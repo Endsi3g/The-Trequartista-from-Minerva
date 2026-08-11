@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -97,7 +97,7 @@ export default function AuditLogsPage() {
         header={
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-mv-lime" />
+              <Clock className="w-4 h-4 text-mv-warm" />
               <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
                 Flux d'Événements Récents ({filteredLogs.length})
               </h3>
@@ -123,7 +123,7 @@ export default function AuditLogsPage() {
                       isAlert
                         ? 'bg-mv-amber-bg border-mv-amber/40 text-mv-amber'
                         : isSystem
-                        ? 'bg-mv-lime-tint border-mv-lime/40 text-mv-lime'
+                        ? 'bg-mv-warm-tint border-mv-warm/40 text-mv-warm'
                         : 'bg-mv-green-tint border-mv-green/40 text-mv-green'
                     }`}
                   >

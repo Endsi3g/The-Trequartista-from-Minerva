@@ -287,7 +287,7 @@ export default function RoiTrackerPage() {
           <Card
             header={
               <div className="flex items-center gap-2">
-                <Target className="w-4 h-4 text-mv-lime" />
+                <Target className="w-4 h-4 text-mv-warm" />
                 <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
                   Suivi des Campagnes Google Ads
                 </h3>
@@ -304,7 +304,7 @@ export default function RoiTrackerPage() {
 
               <div className="flex items-center justify-between p-3 rounded-lg bg-mv-cream-soft border border-mv-border">
                 <span className="text-mv-ink-soft">Leads Qualifiés Ads :</span>
-                <span className="font-extrabold text-mv-lime text-sm">
+                <span className="font-extrabold text-mv-warm text-sm">
                   {metrics.google_ads_leads} Clics convertis
                 </span>
               </div>
@@ -343,7 +343,7 @@ export default function RoiTrackerPage() {
               />
               <div className="flex items-center justify-between text-xs font-semibold px-1">
                 <span className="text-mv-ink-soft">Performance : <strong className="text-mv-green">14 200 Vues</strong></span>
-                <span className="text-mv-ink-soft">CPL Vidéo : <strong className="text-mv-lime">24.50 $ / lead</strong></span>
+                <span className="text-mv-ink-soft">CPL Vidéo : <strong className="text-mv-warm">24.50 $ / lead</strong></span>
               </div>
             </div>
 
@@ -356,7 +356,7 @@ export default function RoiTrackerPage() {
               />
               <div className="flex items-center justify-between text-xs font-semibold px-1">
                 <span className="text-mv-ink-soft">Performance : <strong className="text-mv-green">9 800 Vues</strong></span>
-                <span className="text-mv-ink-soft">CPL Vidéo : <strong className="text-mv-lime">28.10 $ / lead</strong></span>
+                <span className="text-mv-ink-soft">CPL Vidéo : <strong className="text-mv-warm">28.10 $ / lead</strong></span>
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
@@ -229,7 +229,7 @@ export default function ContentPlannerPage() {
                         stage === 'Publié'
                           ? 'bg-mv-green'
                           : stage === 'Enregistré'
-                          ? 'bg-mv-lime'
+                          ? 'bg-mv-warm'
                           : stage === 'Rédigé'
                           ? 'bg-mv-amber'
                           : 'bg-mv-ink-faint'
@@ -260,7 +260,7 @@ export default function ContentPlannerPage() {
 
                       {post.video_url && (
                         <div className="relative aspect-video rounded-lg overflow-hidden bg-black flex items-center justify-center border border-mv-border">
-                          <Film className="w-6 h-6 text-mv-lime animate-pulse" />
+                          <Film className="w-6 h-6 text-mv-warm animate-pulse" />
                           <span className="absolute bottom-1 right-1 text-[9px] bg-black/80 text-white px-1.5 py-0.5 rounded font-mono font-bold">
                             9:16 Reel
                           </span>
@@ -269,7 +269,7 @@ export default function ContentPlannerPage() {
 
                       <div className="pt-2 border-t border-mv-border/60 flex items-center justify-between text-[11px]">
                         <span className="text-mv-ink-soft flex items-center gap-1">
-                          <Video className="w-3.5 h-3.5 text-mv-lime" /> {post.platform || post.format}
+                          <Video className="w-3.5 h-3.5 text-mv-warm" /> {post.platform || post.format}
                         </span>
 
                         <select

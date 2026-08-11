@@ -73,7 +73,7 @@ export default function ProjectRoadmapPage() {
                     step.status === 'Completed'
                       ? 'bg-mv-green text-mv-cream'
                       : step.status === 'In Progress'
-                      ? 'bg-mv-lime-tint text-mv-lime border border-mv-lime/40'
+                      ? 'bg-mv-warm-tint text-mv-warm border border-mv-warm/40'
                       : 'bg-mv-cream-soft text-mv-ink-soft border border-mv-border'
                   }`}
                 >

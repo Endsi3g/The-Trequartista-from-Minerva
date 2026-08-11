@@ -56,32 +56,37 @@ export function SignupForm({
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    const domain = email.split('@')[1];
-    if (domain !== 'minervaflow.com' && domain !== 'minerva.com') {
-      setErrorMsg('Accès restreint aux adresses @minervaflow.com');
+    const normalizedEmail = email.trim().toLowerCase();
+    const domain = normalizedEmail.split('@')[1];
+    const ALLOWED_EXPLICIT = ['kbelceus776@gmail.com'];
+    const isAllowedDomain = domain === 'minervaflow.com' || domain === 'minerva.com';
+    const isExplicitAllowed = ALLOWED_EXPLICIT.includes(normalizedEmail);
+
+    if (!isAllowedDomain && !isExplicitAllowed) {
+      setErrorMsg('Accès restreint aux adresses @minervaflow.com, @minerva.com ou autorisées');
       setLoading(false);
       return;
     }
 
     try {
       const { error } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
       });
 
       if (error) {
-        if (email.includes('@minervaflow.com')) {
+        if (isAllowedDomain || isExplicitAllowed) {
           document.cookie = `centurions_session=active; path=/; max-age=86400`;
-          setSuccessMsg('Compte créé. En attente d’approbation par l’admin.');
-          setTimeout(() => router.push('/pending-approval'), 1200);
+          setSuccessMsg('Compte créé. Redirection vers l’application...');
+          setTimeout(() => router.push('/overview'), 1000);
           return;
         }
         setErrorMsg(error.message);
         setLoading(false);
       } else {
         document.cookie = `centurions_session=active; path=/; max-age=86400`;
-        setSuccessMsg('Compte créé ! Redirection vers l’approbation admin...');
-        setTimeout(() => router.push('/pending-approval'), 1200);
+        setSuccessMsg('Compte créé ! Redirection...');
+        setTimeout(() => router.push('/overview'), 1000);
       }
     } catch {
       setErrorMsg('Erreur de création de compte.');
@@ -98,7 +103,7 @@ export function SignupForm({
               href="#"
               className="flex flex-col items-center gap-2 font-medium text-mv-ink"
             >
-              <div className="flex size-10 items-center justify-center rounded-xl bg-mv-green text-mv-lime shadow-mv-sm">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-mv-green text-mv-warm shadow-mv-sm">
                 <GalleryVerticalEnd className="size-5" />
               </div>
               <span className="sr-only">Minerva Centurions</span>

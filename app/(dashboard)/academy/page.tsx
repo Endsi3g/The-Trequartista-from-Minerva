@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
@@ -129,7 +129,7 @@ export default function AcademyPage() {
               {/* Embedded Video Thumbnail Preview */}
               {sop.video_url && (
                 <div className="relative aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center border border-mv-border">
-                  <Film className="w-8 h-8 text-mv-lime animate-pulse" />
+                  <Film className="w-8 h-8 text-mv-warm animate-pulse" />
                   <span className="absolute bottom-2 right-2 text-[10px] bg-black/80 text-white px-2 py-0.5 rounded font-mono font-bold">
                     Tutoriel Vidéo .MP4
                   </span>

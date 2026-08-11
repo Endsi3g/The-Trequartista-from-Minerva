@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -145,7 +145,7 @@ export function StorageBrowser({
       header={
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
           <div className="flex items-center gap-2">
-            <HardDrive className="w-4 h-4 text-mv-lime" />
+            <HardDrive className="w-4 h-4 text-mv-warm" />
             <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
               {title}
             </h3>
@@ -189,7 +189,7 @@ export function StorageBrowser({
               </div>
               <div className="w-full h-1.5 bg-mv-border rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-mv-lime rounded-full transition-all duration-300"
+                  className="h-full bg-mv-warm rounded-full transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
@@ -225,7 +225,7 @@ export function StorageBrowser({
                         {isImage ? (
                           <ImageIcon className="w-4 h-4" />
                         ) : isVideo ? (
-                          <Video className="w-4 h-4 text-mv-lime" />
+                          <Video className="w-4 h-4 text-mv-warm" />
                         ) : (
                           <FileText className="w-4 h-4" />
                         )}
@@ -249,7 +249,7 @@ export function StorageBrowser({
                       >
                         {copiedName === file.name ? (
                           <>
-                            <Check className="w-3 h-3 text-mv-lime" /> Copié
+                            <Check className="w-3 h-3 text-mv-warm" /> Copié
                           </>
                         ) : (
                           <>

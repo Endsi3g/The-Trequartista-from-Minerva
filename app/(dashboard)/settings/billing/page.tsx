@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -139,7 +139,7 @@ export default function BillingPage() {
 
       {toastMsg && (
         <div className="p-3.5 rounded-xl bg-mv-green-tint border border-mv-green/40 text-mv-green text-xs font-bold flex items-center gap-2 animate-mv-fade-up">
-          <CheckCircle2 className="w-4 h-4 text-mv-lime" /> {toastMsg}
+          <CheckCircle2 className="w-4 h-4 text-mv-warm" /> {toastMsg}
         </div>
       )}
 
@@ -212,7 +212,7 @@ export default function BillingPage() {
                   <td className="py-3.5 px-4 font-semibold text-mv-ink-soft">
                     Pack Centurion High-Growth
                   </td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-mv-lime">
+                  <td className="py-3.5 px-4 font-mono font-bold text-mv-warm">
                     {c.mrr.toLocaleString('fr-CA')} $ / mois
                   </td>
                   <td className="py-3.5 px-4">
@@ -251,7 +251,7 @@ export default function BillingPage() {
               className="p-4 rounded-xl bg-mv-cream-soft border border-mv-border flex items-center justify-between gap-4 text-xs"
             >
               <div className="flex items-center gap-4">
-                <div className="p-2.5 rounded-lg bg-mv-surface border border-mv-border font-mono font-bold text-mv-lime">
+                <div className="p-2.5 rounded-lg bg-mv-surface border border-mv-border font-mono font-bold text-mv-warm">
                   {inv.id}
                 </div>
                 <div>
@@ -272,7 +272,7 @@ export default function BillingPage() {
 
                 <button
                   onClick={() => alert(`Téléchargement de la facture PDF ${inv.id}...`)}
-                  className="p-2 rounded-lg bg-mv-surface hover:bg-mv-green-tint border border-mv-border text-mv-green hover:text-mv-lime transition-all cursor-pointer"
+                  className="p-2 rounded-lg bg-mv-surface hover:bg-mv-green-tint border border-mv-border text-mv-green hover:text-mv-warm transition-all cursor-pointer"
                   title="Télécharger la Facture PDF"
                 >
                   <Download className="w-4 h-4" />

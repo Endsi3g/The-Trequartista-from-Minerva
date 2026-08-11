@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
@@ -260,7 +260,7 @@ export default function LeadsCrmPage() {
                           : stage === 'Perdu'
                           ? 'bg-mv-red'
                           : stage === 'Nouveau'
-                          ? 'bg-mv-lime'
+                          ? 'bg-mv-warm'
                           : 'bg-mv-amber'
                       }`}
                     />

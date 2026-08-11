@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -107,7 +107,7 @@ function NavLink({
           <Icon
             className={[
               'h-4 w-4 shrink-0 transition-transform duration-150 group-hover:scale-110',
-              active ? 'text-mv-lime' : 'text-mv-ink-faint group-hover:text-mv-green',
+              active ? 'text-mv-warm' : 'text-mv-ink-faint group-hover:text-mv-green',
             ].join(' ')}
           />
           {!collapsed && (

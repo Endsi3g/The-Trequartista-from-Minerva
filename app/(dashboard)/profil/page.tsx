@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
@@ -211,7 +211,7 @@ export default function ProfilePage() {
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                 isActive
-                  ? 'border-mv-lime text-mv-lime bg-mv-surface/60 font-bold'
+                  ? 'border-mv-warm text-mv-warm bg-mv-surface/60 font-bold'
                   : 'border-transparent text-mv-ink-soft hover:text-mv-ink'
               }`}
             >
@@ -267,7 +267,7 @@ export default function ProfilePage() {
 
               <div>
                 <label className="block font-bold text-mv-ink mb-1.5 flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-mv-lime" /> Courriel Professionnel
+                  <Mail className="w-3.5 h-3.5 text-mv-warm" /> Courriel Professionnel
                 </label>
                 <input
                   type="email"
@@ -291,7 +291,7 @@ export default function ProfilePage() {
 
               <div>
                 <label className="block font-bold text-mv-ink mb-1.5 flex items-center gap-1.5">
-                  <Building className="w-3.5 h-3.5 text-mv-lime" /> Département
+                  <Building className="w-3.5 h-3.5 text-mv-warm" /> Département
                 </label>
                 <input
                   type="text"

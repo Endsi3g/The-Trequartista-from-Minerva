@@ -157,7 +157,7 @@ export default function LaunchCheckPage() {
                 <div
                   className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-all ${
                     item.checked
-                      ? 'bg-mv-green border-mv-green text-mv-lime animate-mv-check-pop'
+                      ? 'bg-mv-green border-mv-green text-mv-warm animate-mv-check-pop'
                       : 'border-mv-ink-mute bg-mv-surface'
                   }`}
                 >
@@ -213,7 +213,7 @@ export default function LaunchCheckPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-mv-surface border border-mv-green/50 rounded-2xl p-8 max-w-md w-full shadow-mv-lg animate-mv-scale-in text-center space-y-6">
-            <div className="w-16 h-16 rounded-full bg-mv-green-tint border border-mv-green flex items-center justify-center mx-auto text-mv-lime">
+            <div className="w-16 h-16 rounded-full bg-mv-green-tint border border-mv-green flex items-center justify-center mx-auto text-mv-warm">
               <Sparkles className="w-8 h-8 animate-mv-leaf-breathe" />
             </div>
 

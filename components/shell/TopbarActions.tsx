@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Bell, Moon, Sun, X } from 'lucide-react';
@@ -88,7 +88,7 @@ export function TopbarActions() {
           title={theme === 'dark' ? 'Passer en Mode Clair' : 'Passer en Mode Sombre'}
         >
           {theme === 'dark'
-            ? <Sun className="w-4 h-4 text-mv-lime" />
+            ? <Sun className="w-4 h-4 text-mv-warm" />
             : <Moon className="w-4 h-4 text-mv-green" />
           }
         </button>

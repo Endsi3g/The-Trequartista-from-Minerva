@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { MessageSquare, Star, Send, X, CheckCircle2 } from 'lucide-react';
@@ -52,7 +52,7 @@ export function UserFeedbackModal() {
         className="fixed bottom-5 left-5 z-40 px-3.5 py-2 rounded-full bg-mv-ink text-mv-surface border border-mv-border/20 shadow-mv-lg flex items-center gap-2 hover:bg-mv-green transition-all cursor-pointer text-xs font-extrabold group"
         title="Donner votre avis ou signaler un bug"
       >
-        <MessageSquare className="w-4 h-4 text-mv-lime group-hover:text-white transition-colors" />
+        <MessageSquare className="w-4 h-4 text-mv-warm group-hover:text-white transition-colors" />
         <span>💬 Feedback</span>
       </button>
 

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -126,7 +126,7 @@ export default function OverviewPage() {
           header={
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-mv-lime" />
+                <Zap className="w-4 h-4 text-mv-warm" />
                 <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
                   Projets Prioritaires & Santé (Supabase Real-Time)
                 </h3>
@@ -217,7 +217,7 @@ export default function OverviewPage() {
               <Link href="/projects/proj-apex-launch/launch-check" className="block">
                 <button className="w-full flex items-center justify-between p-3 rounded-lg bg-mv-cream-soft hover:bg-mv-green-tint border border-mv-border hover:border-mv-green/40 transition-all text-xs font-bold text-mv-ink cursor-pointer">
                   <span className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-mv-lime" /> Lancer Checklist 20-Pts
+                    <CheckCircle2 className="w-4 h-4 text-mv-warm" /> Lancer Checklist 20-Pts
                   </span>
                   <ArrowRight className="w-3.5 h-3.5 text-mv-ink-soft" />
                 </button>
