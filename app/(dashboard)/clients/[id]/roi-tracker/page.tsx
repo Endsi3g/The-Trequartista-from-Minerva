@@ -8,7 +8,10 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { HeatmapScale } from '@/components/charts/HeatmapScale';
+import { BarChart } from '@/components/charts/BarChart';
+import { DonutChart } from '@/components/charts/DonutChart';
 import { ClientExecutiveReport } from '@/components/reports/ClientExecutiveReport';
+
 import { StorageBrowser } from '@/components/storage/StorageBrowser';
 import { VideoAssetPlayer } from '@/components/media/VideoAssetPlayer';
 import {
@@ -212,77 +215,32 @@ export default function RoiTrackerPage() {
 
         {/* Main Impact Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card
-            className="lg:col-span-2"
-            header={
-              <div className="flex items-center justify-between w-full">
-                <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
-                  Évolution Hebdomadaire des Leads
-                </h3>
-                <Badge variant="lime">
-                  <CheckCircle className="w-3 h-3 text-mv-lime" /> +34% Croissance
-                </Badge>
-              </div>
-            }
-          >
-            <div className="space-y-4">
-              <div className="h-48 flex items-end justify-between gap-3 pt-6 pb-2 px-2 border-b border-mv-border">
-                {metrics.weekly_leads_trend.map((val, idx) => {
-                  const heightPct = (val / 20) * 100;
-                  return (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-2 group">
-                      <span className="text-[11px] font-mono font-bold text-mv-lime opacity-0 group-hover:opacity-100 transition-opacity">
-                        {val}
-                      </span>
-                      <div
-                        className="w-full bg-mv-green-tint border border-mv-green/40 group-hover:bg-mv-green rounded-t-md transition-all duration-300 relative"
-                        style={{ height: `${heightPct}%` }}
-                      >
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-mv-lime rounded-t-md" />
-                      </div>
-                      <span className="text-[10px] font-semibold text-mv-ink-soft uppercase">
-                        Sem {idx + 1}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+          <div className="lg:col-span-2 space-y-6">
+            <BarChart
+              title="Comparatif Hebdomadaire : Budget Investi vs Leads Générés"
+              subtitle="Performance des 4 dernières semaines"
+              data={[
+                { label: 'Sem 1', value: 8, secondaryValue: 1125 },
+                { label: 'Sem 2', value: 12, secondaryValue: 1125 },
+                { label: 'Sem 3', value: 14, secondaryValue: 1125 },
+                { label: 'Sem 4', value: 14, secondaryValue: 1125 },
+              ]}
+              valuePrefix=""
+              valueSuffix=" leads"
+            />
+          </div>
 
-              <div className="flex items-center justify-between text-xs text-mv-ink-soft">
-                <span>Moyenne hebdo : <strong className="text-mv-ink">11.8 leads / semaine</strong></span>
-                <span>Source : Automatisations Webhooks & Formulaires Framer</span>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-mv-surface to-mv-green-tint/40 border-mv-green/40 flex flex-col justify-between">
-            <div>
-              <span className="text-xs font-bold text-mv-lime uppercase tracking-widest">
-                RETURN ON INVESTMENT (ROI)
-              </span>
-              <div className="mt-4">
-                <div className="text-5xl font-black text-mv-ink tracking-tight font-display">
-                  {metrics.roi_multiplier}x <span className="text-2xl font-bold text-mv-green">ROI</span>
-                </div>
-                <p className="text-xs text-mv-ink-soft mt-2">
-                  Pour chaque dollar investi dans les services Minerva, le client a généré <strong>{metrics.roi_multiplier} $</strong> de valeur.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-mv-border/60 space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-mv-ink-soft">Investi par le client :</span>
-                <span className="font-bold text-mv-ink">{metrics.total_invested.toLocaleString('fr-CA')} $</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-mv-ink-soft">Valeur générée :</span>
-                <span className="font-extrabold text-mv-lime">{metrics.total_generated.toLocaleString('fr-CA')} $</span>
-              </div>
-              <HeatmapScale level={5} label="Intensité Génération Revenus" />
-            </div>
-          </Card>
+          <DonutChart
+            title="Répartition du Budget Publicitaire par Canal"
+            subtitle="Allocation Mensuelle ($)"
+            data={[
+              { label: 'Google Ads Search', value: 2040, color: '#167f5b' },
+              { label: 'Meta Reels & Ads', value: 1460, color: '#dfff5f' },
+              { label: 'SEO & Fiche GMB', value: 1000, color: '#ab7d1f' },
+            ]}
+          />
         </div>
+
 
         {/* Sub Grid: GMB & SEO + Google Ads Tracking */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

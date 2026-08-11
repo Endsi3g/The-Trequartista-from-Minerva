@@ -25,6 +25,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { ContentPost } from '@/lib/types';
+import { DonutChart } from '@/components/charts/DonutChart';
+
 
 export default function ContentPlannerPage() {
   const [viewMode, setViewMode] = useState<'kanban' | 'calendar' | 'storage'>('kanban');
@@ -195,7 +197,20 @@ export default function ContentPlannerPage() {
         </div>
       </div>
 
+      {/* Platform Distribution Chart */}
+      <DonutChart
+        title="Répartition des Contenus Vidéo par Plateforme"
+        subtitle="Distribution de la stratégie de publication sociale"
+        data={[
+          { label: 'Instagram Reels', value: 12, color: '#167f5b' },
+          { label: 'TikTok', value: 8, color: '#dfff5f' },
+          { label: 'YouTube Shorts', value: 5, color: '#ab7d1f' },
+          { label: 'LinkedIn Video', value: 3, color: '#0e5a40' },
+        ]}
+      />
+
       {/* STORAGE MEDIA EXPLORER VIEW */}
+
       {viewMode === 'storage' && (
         <StorageBrowser defaultBucket="academy-media" title="Bibliothèque Vidéos & Assets Supabase" />
       )}

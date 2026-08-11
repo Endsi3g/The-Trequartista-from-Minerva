@@ -11,6 +11,8 @@ import { fetchLaunchChecklist, saveLaunchChecklist, logAuditEvent } from '@/lib/
 import { invokeLaunchCheckValidator } from '@/lib/services/edge-functions';
 import { LaunchCheckItem } from '@/lib/types';
 import confetti from 'canvas-confetti';
+import { GaugeChart } from '@/components/charts/GaugeChart';
+
 
 export default function LaunchCheckPage() {
   const params = useParams();
@@ -108,26 +110,11 @@ export default function LaunchCheckPage() {
           </p>
         </div>
 
-        {/* Dynamic Progress Bar */}
-        <div className="flex flex-col items-end gap-2 shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl font-black text-mv-ink font-mono tracking-tight">
-              {scorePct}%
-            </span>
-            <span className="text-xs text-mv-ink-soft font-semibold">
-              ({checkedCount}/{totalCount} Valides)
-            </span>
-          </div>
-
-          <div className="w-56 h-3 bg-mv-border rounded-full overflow-hidden">
-            <div
-              className={`h-full transition-all duration-500 rounded-full ${
-                isComplete ? 'bg-mv-lime' : 'bg-mv-green'
-              }`}
-              style={{ width: `${scorePct}%` }}
-            />
-          </div>
+        {/* Dynamic Radial Gauge Chart */}
+        <div className="flex items-center gap-6">
+          <GaugeChart score={checkedCount} total={totalCount} label="Qualité Certifiée" />
         </div>
+
       </div>
 
       {/* 20 Checkbox Items List */}

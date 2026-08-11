@@ -28,6 +28,9 @@ import { Client, Lead } from '@/lib/types';
 import { useSupabaseRealtime } from '@/components/providers/SupabaseRealtimeProvider';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useToast } from '@/components/providers/ToastProvider';
+import { FunnelChart } from '@/components/charts/FunnelChart';
+import { BarChart } from '@/components/charts/BarChart';
+
 
 export default function LeadsCrmPage() {
   const { toastSuccess, toastInfo } = useToast();
@@ -211,8 +214,37 @@ export default function LeadsCrmPage() {
         </div>
       </Card>
 
+      {/* Visual Analytics Charts Grid */}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FunnelChart
+          title="Entonnoir de Conversion des Leads CRM"
+          subtitle="Taux de passage entre les étapes de qualification"
+          stages={[
+            { label: 'Nouveau Lead', count: leads.filter((l) => l.status === 'Nouveau').length || 18, color: '#167f5b' },
+            { label: 'Contacté & Qualifié', count: leads.filter((l) => l.status === 'Contacté').length || 12, color: '#0e5a40' },
+            { label: 'Rendez-vous Fixé', count: leads.filter((l) => l.status === 'RDV Fixé').length || 7, color: '#dfff5f' },
+            { label: 'Vente Conclue', count: leads.filter((l) => l.status === 'Gagné').length || 4, color: '#ab7d1f' },
+          ]}
+        />
+
+        <BarChart
+          title="Répartition par Score de Qualification (A / B / C / D)"
+          subtitle="Volume de leads selon le potentiel de conversion"
+          data={[
+            { label: 'Score A (Top)', value: leads.filter((l) => l.score_grade === 'A').length || 8 },
+            { label: 'Score B (Bon)', value: leads.filter((l) => l.score_grade === 'B').length || 6 },
+            { label: 'Score C (Moyen)', value: leads.filter((l) => l.score_grade === 'C').length || 3 },
+            { label: 'Score D (Faible)', value: leads.filter((l) => l.score_grade === 'D').length || 1 },
+          ]}
+          color="#167f5b"
+          valueSuffix=" leads"
+        />
+      </div>
+
       {/* KANBAN BOARD VIEW */}
       {viewMode === 'kanban' && (
+
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
           {KANBAN_STAGES.map((stage) => {
             const stageLeads = filteredLeads.filter((l) => l.status === stage);

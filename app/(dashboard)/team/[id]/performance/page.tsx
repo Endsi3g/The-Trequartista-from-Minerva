@@ -16,6 +16,8 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { INITIAL_TEAM } from '@/lib/mock-data';
+import { PerformanceBarChart } from '@/components/charts/PerformanceBarChart';
+
 
 export default function PerformancePage() {
   const params = useParams();
@@ -159,40 +161,21 @@ export default function PerformancePage() {
 
       {/* Tab Content 2: Skills Matrix */}
       {activeTab === 'skills' && (
-        <Card
-          header={
-            <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
-              Grille de Compétences Interne Minerva
-            </h3>
-          }
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {member.skills.map((s, idx) => (
-              <div
-                key={idx}
-                className="p-4 rounded-xl bg-mv-cream-soft border border-mv-border flex items-center justify-between"
-              >
-                <div>
-                  <div className="text-xs font-bold text-mv-ink">{s.skill}</div>
-                  <div className="text-[11px] text-mv-ink-soft mt-0.5">Évaluation Équipe Minerva</div>
-                </div>
-
-                <Badge
-                  variant={
-                    s.level === 'Expert'
-                      ? 'lime'
-                      : s.level === 'Avancé'
-                      ? 'green'
-                      : 'amber'
-                  }
-                >
-                  {s.level}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </Card>
+        <div className="space-y-6">
+          <PerformanceBarChart
+            title="Niveau de Maîtrise & Vélocité Équipe (%)"
+            subtitle="Évaluation continue des compétences techniques et opérationnelles"
+            skills={[
+              { skill: 'Supabase Postgres & Edge Functions', score: 95 },
+              { skill: 'Next.js 15 App Router & Server Actions', score: 92 },
+              { skill: 'Framer Design & Animations UI', score: 88 },
+              { skill: 'Google Ads & Tracking Conversion', score: 82 },
+              { skill: 'Automatisations Webhook & Zapier', score: 90 },
+            ]}
+          />
+        </div>
       )}
+
 
       {/* Tab Content 3: Feedbacks 360 */}
       {activeTab === 'feedbacks' && (
