@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
+
   const { pathname } = request.nextUrl;
 
   // Exclude static assets, icons, open-graph image and webhooks API routes
@@ -10,8 +11,10 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/webhooks') ||
     pathname.startsWith('/icon.svg') ||
     pathname.startsWith('/opengraph-image') ||
-    pathname === '/login'
+    pathname === '/login' ||
+    pathname === '/signup'
   ) {
+
     return NextResponse.next();
   }
 

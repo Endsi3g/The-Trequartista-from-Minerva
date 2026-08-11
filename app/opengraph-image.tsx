@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
+
 
 export const alt = 'Minerva Centurions — Cockpit In-House';
 export const size = {
@@ -43,8 +44,9 @@ export default async function Image() {
           >
             M
           </div>
-          <div style={{ color: '#f3f2ea', fontSize: '28px', fontWeight: 'bold', letterSpacing: '-0.5px' }}>
-            MINERVA <span style={{ color: '#1c9a6f' }}>CENTURIONS</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f3f2ea', fontSize: '28px', fontWeight: 'bold', letterSpacing: '-0.5px' }}>
+            <span>MINERVA</span>
+            <span style={{ color: '#1c9a6f' }}>CENTURIONS</span>
           </div>
         </div>
 
