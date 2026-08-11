@@ -2,26 +2,26 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 export async function proxy(request: NextRequest) {
-
   const { pathname } = request.nextUrl;
 
-  // Exclude static assets, icons, open-graph image and webhooks API routes
+  // Bypass: public pages, static assets, auth callbacks
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/webhooks') ||
-    pathname.startsWith('/icon.svg') ||
+    pathname.startsWith('/auth/callback') ||
+    pathname.startsWith('/icon-512.png') ||
+    pathname.startsWith('/icon-192.png') ||
+    pathname.startsWith('/favicon.ico') ||
     pathname.startsWith('/opengraph-image') ||
     pathname === '/login' ||
-    pathname === '/signup'
+    pathname === '/signup' ||
+    pathname === '/pending-approval'
   ) {
-
     return NextResponse.next();
   }
 
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   });
 
   const supabase = createServerClient(
@@ -48,12 +48,30 @@ export async function proxy(request: NextRequest) {
 
   const devSessionCookie = request.cookies.get('centurions_session');
 
-  // If no active session and accessing protected dashboard route, redirect to /login
-  if (!user && !devSessionCookie && pathname !== '/login') {
+  // 1. Not authenticated → redirect to /login
+  if (!user && !devSessionCookie) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = '/login';
     redirectUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(redirectUrl);
+  }
+
+  // 2. Authenticated → check approval status from profiles table
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('approved, role')
+      .eq('id', user.id)
+      .single();
+
+    // Profile exists and not approved → redirect to pending-approval
+    if (profile && !profile.approved) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = '/pending-approval';
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // No profile yet (first login before trigger fires) → allow through with devSession fallback
   }
 
   return response;
@@ -67,5 +85,9 @@ export const config = {
     '/team/:path*',
     '/academy/:path*',
     '/content-planner/:path*',
+    '/leads/:path*',
+    '/profil/:path*',
+    '/settings/:path*',
+    '/integrations/:path*',
   ],
 };

@@ -22,6 +22,8 @@ import { fetchProjects, fetchClients } from '@/lib/services/supabase-data';
 import { Project, Client } from '@/lib/types';
 import { AreaChart } from '@/components/charts/AreaChart';
 import { SparklineChart } from '@/components/charts/SparklineChart';
+import { ChartBarInteractive } from '@/components/charts/ChartBarInteractive';
+
 
 
 export default function OverviewPage() {
@@ -253,6 +255,10 @@ export default function OverviewPage() {
             </div>
           </Card>
         </div>
+      </div>
+      {/* ── Graphique Barres Interactif ── */}
+      <div className="mt-6">
+        <ChartBarInteractive />
       </div>
     </div>
   );

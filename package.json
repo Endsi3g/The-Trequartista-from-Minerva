@@ -10,14 +10,17 @@
     "deploy:supabase": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy-supabase.ps1"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.3.3",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.48.1",
     "canvas-confetti": "^1.9.4",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
     "next": "16.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "recharts": "^3.10.1",
     "tailwind-merge": "^3.0.1"
   },
   "devDependencies": {

@@ -22,6 +22,8 @@ import {
   Target,
   type LucideIcon,
 } from 'lucide-react';
+import { Tooltip } from '@/components/ui/Tooltip';
+
 
 // ── Types ──────────────────────────────────────────────
 type NavItem = {
@@ -91,39 +93,42 @@ function NavLink({
 
   return (
     <div className="group relative flex items-center">
-      <Link
-        href={item.href}
-        className={[
-          'flex flex-1 items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-all duration-150',
-          active
-            ? 'bg-mv-green text-white shadow-mv-sm'
-            : 'text-mv-ink-soft hover:bg-mv-green-tint hover:text-mv-ink',
-        ].join(' ')}
-        title={collapsed ? item.label : undefined}
-      >
-        <Icon
+      <Tooltip content={collapsed ? item.label : ''} position="right">
+        <Link
+          href={item.href}
           className={[
-            'h-4 w-4 shrink-0 transition-transform duration-150 group-hover:scale-110',
-            active ? 'text-mv-lime' : 'text-mv-ink-faint group-hover:text-mv-green',
+            'flex flex-1 items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-all duration-150',
+            active
+              ? 'bg-mv-green text-white shadow-mv-sm'
+              : 'text-mv-ink-soft hover:bg-mv-green-tint hover:text-mv-ink',
           ].join(' ')}
-        />
-        {!collapsed && (
-          <span className="truncate">{item.label}</span>
-        )}
-      </Link>
+          title={undefined}
+        >
+          <Icon
+            className={[
+              'h-4 w-4 shrink-0 transition-transform duration-150 group-hover:scale-110',
+              active ? 'text-mv-lime' : 'text-mv-ink-faint group-hover:text-mv-green',
+            ].join(' ')}
+          />
+          {!collapsed && (
+            <span className="truncate">{item.label}</span>
+          )}
+        </Link>
+      </Tooltip>
 
       {/* Favorite toggle — only visible on hover when expanded */}
       {!collapsed && onToggleFavorite && (
-        <button
-          onClick={(e) => onToggleFavorite(e, item.key)}
-          className="absolute right-1 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity text-mv-ink-faint hover:text-mv-amber"
-          title={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-        >
-          {isFavorite
-            ? <Star className="w-3 h-3 fill-mv-amber text-mv-amber" />
-            : <StarOff className="w-3 h-3" />
-          }
-        </button>
+        <Tooltip content={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'} position="right">
+          <button
+            onClick={(e) => onToggleFavorite(e, item.key)}
+            className="absolute right-1 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity text-mv-ink-faint hover:text-mv-amber"
+          >
+            {isFavorite
+              ? <Star className="w-3 h-3 fill-mv-amber text-mv-amber" />
+              : <StarOff className="w-3 h-3" />
+            }
+          </button>
+        </Tooltip>
       )}
     </div>
   );
@@ -203,16 +208,17 @@ export function AppSidebar({ collapsed, onToggleCollapse }: AppSidebarProps) {
           }
         </Link>
 
-        <button
-          onClick={onToggleCollapse}
-          className="p-1.5 rounded-lg text-mv-ink-soft hover:text-mv-ink hover:bg-mv-border/60 transition-colors shrink-0 cursor-pointer ml-1"
-          title={collapsed ? 'Déplier la sidebar' : 'Rétracter la sidebar'}
-        >
-          {collapsed
-            ? <ChevronRight className="w-4 h-4" />
-            : <ChevronLeft className="w-4 h-4" />
-          }
-        </button>
+        <Tooltip content={collapsed ? 'Déplier la sidebar' : 'Rétracter la sidebar'} position="right">
+          <button
+            onClick={onToggleCollapse}
+            className="p-1.5 rounded-lg text-mv-ink-soft hover:text-mv-ink hover:bg-mv-border/60 transition-colors shrink-0 cursor-pointer ml-1"
+          >
+            {collapsed
+              ? <ChevronRight className="w-4 h-4" />
+              : <ChevronLeft className="w-4 h-4" />
+            }
+          </button>
+        </Tooltip>
       </div>
 
       {/* ── Navigation ── */}

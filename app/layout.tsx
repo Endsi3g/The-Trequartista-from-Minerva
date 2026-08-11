@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: 'Command center de Minerva pour la livraison client, le suivi du ROI, la qualité et le management équipe.',
   manifest: '/manifest.json',
   icons: {
-    icon: '/icon.svg',
+    icon: '/icon-512.png',
     apple: '/icon-192.png',
   },
   openGraph: {

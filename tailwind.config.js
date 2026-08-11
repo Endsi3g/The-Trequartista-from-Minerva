@@ -63,6 +63,7 @@ module.exports = {
         'mv-leaf-breathe': 'mvLeafBreathe 4.5s infinite ease-in-out',
         'mv-check-pop': 'mvCheckPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
         'mv-scale-in': 'mvScaleIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'mv-fade-in': 'mvFadeIn 0.15s ease-out forwards',
       },
       keyframes: {
         mvFadeUp: {
@@ -85,6 +86,10 @@ module.exports = {
         mvScaleIn: {
           '0%': { transform: 'scale(0.96)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        mvFadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(-2px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
       },
     },

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -37,11 +37,42 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'info' | 'notifications' | 'security' | 'api_keys'>('info');
 
   // Form State
-  const [fullName, setFullName] = useState('Alex Tremblay');
-  const [email, setEmail] = useState('alex@minervaflow.com');
-  const [role, setRole] = useState('Lead Dev Fullstack & IA');
-  const [department, setDepartment] = useState('Operations & Tech');
-  const [avatarUrl, setAvatarUrl] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState('');
+  const [department, setDepartment] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+
+  // Load real user from Supabase on mount
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setEmail(user.email || '');
+          // Try to load from profiles table
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, role, department, avatar_url')
+            .eq('id', user.id)
+            .single();
+          if (profile) {
+            setFullName(profile.full_name || user.user_metadata?.full_name || '');
+            setRole(profile.role || 'member');
+            setDepartment(profile.department || '');
+            setAvatarUrl(profile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(profile.full_name || user.email || 'MV')}`);
+          } else {
+            // Fallback: use auth metadata
+            setFullName(user.user_metadata?.full_name || '');
+            setAvatarUrl(`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email || 'MV')}`);
+          }
+        }
+      } catch {}
+    }
+    loadUser();
+  }, []);
+
 
   // Notification Toggles State
   const [emailChecklistAlert, setEmailChecklistAlert] = useState(true);

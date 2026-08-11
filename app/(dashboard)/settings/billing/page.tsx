@@ -17,15 +17,32 @@ import {
   ArrowUpRight,
   ShieldCheck,
   RefreshCw,
+  UserCheck,
+  X,
+  Users,
+  Shield,
 } from 'lucide-react';
 import { fetchClients } from '@/lib/services/supabase-data';
 import { Client } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
+import { Tooltip } from '@/components/ui/Tooltip';
+
+
+interface PendingMember {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  created_at: string;
+}
 
 export default function BillingPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [simulating, setSimulating] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [pendingMembers, setPendingMembers] = useState<PendingMember[]>([]);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+
 
   useEffect(() => {
     async function loadData() {
@@ -35,7 +52,21 @@ export default function BillingPage() {
       setLoading(false);
     }
     loadData();
+
+    async function loadPending() {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, created_at')
+          .eq('approved', false)
+          .order('created_at', { ascending: false });
+        setPendingMembers(data || []);
+      } catch {}
+    }
+    loadPending();
   }, []);
+
 
   const totalMrr = clients.reduce((acc, c) => acc + c.mrr, 0);
   const totalArr = totalMrr * 12;
@@ -250,6 +281,89 @@ export default function BillingPage() {
             </div>
           ))}
         </div>
+      </Card>
+
+      {/* ── Admin: Gestion des Accès Membres ── */}
+      <Card>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-8 h-8 rounded-lg bg-mv-green-tint border border-mv-green/30 flex items-center justify-center text-mv-green">
+            <Shield className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="font-extrabold text-sm text-mv-ink">Gestion des Accès — Nouveaux Membres</h2>
+            <p className="text-xs text-mv-ink-soft">Approuver ou rejeter les demandes d&apos;accès en attente.</p>
+          </div>
+          <div className="ml-auto">
+            {pendingMembers.length > 0 && (
+              <span className="text-xs font-bold text-mv-amber bg-mv-amber/10 border border-mv-amber/30 px-2 py-0.5 rounded-full">
+                {pendingMembers.length} en attente
+              </span>
+            )}
+          </div>
+        </div>
+
+        {pendingMembers.length === 0 ? (
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-mv-green-tint/40 border border-mv-green/20">
+            <CheckCircle2 className="w-5 h-5 text-mv-green" />
+            <p className="text-sm text-mv-ink-soft">Aucune demande d&apos;accès en attente. Tous les membres sont approuvés.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {pendingMembers.map((member) => (
+              <div key={member.id} className="flex items-center justify-between p-3.5 rounded-xl bg-mv-cream-soft border border-mv-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-mv-green text-white flex items-center justify-center font-bold text-sm">
+                    {(member.full_name || member.email || '?')[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-mv-ink">{member.full_name || 'Nom inconnu'}</div>
+                    <div className="text-xs text-mv-ink-soft font-mono">{member.email}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Tooltip content="Approuver l'accès au cockpit" position="top">
+                    <button
+                      disabled={approvingId === member.id}
+                      onClick={async () => {
+                        setApprovingId(member.id);
+                        try {
+                          const supabase = createClient();
+                          await supabase.from('profiles').update({ approved: true }).eq('id', member.id);
+                          setPendingMembers((prev) => prev.filter((m) => m.id !== member.id));
+                          setToastMsg(`✓ ${member.full_name || member.email} approuvé(e).`);
+                        } catch { setToastMsg('Erreur lors de l\'approbation.'); }
+                        setApprovingId(null);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mv-green text-white text-xs font-bold hover:bg-mv-green/90 transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      <UserCheck className="w-3.5 h-3.5" />
+                      Approuver
+                    </button>
+                  </Tooltip>
+                  <Tooltip content="Rejeter et supprimer ce compte" position="top">
+                    <button
+                      disabled={approvingId === member.id}
+                      onClick={async () => {
+                        if (!confirm(`Rejeter le compte de ${member.full_name || member.email} ?`)) return;
+                        setApprovingId(member.id);
+                        try {
+                          const supabase = createClient();
+                          await supabase.from('profiles').delete().eq('id', member.id);
+                          setPendingMembers((prev) => prev.filter((m) => m.id !== member.id));
+                          setToastMsg(`Compte de ${member.full_name || member.email} rejeté.`);
+                        } catch { setToastMsg('Erreur lors du rejet.'); }
+                        setApprovingId(null);
+                      }}
+                      className="p-1.5 rounded-lg bg-mv-red-bg border border-mv-red/20 text-mv-red hover:bg-mv-red/10 transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </Tooltip>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );
