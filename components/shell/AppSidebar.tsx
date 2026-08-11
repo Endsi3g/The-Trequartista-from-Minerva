@@ -19,6 +19,7 @@ import {
   StarOff,
   Settings,
   Zap,
+  Target,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -38,30 +39,32 @@ type NavGroup = {
 // ── Navigation Catalogue ───────────────────────────────
 const navGroups: NavGroup[] = [
   {
-    title: 'PILOTAGE & FINANCES',
+    title: 'REVENUE & CLIENTS',
     items: [
-      { key: 'overview',    href: '/overview',    icon: LayoutDashboard, label: 'Command Center'    },
-      { key: 'clients',     href: '/clients',     icon: Users,           label: 'Clients & MRR'     },
-      { key: 'roi-tracker', href: '/clients',     icon: TrendingUp,      label: 'Suivi ROI Client'  },
+      { key: 'overview',    href: '/overview',                                icon: LayoutDashboard, label: "Vue d'ensemble"               },
+      { key: 'leads',       href: '/leads',                                   icon: Target,          label: 'Leads & Pipeline CRM'         },
+      { key: 'clients',     href: '/clients',                                 icon: Users,           label: 'Portefeuille Clients & MRR'   },
+      { key: 'roi-tracker', href: '/clients/client-apex-roofing/roi-tracker', icon: TrendingUp,      label: 'Rapports ROI & Performance'  },
     ],
   },
   {
-    title: 'OPÉRATIONS & QUALITÉ',
+    title: 'OPÉRATIONS CLIENTS',
     items: [
-      { key: 'projects',        href: '/projects',       icon: FolderKanban, label: 'Projets & Kanban'  },
-      { key: 'launch-check',    href: '/projects',       icon: CheckCircle2, label: 'Checklist 20-Pts'  },
-      { key: 'content-planner', href: '/content-planner', icon: Share2,       label: 'Social & Reels'    },
+      { key: 'projects',        href: '/projects',                               icon: FolderKanban, label: 'Pipeline Projets'           },
+      { key: 'launch-check',    href: '/projects/proj-apex-launch/launch-check', icon: CheckCircle2, label: 'Checklist Qualité (20 Pts)' },
+      { key: 'content-planner', href: '/content-planner',                        icon: Share2,       label: 'Planificateur Contenu'      },
     ],
   },
   {
-    title: 'ÉQUIPE & ACADÉMIE',
+    title: 'RESSOURCES HUMAINES',
     items: [
-      { key: 'team',     href: '/team',    icon: UserCheck,      label: 'Répertoire Équipe'  },
-      { key: 'profil',   href: '/profil',  icon: Users,          label: 'Profil & OKRs'      },
-      { key: 'academy',  href: '/academy', icon: GraduationCap,  label: 'Académie LMS & SOPs' },
+      { key: 'team',     href: '/team',    icon: UserCheck,      label: 'Membres & Équipe'            },
+      { key: 'profil',   href: '/profil',  icon: Users,          label: 'Mon Profil & OKRs'            },
+      { key: 'academy',  href: '/academy', icon: GraduationCap,  label: 'Base de Connaissances & SOPs' },
     ],
   },
 ];
+
 
 const bottomItems: NavItem[] = [
   { key: 'integrations', href: '/integrations', icon: Zap,      label: 'Intégrations'  },

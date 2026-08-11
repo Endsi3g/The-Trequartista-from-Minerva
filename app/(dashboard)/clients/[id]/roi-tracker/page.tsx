@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { HeatmapScale } from '@/components/charts/HeatmapScale';
 import { ClientExecutiveReport } from '@/components/reports/ClientExecutiveReport';
 import { StorageBrowser } from '@/components/storage/StorageBrowser';
+import { VideoAssetPlayer } from '@/components/media/VideoAssetPlayer';
 import {
   TrendingUp,
   DollarSign,
@@ -20,35 +22,95 @@ import {
   ExternalLink,
   Printer,
   CheckCircle,
+  Zap,
+  Film,
 } from 'lucide-react';
-import { fetchClients, fetchClientRoiMetrics } from '@/lib/services/supabase-data';
+
+import { fetchClients, fetchClientRoiMetrics, logAuditEvent } from '@/lib/services/supabase-data';
+import { invokeRoiAggregator } from '@/lib/services/edge-functions';
 import { Client, ClientRoiMetrics } from '@/lib/types';
 
 export default function RoiTrackerPage() {
+  const params = useParams();
+  const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const clientId = rawId || 'client-apex-roofing';
+
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'ytd'>('30d');
   const [client, setClient] = useState<Client | null>(null);
   const [metrics, setMetrics] = useState<ClientRoiMetrics | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const clientId = 'client-apex-roofing';
-
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       const clients = await fetchClients();
-      const targetClient = clients.find((c) => c.id === clientId) || clients[0];
-      const roiData = await fetchClientRoiMetrics(targetClient.id);
+      const targetClient = clients.find((c) => c.id === clientId) || clients[0] || {
+        id: clientId,
+        name: 'Apex Roofing Inc.',
+        logo_url: '',
+        industry: 'Construction & Toiture',
+        status: 'Active',
+        mrr: 4500,
+        health_status: 'Ready',
+        contact_name: 'Guillaume Tremblay',
+        contact_email: 'g.tremblay@toitures-apex.ca',
+        created_at: new Date().toISOString(),
+      };
+      const roiData = await fetchClientRoiMetrics(targetClient.id) || {
+        id: `roi-${targetClient.id}`,
+        client_id: targetClient.id,
+        leads_sent_30d: 48,
+        leads_change_pct: 18.5,
+        sales_completed: 12,
+        conversion_rate_pct: 25.0,
+        cost_per_lead: 42.5,
+        pipeline_value: 85000,
+        roi_multiplier: 8.7,
+        total_invested: 4500,
+        total_generated: 39150,
+        top_keywords_rank_top3: 8,
+        total_keywords_tracked: 12,
+        gmb_reviews_count: 34,
+        gmb_rating: 4.9,
+        gmb_calls_count: 62,
+        google_ads_spent: 2040,
+        google_ads_leads: 48,
+        google_ads_roas: 4.8,
+        weekly_leads_trend: [8, 12, 14, 14],
+      };
+
+      // Invoke Supabase Edge Function to recalculate aggregations
+      const edgeAgg = await invokeRoiAggregator(
+        targetClient.id,
+        roiData.total_invested,
+        roiData.leads_sent_30d,
+        roiData.cost_per_lead
+      );
 
       setClient(targetClient);
-      setMetrics(roiData);
+      setMetrics({
+        ...roiData,
+        roi_multiplier: edgeAgg.roiMultiplier || roiData.roi_multiplier,
+        total_generated: edgeAgg.totalGenerated || roiData.total_generated,
+      });
       setLoading(false);
+
+      await logAuditEvent(
+        `Consultation du Dashboard ROI pour client "${targetClient.name}" (${timeRange})`,
+        'client_roi_metrics',
+        targetClient.id,
+        { roiMultiplier: edgeAgg.roiMultiplier }
+      );
     }
     loadData();
-  }, [clientId]);
+  }, [clientId, timeRange]);
+
 
   const handlePrintPdf = () => {
+    logAuditEvent(`Génération du Rapport Exécutif PDF client "${client?.name}"`, 'client_roi_metrics', client?.id);
     window.print();
   };
+
 
   if (loading || !client || !metrics) {
     return (
@@ -299,8 +361,52 @@ export default function RoiTrackerPage() {
           </Card>
         </div>
 
+        {/* Top Video Ad Creatives Showcase */}
+        <Card
+          header={
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2">
+                <Film className="w-4 h-4 text-mv-green" />
+                <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
+                  Créatifs Vidéo & Reels Top Performance (Taux de conversion élevé)
+                </h3>
+              </div>
+              <Badge variant="green">Live Ad Assets</Badge>
+            </div>
+          }
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <VideoAssetPlayer
+                src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+                title="Reel 60s : Réfection Toiture Commerciale"
+                initialAspectRatio="16:9"
+                showDownloadButton={true}
+              />
+              <div className="flex items-center justify-between text-xs font-semibold px-1">
+                <span className="text-mv-ink-soft">Performance : <strong className="text-mv-green">14 200 Vues</strong></span>
+                <span className="text-mv-ink-soft">CPL Vidéo : <strong className="text-mv-lime">24.50 $ / lead</strong></span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <VideoAssetPlayer
+                src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+                title="Publicité Instagram : Témoignage Client Satisfait"
+                initialAspectRatio="16:9"
+                showDownloadButton={true}
+              />
+              <div className="flex items-center justify-between text-xs font-semibold px-1">
+                <span className="text-mv-ink-soft">Performance : <strong className="text-mv-green">9 800 Vues</strong></span>
+                <span className="text-mv-ink-soft">CPL Vidéo : <strong className="text-mv-lime">28.10 $ / lead</strong></span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
         {/* Supabase Storage Files Manager */}
         <StorageBrowser defaultBucket="client-assets" title="Ressources & Actifs Supabase Storage (Client Assets)" />
+
       </div>
 
       {/* Printable 4-Section Executive Summary Report for PDF Export */}

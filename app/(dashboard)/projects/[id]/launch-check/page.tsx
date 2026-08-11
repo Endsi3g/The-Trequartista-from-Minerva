@@ -1,20 +1,28 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+
+import { useParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { CheckCircle2, AlertCircle, ShieldCheck, Sparkles, Rocket, RefreshCw } from 'lucide-react';
-import { fetchLaunchChecklist, saveLaunchChecklist } from '@/lib/services/supabase-data';
+import { CheckCircle2, AlertCircle, ShieldCheck, Sparkles, Rocket, RefreshCw, Zap } from 'lucide-react';
+import { fetchLaunchChecklist, saveLaunchChecklist, logAuditEvent } from '@/lib/services/supabase-data';
+import { invokeLaunchCheckValidator } from '@/lib/services/edge-functions';
 import { LaunchCheckItem } from '@/lib/types';
 import confetti from 'canvas-confetti';
 
 export default function LaunchCheckPage() {
+  const params = useParams();
+  const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const projectId = rawId || 'proj-apex-launch';
+
   const [items, setItems] = useState<LaunchCheckItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isValidating, setIsValidating] = useState(false);
+  const [edgeValidation, setEdgeValidation] = useState<{ isReadyForProduction: boolean; validatedAt?: string } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const projectId = 'proj-apex-launch';
 
   useEffect(() => {
     async function loadChecklist() {
@@ -32,9 +40,12 @@ export default function LaunchCheckPage() {
   const isComplete = checkedCount === totalCount && totalCount > 0;
 
   const toggleCheck = async (id: number) => {
+    const targetItem = items.find(i => i.id === id);
+    const newCheckedState = !targetItem?.checked;
+
     const updated = items.map((item) => {
       if (item.id === id) {
-        return { ...item, checked: !item.checked };
+        return { ...item, checked: newCheckedState };
       }
       return item;
     });
@@ -42,8 +53,21 @@ export default function LaunchCheckPage() {
     setItems(updated);
     await saveLaunchChecklist(projectId, updated);
 
-    const newCheckedCount = updated.filter((i) => i.checked).length;
-    if (newCheckedCount === totalCount && totalCount > 0) {
+    // Call Supabase Edge Function to validate payload
+    setIsValidating(true);
+    const result = await invokeLaunchCheckValidator(projectId, updated);
+    setEdgeValidation(result);
+    setIsValidating(false);
+
+    // Log operational audit event
+    await logAuditEvent(
+      `Validation du critère #${id} (${targetItem?.title}): ${newCheckedState ? 'Coché [OK]' : 'Décoché'}`,
+      'project_launch_checks',
+      projectId,
+      { scorePct: result.scorePct, checkedCount: result.checkedCount }
+    );
+
+    if (result.isReadyForProduction || (result.checkedCount === totalCount && totalCount > 0)) {
       confetti({
         particleCount: 120,
         spread: 70,
@@ -58,6 +82,12 @@ export default function LaunchCheckPage() {
     const resetItems = items.map((i) => ({ ...i, checked: false }));
     setItems(resetItems);
     await saveLaunchChecklist(projectId, resetItems);
+    await logAuditEvent(
+      'Réinitialisation complète de la checklist 20-points',
+      'project_launch_checks',
+      projectId
+    );
+
   };
 
   return (

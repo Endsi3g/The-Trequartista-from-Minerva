@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
+import { SupabaseRealtimeProvider } from '@/components/providers/SupabaseRealtimeProvider';
+import { ToastProvider } from '@/components/providers/ToastProvider';
 
 export const metadata: Metadata = {
+
   title: 'Minerva Centurions — Cockpit Client',
   description: 'Command center de Minerva pour la livraison client, le suivi du ROI, la qualité et le management équipe.',
   icons: {
@@ -49,9 +52,15 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <ThemeProvider>
-          {children}
+          <ToastProvider>
+            <SupabaseRealtimeProvider>
+              {children}
+            </SupabaseRealtimeProvider>
+          </ToastProvider>
         </ThemeProvider>
       </body>
+
     </html>
   );
 }
+

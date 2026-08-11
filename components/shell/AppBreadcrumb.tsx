@@ -34,8 +34,9 @@ export function AppBreadcrumb() {
         <span>Centurions</span>
       </Link>
 
-      {segments.map((segment, index) => {
+      {segments.map((segment: string, index: number) => {
         const href = `/${segments.slice(0, index + 1).join('/')}`;
+
         const isLast = index === segments.length - 1;
         const label = ROUTE_LABELS[segment] || segment.replace(/-/g, ' ');
 

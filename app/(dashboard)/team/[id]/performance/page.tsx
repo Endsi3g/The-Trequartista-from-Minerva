@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -17,9 +18,13 @@ import {
 import { INITIAL_TEAM } from '@/lib/mock-data';
 
 export default function PerformancePage() {
+  const params = useParams();
+  const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const [activeTab, setActiveTab] = useState<'okrs' | 'skills' | 'feedbacks' | 'history'>('okrs');
   const [isSyncing, setIsSyncing] = useState(false);
-  const member = INITIAL_TEAM[0];
+
+  const member = INITIAL_TEAM.find(m => m.id === rawId) || INITIAL_TEAM[0];
+
 
   const triggerGoogleCalendarSync = async () => {
     setIsSyncing(true);

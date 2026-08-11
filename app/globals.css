@@ -5,11 +5,11 @@
 @tailwind utilities;
 
 @layer base {
-  /* ── Light Mode (default) — Minerva-Flow palette ── */
+  /* ── Light Mode (default) — Couleurs EXACTES Minerva-Flow ── */
   :root {
     color-scheme: light;
 
-    /* Brand */
+    /* Brand — pixel-perfect from Minerva-Flow globals.css */
     --mv-green: #167f5b;
     --mv-green-dark: #0e5a40;
     --mv-green-darker: #0a4531;
@@ -37,13 +37,14 @@
     --mv-amber: #ab7d1f;
     --mv-amber-bg: #f6efd9;
 
-    /* Revenue-intensity heatmap */
+    /* Revenue-intensity heatmap scale */
     --mv-heat-1: #ede7d6;
     --mv-heat-2: #c7e1d0;
     --mv-heat-3: #8fc7a9;
     --mv-heat-4: #4da37e;
     --mv-heat-5: #167f5b;
 
+    /* Shadows */
     --shadow-mv-sm: 0 1px 2px rgba(26, 30, 22, 0.05);
     --shadow-mv-md: 0 2px 4px rgba(26, 30, 22, 0.04), 0 8px 20px rgba(26, 30, 22, 0.06);
     --shadow-mv-lg: 0 8px 16px rgba(26, 30, 22, 0.06), 0 24px 48px rgba(26, 30, 22, 0.10);
@@ -60,18 +61,23 @@
     --mv-green-darker: #0a4531;
     --mv-green-light: #1e3328;
     --mv-green-tint: #17261e;
+
     --mv-lime: #dfff5f;
     --mv-lime-dark: #6d7e1f;
     --mv-lime-tint: #2c3514;
+
     --mv-cream: #14170f;
     --mv-cream-soft: #1a1e16;
     --mv-surface: #1e231a;
+
     --mv-ink: #f3f2ea;
     --mv-ink-soft: #a0a89a;
     --mv-ink-faint: #6e7668;
     --mv-ink-mute: #454d40;
+
     --mv-border: #282e22;
     --mv-border-soft: #20251c;
+
     --mv-red: #e55342;
     --mv-red-bg: #2d1917;
     --mv-amber: #d99b26;
@@ -93,19 +99,17 @@
     color: var(--mv-ink);
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     font-feature-settings: "ss01" 1, "cv05" 1;
-    scroll-behavior: smooth;
-    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 
-  /* Universal Selection */
   ::selection {
     background-color: var(--mv-lime);
     color: #14170f;
   }
 
-  /* Universal Scrollbar hiding */
   * {
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -114,30 +118,16 @@
     display: none;
   }
 
-  /* Print Styles for PDF Report Exportation */
   @media print {
-    aside, header, nav, button, .no-print {
-      display: none !important;
-    }
-    main {
-      padding: 0 !important;
-      margin: 0 !important;
-      max-width: 100% !important;
-    }
-    body {
-      background: white !important;
-      color: black !important;
-    }
-    .print-only {
-      display: block !important;
-    }
-    .print-break {
-      page-break-before: always;
-    }
+    aside, header, nav, button, .no-print { display: none !important; }
+    main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+    body { background: white !important; color: black !important; }
+    .print-only { display: block !important; }
+    .print-break { page-break-before: always; }
   }
 }
 
-/* ── Utility Classes ── */
+/* ── Utility classes ── */
 .font-display {
   font-family: "New York", -apple-system-serif, ui-serif, Georgia, serif;
 }
@@ -145,14 +135,5 @@
 .shimmer-bg {
   background: linear-gradient(90deg, var(--mv-surface) 25%, var(--mv-border) 50%, var(--mv-surface) 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+  animation: mvShimmer 1.8s infinite linear;
 }
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* Sidebar width transitions */
-.sidebar-collapsed { width: 68px; }
-.sidebar-expanded { width: 260px; }

@@ -145,15 +145,27 @@ export default function NotionIntegrationPage() {
           <NotionIcon size={28} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-mv-ink">Connecter Notion</h1>
+          <h1 className="text-xl font-bold text-mv-ink">Connecter Notion & Service MCP</h1>
           <p className="text-sm text-mv-ink-soft">
-            Liez vos pages et bases de données Notion à Centurions.
+            Liez vos pages Notion et le serveur MCP à Minerva Centurions.
           </p>
         </div>
       </div>
 
+      {/* Notion MCP Server Card */}
+      <div className="p-4 rounded-xl bg-mv-green-tint border border-mv-green/40 space-y-2">
+        <div className="flex items-center justify-between text-xs font-bold text-mv-green">
+          <span>Serveur Notion MCP : https://mcp.notion.com/mcp</span>
+          <span className="px-2 py-0.5 rounded bg-mv-green text-white text-[10px]">MCP Connected</span>
+        </div>
+        <p className="text-xs text-mv-ink-soft">
+          Permet la synchronisation bidirectionnelle entre les bases Notion et les SOPs, Projets et Reels Minerva.
+        </p>
+      </div>
+
       {/* Instructions */}
       <div className="p-4 rounded-xl bg-mv-cream-soft border border-mv-border space-y-3">
+
         <h2 className="text-sm font-bold text-mv-ink flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-mv-green" />
           Comment obtenir votre Integration Token

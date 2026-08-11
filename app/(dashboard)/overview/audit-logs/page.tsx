@@ -1,66 +1,41 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Shield, Clock, Filter, ArrowLeft, CheckCircle2, User, Zap, AlertTriangle } from 'lucide-react';
+import { Shield, Clock, ArrowLeft, User, Zap, AlertTriangle } from 'lucide-react';
+import { fetchAuditLogs } from '@/lib/services/supabase-data';
+import { useSupabaseRealtime } from '@/components/providers/SupabaseRealtimeProvider';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { AuditLog } from '@/lib/types';
 
 export default function AuditLogsPage() {
-  const [filterSeverity, setFilterSeverity] = useState<'all' | 'action' | 'alert' | 'system'>('all');
+  const [filterCategory, setFilterCategory] = useState<'all' | 'action' | 'alert' | 'system'>('all');
+  const [dbLogs, setDbLogs] = useState<AuditLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const logs = [
-    {
-      id: 'log-1',
-      author: 'Alex Tremblay',
-      role: 'Dev Fullstack',
-      action: 'Validation du point #13 (Visuels OpenGraph OG) sur la checklist Apex Roofing.',
-      category: 'action',
-      severity: 'green',
-      timestamp: 'Il y a 12 min',
-    },
-    {
-      id: 'log-2',
-      author: 'Système Webhook',
-      role: 'API Automation',
-      action: 'Nouveau lead qualifié capturé depuis le formulaire Framer Apex Roofing (+1 lead).',
-      category: 'system',
-      severity: 'lime',
-      timestamp: 'Il y a 34 min',
-    },
-    {
-      id: 'log-3',
-      author: 'Sarah Bouchard',
-      role: 'Head of Success',
-      action: 'Création de la fiche du nouveau client "Clinique Santé Moderne" (MRR 4,500 $).',
-      category: 'action',
-      severity: 'green',
-      timestamp: 'Il y a 2h',
-    },
-    {
-      id: 'log-4',
-      author: 'Moteur d’Alertes',
-      role: 'Alert Engine',
-      action: 'Déclenchement d’une alerte ambre : le critère Loi 25 (#17) est en attente sur Apex Roofing.',
-      category: 'alert',
-      severity: 'amber',
-      timestamp: 'Il y a 4h',
-    },
-    {
-      id: 'log-5',
-      author: 'Alex Tremblay',
-      role: 'Dev Fullstack',
-      action: 'Synchronisation du créneau 1-on-1 du 13 Août avec Google Calendar.',
-      category: 'action',
-      severity: 'green',
-      timestamp: 'Hier à 16:30',
-    },
-  ];
+  const { isConnected, lastUpdateTimestamp, latestAuditLog } = useSupabaseRealtime();
 
-  const filteredLogs = filterSeverity === 'all'
-    ? logs
-    : logs.filter((l) => l.category === filterSeverity);
+  useEffect(() => {
+    async function loadLogs() {
+      setIsLoading(true);
+      const data = await fetchAuditLogs(50);
+      setDbLogs(data);
+      setIsLoading(false);
+    }
+    loadLogs();
+  }, [lastUpdateTimestamp]);
+
+  const displayLogs = dbLogs;
+
+
+  const filteredLogs = displayLogs.filter((log) => {
+    if (filterCategory === 'all') return true;
+    if (filterCategory === 'alert') return log.action.includes('alert') || log.table_name === 'alerts';
+    if (filterCategory === 'system') return log.actor_name.includes('Système') || log.actor_name.includes('Trigger') || log.table_name === 'leads';
+    return !log.actor_name.includes('Système') && !log.action.includes('alert');
+  });
 
   return (
     <div className="space-y-8">
@@ -74,32 +49,48 @@ export default function AuditLogsPage() {
             <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
               Journal d'Audit & Traçabilité Ops
             </h1>
-            <Badge variant="green">Realtime Stream</Badge>
+            <Badge variant={isConnected ? 'green' : 'amber'}>
+              {isConnected ? 'Realtime Connected' : 'Supabase Live'}
+            </Badge>
           </div>
           <p className="text-sm text-mv-ink-soft mt-1">
-            Historique complet des actions d'équipe, validations de checklist et événements webhooks.
+            Historique complet des actions d'équipe, validations de checklist et événements webhooks en direct de Supabase Postgres.
           </p>
         </div>
 
         {/* Severity Filters */}
         <div className="flex items-center gap-2">
           <div className="flex items-center bg-mv-cream-soft border border-mv-border rounded-lg p-1 text-xs font-semibold">
-            {(['all', 'action', 'alert', 'system'] as const).map((sev) => (
+            {(['all', 'action', 'alert', 'system'] as const).map((cat) => (
               <button
-                key={sev}
-                onClick={() => setFilterSeverity(sev)}
+                key={cat}
+                onClick={() => setFilterCategory(cat)}
                 className={`px-3 py-1.5 rounded-md transition-all uppercase cursor-pointer ${
-                  filterSeverity === sev
+                  filterCategory === cat
                     ? 'bg-mv-green text-mv-cream shadow-mv-sm font-bold'
                     : 'text-mv-ink-soft hover:text-mv-ink'
                 }`}
               >
-                {sev}
+                {cat}
               </button>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Realtime Alert Callout when new log arrives */}
+      {latestAuditLog && (
+        <div className="p-4 rounded-xl bg-mv-green-tint border border-mv-green/40 flex items-center justify-between text-xs animate-mv-fade-up">
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-mv-green" />
+            <span className="font-bold text-mv-green">Dernier événement Supabase Realtime :</span>
+            <span className="text-mv-ink font-semibold">{latestAuditLog.action}</span>
+          </div>
+          <span className="text-[10px] font-mono text-mv-ink-faint">
+            {new Date(latestAuditLog.created_at).toLocaleTimeString('fr-CA')}
+          </span>
+        </div>
+      )}
 
       {/* Logs Feed */}
       <Card
@@ -111,54 +102,70 @@ export default function AuditLogsPage() {
                 Flux d'Événements Récents ({filteredLogs.length})
               </h3>
             </div>
-            <span className="text-[11px] font-mono text-mv-ink-soft">Supabase Realtime Stream</span>
+            <span className="text-[11px] font-mono text-mv-ink-soft">
+              {isLoading ? 'Chargement...' : 'Supabase Postgres Channel'}
+            </span>
           </div>
         }
       >
         <div className="space-y-3">
-          {filteredLogs.map((log) => (
-            <div
-              key={log.id}
-              className="p-4 rounded-xl bg-mv-cream-soft border border-mv-border hover:border-mv-green/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-            >
-              <div className="flex items-start gap-3.5">
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-                    log.category === 'alert'
-                      ? 'bg-mv-amber-bg border-mv-amber/40 text-mv-amber'
-                      : log.category === 'system'
-                      ? 'bg-mv-lime-tint border-mv-lime/40 text-mv-lime'
-                      : 'bg-mv-green-tint border-mv-green/40 text-mv-green'
-                  }`}
-                >
-                  {log.category === 'alert' ? (
-                    <AlertTriangle className="w-4 h-4" />
-                  ) : log.category === 'system' ? (
-                    <Zap className="w-4 h-4" />
-                  ) : (
-                    <User className="w-4 h-4" />
-                  )}
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-mv-ink">{log.author}</span>
-                    <span className="text-[10px] text-mv-ink-faint">({log.role})</span>
-                    <Badge variant={log.severity === 'amber' ? 'amber' : 'green'}>
-                      {log.category}
-                    </Badge>
+          {filteredLogs.map((log) => {
+            const isAlert = log.action.includes('alert') || log.table_name === 'alerts';
+            const isSystem = log.actor_name.includes('Système') || log.actor_name.includes('Trigger') || log.table_name === 'leads';
+            return (
+              <div
+                key={log.id}
+                className="p-4 rounded-xl bg-mv-cream-soft border border-mv-border hover:border-mv-green/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+              >
+                <div className="flex items-start gap-3.5">
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                      isAlert
+                        ? 'bg-mv-amber-bg border-mv-amber/40 text-mv-amber'
+                        : isSystem
+                        ? 'bg-mv-lime-tint border-mv-lime/40 text-mv-lime'
+                        : 'bg-mv-green-tint border-mv-green/40 text-mv-green'
+                    }`}
+                  >
+                    {isAlert ? (
+                      <AlertTriangle className="w-4 h-4" />
+                    ) : isSystem ? (
+                      <Zap className="w-4 h-4" />
+                    ) : (
+                      <User className="w-4 h-4" />
+                    )}
                   </div>
-                  <p className="text-mv-ink-soft mt-1 leading-relaxed">{log.action}</p>
-                </div>
-              </div>
 
-              <div className="text-[11px] font-mono text-mv-ink-faint shrink-0 text-right">
-                {log.timestamp}
-              </div>
-            </div>
-          ))}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-mv-ink">{log.actor_name}</span>
+                      <span className="text-[10px] text-mv-ink-faint">({log.table_name})</span>
+                      <Badge variant={isAlert ? 'amber' : isSystem ? 'lime' : 'green'}>
+                        {isAlert ? 'alert' : isSystem ? 'system' : 'action'}
+                      </Badge>
+                    </div>
+                    <p className="text-mv-ink-soft mt-1 leading-relaxed">{log.action}</p>
+                  </div>
+                </div>
+
+                  <div className="text-[11px] font-mono text-mv-ink-faint shrink-0 text-right">
+                    {new Date(log.created_at).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              );
+            })}
+
+          {filteredLogs.length === 0 && (
+            <EmptyState
+              icon={Shield}
+              title="Aucun Journal d'Audit"
+              description="Aucun événement d'audit n'a encore été enregistré dans la base de données Supabase public.audit_logs."
+            />
+          )}
         </div>
       </Card>
     </div>
   );
 }
+
+

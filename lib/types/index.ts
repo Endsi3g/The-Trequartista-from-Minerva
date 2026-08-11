@@ -89,10 +89,16 @@ export interface ContentPost {
   client_name: string;
   title: string;
   format: 'Reel 60s' | 'Carrousel IG' | 'Post LinkedIn' | 'Story';
+  platform?: 'Instagram' | 'TikTok' | 'YouTube Shorts' | 'LinkedIn';
   scheduled_date: string;
   status: 'Idéation' | 'Rédigé' | 'Enregistré' | 'Publié';
   thumbnail_url: string;
+  video_url?: string;
+  script_notes?: string;
+  metrics_views?: number;
+  metrics_clicks?: number;
 }
+
 
 export interface TeamOKR {
   id: string;
@@ -174,3 +180,41 @@ export interface Alert {
   resolved: boolean;
   created_at: string;
 }
+
+// ── Audit Logs ─────────────────────────────────────────────────────────────
+
+export interface AuditLog {
+  id: string;
+  action: string;
+  table_name: string;
+  record_id?: string;
+  actor_name: string;
+  actor_email?: string;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
+// ── Lead CRM ───────────────────────────────────────────────────────────────
+
+export interface LeadNote {
+  id: string;
+  author: string;
+  text: string;
+  created_at: string;
+}
+
+export interface Lead {
+  id: string;
+  client_id: string;
+  client_name: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone?: string;
+  service_requested: string;
+  score_grade: 'A' | 'B' | 'C' | 'D';
+  status: 'Nouveau' | 'Contacté' | 'RDV Fixé' | 'Gagné' | 'Perdu';
+  notes: LeadNote[];
+  created_at: string;
+}
+
+
