@@ -17,40 +17,62 @@
     <strong>Client CRM</strong> &nbsp;&bull;&nbsp;
     <strong>Quality Assurance</strong> &nbsp;&bull;&nbsp;
     <strong>Content Studio</strong> &nbsp;&bull;&nbsp;
-    <strong>Notion Workspace Sync</strong>
+    <strong>Notion Workspace Sync</strong> &nbsp;&bull;&nbsp;
+    <strong>PWA Enabled</strong>
   </p>
 
   ---
 
 </div>
 
-## Overview
+## Platform Overview
 
-**Minerva Centurions** is the central command platform for Minerva operations. Built to replace fragmented agency tooling, it unifies client financial metrics, lead management, project quality control, content asset management, and internal training into a single operational interface.
+Minerva Centurions is the master client delivery and operations cockpit built for Minerva agency teams. Designed to eliminate fragmented spreadsheets and disconnected tools, Centurions unifies client financial reporting, lead attribution, campaign quality control, media asset planning, and internal SOP knowledge management into a cohesive web application.
 
-The platform provides agency leaders, project managers, and media buyers with continuous visibility over client ROI, campaign execution, and team performance.
+The platform grants agency executives, account directors, media buyers, and developers continuous, real-time visibility into client performance, campaign progress, and operational health.
 
 ---
 
-## Core Ecosystem
+## Detailed Platform Capabilities
 
-### Revenue & Client Intelligence
-Tracks client financial performance, monthly recurring revenue (MRR), cost per lead (CPL), and return on ad spend (ROAS). Generates client executive reports and audit logs for full operational transparency.
+### 1. Command Center & Audit Intelligence
+The central dashboard provides an aggregate view of total agency Monthly Recurring Revenue (MRR), active client health statuses, team capacity, and recent system actions. Integrated real-time audit logging records every major database change, quality checklist update, and campaign event to maintain accountability across team members.
 
-### Lead Pipeline CRM
-Manages inbound leads across all client campaigns with quality scoring (A/B/C/D), contact logs, status progression from initial capture to sale completion, and data export.
+### 2. Revenue & Client ROI Tracking Engine
+A specialized financial dashboard for tracking client campaign profitability. Monitors key acquisition metrics including total ad investment, generated pipeline value, Cost Per Lead (CPL), Return on Ad Spend (ROAS), Google Business Profile interactions, and organic SEO keyword positioning. Includes an executive report generator formatted for PDF printing.
 
-### Quality Assurance & Launch Validation
-Enforces a 20-point quality control protocol prior to client site and campaign launches. Ensures compliance with data privacy regulations (Loi 25), web performance standards, and conversion setup.
+### 3. Lead CRM & Acquisition Pipeline
+A comprehensive lead management engine offering both Kanban board and tabular views. Organizes incoming client leads by quality grade (A, B, C, D), status stage (New, Contacted, Qualified, Closed), and attribution channel. Enables team members to record notes, initiate quick contact triggers, and export lead data to CSV format.
 
-### Social Reels & Media Content Studio
-A dedicated video production workspace for planning, previewing in 9:16 mobile formats, and organizing video creatives across Instagram Reels, TikTok, YouTube Shorts, and LinkedIn Video.
+### 4. Quality Assurance & 20-Point Launch Validation
+Enforces strict quality benchmarks before client websites, Framer builds, or advertising campaigns go live. Features a 20-point launch checklist covering performance optimization, OpenGraph metadata, forms validation, responsive layout checks, and Quebec data privacy compliance (Loi 25). Supabase Edge Functions validate readiness scores and trigger alerts when items require attention.
 
-### Knowledge Academy & SOP Library
-Standardizes agency execution through interactive procedures (SOPs), video walkthroughs, and team training resources.
+### 5. Social Reels Studio & Media Asset Downloader
+A dedicated video production workspace tailored for short-form video content. Allows media teams to draft script notes, assign target platforms (Instagram Reels, TikTok, YouTube Shorts, LinkedIn Video), and preview creatives in vertical 9:16 smartphone containers or widescreen 16:9 formats. Includes an integrated media downloader service (yt-dlp) for importing public video URLs directly into Supabase Storage with 1-click MP4 downloading.
 
-### Workspace Integrations
-Connects directly to Notion workspaces via Model Context Protocol (MCP) to synchronize internal documentation, wikis, and SOPs with the Centurions dashboard.
+### 6. Knowledge Academy & SOP Library
+A central knowledge repository for standardizing agency workflows. Houses interactive Standard Operating Procedures (SOPs), design guidelines, Framer templates, and video walkthrough tutorials to accelerate onboarding and maintain execution consistency across team members.
+
+### 7. Notion Workspace Sync & Integrations Ecosystem
+Connects directly to Notion workspaces via the Model Context Protocol (MCP) server at `https://mcp.notion.com/mcp`. Enables 2-way synchronization between Notion pages and Minerva SOPs or content plans. The integrations hub also provides testing tools for custom incoming lead webhooks and edge function dispatchers.
+
+### 8. User Feedback System, Global Toasts & PWA Support
+Includes an in-app feedback modal for submitting bug reports and feature ideas directly to Supabase, a global animated toast notification engine for real-time action feedback, and reusable confirmation dialogs. Complete Progressive Web App (PWA) support enables offline caching via Service Worker and standalone installation on mobile devices.
+
+---
+
+## Technical Architecture & Security Model
+
+- **Frontend Application**: Next.js 15 App Router with server-rendered routes, client components, and custom CSS design system tailored to Minerva brand tokens.
+- **Database & Storage Layer**: Supabase Postgres featuring Row Level Security (RLS) policies, database triggers for change logging, and Storage buckets (`client-assets`, `team-documents`, `academy-media`).
+- **Realtime Communications**: WebSocket subscription layer via Supabase Realtime for instant synchronization across connected client sessions.
+- **API Key Management**: Custom API key generation (`user_api_keys`) for authenticating external webhooks and third-party integrations.
+
+---
+
+## Quality & Test Verification
+
+The platform is continuously audited using an automated Playwright end-to-end test suite covering all 23 static and dynamic routes across desktop and mobile viewports. TypeScript strict type-checking ensures 0 type errors across the codebase.
 
 ---
 
