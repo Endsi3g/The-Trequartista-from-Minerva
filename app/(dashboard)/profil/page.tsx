@@ -66,7 +66,6 @@ export default function ProfilePage() {
     setSavedSuccess(false);
 
     try {
-      // Simulate Supabase DB update
       await supabase.from('profiles').update({
         full_name: fullName,
         role: role,
@@ -179,9 +178,9 @@ export default function ProfilePage() {
                 </label>
                 <input
                   type="email"
-                  disabled
                   value={email}
-                  className="w-full p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink-soft font-mono opacity-80 cursor-not-allowed"
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink font-mono font-semibold focus:outline-none focus:border-mv-green"
                 />
               </div>
 
