@@ -100,9 +100,30 @@
   *::-webkit-scrollbar {
     display: none;
   }
+
+  /* Print Styles for PDF Report Exportation */
+  @media print {
+    aside, header, nav, button, .no-print {
+      display: none !important;
+    }
+    main {
+      padding: 0 !important;
+      margin: 0 !important;
+      max-width: 100% !important;
+    }
+    body {
+      background: white !important;
+      color: black !important;
+    }
+    .print-only {
+      display: block !important;
+    }
+    .print-break {
+      page-break-before: always;
+    }
+  }
 }
 
-/* Custom Utilities for Minerva Aesthetics */
 .font-display {
   font-family: "New York", -apple-system-serif, ui-serif, Georgia, serif;
 }
