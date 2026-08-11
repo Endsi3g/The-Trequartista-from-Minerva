@@ -1,10 +1,10 @@
-# 🛡️ MINERVA CENTURIONS — COCKPIT IN-HOUSE
+# MINERVA CENTURIONS — COCKPIT IN-HOUSE
 
 **Centurions de Minerva** est le cockpit interne à usage exclusif de la direction et des collaborateurs de **Minerva** pour piloter l'agence, la livraison des projets clients (avec la checklist 20 points obligatoire), la mesure du ROI, et la gestion du personnel / 1-on-1s.
 
 ---
 
-## 🎨 Design System Minerva (Mode Sombre Natif)
+## Design System Minerva (Mode Sombre Natif)
 
 L'application applique rigoureusement les règles et tokens CSS du Design System Minerva :
 
@@ -24,27 +24,27 @@ L'application applique rigoureusement les règles et tokens CSS du Design System
 
 ---
 
-## 🗺️ Architecture des Pages (3 Domaines)
+## Architecture des Pages (3 Domaines)
 
-### 📊 DOMAINE 1 : PILOTAGE & FINANCES
+### DOMAINE 1 : PILOTAGE & FINANCES
 - `/overview` — Command Center MRR, projets actifs, NPS et raccourcis opérations.
 - `/clients` — Répertoire des abonnements clients et statut des contrats.
 - `/clients/[id]/roi-tracker` — Vue détaillée du ROI client (Leads, CPL, Pipeline, SEO, Ads & Heatmap scale).
 
-### 🚀 DOMAINE 2 : OPÉRATIONS & QUALITÉ
+### DOMAINE 2 : OPÉRATIONS & QUALITÉ
 - `/projects` — Pipeline Kanban/Table de tous les projets en cours.
 - `/projects/[id]/roadmap` — Roadmap des jalons (Framer, GMB, WhatsApp IA, Text-back).
 - `/projects/[id]/launch-check` — Checklist Qualité 20-Points avec score bar et modale de célébration.
 - `/content-planner` — Planificateur de Reels & Carrousels réseaux sociaux.
 
-### 👥 DOMAINE 3 : ÉQUIPE & ACADÉMIE
+### DOMAINE 3 : ÉQUIPE & ACADÉMIE
 - `/team` — Répertoire de l'équipe in-house.
 - `/team/[id]/performance` — Fiche 1-on-1, synchronisation Google Calendar, OKRs Q3 et Matrice de Compétences.
 - `/academy` — Académie LMS & SOPs internes de référence.
 
 ---
 
-## ⚡ Supabase Backend & Integration
+## Supabase Backend & Integration
 
 - **Instance Supabase** : `https://eobatkwbwcdsdqbemrma.supabase.co`
 - **Buckets Storage** : `client-assets`, `team-documents`, `academy-media`
@@ -55,7 +55,7 @@ L'application applique rigoureusement les règles et tokens CSS du Design System
 
 ---
 
-## 🚀 Démarrage Rapide
+## Démarrage Rapide
 
 ```bash
 # Installation des dépendances

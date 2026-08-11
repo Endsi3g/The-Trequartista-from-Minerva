@@ -1,15 +1,62 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { StatCard } from '@/components/ui/StatCard';
-import { Users, Plus, TrendingUp, DollarSign, ArrowRight, ExternalLink } from 'lucide-react';
-import { INITIAL_CLIENTS } from '@/lib/mock-data';
+import { Users, Plus, TrendingUp, DollarSign, ExternalLink, X } from 'lucide-react';
+import { fetchClients, addClient } from '@/lib/services/supabase-data';
+import { Client } from '@/lib/types';
 
 export default function ClientsPage() {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Form State
+  const [name, setName] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [mrr, setMrr] = useState(3000);
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      const data = await fetchClients();
+      setClients(data);
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const handleCreateClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !industry) return;
+
+    const newClient = await addClient({
+      name,
+      industry,
+      status: 'Active',
+      mrr: Number(mrr),
+      health_status: 'Ready',
+      contact_name: contactName || 'Contact Principal',
+      contact_email: contactEmail || 'contact@client.com',
+      logo_url: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?w=150&auto=format&fit=crop&q=80',
+    });
+
+    if (newClient) {
+      setClients([newClient, ...clients]);
+      setIsModalOpen(false);
+      setName('');
+      setIndustry('');
+    }
+  };
+
+  const totalMrr = clients.reduce((acc, c) => acc + c.mrr, 0);
+
   return (
     <div className="space-y-8">
       {/* Page Header */}
@@ -19,12 +66,12 @@ export default function ClientsPage() {
             Répertoire Clients & Suivi MRR
           </h1>
           <p className="text-sm text-mv-ink-soft mt-1">
-            Gestion des abonnements mensuels, de la santé des comptes et du ROI généré.
+            Gestion directe dans Supabase des abonnements mensuels.
           </p>
         </div>
 
-        <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
-          Ajouter un Client
+        <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={() => setIsModalOpen(true)}>
+          Nouveau Client Supabase
         </Button>
       </div>
 
@@ -32,15 +79,15 @@ export default function ClientsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
           title="Clients Actifs"
-          value={INITIAL_CLIENTS.length}
-          change="+1 ce mois"
+          value={loading ? '...' : clients.length}
+          change="Synchro Supabase Live"
           changeType="positive"
           subtitle="Abonnements actifs"
           icon={<Users className="w-5 h-5" />}
         />
         <StatCard
           title="MRR Total Sous Gestion"
-          value="15 900 $"
+          value={loading ? '...' : `${totalMrr.toLocaleString('fr-CA')} $`}
           change="+2 400 $ ce trimestre"
           changeType="positive"
           subtitle="Revenu récurrent mensuel"
@@ -48,7 +95,7 @@ export default function ClientsPage() {
         />
         <StatCard
           title="Moyenne MRR / Client"
-          value="3 975 $"
+          value={loading || clients.length === 0 ? '...' : `${Math.round(totalMrr / clients.length).toLocaleString('fr-CA')} $`}
           change="+12% retention"
           changeType="positive"
           subtitle="Valeur moyenne de contrat"
@@ -60,71 +107,166 @@ export default function ClientsPage() {
       <Card
         header={
           <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
-            Portefeuille Clients Minerva
+            Portefeuille Clients Minerva (Base de Données Realtime)
           </h3>
         }
       >
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-mv-border text-mv-ink-soft uppercase text-[10px] tracking-wider">
-                <th className="pb-3 font-semibold">Entreprise</th>
-                <th className="pb-3 font-semibold">Secteur d'Activité</th>
-                <th className="pb-3 font-semibold">MRR Mensuel</th>
-                <th className="pb-3 font-semibold">Statut & Santé</th>
-                <th className="pb-3 font-semibold">Contact Principal</th>
-                <th className="pb-3 font-semibold text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-mv-border/40">
-              {INITIAL_CLIENTS.map((client) => (
-                <tr key={client.id} className="hover:bg-mv-cream-soft/40 transition-colors">
-                  <td className="py-4 pr-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={client.logo_url}
-                        alt={client.name}
-                        className="w-9 h-9 rounded-lg object-cover border border-mv-border shrink-0"
-                      />
-                      <div>
-                        <div className="font-bold text-mv-ink text-sm">{client.name}</div>
-                        <div className="text-[11px] text-mv-ink-soft">Membre depuis {new Date(client.created_at).toLocaleDateString('fr-CA')}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-2">
-                    <span className="font-semibold text-mv-ink">{client.industry}</span>
-                  </td>
-                  <td className="py-4 px-2">
-                    <span className="font-mono font-bold text-mv-green text-sm">{client.mrr.toLocaleString('fr-CA')} $</span>
-                  </td>
-                  <td className="py-4 px-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant={client.status === 'Active' ? 'green' : 'amber'}>
-                        {client.status}
-                      </Badge>
-                      <Badge variant={client.health_status === 'Ready' ? 'lime' : 'neutral'}>
-                        ● {client.health_status}
-                      </Badge>
-                    </div>
-                  </td>
-                  <td className="py-4 px-2">
-                    <div className="text-mv-ink font-semibold">{client.contact_name}</div>
-                    <div className="text-[11px] text-mv-ink-soft">{client.contact_email}</div>
-                  </td>
-                  <td className="py-4 pl-4 text-right">
-                    <Link href={`/clients/${client.id}/roi-tracker`}>
-                      <Button variant="outline" size="sm" icon={<ExternalLink className="w-3.5 h-3.5" />}>
-                        Suivi ROI
-                      </Button>
-                    </Link>
-                  </td>
+        {loading ? (
+          <div className="p-8 text-center space-y-3">
+            <div className="h-4 shimmer-bg rounded w-3/4 mx-auto animate-mv-shimmer" />
+            <div className="h-4 shimmer-bg rounded w-1/2 mx-auto animate-mv-shimmer" />
+          </div>
+        ) : clients.length === 0 ? (
+          <div className="p-8 text-center text-xs text-mv-ink-soft">
+            Aucun client enregistré. Cliquez sur "Nouveau Client Supabase" pour ajouter votre premier contrat.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-mv-border text-mv-ink-soft uppercase text-[10px] tracking-wider">
+                  <th className="pb-3 font-semibold">Entreprise</th>
+                  <th className="pb-3 font-semibold">Secteur d'Activité</th>
+                  <th className="pb-3 font-semibold">MRR Mensuel</th>
+                  <th className="pb-3 font-semibold">Statut & Santé</th>
+                  <th className="pb-3 font-semibold">Contact Principal</th>
+                  <th className="pb-3 font-semibold text-right">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-mv-border/40">
+                {clients.map((client) => (
+                  <tr key={client.id} className="hover:bg-mv-cream-soft/40 transition-colors">
+                    <td className="py-4 pr-4">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={client.logo_url || 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?w=150&auto=format&fit=crop&q=80'}
+                          alt={client.name}
+                          className="w-9 h-9 rounded-lg object-cover border border-mv-border shrink-0"
+                        />
+                        <div>
+                          <div className="font-bold text-mv-ink text-sm">{client.name}</div>
+                          <div className="text-[11px] text-mv-ink-soft">Réf: {client.id.slice(0, 8)}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-2">
+                      <span className="font-semibold text-mv-ink">{client.industry}</span>
+                    </td>
+                    <td className="py-4 px-2">
+                      <span className="font-mono font-bold text-mv-green text-sm">{client.mrr.toLocaleString('fr-CA')} $</span>
+                    </td>
+                    <td className="py-4 px-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={client.status === 'Active' ? 'green' : 'amber'}>
+                          {client.status}
+                        </Badge>
+                        <Badge variant={client.health_status === 'Ready' ? 'lime' : 'neutral'}>
+                          ● {client.health_status}
+                        </Badge>
+                      </div>
+                    </td>
+                    <td className="py-4 px-2">
+                      <div className="text-mv-ink font-semibold">{client.contact_name}</div>
+                      <div className="text-[11px] text-mv-ink-soft">{client.contact_email}</div>
+                    </td>
+                    <td className="py-4 pl-4 text-right">
+                      <Link href={`/clients/${client.id}/roi-tracker`}>
+                        <Button variant="outline" size="sm" icon={<ExternalLink className="w-3.5 h-3.5" />}>
+                          Suivi ROI
+                        </Button>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
+
+      {/* Modal Add Client */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 max-w-lg w-full shadow-mv-lg animate-mv-scale-in space-y-4">
+            <div className="flex items-center justify-between border-b border-mv-border pb-3">
+              <h3 className="text-lg font-bold text-mv-ink font-display">Nouveau Client Supabase</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-mv-ink-soft hover:text-mv-ink">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateClient} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-mv-ink mb-1">Nom du Client</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Apex Roofing"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full p-2.5 rounded-lg bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-mv-ink mb-1">Secteur d'Activité</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Bâtiment & Toiture"
+                  value={industry}
+                  onChange={(e) => setIndustry(e.target.value)}
+                  className="w-full p-2.5 rounded-lg bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-mv-ink mb-1">MRR ($)</label>
+                  <input
+                    type="number"
+                    required
+                    value={mrr}
+                    onChange={(e) => setMrr(Number(e.target.value))}
+                    className="w-full p-2.5 rounded-lg bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-mv-ink mb-1">Contact Nom</label>
+                  <input
+                    type="text"
+                    placeholder="David Miller"
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    className="w-full p-2.5 rounded-lg bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-mv-ink mb-1">Contact Email</label>
+                <input
+                  type="email"
+                  placeholder="david@client.com"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  className="w-full p-2.5 rounded-lg bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-3">
+                <Button type="button" variant="secondary" className="flex-1" onClick={() => setIsModalOpen(false)}>
+                  Annuler
+                </Button>
+                <Button type="submit" variant="primary" className="flex-1">
+                  Enregistrer dans Supabase
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

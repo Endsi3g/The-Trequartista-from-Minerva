@@ -37,11 +37,11 @@ export default async function Image() {
               alignItems: 'center',
               justifyContent: 'center',
               color: '#dfff5f',
-              fontSize: '36px',
+              fontSize: '28px',
               fontWeight: 'bold',
             }}
           >
-            🛡️
+            M
           </div>
           <div style={{ color: '#f3f2ea', fontSize: '28px', fontWeight: 'bold', letterSpacing: '-0.5px' }}>
             MINERVA <span style={{ color: '#1c9a6f' }}>CENTURIONS</span>

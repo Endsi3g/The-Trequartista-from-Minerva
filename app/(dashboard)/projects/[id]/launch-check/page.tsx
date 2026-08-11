@@ -1,35 +1,49 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle2, AlertCircle, ShieldCheck, Sparkles, Rocket, RefreshCw } from 'lucide-react';
-import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
+import { fetchLaunchChecklist, saveLaunchChecklist } from '@/lib/services/supabase-data';
+import { LaunchCheckItem } from '@/lib/types';
 import confetti from 'canvas-confetti';
 
 export default function LaunchCheckPage() {
-  const [items, setItems] = useState(INITIAL_LAUNCH_CHECKITEMS);
+  const [items, setItems] = useState<LaunchCheckItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const checkedCount = items.filter((i) => i.checked).length;
-  const totalCount = items.length;
-  const scorePct = Math.round((checkedCount / totalCount) * 100);
-  const isComplete = checkedCount === totalCount;
+  const projectId = 'proj-apex-launch';
 
-  const toggleCheck = (id: number) => {
+  useEffect(() => {
+    async function loadChecklist() {
+      setLoading(true);
+      const data = await fetchLaunchChecklist(projectId);
+      setItems(data);
+      setLoading(false);
+    }
+    loadChecklist();
+  }, [projectId]);
+
+  const checkedCount = items.filter((i) => i.checked).length;
+  const totalCount = items.length || 20;
+  const scorePct = totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0;
+  const isComplete = checkedCount === totalCount && totalCount > 0;
+
+  const toggleCheck = async (id: number) => {
     const updated = items.map((item) => {
       if (item.id === id) {
-        const nextState = !item.checked;
-        return { ...item, checked: nextState };
+        return { ...item, checked: !item.checked };
       }
       return item;
     });
 
     setItems(updated);
+    await saveLaunchChecklist(projectId, updated);
 
     const newCheckedCount = updated.filter((i) => i.checked).length;
-    if (newCheckedCount === totalCount) {
+    if (newCheckedCount === totalCount && totalCount > 0) {
       confetti({
         particleCount: 120,
         spread: 70,
@@ -40,8 +54,10 @@ export default function LaunchCheckPage() {
     }
   };
 
-  const resetAll = () => {
-    setItems(items.map((i) => ({ ...i, checked: false })));
+  const resetAll = async () => {
+    const resetItems = items.map((i) => ({ ...i, checked: false }));
+    setItems(resetItems);
+    await saveLaunchChecklist(projectId, resetItems);
   };
 
   return (
@@ -51,14 +67,14 @@ export default function LaunchCheckPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl lg:text-2xl font-extrabold text-mv-ink font-display">
-              Checklist Qualité 20-Points (Launch Standards)
+              Checklist Qualité 20-Points (Supabase Sync)
             </h1>
             <Badge variant={isComplete ? 'green' : 'amber'}>
               {isComplete ? '● 100% Conforme' : '● Validation en cours'}
             </Badge>
           </div>
           <p className="text-xs text-mv-ink-soft mt-1">
-            Projet : <strong>Apex Roofing — Refonte Framer</strong>. Validation obligatoire avant le passage en production.
+            Projet : <strong>Apex Roofing — Refonte Framer</strong>. Synchronisation des cases cochées directement dans Supabase.
           </p>
         </div>
 
@@ -98,53 +114,60 @@ export default function LaunchCheckPage() {
               onClick={resetAll}
               className="text-xs text-mv-ink-soft hover:text-mv-red flex items-center gap-1 cursor-pointer transition-colors"
             >
-              <RefreshCw className="w-3.5 h-3.5" /> Réinitialiser
+              <RefreshCw className="w-3.5 h-3.5" /> Réinitialiser Supabase
             </button>
           </div>
         }
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => toggleCheck(item.id)}
-              className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer flex items-start gap-3.5 ${
-                item.checked
-                  ? 'bg-mv-green-tint/60 border-mv-green/40'
-                  : 'bg-mv-cream-soft border-mv-border hover:border-mv-border/80'
-              }`}
-            >
-              {/* Animated Checkbox */}
+        {loading ? (
+          <div className="p-8 text-center space-y-3">
+            <div className="h-4 shimmer-bg rounded w-3/4 mx-auto animate-mv-shimmer" />
+            <div className="h-4 shimmer-bg rounded w-1/2 mx-auto animate-mv-shimmer" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {items.map((item) => (
               <div
-                className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                key={item.id}
+                onClick={() => toggleCheck(item.id)}
+                className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer flex items-start gap-3.5 ${
                   item.checked
-                    ? 'bg-mv-green border-mv-green text-mv-lime animate-mv-check-pop'
-                    : 'border-mv-ink-mute bg-mv-surface'
+                    ? 'bg-mv-green-tint/60 border-mv-green/40'
+                    : 'bg-mv-cream-soft border-mv-border hover:border-mv-border/80'
                 }`}
               >
-                {item.checked && <CheckCircle2 className="w-4 h-4" />}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span
-                    className={`text-xs font-bold transition-colors ${
-                      item.checked ? 'text-mv-ink line-through opacity-80' : 'text-mv-ink'
-                    }`}
-                  >
-                    {item.id}. {item.title}
-                  </span>
-                  <span className="text-[10px] font-semibold text-mv-ink-faint px-2 py-0.5 rounded bg-mv-surface border border-mv-border shrink-0">
-                    {item.category}
-                  </span>
+                {/* Animated Checkbox */}
+                <div
+                  className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                    item.checked
+                      ? 'bg-mv-green border-mv-green text-mv-lime animate-mv-check-pop'
+                      : 'border-mv-ink-mute bg-mv-surface'
+                  }`}
+                >
+                  {item.checked && <CheckCircle2 className="w-4 h-4" />}
                 </div>
-                <p className="text-[11px] text-mv-ink-soft mt-1 leading-relaxed">
-                  {item.description}
-                </p>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`text-xs font-bold transition-colors ${
+                        item.checked ? 'text-mv-ink line-through opacity-80' : 'text-mv-ink'
+                      }`}
+                    >
+                      {item.id}. {item.title}
+                    </span>
+                    <span className="text-[10px] font-semibold text-mv-ink-faint px-2 py-0.5 rounded bg-mv-surface border border-mv-border shrink-0">
+                      {item.category}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-mv-ink-soft mt-1 leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       {/* Action Footer */}
@@ -153,8 +176,8 @@ export default function LaunchCheckPage() {
           <AlertCircle className={`w-5 h-5 ${isComplete ? 'text-mv-green' : 'text-mv-amber'}`} />
           <span className="text-xs text-mv-ink-soft">
             {isComplete
-              ? 'Tous les 20 critères sont validés. Vous pouvez débloquer la mise en production.'
-              : `Il reste ${totalCount - checkedCount} critère(s) obligatoire(s) à valider.`}
+              ? 'Tous les 20 critères sont validés dans Supabase. Vous pouvez débloquer la mise en production.'
+              : `Il reste ${totalCount - checkedCount} critère(s) obligatoire(s) à valider dans Supabase.`}
           </span>
         </div>
 
@@ -182,27 +205,19 @@ export default function LaunchCheckPage() {
                 Projet Prêt pour la Production !
               </h3>
               <p className="text-xs text-mv-ink-soft mt-2 leading-relaxed">
-                Les 20 critères de qualité Minerva ont été vérifiés et certifiés pour <strong>Apex Roofing</strong>. Le site est officiellement autorisé à être publié.
+                Les 20 critères de qualité Minerva ont été certifiés et sauvegardés dans la base de données Supabase.
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-mv-green-tint border border-mv-green/30 text-xs text-mv-green font-bold">
-              ✔ Conformité Loi 25 • Temps de chargement &lt; 1.8s • SEO & Analytics OK
-            </div>
-
             <div className="flex gap-3">
-              <Button
-                variant="secondary"
-                className="flex-1"
-                onClick={() => setIsModalOpen(false)}
-              >
+              <Button variant="secondary" className="flex-1" onClick={() => setIsModalOpen(false)}>
                 Fermer
               </Button>
               <Button
                 variant="lime"
                 className="flex-1"
                 onClick={() => {
-                  alert('Publication en cours via Vercel / Framer Webhooks...');
+                  alert('Validation transmise au webhook Supabase Edge Function (launch-check-validator) !');
                   setIsModalOpen(false);
                 }}
               >

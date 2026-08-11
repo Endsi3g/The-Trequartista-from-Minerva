@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -28,7 +28,7 @@ export function AppSidebar({ collapsed, onToggleCollapse }: AppSidebarProps) {
 
   const domainGroups = [
     {
-      title: '📊 PILOTAGE & FINANCES',
+      title: 'PILOTAGE & FINANCES',
       items: [
         { href: '/overview', label: 'Command Center', icon: LayoutDashboard },
         { href: '/clients', label: 'Clients & MRR', icon: Users },
@@ -36,7 +36,7 @@ export function AppSidebar({ collapsed, onToggleCollapse }: AppSidebarProps) {
       ],
     },
     {
-      title: '🚀 OPÉRATIONS & QUALITÉ',
+      title: 'OPÉRATIONS & QUALITÉ',
       items: [
         { href: '/projects', label: 'Projets & Kanban', icon: FolderKanban },
         { href: '/projects/proj-apex-launch/launch-check', label: 'Checklist 20-Pts', icon: CheckCircle2 },
@@ -44,7 +44,7 @@ export function AppSidebar({ collapsed, onToggleCollapse }: AppSidebarProps) {
       ],
     },
     {
-      title: '👥 ÉQUIPE & ACADÉMIE',
+      title: 'ÉQUIPE & ACADÉMIE',
       items: [
         { href: '/team', label: 'Répertoire Équipe', icon: UserCheck },
         { href: '/team/team-alex/performance', label: 'Fiche 1-on-1 & OKRs', icon: Sparkles },
