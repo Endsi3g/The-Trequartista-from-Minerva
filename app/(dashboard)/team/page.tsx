@@ -152,7 +152,7 @@ export default function TeamPage() {
                     <div className="flex items-center gap-1.5 mt-1">
                       <Badge variant="green">● Actif</Badge>
                       {member.role === 'admin' && (
-                        <Tooltip content="Administrateur du cockpit Minerva" position="right">
+                        <Tooltip content="Administrateur du Command Center in-house" position="right">
                           <Badge variant="neutral">
                             <Shield className="w-2.5 h-2.5 inline mr-0.5" />
                             Admin
