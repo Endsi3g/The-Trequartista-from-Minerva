@@ -67,10 +67,19 @@ export function SupabaseRealtimeProvider({ children }: { children: React.ReactNo
             setLastUpdateTimestamp(Date.now());
           }
         )
-        .subscribe((status) => {
+        .subscribe((status, err) => {
           if (status === 'SUBSCRIBED') {
-            console.log('[Supabase Realtime] Successfully subscribed to postgres_changes.');
+            console.log('[Supabase Realtime] Connected.');
             setIsConnected(true);
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            // Unsubscribe on error to avoid endless 401 WebSocket reconnection loops
+            setIsConnected(false);
+            if (err) {
+              console.warn('[Supabase Realtime] Disabled auto-retry due to connection status:', status, err);
+            }
+            if (channel) {
+              supabase.removeChannel(channel).catch(() => {});
+            }
           } else {
             setIsConnected(false);
           }
