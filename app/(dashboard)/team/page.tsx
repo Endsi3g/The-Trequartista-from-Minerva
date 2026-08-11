@@ -65,7 +65,7 @@ export default function TeamPage() {
           </p>
         </div>
 
-        <Tooltip content="Inviter un nouveau membre à rejoindre le cockpit" position="left">
+        <Tooltip content="Inviter un nouveau membre à rejoindre le Command Center in-house" position="left">
           <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
             Inviter un Collaborateur
           </Button>

@@ -30,12 +30,12 @@ export function Logo({ size = 30, collapsed = false }: LogoProps) {
       <LogoMark size={size} />
       {!collapsed && (
         <div className="flex flex-col whitespace-nowrap leading-tight">
-          <span className="font-extrabold text-sm tracking-tight text-mv-ink">
+          <span className="font-extrabold text-sm tracking-tight text-mv-ink font-display">
             MINERVA{' '}
-            <span className="text-mv-green">CENTURIONS</span>
+            <span className="text-mv-green">TREQUARTISTA</span>
           </span>
           <span className="text-[10px] font-semibold text-mv-ink-faint tracking-widest uppercase">
-            Cockpit Client
+            Command Center in-house
           </span>
         </div>
       )}

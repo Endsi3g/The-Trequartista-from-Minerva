@@ -3,7 +3,7 @@ import { ImageResponse } from 'next/og';
 export const runtime = 'nodejs';
 
 
-export const alt = 'The Trequartista from Minerva — Cockpit Operations';
+export const alt = 'The Trequartista from Minerva — Command Center in-house';
 export const size = {
   width: 1200,
   height: 630,
@@ -60,7 +60,7 @@ export default async function Image() {
               maxWidth: '900px',
             }}
           >
-            Cockpit Operations, Quality Control & Team Execution
+            Command Center in-house, Quality Control & Team Execution
           </div>
           <div style={{ fontSize: '24px', color: '#a0a89a', maxWidth: '800px' }}>
             Command Center in-house pour la livraison de projets clients, le suivi du ROI, les checklists de lancement 20-points et la gestion 1-on-1.

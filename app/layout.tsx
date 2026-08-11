@@ -5,7 +5,7 @@ import { SupabaseRealtimeProvider } from '@/components/providers/SupabaseRealtim
 import { ToastProvider } from '@/components/providers/ToastProvider';
 
 export const metadata: Metadata = {
-  title: 'The Trequartista from Minerva — Cockpit Operations',
+  title: 'The Trequartista from Minerva — Command Center in-house',
   description: 'Command center in-house de Minerva pour la livraison client, le suivi du ROI, la qualité et le management équipe.',
   manifest: '/manifest.json',
   icons: {
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     apple: '/icon-192.png',
   },
   openGraph: {
-    title: 'The Trequartista from Minerva — Cockpit Operations',
+    title: 'The Trequartista from Minerva — Command Center in-house',
     description: 'Command center in-house de Minerva pour la livraison client, le suivi du ROI, la qualité et le management équipe.',
     url: 'https://minervaflow.com',
     siteName: 'The Trequartista from Minerva',
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
         url: '/opengraph-image',
         width: 1200,
         height: 630,
-        alt: 'The Trequartista from Minerva Cockpit',
+        alt: 'The Trequartista from Minerva — Command Center in-house',
       },
     ],
     locale: 'fr_CA',

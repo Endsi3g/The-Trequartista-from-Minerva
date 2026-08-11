@@ -25,7 +25,7 @@ export default function NotFoundPage() {
         <div className="space-y-2">
           <h2 className="text-lg font-bold text-mv-ink">Oups ! Cette destination n'existe pas.</h2>
           <p className="text-xs text-mv-ink-soft leading-relaxed max-w-sm mx-auto">
-            La page que vous recherchez a peut-être été déplacée, supprimée ou n'a jamais existé dans le Cockpit Centurions.
+            La page que vous recherchez a peut-être été déplacée, supprimée ou n'a jamais existé dans le Command Center in-house.
           </p>
         </div>
 

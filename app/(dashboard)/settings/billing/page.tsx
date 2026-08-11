@@ -321,7 +321,7 @@ export default function BillingPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Tooltip content="Approuver l'accès au cockpit" position="top">
+                  <Tooltip content="Approuver l'accès au Command Center in-house" position="top">
                     <button
                       disabled={approvingId === member.id}
                       onClick={async () => {
