@@ -5,24 +5,24 @@ import { SupabaseRealtimeProvider } from '@/components/providers/SupabaseRealtim
 import { ToastProvider } from '@/components/providers/ToastProvider';
 
 export const metadata: Metadata = {
-  title: 'Minerva Centurions — Cockpit Client',
-  description: 'Command center de Minerva pour la livraison client, le suivi du ROI, la qualité et le management équipe.',
+  title: 'The Trequartista from Minerva — Cockpit Operations',
+  description: 'Command center in-house de Minerva pour la livraison client, le suivi du ROI, la qualité et le management équipe.',
   manifest: '/manifest.json',
   icons: {
     icon: '/icon-512.png',
     apple: '/icon-192.png',
   },
   openGraph: {
-    title: 'Minerva Centurions — Cockpit Client',
-    description: 'Command center de Minerva pour la livraison client, le suivi du ROI, la qualité et le management équipe.',
+    title: 'The Trequartista from Minerva — Cockpit Operations',
+    description: 'Command center in-house de Minerva pour la livraison client, le suivi du ROI, la qualité et le management équipe.',
     url: 'https://minervaflow.com',
-    siteName: 'Minerva Centurions',
+    siteName: 'The Trequartista from Minerva',
     images: [
       {
         url: '/opengraph-image',
         width: 1200,
         height: 630,
-        alt: 'Minerva Centurions Cockpit',
+        alt: 'The Trequartista from Minerva Cockpit',
       },
     ],
     locale: 'fr_CA',

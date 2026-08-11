@@ -3,7 +3,7 @@ import { ImageResponse } from 'next/og';
 export const runtime = 'nodejs';
 
 
-export const alt = 'Minerva Centurions — Cockpit In-House';
+export const alt = 'The Trequartista from Minerva — Cockpit Operations';
 export const size = {
   width: 1200,
   height: 630,
@@ -46,7 +46,7 @@ export default async function Image() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f3f2ea', fontSize: '28px', fontWeight: 'bold', letterSpacing: '-0.5px' }}>
             <span>MINERVA</span>
-            <span style={{ color: '#1c9a6f' }}>CENTURIONS</span>
+            <span style={{ color: '#1c9a6f' }}>TREQUARTISTA</span>
           </div>
         </div>
 
