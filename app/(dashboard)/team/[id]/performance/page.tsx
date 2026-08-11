@@ -4,23 +4,22 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { StorageBrowser } from '@/components/storage/StorageBrowser';
 import {
   Calendar,
   Sparkles,
   Target,
   Award,
   MessageSquare,
-  CheckCircle,
   Clock,
   RefreshCw,
-  Zap,
 } from 'lucide-react';
 import { INITIAL_TEAM } from '@/lib/mock-data';
 
 export default function PerformancePage() {
   const [activeTab, setActiveTab] = useState<'okrs' | 'skills' | 'feedbacks' | 'history'>('okrs');
   const [isSyncing, setIsSyncing] = useState(false);
-  const member = INITIAL_TEAM[0]; // Alex Tremblay
+  const member = INITIAL_TEAM[0];
 
   const triggerGoogleCalendarSync = async () => {
     setIsSyncing(true);
@@ -36,7 +35,7 @@ export default function PerformancePage() {
       });
       await res.json();
     } catch {
-      // Fallback stub
+      // Fallback
     }
     setTimeout(() => {
       setIsSyncing(false);
@@ -221,6 +220,9 @@ export default function PerformancePage() {
           </div>
         </Card>
       )}
+
+      {/* Supabase Storage HR Documents */}
+      <StorageBrowser defaultBucket="team-documents" title="Documents & Fiches RH (Supabase Storage)" />
     </div>
   );
 }

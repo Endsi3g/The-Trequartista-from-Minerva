@@ -4,7 +4,8 @@ import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { GraduationCap, BookOpen, Video, Clock, ArrowRight } from 'lucide-react';
+import { StorageBrowser } from '@/components/storage/StorageBrowser';
+import { GraduationCap, BookOpen, Clock, ArrowRight } from 'lucide-react';
 import { INITIAL_SOPS } from '@/lib/mock-data';
 
 export default function AcademyPage() {
@@ -53,6 +54,9 @@ export default function AcademyPage() {
           </Card>
         ))}
       </div>
+
+      {/* Supabase Storage Media & Video SOPs */}
+      <StorageBrowser defaultBucket="academy-media" title="Bibliothèque Média & Vidéos SOPs (Supabase Storage)" />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { HeatmapScale } from '@/components/charts/HeatmapScale';
 import { ClientExecutiveReport } from '@/components/reports/ClientExecutiveReport';
+import { StorageBrowser } from '@/components/storage/StorageBrowser';
 import {
   TrendingUp,
   DollarSign,
@@ -147,9 +148,8 @@ export default function RoiTrackerPage() {
           />
         </div>
 
-        {/* Main Impact Grid: Weekly Trend & ROI Callout */}
+        {/* Main Impact Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Weekly Lead Trend SVG Chart (2 cols) */}
           <Card
             className="lg:col-span-2"
             header={
@@ -193,7 +193,6 @@ export default function RoiTrackerPage() {
             </div>
           </Card>
 
-          {/* Highlight ROI Card (1 col) */}
           <Card className="bg-gradient-to-br from-mv-surface to-mv-green-tint/40 border-mv-green/40 flex flex-col justify-between">
             <div>
               <span className="text-xs font-bold text-mv-lime uppercase tracking-widest">
@@ -299,6 +298,9 @@ export default function RoiTrackerPage() {
             </div>
           </Card>
         </div>
+
+        {/* Supabase Storage Files Manager */}
+        <StorageBrowser defaultBucket="client-assets" title="Ressources & Actifs Supabase Storage (Client Assets)" />
       </div>
 
       {/* Printable 4-Section Executive Summary Report for PDF Export */}
