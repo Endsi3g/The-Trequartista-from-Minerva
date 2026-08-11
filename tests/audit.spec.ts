@@ -19,7 +19,9 @@ test.describe('Minerva Centurions Complete SaaS Audit Suite', () => {
     '/profil',
     '/settings/billing',
     '/login',
+    '/signup',
   ];
+
 
   for (const route of routes) {
     test(`Audit Route Accessibility & Rendering: ${route}`, async ({ page }) => {

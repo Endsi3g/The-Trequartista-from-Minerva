@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, Suspense } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Shield, Lock, Mail, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -183,15 +185,21 @@ function LoginForm() {
       </form>
 
       {/* Footer Info */}
-      <div className="pt-4 border-t border-mv-border text-center text-[10px] text-mv-ink-mute space-y-1">
-        <div className="flex items-center justify-center gap-1 text-mv-green font-semibold">
+      <div className="pt-4 border-t border-mv-border text-center text-xs space-y-2">
+        <div className="flex items-center justify-center gap-1 text-mv-green font-semibold text-[11px]">
           <CheckCircle2 className="w-3 h-3" /> Domaine restreint @minervaflow.com
         </div>
-        <div>Accès interne sécurisé par Supabase Auth & Vercel SSL</div>
+        <div className="text-mv-ink-soft">
+          Nouveau sur Centurions ?{' '}
+          <Link href="/signup" className="font-bold text-mv-green hover:underline">
+            Créer un Compte
+          </Link>
+        </div>
       </div>
     </div>
   );
 }
+
 
 export default function LoginPage() {
   return (
