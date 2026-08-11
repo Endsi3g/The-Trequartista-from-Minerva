@@ -1,0 +1,18 @@
+{
+  "name": "Minerva Centurions — Cockpit Client",
+  "short_name": "Centurions",
+  "description": "Command center de Minerva pour la livraison client, le suivi du ROI, la qualité et le management équipe.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffefa",
+  "theme_color": "#167f5b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
