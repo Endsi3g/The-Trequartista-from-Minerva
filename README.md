@@ -1,73 +1,122 @@
-# 🛡️ Minerva Centurions — Master Production SaaS Cockpit
+<div align="center">
 
-**Minerva Centurions** est la plateforme SaaS B2B de pilotage de l'agence Minerva : gestion des clients & du ROI publicitaire, CRM des leads, contrôle qualité des projets (Checklist 20 points), Social Reels Studio avec lecteur vidéo universel, base de connaissances SOPs, intégration Notion MCP Server et PWA (Progressive Web App).
+  <img src="public/icon.svg" width="96" height="96" alt="Minerva Centurions Logo" />
+
+  # Minerva Centurions
+
+  **The Master Operations & Client ROI Command Center for High-Growth Agencies**
+
+  <p>
+    <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js_15-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js 15" /></a>
+    <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript_5-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
+    <a href="https://supabase.com"><img src="https://img.shields.io/badge/Supabase_Realtime-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" /></a>
+    <a href="https://playwright.dev"><img src="https://img.shields.io/badge/Playwright_E2E-2EAD33?style=for-the-badge&logo=playwright&logoColor=white" alt="Playwright" /></a>
+    <a href="https://vercel.com"><img src="https://img.shields.io/badge/Vercel_PWA-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" /></a>
+  </p>
+
+  <p>
+    <strong>Client CRM</strong> &nbsp;•&nbsp;
+    <strong>ROAS Tracker</strong> &nbsp;•&nbsp;
+    <strong>Reels Studio (yt-dlp)</strong> &nbsp;•&nbsp;
+    <strong>Notion MCP Sync</strong> &nbsp;•&nbsp;
+    <strong>Checklist 20/20</strong> &nbsp;•&nbsp;
+    <strong>PWA Enabled</strong>
+  </p>
+
+  ---
+
+</div>
+
+## 🛡️ Executive Summary
+
+**Minerva Centurions** is a unified, enterprise-grade B2B SaaS operations engine designed for agency delivery management, revenue attribution, lead management, and automated quality assurance.
+
+```
+                  ┌─────────────────────────────────────────┐
+                  │    MINERVA CENTURIONS COMMAND CENTER    │
+                  └────────────────────┬────────────────────┘
+                                       │
+         ┌─────────────────────────────┼─────────────────────────────┐
+         ▼                             ▼                             ▼
+┌─────────────────┐           ┌─────────────────┐           ┌─────────────────┐
+│   Clients CRM   │           │ Social Reels    │           │ Notion MCP Sync │
+│ & ROI Analytics │           │ Studio (yt-dlp) │           │ & SOP Academy   │
+└─────────────────┘           └─────────────────┘           └─────────────────┘
+```
 
 ---
 
-## ✨ Points Forts & Architecture
+## ⚡ Core Capabilities
 
-- **⚡ Architecture Fullstack Live & Realtime** : Conçu sur Next.js 15 App Router avec Supabase Postgres, Row Level Security (RLS) et WebSocket Channels (`SupabaseRealtimeProvider`).
-- **📱 Progressive Web App (PWA)** : Support d'installation PWA avec Service Worker offline (`/sw.js`), `manifest.json` et raccourci mobile.
-- **🎬 Social Reels Studio & Media Downloader** : Lecteur vidéo universel (`VideoAssetPlayer.tsx`) supportant les formats 9:16 vertical & 16:9 widescreen, contrôle de vitesse, téléchargement `.mp4` 1-clic et service Downloader (`yt-dlp`).
-- **🔗 Intégration Notion MCP Server** : Connexion au serveur Notion MCP (`https://mcp.notion.com/mcp`) et synchronisation 2-voies (`/api/integrations/notion/sync`).
-- **🎯 Leads CRM & Quality Pipeline** : Kanban / Tableau des leads avec qualification A/B/C/D et export CSV.
-- **📋 Checklist 20-Points Qualité** : Validation automatique avec animations confettis et Edge Functions Supabase.
-- **💬 Système Feedback & Toasts** : Moteur global de notifications toast (`ToastProvider.tsx`), widget feedback in-app (`UserFeedbackModal.tsx`) et modale de confirmation (`ConfirmDialog.tsx`).
-- **🧪 Playwright E2E Audit Suite** : Suite de tests automatisés auditant les 23 routes desktop & mobile.
-
----
-
-## 🛠️ Stack Technique
-
-| Layer | Technologie |
-| :--- | :--- |
-| **Framework** | Next.js 15.1.7 (App Router, Server Actions) |
-| **Styling** | Vanilla Tailwind CSS (Variables HSL Minerva) |
-| **Database** | Supabase Postgres (Realtime & Storage) |
-| **Icons** | Lucide React Icons |
-| **PWA** | Web App Manifest & Custom Service Worker |
-| **Testing** | Playwright E2E (`@playwright/test`) |
-| **Deployment** | Vercel Platform & Supabase Edge Functions |
+- 📈 **Realtime Client ROI & ROAS Tracker**: Live financial performance dashboards with automated edge aggregations (`client_roi_metrics`).
+- 🎬 **Social Reels Studio & Universal Video Player**: 9:16 smartphone inspector, 1-click `.mp4` video downloads powered by `yt-dlp` media downloader service.
+- 🔗 **Notion MCP Server Integration**: Native 2-way database synchronization connecting Notion workspaces (`https://mcp.notion.com/mcp`).
+- 🎯 **Leads Pipeline CRM**: Kanban & Table views with lead quality scoring (A/B/C/D), fast actions, and CSV export.
+- 📋 **Checklist 20-Points Quality Assurance**: Real-time project launch checklist with Edge Function validation.
+- 💬 **Global User Toast & In-App Feedback**: Toast alerts (`ToastProvider.tsx`), in-app feedback modal (`UserFeedbackModal.tsx`), and confirmation dialogs (`ConfirmDialog.tsx`).
+- 📱 **Progressive Web App (PWA)**: Standalone mobile installation, offline Service Worker (`/sw.js`), and manifest support.
+- 🧪 **Playwright E2E Test Audit**: 100% automated test suite validating all 23 static and dynamic routes.
 
 ---
 
-## 🚀 Démarrage Rapide
+## 🛠️ Tech Stack
 
-### 1. Installation des dépendances
+<div align="center">
+
+| Core | Database & Storage | Testing & Deployment |
+| :--- | :--- | :--- |
+| **Next.js 15 App Router** | **Supabase Postgres** | **Playwright E2E (`@playwright/test`)** |
+| **TypeScript 5.7** | **Supabase Realtime WebSockets** | **Vercel Platform Deployment** |
+| **Tailwind CSS (Vanilla HSL)** | **Supabase Storage Buckets** | **PWA Web App Manifest & SW** |
+
+</div>
+
+---
+
+## 🚀 Quick Start
+
+### 1. Installation
+
 ```bash
 pnpm install
 ```
 
-### 2. Variables d'environnement
-Créez un fichier `.env.local` à la racine :
+### 2. Environment Setup
+
+Create a `.env.local` file in the root directory:
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://eobatkwbwcdsdqbemrma.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
-### 3. Lancer le serveur de développement
+### 3. Development Server
+
 ```bash
 pnpm dev
 ```
-Ouvrez [http://localhost:3000](http://localhost:3000) dans votre navigateur.
+
+Visit [http://localhost:3000](http://localhost:3000) to access the cockpit.
 
 ---
 
-## 🧪 Tests & Build
+## 🧪 Verification Commands
 
 ```bash
-# Vérification des types TypeScript (0 erreur)
+# TypeScript Typecheck (0 errors)
 npx tsc --noEmit
 
-# Production Build
+# Production Build Test
 pnpm build
 
-# Playwright E2E Audit Tests
+# Playwright E2E Audit Suite
 npx playwright test
 ```
 
 ---
 
-## 📄 Licence
-Propriété exclusive de **Minerva Flow Inc.** — Tous droits réservés.
+<div align="center">
+
+  <sub>Built with precision by **Minerva Flow Inc.** &nbsp;•&nbsp; All Rights Reserved</sub>
+
+</div>
