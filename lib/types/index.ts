@@ -127,3 +127,50 @@ export interface AcademySOP {
   video_url?: string;
   description: string;
 }
+
+// ── Integrations ─────────────────────────────────────────────────────────────
+
+export type IntegrationStatus = 'connected' | 'disconnected' | 'error' | 'coming_soon';
+
+export interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  status: IntegrationStatus;
+  connected_at?: string;
+  metadata?: Record<string, unknown>;
+}
+
+// ── Notion ────────────────────────────────────────────────────────────────────
+
+export interface NotionPage {
+  id: string;
+  title: string;
+  url: string;
+  icon?: { type: 'emoji'; emoji: string } | { type: 'external'; external: { url: string } } | null;
+  last_edited_time: string;
+  parent_type: 'workspace' | 'database_id' | 'page_id';
+}
+
+export interface NotionConfig {
+  id: string;
+  user_id: string;
+  integration_token_hash: string; // stored hashed, never raw
+  connected_at: string;
+  workspace_name: string;
+  workspace_icon?: string;
+  linked_page_ids: string[];
+}
+
+// ── Alerts (real-time, from Supabase) ────────────────────────────────────────
+
+export interface Alert {
+  id: string;
+  title: string;
+  description: string;
+  severity: 'critical' | 'warning' | 'info';
+  url: string;
+  resolved: boolean;
+  created_at: string;
+}

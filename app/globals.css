@@ -1,12 +1,60 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  /* Default Native Dark Mode for Centurions Cockpit */
+  /* ── Light Mode (default) — Minerva-Flow palette ── */
   :root {
+    color-scheme: light;
+
+    /* Brand */
+    --mv-green: #167f5b;
+    --mv-green-dark: #0e5a40;
+    --mv-green-darker: #0a4531;
+    --mv-green-light: #dcece3;
+    --mv-green-tint: #eef5f0;
+
+    --mv-lime: #dfff5f;
+    --mv-lime-dark: #6d7e1f;
+    --mv-lime-tint: #f4ffdc;
+
+    --mv-cream: #f5f1e6;
+    --mv-cream-soft: #fbf9f3;
+    --mv-surface: #fffefa;
+
+    --mv-ink: #1a1e16;
+    --mv-ink-soft: #565f52;
+    --mv-ink-faint: #8d9488;
+    --mv-ink-mute: #b3b8a9;
+
+    --mv-border: #e6e0d0;
+    --mv-border-soft: #eee9db;
+
+    --mv-red: #b5473a;
+    --mv-red-bg: #f8ece8;
+    --mv-amber: #ab7d1f;
+    --mv-amber-bg: #f6efd9;
+
+    /* Revenue-intensity heatmap */
+    --mv-heat-1: #ede7d6;
+    --mv-heat-2: #c7e1d0;
+    --mv-heat-3: #8fc7a9;
+    --mv-heat-4: #4da37e;
+    --mv-heat-5: #167f5b;
+
+    --shadow-mv-sm: 0 1px 2px rgba(26, 30, 22, 0.05);
+    --shadow-mv-md: 0 2px 4px rgba(26, 30, 22, 0.04), 0 8px 20px rgba(26, 30, 22, 0.06);
+    --shadow-mv-lg: 0 8px 16px rgba(26, 30, 22, 0.06), 0 24px 48px rgba(26, 30, 22, 0.10);
+
+    --radius: 0.625rem;
+  }
+
+  /* ── Dark Mode — opt-in via .dark on <html> ── */
+  .dark {
+    color-scheme: dark;
+
     --mv-green: #1c9a6f;
     --mv-green-dark: #126b4d;
     --mv-green-darker: #0a4531;
@@ -38,52 +86,17 @@
     --shadow-mv-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
     --shadow-mv-md: 0 2px 4px rgba(0, 0, 0, 0.25), 0 8px 20px rgba(0, 0, 0, 0.35);
     --shadow-mv-lg: 0 8px 16px rgba(0, 0, 0, 0.35), 0 24px 48px rgba(0, 0, 0, 0.45);
-
-    --radius: 0.625rem;
-  }
-
-  /* Light Mode support */
-  .light {
-    --mv-green: #167f5b;
-    --mv-green-dark: #0e5a40;
-    --mv-green-darker: #0a4531;
-    --mv-green-light: #dcece3;
-    --mv-green-tint: #eef5f0;
-    --mv-lime: #dfff5f;
-    --mv-lime-dark: #6d7e1f;
-    --mv-lime-tint: #f4ffdc;
-    --mv-cream: #f5f1e6;
-    --mv-cream-soft: #fbf9f3;
-    --mv-surface: #fffefa;
-    --mv-ink: #1a1e16;
-    --mv-ink-soft: #565f52;
-    --mv-ink-faint: #8d9488;
-    --mv-ink-mute: #b3b8a9;
-    --mv-border: #e6e0d0;
-    --mv-border-soft: #eee9db;
-    --mv-red: #b5473a;
-    --mv-red-bg: #f8ece8;
-    --mv-amber: #ab7d1f;
-    --mv-amber-bg: #f6efd9;
-
-    --mv-heat-1: #ede7d6;
-    --mv-heat-2: #b8d4c6;
-    --mv-heat-3: #7cb89e;
-    --mv-heat-4: #439b77;
-    --mv-heat-5: #167f5b;
-
-    --shadow-mv-sm: 0 1px 2px rgba(26, 30, 22, 0.05);
-    --shadow-mv-md: 0 2px 4px rgba(26, 30, 22, 0.04), 0 8px 20px rgba(26, 30, 22, 0.06);
-    --shadow-mv-lg: 0 8px 16px rgba(26, 30, 22, 0.06), 0 24px 48px rgba(26, 30, 22, 0.10);
   }
 
   body {
-    background-color: var(--mv-cream);
+    background-color: var(--mv-surface);
     color: var(--mv-ink);
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     font-feature-settings: "ss01" 1, "cv05" 1;
     scroll-behavior: smooth;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Universal Selection */
@@ -124,6 +137,7 @@
   }
 }
 
+/* ── Utility Classes ── */
 .font-display {
   font-family: "New York", -apple-system-serif, ui-serif, Georgia, serif;
 }
@@ -131,4 +145,14 @@
 .shimmer-bg {
   background: linear-gradient(90deg, var(--mv-surface) 25%, var(--mv-border) 50%, var(--mv-surface) 75%);
   background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
 }
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Sidebar width transitions */
+.sidebar-collapsed { width: 68px; }
+.sidebar-expanded { width: 260px; }

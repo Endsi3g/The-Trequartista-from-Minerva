@@ -13,9 +13,12 @@ export function AppShell({ children }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-mv-cream text-mv-ink flex">
-      {/* Retractable Collapsible Sidebar */}
-      <AppSidebar collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} />
+    <div className="min-h-screen bg-mv-surface text-mv-ink flex">
+      {/* Retractable Sidebar */}
+      <AppSidebar
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed(!collapsed)}
+      />
 
       {/* Main Content Area */}
       <div
@@ -24,19 +27,18 @@ export function AppShell({ children }: AppShellProps) {
         }`}
       >
         {/* Top Header */}
-        <header className="h-16 px-6 bg-mv-surface/80 backdrop-blur-md border-b border-mv-border sticky top-0 z-20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-extrabold text-mv-ink tracking-tight uppercase">
-              Centurions Cockpit
-            </span>
+        <header className="h-16 px-6 bg-mv-cream-soft/80 backdrop-blur-md border-b border-mv-border sticky top-0 z-20 flex items-center justify-between">
+          {/* Left: Breadcrumb */}
+          <div className="flex items-center gap-2 min-w-0">
+            <AppBreadcrumb />
           </div>
 
+          {/* Right: Actions */}
           <TopbarActions />
         </header>
 
-        {/* Page Content Container */}
-        <main className="p-6 lg:p-8 max-w-7xl w-full mx-auto animate-mv-fade-up">
-          <AppBreadcrumb />
+        {/* Page Content */}
+        <main className="p-6 lg:p-8 max-w-7xl w-full mx-auto">
           {children}
         </main>
       </div>

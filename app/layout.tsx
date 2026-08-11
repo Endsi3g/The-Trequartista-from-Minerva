@@ -1,15 +1,17 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { ThemeProvider } from '@/components/theme/ThemeProvider';
 
 export const metadata: Metadata = {
-  title: 'Minerva Centurions — Cockpit In-House',
-  description: 'Command center interne de Minerva pour la livraison client, le suivi du ROI, la qualité et le management équipe.',
+  title: 'Minerva Centurions — Cockpit Client',
+  description: 'Command center de Minerva pour la livraison client, le suivi du ROI, la qualité et le management équipe.',
   icons: {
     icon: '/icon.svg',
+    apple: '/icon-192.png',
   },
   openGraph: {
-    title: 'Minerva Centurions — Cockpit In-House',
-    description: 'Command center interne de Minerva pour la livraison client, le suivi du ROI, la qualité et le management équipe.',
+    title: 'Minerva Centurions — Cockpit Client',
+    description: 'Command center de Minerva pour la livraison client, le suivi du ROI, la qualité et le management équipe.',
     url: 'https://minervaflow.com',
     siteName: 'Minerva Centurions',
     images: [
@@ -31,9 +33,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className="dark">
-      <body className="antialiased selection:bg-mv-lime selection:text-mv-cream">
-        {children}
+    <html lang="fr" suppressHydrationWarning>
+      <head>
+        {/* Anti-flash: read theme from localStorage before first paint */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var t = localStorage.getItem('mv-theme');
+                if (t === 'dark') document.documentElement.classList.add('dark');
+              } catch(e) {}
+            `,
+          }}
+        />
+      </head>
+      <body className="antialiased">
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

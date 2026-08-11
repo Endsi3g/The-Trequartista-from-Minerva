@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Logo, LogoMark } from './Logo';
 import {
   LayoutDashboard,
   Users,
@@ -14,10 +15,118 @@ import {
   GraduationCap,
   ChevronLeft,
   ChevronRight,
-  Shield,
-  Sparkles,
+  Star,
+  StarOff,
+  Settings,
+  Zap,
+  type LucideIcon,
 } from 'lucide-react';
 
+// ── Types ──────────────────────────────────────────────
+type NavItem = {
+  key: string;
+  href: string;
+  icon: LucideIcon;
+  label: string;
+};
+
+type NavGroup = {
+  title: string;
+  items: NavItem[];
+};
+
+// ── Navigation Catalogue ───────────────────────────────
+const navGroups: NavGroup[] = [
+  {
+    title: 'PILOTAGE & FINANCES',
+    items: [
+      { key: 'overview',    href: '/overview',    icon: LayoutDashboard, label: 'Command Center'    },
+      { key: 'clients',     href: '/clients',     icon: Users,           label: 'Clients & MRR'     },
+      { key: 'roi-tracker', href: '/clients',     icon: TrendingUp,      label: 'Suivi ROI Client'  },
+    ],
+  },
+  {
+    title: 'OPÉRATIONS & QUALITÉ',
+    items: [
+      { key: 'projects',        href: '/projects',       icon: FolderKanban, label: 'Projets & Kanban'  },
+      { key: 'launch-check',    href: '/projects',       icon: CheckCircle2, label: 'Checklist 20-Pts'  },
+      { key: 'content-planner', href: '/content-planner', icon: Share2,       label: 'Social & Reels'    },
+    ],
+  },
+  {
+    title: 'ÉQUIPE & ACADÉMIE',
+    items: [
+      { key: 'team',     href: '/team',    icon: UserCheck,      label: 'Répertoire Équipe'  },
+      { key: 'profil',   href: '/profil',  icon: Users,          label: 'Profil & OKRs'      },
+      { key: 'academy',  href: '/academy', icon: GraduationCap,  label: 'Académie LMS & SOPs' },
+    ],
+  },
+];
+
+const bottomItems: NavItem[] = [
+  { key: 'integrations', href: '/integrations', icon: Zap,      label: 'Intégrations'  },
+  { key: 'settings',     href: '/settings',     icon: Settings, label: 'Paramètres'    },
+];
+
+const FAVORITES_KEY = 'mv-sidebar-favorites';
+
+// ── NavLink Component ──────────────────────────────────
+function NavLink({
+  item,
+  active,
+  collapsed,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  item: NavItem;
+  active: boolean;
+  collapsed: boolean;
+  isFavorite?: boolean;
+  onToggleFavorite?: (e: React.MouseEvent, key: string) => void;
+}) {
+  const Icon = item.icon;
+
+  return (
+    <div className="group relative flex items-center">
+      <Link
+        href={item.href}
+        className={[
+          'flex flex-1 items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-all duration-150',
+          active
+            ? 'bg-mv-green text-white shadow-mv-sm'
+            : 'text-mv-ink-soft hover:bg-mv-green-tint hover:text-mv-ink',
+        ].join(' ')}
+        title={collapsed ? item.label : undefined}
+      >
+        <Icon
+          className={[
+            'h-4 w-4 shrink-0 transition-transform duration-150 group-hover:scale-110',
+            active ? 'text-mv-lime' : 'text-mv-ink-faint group-hover:text-mv-green',
+          ].join(' ')}
+        />
+        {!collapsed && (
+          <span className="truncate">{item.label}</span>
+        )}
+      </Link>
+
+      {/* Favorite toggle — only visible on hover when expanded */}
+      {!collapsed && onToggleFavorite && (
+        <button
+          onClick={(e) => onToggleFavorite(e, item.key)}
+          className="absolute right-1 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity text-mv-ink-faint hover:text-mv-amber"
+          title={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+        >
+          {isFavorite
+            ? <Star className="w-3 h-3 fill-mv-amber text-mv-amber" />
+            : <StarOff className="w-3 h-3" />
+          }
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── AppSidebar ─────────────────────────────────────────
 interface AppSidebarProps {
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -25,122 +134,156 @@ interface AppSidebarProps {
 
 export function AppSidebar({ collapsed, onToggleCollapse }: AppSidebarProps) {
   const pathname = usePathname();
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [userInitials, setUserInitials] = useState('MV');
+  const [userLabel, setUserLabel] = useState('Équipe Minerva');
 
-  const domainGroups = [
-    {
-      title: 'PILOTAGE & FINANCES',
-      items: [
-        { href: '/overview', label: 'Command Center', icon: LayoutDashboard },
-        { href: '/clients', label: 'Clients & MRR', icon: Users },
-        { href: '/clients/client-apex-roofing/roi-tracker', label: 'Suivi ROI Client', icon: TrendingUp },
-      ],
-    },
-    {
-      title: 'OPÉRATIONS & QUALITÉ',
-      items: [
-        { href: '/projects', label: 'Projets & Kanban', icon: FolderKanban },
-        { href: '/projects/proj-apex-launch/launch-check', label: 'Checklist 20-Pts', icon: CheckCircle2 },
-        { href: '/content-planner', label: 'Social & Reels', icon: Share2 },
-      ],
-    },
-    {
-      title: 'ÉQUIPE & ACADÉMIE',
-      items: [
-        { href: '/team', label: 'Répertoire Équipe', icon: UserCheck },
-        { href: '/team/team-alex/performance', label: 'Fiche 1-on-1 & OKRs', icon: Sparkles },
-        { href: '/academy', label: 'Académie LMS & SOPs', icon: GraduationCap },
-      ],
-    },
-  ];
+  // Load favorites from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(FAVORITES_KEY);
+      if (stored) setFavorites(JSON.parse(stored));
+    } catch {}
+  }, []);
+
+  // Load user from Supabase auth
+  useEffect(() => {
+    (async () => {
+      try {
+        const { createBrowserClient } = await import('@supabase/ssr');
+        const supabase = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          const name = user.user_metadata?.full_name || user.email;
+          const parts = name.split(/[ @]/);
+          const initials = parts.slice(0, 2).map((p: string) => p[0]?.toUpperCase()).join('');
+          setUserInitials(initials || 'MV');
+          setUserLabel(user.user_metadata?.full_name || user.email);
+        }
+      } catch {}
+    })();
+  }, []);
+
+  const toggleFavorite = (e: React.MouseEvent, key: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFavorites((prev) => {
+      const next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
+      try { localStorage.setItem(FAVORITES_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  // All nav items flat for active check
+  const allItems = navGroups.flatMap((g) => g.items);
+  const favoriteItems = allItems.filter((item) => favorites.includes(item.key));
+
+  const isActive = (href: string, key: string) =>
+    pathname === href || (href !== '/overview' && pathname.startsWith(href) && key !== 'roi-tracker' && key !== 'launch-check');
 
   return (
     <aside
-      className={`fixed top-0 left-0 bottom-0 z-30 bg-mv-surface border-r border-mv-border flex flex-col justify-between transition-all duration-300 ${
-        collapsed ? 'w-[68px]' : 'w-[260px]'
-      }`}
+      className={[
+        'fixed top-0 left-0 bottom-0 z-30 flex flex-col bg-mv-cream-soft border-r border-mv-border transition-all duration-300',
+        collapsed ? 'w-[68px]' : 'w-[260px]',
+      ].join(' ')}
     >
-      {/* Sidebar Header / Brand */}
-      <div>
-        <div className="h-16 px-4 border-b border-mv-border flex items-center justify-between">
-          <Link href="/overview" className="flex items-center gap-3 overflow-hidden">
-            <div className="w-9 h-9 rounded-xl bg-mv-green-tint border border-mv-green/40 flex items-center justify-center shrink-0">
-              <Shield className="w-5 h-5 text-mv-green animate-mv-leaf-breathe" />
-            </div>
-            {!collapsed && (
-              <div className="flex flex-col whitespace-nowrap">
-                <span className="font-extrabold text-sm tracking-tight text-mv-ink">
-                  MINERVA <span className="text-mv-green">CENTURIONS</span>
-                </span>
-                <span className="text-[10px] font-semibold text-mv-lime tracking-widest uppercase">
-                  COCKPIT IN-HOUSE
-                </span>
-              </div>
-            )}
-          </Link>
+      {/* ── Header ── */}
+      <div className="h-16 px-3 border-b border-mv-border flex items-center justify-between shrink-0">
+        <Link href="/overview" className="flex items-center gap-2.5 min-w-0">
+          {collapsed
+            ? <LogoMark size={28} />
+            : <Logo size={28} />
+          }
+        </Link>
 
-          <button
-            onClick={onToggleCollapse}
-            className="p-1.5 rounded-lg bg-mv-cream-soft text-mv-ink-soft hover:text-mv-ink hover:bg-mv-border/40 transition-colors shrink-0 cursor-pointer"
-            title={collapsed ? 'Déplier la sidebar' : 'Rétracter la sidebar'}
-          >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
-        </div>
-
-        {/* Navigation Sections */}
-        <div className="p-3 space-y-6 overflow-y-auto max-h-[calc(100vh-140px)]">
-          {domainGroups.map((group, groupIdx) => (
-            <div key={groupIdx} className="space-y-1">
-              {!collapsed && (
-                <div className="px-3 py-1.5 text-[11px] font-bold text-mv-ink-faint tracking-wider uppercase">
-                  {group.title}
-                </div>
-              )}
-
-              <div className="space-y-1">
-                {group.items.map((item) => {
-                  const isActive = pathname === item.href || (item.href !== '/overview' && pathname.startsWith(item.href));
-                  const Icon = item.icon;
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 group ${
-                        isActive
-                          ? 'bg-mv-green text-mv-cream shadow-mv-sm font-bold'
-                          : 'text-mv-ink-soft hover:bg-mv-cream-soft hover:text-mv-ink'
-                      }`}
-                      title={collapsed ? item.label : undefined}
-                    >
-                      <Icon
-                        className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
-                          isActive ? 'text-mv-lime' : 'text-mv-ink-faint group-hover:text-mv-green'
-                        }`}
-                      />
-                      {!collapsed && <span className="truncate">{item.label}</span>}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
+        <button
+          onClick={onToggleCollapse}
+          className="p-1.5 rounded-lg text-mv-ink-soft hover:text-mv-ink hover:bg-mv-border/60 transition-colors shrink-0 cursor-pointer ml-1"
+          title={collapsed ? 'Déplier la sidebar' : 'Rétracter la sidebar'}
+        >
+          {collapsed
+            ? <ChevronRight className="w-4 h-4" />
+            : <ChevronLeft className="w-4 h-4" />
+          }
+        </button>
       </div>
 
-      {/* Footer Profile Status */}
-      <div className="p-3 border-t border-mv-border bg-mv-cream-soft/30">
-        <div className="flex items-center gap-3 p-2 rounded-lg bg-mv-surface border border-mv-border">
+      {/* ── Navigation ── */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-4 pt-3">
+
+        {/* Favoris */}
+        {favoriteItems.length > 0 && (
+          <div className="space-y-0.5">
+            {!collapsed && (
+              <p className="px-2.5 mb-1 text-[10px] font-bold tracking-widest uppercase text-mv-ink-faint">
+                Favoris
+              </p>
+            )}
+            {favoriteItems.map((item) => (
+              <NavLink
+                key={item.key}
+                item={item}
+                active={isActive(item.href, item.key)}
+                collapsed={collapsed}
+                isFavorite
+                onToggleFavorite={toggleFavorite}
+              />
+            ))}
+            <div className="mt-2 border-t border-mv-border-soft" />
+          </div>
+        )}
+
+        {/* Main groups */}
+        {navGroups.map((group) => (
+          <div key={group.title} className="space-y-0.5">
+            {!collapsed && (
+              <p className="px-2.5 mb-1 text-[10px] font-bold tracking-widest uppercase text-mv-ink-faint">
+                {group.title}
+              </p>
+            )}
+            {group.items.map((item) => (
+              <NavLink
+                key={item.key}
+                item={item}
+                active={isActive(item.href, item.key)}
+                collapsed={collapsed}
+                isFavorite={favorites.includes(item.key)}
+                onToggleFavorite={toggleFavorite}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* ── Bottom Items ── */}
+      <div className="p-2 border-t border-mv-border space-y-0.5 shrink-0">
+        {bottomItems.map((item) => (
+          <NavLink
+            key={item.key}
+            item={item}
+            active={pathname.startsWith(item.href)}
+            collapsed={collapsed}
+          />
+        ))}
+      </div>
+
+      {/* ── User Footer ── */}
+      <div className="p-2.5 border-t border-mv-border bg-mv-surface/50 shrink-0">
+        <div className="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-mv-green-tint transition-colors cursor-pointer">
           <div className="relative shrink-0">
-            <div className="w-8 h-8 rounded-full bg-mv-green text-mv-cream flex items-center justify-center font-bold text-xs">
-              AT
+            <div className="w-7 h-7 rounded-full bg-mv-green text-white flex items-center justify-center font-bold text-[11px]">
+              {userInitials}
             </div>
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-mv-green border-2 border-mv-surface" />
+            <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-green-400 border-2 border-mv-cream-soft" />
           </div>
           {!collapsed && (
-            <div className="flex flex-col truncate">
-              <span className="text-xs font-bold text-mv-ink truncate">Alex Tremblay</span>
-              <span className="text-[10px] text-mv-ink-soft truncate">Admin • Tech & IA</span>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[12px] font-semibold text-mv-ink truncate">{userLabel}</span>
+              <span className="text-[10px] text-mv-ink-faint truncate">Minerva • Admin</span>
             </div>
           )}
         </div>
