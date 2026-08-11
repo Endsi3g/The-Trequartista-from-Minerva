@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { ChevronRight, Home } from 'lucide-react';
 
 const ROUTE_LABELS: Record<string, string> = {
-  overview: 'Command Center',
+  overview: 'Vue d’ensemble',
   clients: 'Clients & MRR',
   'roi-tracker': 'Suivi ROI & Leads',
   projects: 'Projets & Livraison',
@@ -31,7 +31,7 @@ export function AppBreadcrumb() {
         className="flex items-center gap-1 hover:text-mv-green transition-colors"
       >
         <Home className="w-3.5 h-3.5" />
-        <span>Centurions</span>
+        <span>Trequartista</span>
       </Link>
 
       {segments.map((segment: string, index: number) => {

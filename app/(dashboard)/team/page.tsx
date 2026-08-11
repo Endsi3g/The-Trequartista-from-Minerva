@@ -65,7 +65,7 @@ export default function TeamPage() {
           </p>
         </div>
 
-        <Tooltip content="Inviter un nouveau membre à rejoindre le Command Center in-house" position="left">
+        <Tooltip content="Inviter un nouveau membre" position="left">
           <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
             Inviter un Collaborateur
           </Button>
@@ -152,7 +152,7 @@ export default function TeamPage() {
                     <div className="flex items-center gap-1.5 mt-1">
                       <Badge variant="green">● Actif</Badge>
                       {member.role === 'admin' && (
-                        <Tooltip content="Administrateur du Command Center in-house" position="right">
+                        <Tooltip content="Administrateur de l'organisation" position="right">
                           <Badge variant="neutral">
                             <Shield className="w-2.5 h-2.5 inline mr-0.5" />
                             Admin

@@ -25,7 +25,7 @@ export default function NotFoundPage() {
         <div className="space-y-2">
           <h2 className="text-lg font-bold text-mv-ink">Oups ! Cette destination n'existe pas.</h2>
           <p className="text-xs text-mv-ink-soft leading-relaxed max-w-sm mx-auto">
-            La page que vous recherchez a peut-être été déplacée, supprimée ou n'a jamais existé dans le Command Center in-house.
+            La page que vous recherchez a peut-être été déplacée, supprimée ou n'a jamais existé.
           </p>
         </div>
 
@@ -33,7 +33,7 @@ export default function NotFoundPage() {
         <div className="flex items-center justify-center gap-3 pt-2">
           <Link href="/overview">
             <Button variant="primary" icon={<Home className="w-4 h-4" />}>
-              Retour au Command Center
+              Retour à l'accueil
             </Button>
           </Link>
         </div>

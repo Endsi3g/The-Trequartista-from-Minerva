@@ -50,7 +50,7 @@ export default function OverviewPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
-            Command Center Operations
+            Vue d’ensemble des Opérations
           </h1>
           <p className="text-sm text-mv-ink-soft mt-1">
             Pilotage en direct depuis la base de données Supabase Minerva.

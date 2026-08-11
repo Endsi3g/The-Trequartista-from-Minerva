@@ -17,7 +17,7 @@ export default function PendingApprovalPage() {
           </h1>
           <p className="text-sm text-mv-ink-soft leading-relaxed">
             Votre compte <span className="font-bold text-mv-ink">Minerva Trequartista</span> a bien été créé.
-            Un administrateur doit approuver votre accès avant que vous puissiez utiliser le Command Center.
+            Un administrateur doit approuver votre accès avant de pouvoir vous connecter.
           </p>
         </div>
 
@@ -38,7 +38,7 @@ export default function PendingApprovalPage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="w-5 h-5 rounded-full bg-mv-border text-mv-ink-faint flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">3</span>
-              <span>Accès complet au Command Center in-house</span>
+              <span>Accès complet à l'application</span>
             </li>
           </ol>
         </div>

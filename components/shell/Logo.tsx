@@ -35,7 +35,7 @@ export function Logo({ size = 30, collapsed = false }: LogoProps) {
             <span className="text-mv-green">TREQUARTISTA</span>
           </span>
           <span className="text-[10px] font-semibold text-mv-ink-faint tracking-widest uppercase">
-            Command Center in-house
+            Internal Suite
           </span>
         </div>
       )}

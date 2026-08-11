@@ -9,7 +9,7 @@
 </div>
 
 <div align="center">
-  <img src="public/dashboard_preview.png" alt="Aperçu du Command Center in-house Minerva Trequartista" width="100%" />
+  <img src="public/dashboard_preview.png" alt="Aperçu de l'application Minerva Trequartista" width="100%" />
 </div>
 
 ---

@@ -363,7 +363,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between p-4 rounded-xl bg-mv-cream-soft border border-mv-border">
               <div>
                 <div className="font-bold text-mv-ink">Tiroir In-App (Topbar)</div>
-                <div className="text-mv-ink-soft mt-0.5">Afficher le compteur rouge et les notifications dans le Command Center.</div>
+                <div className="text-mv-ink-soft mt-0.5">Afficher le compteur rouge et les notifications dans l'application.</div>
               </div>
               <input
                 type="checkbox"

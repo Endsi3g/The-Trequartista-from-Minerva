@@ -120,7 +120,7 @@ export function ClientExecutiveReport({ client, metrics }: ClientExecutiveReport
 
       {/* Report Footer */}
       <div className="pt-6 border-t text-center text-[10px] text-gray-400">
-        Rapport confidentiel généré automatiquement par Minerva Trequartista Command Center • minervaflow.com
+        Rapport confidentiel généré automatiquement par Minerva Trequartista • minervaflow.com
       </div>
     </div>
   );

@@ -185,7 +185,7 @@ export default function IntegrationsPage() {
                   Accéder à l'intégration <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               ) : (
-                <span className="text-mv-ink-faint">Actif dans le Command Center</span>
+                <span className="text-mv-ink-faint">Intégration active</span>
               )}
             </div>
           </Card>
