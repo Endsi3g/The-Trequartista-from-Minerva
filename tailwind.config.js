@@ -1,0 +1,93 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: ['class'],
+  content: [
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        mv: {
+          green: 'var(--mv-green)',
+          'green-dark': 'var(--mv-green-dark)',
+          'green-darker': 'var(--mv-green-darker)',
+          'green-light': 'var(--mv-green-light)',
+          'green-tint': 'var(--mv-green-tint)',
+          lime: 'var(--mv-lime)',
+          'lime-dark': 'var(--mv-lime-dark)',
+          'lime-tint': 'var(--mv-lime-tint)',
+          cream: 'var(--mv-cream)',
+          'cream-soft': 'var(--mv-cream-soft)',
+          surface: 'var(--mv-surface)',
+          ink: 'var(--mv-ink)',
+          'ink-soft': 'var(--mv-ink-soft)',
+          'ink-faint': 'var(--mv-ink-faint)',
+          'ink-mute': 'var(--mv-ink-mute)',
+          border: 'var(--mv-border)',
+          'border-soft': 'var(--mv-border-soft)',
+          red: 'var(--mv-red)',
+          'red-bg': 'var(--mv-red-bg)',
+          amber: 'var(--mv-amber)',
+          'amber-bg': 'var(--mv-amber-bg)',
+          'heat-1': 'var(--mv-heat-1)',
+          'heat-2': 'var(--mv-heat-2)',
+          'heat-3': 'var(--mv-heat-3)',
+          'heat-4': 'var(--mv-heat-4)',
+          'heat-5': 'var(--mv-heat-5)',
+        },
+      },
+      borderRadius: {
+        DEFAULT: '0.625rem',
+        sm: 'calc(0.625rem * 0.6)',
+        md: 'calc(0.625rem * 0.8)',
+        lg: '0.625rem',
+        xl: 'calc(0.625rem * 1.4)',
+        '2xl': 'calc(0.625rem * 1.8)',
+        '3xl': 'calc(0.625rem * 2.2)',
+        '4xl': 'calc(0.625rem * 2.6)',
+      },
+      boxShadow: {
+        'mv-sm': '0 1px 2px rgba(26,30,22,.05)',
+        'mv-md': '0 2px 4px rgba(26,30,22,.04), 0 8px 20px rgba(26,30,22,.06)',
+        'mv-lg': '0 8px 16px rgba(26,30,22,.06), 0 24px 48px rgba(26,30,22,.10)',
+      },
+      fontFamily: {
+        display: ['New York', '-apple-system-serif', 'ui-serif', 'Georgia', 'serif'],
+        sans: ['Plus Jakarta Sans', 'var(--font-jakarta)', 'sans-serif'],
+      },
+      animation: {
+        'mv-fade-up': 'mvFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'mv-shimmer': 'mvShimmer 1.8s infinite linear',
+        'mv-leaf-breathe': 'mvLeafBreathe 4.5s infinite ease-in-out',
+        'mv-check-pop': 'mvCheckPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+        'mv-scale-in': 'mvScaleIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+      },
+      keyframes: {
+        mvFadeUp: {
+          '0%': { transform: 'translateY(6px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        mvShimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        mvLeafBreathe: {
+          '0%, 100%': { transform: 'scale(1) rotate(0deg)' },
+          '50%': { transform: 'scale(1.08) rotate(2deg)' },
+        },
+        mvCheckPop: {
+          '0%': { transform: 'scale(0.5)', opacity: '0' },
+          '70%': { transform: 'scale(1.15)', opacity: '1' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        mvScaleIn: {
+          '0%': { transform: 'scale(0.96)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+      },
+    },
+  },
+  plugins: [],
+};

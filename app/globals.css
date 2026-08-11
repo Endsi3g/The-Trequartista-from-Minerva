@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Default Native Dark Mode for Centurions Cockpit */
+  :root {
+    --mv-green: #1c9a6f;
+    --mv-green-dark: #126b4d;
+    --mv-green-darker: #0a4531;
+    --mv-green-light: #1e3328;
+    --mv-green-tint: #17261e;
+    --mv-lime: #dfff5f;
+    --mv-lime-dark: #6d7e1f;
+    --mv-lime-tint: #2c3514;
+    --mv-cream: #14170f;
+    --mv-cream-soft: #1a1e16;
+    --mv-surface: #1e231a;
+    --mv-ink: #f3f2ea;
+    --mv-ink-soft: #a0a89a;
+    --mv-ink-faint: #6e7668;
+    --mv-ink-mute: #454d40;
+    --mv-border: #282e22;
+    --mv-border-soft: #20251c;
+    --mv-red: #e55342;
+    --mv-red-bg: #2d1917;
+    --mv-amber: #d99b26;
+    --mv-amber-bg: #2b2210;
+
+    --mv-heat-1: #21291c;
+    --mv-heat-2: #164030;
+    --mv-heat-3: #186347;
+    --mv-heat-4: #19865f;
+    --mv-heat-5: #1c9a6f;
+
+    --shadow-mv-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-mv-md: 0 2px 4px rgba(0, 0, 0, 0.25), 0 8px 20px rgba(0, 0, 0, 0.35);
+    --shadow-mv-lg: 0 8px 16px rgba(0, 0, 0, 0.35), 0 24px 48px rgba(0, 0, 0, 0.45);
+
+    --radius: 0.625rem;
+  }
+
+  /* Light Mode support */
+  .light {
+    --mv-green: #167f5b;
+    --mv-green-dark: #0e5a40;
+    --mv-green-darker: #0a4531;
+    --mv-green-light: #dcece3;
+    --mv-green-tint: #eef5f0;
+    --mv-lime: #dfff5f;
+    --mv-lime-dark: #6d7e1f;
+    --mv-lime-tint: #f4ffdc;
+    --mv-cream: #f5f1e6;
+    --mv-cream-soft: #fbf9f3;
+    --mv-surface: #fffefa;
+    --mv-ink: #1a1e16;
+    --mv-ink-soft: #565f52;
+    --mv-ink-faint: #8d9488;
+    --mv-ink-mute: #b3b8a9;
+    --mv-border: #e6e0d0;
+    --mv-border-soft: #eee9db;
+    --mv-red: #b5473a;
+    --mv-red-bg: #f8ece8;
+    --mv-amber: #ab7d1f;
+    --mv-amber-bg: #f6efd9;
+
+    --mv-heat-1: #ede7d6;
+    --mv-heat-2: #b8d4c6;
+    --mv-heat-3: #7cb89e;
+    --mv-heat-4: #439b77;
+    --mv-heat-5: #167f5b;
+
+    --shadow-mv-sm: 0 1px 2px rgba(26, 30, 22, 0.05);
+    --shadow-mv-md: 0 2px 4px rgba(26, 30, 22, 0.04), 0 8px 20px rgba(26, 30, 22, 0.06);
+    --shadow-mv-lg: 0 8px 16px rgba(26, 30, 22, 0.06), 0 24px 48px rgba(26, 30, 22, 0.10);
+  }
+
+  body {
+    background-color: var(--mv-cream);
+    color: var(--mv-ink);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-feature-settings: "ss01" 1, "cv05" 1;
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+
+  /* Universal Selection */
+  ::selection {
+    background-color: var(--mv-lime);
+    color: #14170f;
+  }
+
+  /* Universal Scrollbar hiding */
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Custom Utilities for Minerva Aesthetics */
+.font-display {
+  font-family: "New York", -apple-system-serif, ui-serif, Georgia, serif;
+}
+
+.shimmer-bg {
+  background: linear-gradient(90deg, var(--mv-surface) 25%, var(--mv-border) 50%, var(--mv-surface) 75%);
+  background-size: 200% 100%;
+}
