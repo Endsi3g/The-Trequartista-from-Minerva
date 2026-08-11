@@ -1,83 +1,63 @@
 <div align="center">
 
-  <img src="public/icon.svg" width="80" height="80" alt="Minerva Centurions Logo" />
-
   # Minerva Centurions
 
-  **The Operating System for Client Delivery, ROI Tracking, and Agency Excellence**
-
-  <p>
-    <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" /></a>
-    <a href="https://supabase.com"><img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" /></a>
-    <a href="https://vercel.com"><img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" /></a>
-  </p>
-
-  <p>
-    <strong>Revenue Attribution</strong> &nbsp;&bull;&nbsp;
-    <strong>Client CRM</strong> &nbsp;&bull;&nbsp;
-    <strong>Quality Assurance</strong> &nbsp;&bull;&nbsp;
-    <strong>Content Studio</strong> &nbsp;&bull;&nbsp;
-    <strong>Notion Workspace Sync</strong> &nbsp;&bull;&nbsp;
-    <strong>PWA Enabled</strong>
-  </p>
+  **Le système d'exploitation de livraison client, de suivi du ROI et d'excellence opérationnelle**
 
   ---
 
 </div>
 
-## Platform Overview
-
-Minerva Centurions is the master client delivery and operations cockpit built for Minerva agency teams. Designed to eliminate fragmented spreadsheets and disconnected tools, Centurions unifies client financial reporting, lead attribution, campaign quality control, media asset planning, and internal SOP knowledge management into a cohesive web application.
-
-The platform grants agency executives, account directors, media buyers, and developers continuous, real-time visibility into client performance, campaign progress, and operational health.
+<div align="center">
+  <img src="public/dashboard_preview.png" alt="Aperçu du Cockpit Minerva Centurions" width="100%" />
+</div>
 
 ---
 
-## Detailed Platform Capabilities
+## Présentation du Projet
 
-### 1. Command Center & Audit Intelligence
-The central dashboard provides an aggregate view of total agency Monthly Recurring Revenue (MRR), active client health statuses, team capacity, and recent system actions. Integrated real-time audit logging records every major database change, quality checklist update, and campaign event to maintain accountability across team members.
+Minerva Centurions est la plateforme centrale de commandement opérationnel développée pour l'agence Minerva. Conçue pour remplacer la dispersion des outils et des feuilles de calcul, la plateforme unifie le suivi financier des clients, l'attribution des leads, le contrôle qualité des livrables, la planification de contenus vidéo et la gestion des procédures internes au sein d'une interface unique.
 
-### 2. Revenue & Client ROI Tracking Engine
-A specialized financial dashboard for tracking client campaign profitability. Monitors key acquisition metrics including total ad investment, generated pipeline value, Cost Per Lead (CPL), Return on Ad Spend (ROAS), Google Business Profile interactions, and organic SEO keyword positioning. Includes an executive report generator formatted for PDF printing.
-
-### 3. Lead CRM & Acquisition Pipeline
-A comprehensive lead management engine offering both Kanban board and tabular views. Organizes incoming client leads by quality grade (A, B, C, D), status stage (New, Contacted, Qualified, Closed), and attribution channel. Enables team members to record notes, initiate quick contact triggers, and export lead data to CSV format.
-
-### 4. Quality Assurance & 20-Point Launch Validation
-Enforces strict quality benchmarks before client websites, Framer builds, or advertising campaigns go live. Features a 20-point launch checklist covering performance optimization, OpenGraph metadata, forms validation, responsive layout checks, and Quebec data privacy compliance (Loi 25). Supabase Edge Functions validate readiness scores and trigger alerts when items require attention.
-
-### 5. Social Reels Studio & Media Asset Downloader
-A dedicated video production workspace tailored for short-form video content. Allows media teams to draft script notes, assign target platforms (Instagram Reels, TikTok, YouTube Shorts, LinkedIn Video), and preview creatives in vertical 9:16 smartphone containers or widescreen 16:9 formats. Includes an integrated media downloader service (yt-dlp) for importing public video URLs directly into Supabase Storage with 1-click MP4 downloading.
-
-### 6. Knowledge Academy & SOP Library
-A central knowledge repository for standardizing agency workflows. Houses interactive Standard Operating Procedures (SOPs), design guidelines, Framer templates, and video walkthrough tutorials to accelerate onboarding and maintain execution consistency across team members.
-
-### 7. Notion Workspace Sync & Integrations Ecosystem
-Connects directly to Notion workspaces via the Model Context Protocol (MCP) server at `https://mcp.notion.com/mcp`. Enables 2-way synchronization between Notion pages and Minerva SOPs or content plans. The integrations hub also provides testing tools for custom incoming lead webhooks and edge function dispatchers.
-
-### 8. User Feedback System, Global Toasts & PWA Support
-Includes an in-app feedback modal for submitting bug reports and feature ideas directly to Supabase, a global animated toast notification engine for real-time action feedback, and reusable confirmation dialogs. Complete Progressive Web App (PWA) support enables offline caching via Service Worker and standalone installation on mobile devices.
+Centurions offre aux dirigeants d'agence, directeurs de comptes et équipes média une visibilité continue et en temps réel sur la rentabilité des campagnes, l'avancement des projets et la performance globale.
 
 ---
 
-## Technical Architecture & Security Model
+## Modules Écosystème
 
-- **Frontend Application**: Next.js 15 App Router with server-rendered routes, client components, and custom CSS design system tailored to Minerva brand tokens.
-- **Database & Storage Layer**: Supabase Postgres featuring Row Level Security (RLS) policies, database triggers for change logging, and Storage buckets (`client-assets`, `team-documents`, `academy-media`).
-- **Realtime Communications**: WebSocket subscription layer via Supabase Realtime for instant synchronization across connected client sessions.
-- **API Key Management**: Custom API key generation (`user_api_keys`) for authenticating external webhooks and third-party integrations.
+### Centre de Commandement
+Affiche la synthèse en temps réel du chiffre d'affaires récurrent mensuel (MRR), de l'état de santé des comptes clients et de la capacité des équipes. Un journal d'audit enregistre l'ensemble des événements et modifications pour garantir une traçabilité complète.
+
+### Suivi du ROI & Performance Client
+Module d'analyse financière mesurant l'investissement publicitaire, la valeur du pipeline généré, le coût par lead (CPL), le retour sur investissement publicitaire (ROAS), les interactions Google Business Profile et le positionnement SEO. Permet l'impression de rapports exécutifs.
+
+### CRM Leads & Pipeline d'Acquisition
+Gestionnaire complet des opportunités sous forme de vue Kanban et de tableau. Classe les leads par niveau de qualification (A, B, C, D), suit leur progression dans le tunnel de vente et permet l'export des données au format CSV.
+
+### Contrôle Qualité & Validation de Lancement
+Protocole d'assurance qualité en 20 points à valider avant la mise en ligne des sites web et le lancement des campagnes publicitaires. Vérifie les performances web, les balises OpenGraph, la conformité aux lois sur la protection des données (Loi 25) et les intégrations de formulaires.
+
+### Studio Reels & Contenus Vidéo
+Espace de création dédié aux formats vidéo courts (Instagram Reels, TikTok, YouTube Shorts, LinkedIn Video). Offre des conteneurs de prévisualisation au format vertical 9:16 et paysage 16:9, ainsi qu'un service d'importation vidéo et de téléchargement MP4 en 1 clic.
+
+### Académie SOP & Base de Connaissances
+Bibliothèque centralisée des procédures opérationnelles standardisées (SOP), des guides de design et des tutoriels vidéo pour accélérer la formation des équipes et maintenir un niveau d'exécution homogène.
+
+### Synchronisation Notion & Intégrations
+Connexion directe aux espaces de travail Notion via le protocole MCP (Model Context Protocol). Assure la synchronisation bidirectionnelle des documentations et fournit des outils de test pour les webhooks d'acquisition externes.
+
+### Retours Utilisateurs, Notifications & PWA
+Widget de retour d'expérience intégré pour transmettre des rapports ou suggestions, moteur global de notifications instantanées, et support complet Progressive Web App (PWA) avec fonctionnement hors ligne et installation mobile.
 
 ---
 
-## Quality & Test Verification
+## Sécurité & Validation
 
-The platform is continuously audited using an automated Playwright end-to-end test suite covering all 23 static and dynamic routes across desktop and mobile viewports. TypeScript strict type-checking ensures 0 type errors across the codebase.
+La plateforme intègre le contrôle d'accès au niveau des lignes de base de données (Row Level Security), la gestion sécurisée des clés d'API et un protocole automatisé de tests de bout en bout (Playwright) vérifiant l'accessibilité de l'ensemble des parcours applicatifs.
 
 ---
 
 <div align="center">
 
-  <sub>Minerva Flow Inc. &bull; All Rights Reserved</sub>
+  <sub>Minerva Flow Inc. &bull; Tous droits réservés</sub>
 
 </div>
