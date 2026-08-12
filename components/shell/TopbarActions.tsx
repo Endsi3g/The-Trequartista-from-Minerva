@@ -26,11 +26,8 @@ export function TopbarActions() {
   useEffect(() => {
     (async () => {
       try {
-        const { createBrowserClient } = await import('@supabase/ssr');
-        const supabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
         const { data } = await supabase
           .from('alerts')
           .select('*')

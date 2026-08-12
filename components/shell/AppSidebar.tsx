@@ -158,11 +158,8 @@ export function AppSidebar({ collapsed, onToggleCollapse }: AppSidebarProps) {
   useEffect(() => {
     (async () => {
       try {
-        const { createBrowserClient } = await import('@supabase/ssr');
-        const supabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user?.email) {
           const name = user.user_metadata?.full_name || user.email;

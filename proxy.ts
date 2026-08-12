@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { getSupabaseEnv } from '@/lib/supabase/env';
 
 const ALLOWED_DOMAINS = ['minervaflow.com', 'minerva.com'];
 
@@ -88,9 +89,10 @@ export async function proxy(request: NextRequest) {
     request: { headers: request.headers },
   });
 
+  const { url, anonKey } = getSupabaseEnv();
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    anonKey,
     {
       cookies: {
         getAll() {

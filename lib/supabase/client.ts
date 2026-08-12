@@ -1,5 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { getSupabaseEnv } from './env';
 
 // Module-level singleton: createBrowserClient() being called on every
 // import site (services, components, event handlers) produced dozens of
@@ -10,10 +11,8 @@ let browserClient: SupabaseClient | undefined;
 
 export function createClient(): SupabaseClient {
   if (!browserClient) {
-    browserClient = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const { url, anonKey } = getSupabaseEnv();
+    browserClient = createBrowserClient(url, anonKey);
   }
   return browserClient;
 }
