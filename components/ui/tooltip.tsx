@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 interface TooltipProps {
-  content: string;
+  content?: string;
   children: React.ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right';
   delay?: number;
@@ -73,4 +73,16 @@ export function Tooltip({
       )}
     </div>
   );
+}
+
+export function TooltipProvider({ children, delayDuration }: { children: React.ReactNode; delayDuration?: number }) {
+  return <>{children}</>;
+}
+
+export function TooltipTrigger({ children, asChild, ...props }: any) {
+  return <div {...props}>{children}</div>;
+}
+
+export function TooltipContent({ children, ...props }: any) {
+  return <div {...props}>{children}</div>;
 }
