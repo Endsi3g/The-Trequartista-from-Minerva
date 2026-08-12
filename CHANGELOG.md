@@ -59,3 +59,11 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 - Téléversement de vidéo par glisser-déposer, ou lien externe — les deux fonctionnent.
 
 *Nouvelle migration en attente : `20260812000011` (colonnes du reel détaillé). Tant qu'elle n'est pas déployée, la création/modification de reels ne fonctionnera pas.*
+
+---
+
+## 2026-08-12 — Ajustements
+
+- Le logo de la sidebar n'affiche plus le nom « Trequartista » — juste l'icône.
+- Les boutons Calendrier/Kanban/Bibliothèque Médias du planificateur de contenu restent lisibles sur petit écran au lieu de se faire couper.
+- Toutes les fenêtres superposées restantes (nouveau client, nouveau lead, nouveau reel, créer une SOP, voir une SOP) sont maintenant de vraies pages avec leur propre adresse, comme demandé.
