@@ -76,3 +76,16 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 - La sidebar affiche maintenant ton rôle (Admin, Membre) à côté du logo plutôt qu'un nom fixe — la base pour l'espace de travail par rôle à venir.
 - Bordure de la sidebar maintenant alignée avec celle du bandeau du haut.
 - Nouvelle capacité technique : un item de navigation peut être marqué « Nouveau » pour signaler une section fraîchement lancée.
+
+---
+
+## 2026-08-12 — Ronde de finition
+
+- Les chiffres bruts des 3 cartes KPI de la Vue d'ensemble (Clients, Leads, Projets en retard) sont maintenant accompagnés d'un petit graphique de répartition réelle (par statut/santé), pas juste un nombre.
+- « Équipe » est maintenant au même endroit que « Mon profil » dans le menu utilisateur, plus dans la sidebar principale.
+- Bordure de la sidebar et du bandeau du haut maintenant bien alignées ; le fil d'Ariane ne montre plus de UUID illisibles ni le mot anglais « new ».
+- Le chronomètre (« Track Time ») est retiré — décidé inutile après usage.
+- Nouveau : suivi réel de complétion des SOPs (bouton « Marquer comme complétée » sur chaque SOP), qui alimente une nouvelle étape de la liste de démarrage : « Terminer les SOPs liées à tes tâches ».
+- Police des titres changée pour Times New Roman.
+- Bouton « Nouveau » du bandeau simplifié en icône neutre plutôt qu'un gros bouton vert.
+- Fond de page et fond des cartes rapprochés pour un contraste plus doux (moins de beige contre blanc pur).
