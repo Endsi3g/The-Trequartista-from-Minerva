@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { NotionPage } from '@/lib/types';
+import { createClient } from '@/lib/supabase/server';
 
 const NOTION_VERSION = '2022-06-28';
 
@@ -35,6 +36,12 @@ function extractTitle(obj: NotionSearchResult): string {
 }
 
 export async function POST(req: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ valid: false, pages: [], error: 'Non authentifié' }, { status: 401 });
+  }
+
   try {
     const { token } = await req.json();
 

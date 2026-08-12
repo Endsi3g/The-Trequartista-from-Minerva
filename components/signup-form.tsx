@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { GalleryVerticalEnd, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import {
   Field,
   FieldDescription,
@@ -75,19 +75,16 @@ export function SignupForm({
       });
 
       if (error) {
-        if (isAllowedDomain || isExplicitAllowed) {
-          document.cookie = `centurions_session=active; path=/; max-age=86400`;
-          setSuccessMsg('Compte créé. Redirection vers l’application...');
-          setTimeout(() => router.push('/overview'), 1000);
-          return;
-        }
         setErrorMsg(error.message);
         setLoading(false);
-      } else {
-        document.cookie = `centurions_session=active; path=/; max-age=86400`;
-        setSuccessMsg('Compte créé ! Redirection...');
-        setTimeout(() => router.push('/overview'), 1000);
+        return;
       }
+
+      setSuccessMsg('Compte créé. Redirection vers l’application...');
+      setTimeout(() => {
+        router.push('/pending-approval');
+        router.refresh();
+      }, 1000);
     } catch {
       setErrorMsg('Erreur de création de compte.');
       setLoading(false);

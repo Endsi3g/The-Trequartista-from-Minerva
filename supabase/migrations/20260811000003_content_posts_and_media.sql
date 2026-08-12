@@ -13,5 +13,7 @@ CREATE TRIGGER trigger_audit_content_posts
   AFTER INSERT OR UPDATE OR DELETE ON public.content_posts
   FOR EACH ROW EXECUTE FUNCTION public.log_table_change();
 
--- Enable Realtime
-ALTER PUBLICATION supabase_realtime ADD TABLE public.content_posts;
+-- Realtime is already enabled for content_posts by
+-- 20260811000001_audit_logs_and_realtime.sql; adding it again here without
+-- IF NOT EXISTS made this migration fail on a fresh database with
+-- "relation content_posts is already member of publication".

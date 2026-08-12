@@ -1,24 +1,24 @@
-﻿'use client';
+'use client';
 
-import React, { useState } from 'react';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import React, { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { StorageBrowser } from '@/components/storage/StorageBrowser';
 import { VideoAssetPlayer } from '@/components/media/VideoAssetPlayer';
 import { GraduationCap, BookOpen, Clock, ArrowRight, Video, Search, Plus, X, Film, CheckCircle2 } from 'lucide-react';
-import { INITIAL_SOPS } from '@/lib/mock-data';
+import { fetchAcademySops, addAcademySop } from '@/lib/services/supabase-data';
+import { useToast } from '@/components/providers/ToastProvider';
 import { AcademySOP } from '@/lib/types';
 
 export default function AcademyPage() {
-  const [sops, setSops] = useState<AcademySOP[]>(INITIAL_SOPS.map(s => ({
-    ...s,
-    video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  })));
+  const [sops, setSops] = useState<AcademySOP[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedSop, setSelectedSop] = useState<AcademySOP | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { toastSuccess, toastError } = useToast();
 
   // Modal Form State
   const [newTitle, setNewTitle] = useState('');
@@ -26,6 +26,13 @@ export default function AcademyPage() {
   const [newAuthor, setNewAuthor] = useState('Alex Tremblay');
   const [newReadTime, setNewReadTime] = useState(5);
   const [newDescription, setNewDescription] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      setSops(await fetchAcademySops());
+      setLoading(false);
+    })();
+  }, []);
 
   const filteredSops = sops.filter((sop) => {
     const matchesSearch =
@@ -36,24 +43,28 @@ export default function AcademyPage() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleCreateSop = (e: React.FormEvent) => {
+  const handleCreateSop = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
-    const created: AcademySOP = {
-      id: `sop-${Date.now()}`,
+    const created = await addAcademySop({
       title: newTitle,
       category: newCategory,
       read_time_min: Number(newReadTime),
       author: newAuthor,
-      video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
       description: newDescription,
-    };
+    });
+
+    if (!created) {
+      toastError('Erreur', 'Impossible de créer la SOP dans Supabase.');
+      return;
+    }
 
     setSops([created, ...sops]);
     setIsModalOpen(false);
     setNewTitle('');
     setNewDescription('');
+    toastSuccess('SOP créée !', 'Ajoutez une vidéo via la bibliothèque média ci-dessous si besoin.');
   };
 
   return (
@@ -112,6 +123,18 @@ export default function AcademyPage() {
       </Card>
 
       {/* SOP Cards Grid */}
+      {loading ? (
+        <div className="text-center py-16 text-sm text-mv-ink-soft">Chargement des SOPs…</div>
+      ) : filteredSops.length === 0 ? (
+        <Card className="text-center py-16">
+          <GraduationCap className="w-8 h-8 text-mv-ink-faint mx-auto mb-3" />
+          <p className="text-sm text-mv-ink-soft">
+            {sops.length === 0
+              ? 'Aucune SOP pour le moment. Créez la première avec le bouton ci-dessus.'
+              : 'Aucune SOP ne correspond à cette recherche.'}
+          </p>
+        </Card>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {filteredSops.map((sop) => (
           <Card key={sop.id} className="flex flex-col justify-between hover:border-mv-green transition-all shadow-mv-sm">
@@ -149,6 +172,7 @@ export default function AcademyPage() {
           </Card>
         ))}
       </div>
+      )}
 
       {/* SOP INSPECTOR & VIDEO PLAYER MODAL */}
       {selectedSop && (

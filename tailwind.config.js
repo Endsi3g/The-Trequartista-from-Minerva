@@ -29,6 +29,8 @@ module.exports = {
           'border-soft': 'var(--mv-border-soft)',
           red: 'var(--mv-red)',
           'red-bg': 'var(--mv-red-bg)',
+          coral: 'var(--mv-red)',
+          'coral-bg': 'var(--mv-red-bg)',
           amber: 'var(--mv-amber)',
           'amber-bg': 'var(--mv-amber-bg)',
           'heat-1': 'var(--mv-heat-1)',

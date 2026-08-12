@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { Home, ArrowLeft, Search, ShieldAlert, Compass } from 'lucide-react';
 
 export default function NotFoundPage() {

@@ -1,8 +1,8 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { MessageSquare, Star, Send, X, CheckCircle2 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/providers/ToastProvider';
 import { submitUserFeedback } from '@/lib/services/supabase-data';
 

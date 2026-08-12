@@ -63,10 +63,13 @@ export default function NotionIntegrationPage() {
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
         );
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
         const { data } = await supabase
           .from('notion_config')
           .select('linked_page_ids')
-          .single();
+          .eq('user_id', user.id)
+          .maybeSingle();
         if (data?.linked_page_ids) {
           setSelectedPages(data.linked_page_ids);
         }
@@ -112,12 +115,18 @@ export default function NotionIntegrationPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // integration_token_hash is NOT NULL — store a hash, never the raw
+      // token, and never send the raw token itself in this payload.
+      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token.trim()));
+      const tokenHash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+
       await supabase.from('notion_config').upsert({
         user_id: user.id,
+        integration_token_hash: tokenHash,
         workspace_name: result.workspaceName ?? 'Notion',
         workspace_icon: result.workspaceIcon,
         linked_page_ids: selectedPages,
-        connected_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
 
       setSavedSuccess(true);

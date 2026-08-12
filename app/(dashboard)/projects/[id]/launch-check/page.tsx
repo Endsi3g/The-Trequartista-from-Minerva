@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from 'react';
 
 import { useParams } from 'next/navigation';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { CheckCircle2, AlertCircle, ShieldCheck, Sparkles, Rocket, RefreshCw, Zap } from 'lucide-react';
 import { fetchLaunchChecklist, saveLaunchChecklist, logAuditEvent } from '@/lib/services/supabase-data';
 import { invokeLaunchCheckValidator } from '@/lib/services/edge-functions';

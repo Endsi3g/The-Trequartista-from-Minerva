@@ -1,13 +1,13 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Shield, Clock, ArrowLeft, User, Zap, AlertTriangle } from 'lucide-react';
 import { fetchAuditLogs } from '@/lib/services/supabase-data';
 import { useSupabaseRealtime } from '@/components/providers/SupabaseRealtimeProvider';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { EmptyState } from '@/components/ui/empty-state';
 import { AuditLog } from '@/lib/types';
 
 export default function AuditLogsPage() {

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -22,7 +22,7 @@ import {
   Target,
   type LucideIcon,
 } from 'lucide-react';
-import { Tooltip } from '@/components/ui/Tooltip';
+import { Tooltip } from '@/components/ui/tooltip';
 
 
 // ── Types ──────────────────────────────────────────────

@@ -108,15 +108,31 @@ export async function saveLaunchChecklist(projectId: string, items: LaunchCheckI
 // ----------------------------------------------------
 // 5. TEAM & 1-ON-1s DIRECT SUPABASE API
 // ----------------------------------------------------
-export async function fetchTeamPerformance(): Promise<TeamMemberPerformance[]> {
-  const { data, error } = await supabase.from('team_performance_reviews').select('*');
+// team_performance_reviews only holds profile_id + review data; full_name/
+// role/avatar_url live on profiles and must be joined in explicitly rather
+// than assumed present on the row (see lib/types AcademySOP/TeamMemberPerformance
+// audit notes — casting without a join silently produced undefined fields).
+export async function fetchTeamMemberPerformance(profileId: string): Promise<TeamMemberPerformance | null> {
+  const [{ data: profile }, { data: review }] = await Promise.all([
+    supabase.from('profiles').select('id, full_name, role, avatar_url').eq('id', profileId).maybeSingle(),
+    supabase.from('team_performance_reviews').select('*').eq('profile_id', profileId).maybeSingle(),
+  ]);
 
-  if (error || !data) {
-    console.warn('[Supabase] Could not fetch team performance:', error);
-    return [];
-  }
+  if (!profile) return null;
 
-  return data as TeamMemberPerformance[];
+  return {
+    id: review?.id ?? profile.id,
+    profile_id: profile.id,
+    full_name: profile.full_name || 'Membre Minerva',
+    role: profile.role || 'member',
+    avatar_url:
+      profile.avatar_url ||
+      `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(profile.full_name || 'MV')}&backgroundColor=1c9a6f&fontColor=ffffff`,
+    next_1on1_date: review?.next_1on1_date || '',
+    okrs: review?.okrs || [],
+    skills: review?.skills || [],
+    feedbacks_count: review?.feedbacks_count || 0,
+  };
 }
 
 // ----------------------------------------------------
@@ -131,6 +147,15 @@ export async function fetchAcademySops(): Promise<AcademySOP[]> {
   }
 
   return data as AcademySOP[];
+}
+
+export async function addAcademySop(sop: Omit<AcademySOP, 'id'>): Promise<AcademySOP | null> {
+  const { data, error } = await supabase.from('academy_sops').insert([sop]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding SOP:', error);
+    return null;
+  }
+  return data as AcademySOP;
 }
 
 // ----------------------------------------------------

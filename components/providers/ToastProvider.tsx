@@ -74,8 +74,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     >
       {children}
 
-      {/* Floating Animated Toast Container */}
-      <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+      {/* Floating Animated Toast Container — aria-live so screen readers announce new toasts */}
+      <div
+        role="region"
+        aria-label="Notifications"
+        aria-live="polite"
+        aria-atomic="false"
+        className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"
+      >
         {toasts.map((t) => {
           const isSuccess = t.variant === 'success';
           const isError = t.variant === 'error';
@@ -108,9 +114,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
               <button
                 onClick={() => removeToast(t.id)}
+                aria-label={`Fermer la notification : ${t.title}`}
                 className="p-1 rounded-lg text-mv-ink-soft hover:text-mv-ink hover:bg-mv-cream cursor-pointer"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             </div>
           );

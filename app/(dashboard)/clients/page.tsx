@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { StatCard } from '@/components/ui/StatCard';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { StatCard } from '@/components/ui/stat-card';
 import { Users, Plus, TrendingUp, DollarSign, ExternalLink, X } from 'lucide-react';
 import { fetchClients, addClient } from '@/lib/services/supabase-data';
 import { Client } from '@/lib/types';

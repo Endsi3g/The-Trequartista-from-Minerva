@@ -50,7 +50,7 @@ function ChartContainer({
         data-slot="chart"
         id={chartId}
         className={cn(
-          "[&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border flex aspect-video justify-center text-xs [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-hidden [&_.recharts-sector]:outline-hidden [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-surface]:outline-hidden",
+          "[&_.recharts-cartesian-axis-tick_text]:fill-mv-ink-faint [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-mv-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-mv-border [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-mv-border [&_.recharts-radial-bar-background-sector]:fill-mv-cream-soft [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-mv-cream-soft [&_.recharts-reference-line_[stroke='#ccc']]:stroke-mv-border flex aspect-video justify-center text-xs [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-hidden [&_.recharts-sector]:outline-hidden [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-surface]:outline-hidden",
           className
         )}
         {...props}
@@ -159,7 +159,7 @@ const ChartTooltipContent = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          'border-border/50 bg-background grid min-w-[8rem] items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl',
+          'border-mv-border/50 bg-mv-surface grid min-w-[8rem] items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl',
           className
         )}
       >
@@ -174,7 +174,7 @@ const ChartTooltipContent = React.forwardRef<
               <div
                 key={item.dataKey || index}
                 className={cn(
-                  '[&>svg]:text-muted-foreground flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5',
+                  '[&>svg]:text-mv-ink-faint flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5',
                   indicator === 'dot' && 'items-center'
                 )}
               >
@@ -212,12 +212,12 @@ const ChartTooltipContent = React.forwardRef<
                     >
                       <div className="grid gap-1.5">
                         {nestLabel ? tooltipLabel : null}
-                        <span className="text-muted-foreground">
+                        <span className="text-mv-ink-faint">
                           {itemConfig?.label || item.name}
                         </span>
                       </div>
                       {item.value !== undefined && (
-                        <span className="text-foreground font-mono font-medium tabular-nums">
+                        <span className="text-mv-ink font-mono font-medium tabular-nums">
                           {item.value.toLocaleString()}
                         </span>
                       )}
@@ -266,7 +266,7 @@ const ChartLegendContent = React.forwardRef<
           <div
             key={item.value}
             className={cn(
-              '[&>svg]:text-muted-foreground flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3'
+              '[&>svg]:text-mv-ink-faint flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3'
             )}
           >
             {itemConfig?.icon && !hideIcon ? (

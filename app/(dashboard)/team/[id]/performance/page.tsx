@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { StorageBrowser } from '@/components/storage/StorageBrowser';
 import {
   Calendar,
@@ -15,8 +15,10 @@ import {
   Clock,
   RefreshCw,
 } from 'lucide-react';
-import { INITIAL_TEAM } from '@/lib/mock-data';
+import { fetchTeamMemberPerformance } from '@/lib/services/supabase-data';
+import type { TeamMemberPerformance } from '@/lib/types';
 import { PerformanceBarChart } from '@/components/charts/PerformanceBarChart';
+import { useToast } from '@/components/providers/ToastProvider';
 
 
 export default function PerformancePage() {
@@ -24,11 +26,20 @@ export default function PerformancePage() {
   const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const [activeTab, setActiveTab] = useState<'okrs' | 'skills' | 'feedbacks' | 'history'>('okrs');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [member, setMember] = useState<TeamMemberPerformance | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toastSuccess } = useToast();
 
-  const member = INITIAL_TEAM.find(m => m.id === rawId) || INITIAL_TEAM[0];
-
+  useEffect(() => {
+    if (!rawId) return;
+    (async () => {
+      setMember(await fetchTeamMemberPerformance(rawId));
+      setLoading(false);
+    })();
+  }, [rawId]);
 
   const triggerGoogleCalendarSync = async () => {
+    if (!member) return;
     setIsSyncing(true);
     try {
       const res = await fetch('https://eobatkwbwcdsdqbemrma.supabase.co/functions/v1/google-calendar-sync', {
@@ -46,9 +57,21 @@ export default function PerformancePage() {
     }
     setTimeout(() => {
       setIsSyncing(false);
-      alert('Synchronisation Google Calendar réussie ! Créneau verrouillé.');
+      toastSuccess('Synchronisation réussie', 'Créneau Google Calendar verrouillé.');
     }, 800);
   };
+
+  if (loading) {
+    return <div className="py-16 text-center text-sm text-mv-ink-soft">Chargement du profil…</div>;
+  }
+
+  if (!member) {
+    return (
+      <Card className="py-16 text-center">
+        <p className="text-sm text-mv-ink-soft">Membre introuvable.</p>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-8">

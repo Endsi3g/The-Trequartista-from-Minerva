@@ -1,9 +1,9 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Users,
   Search,
@@ -26,7 +26,7 @@ import {
 import { fetchClients, fetchLeads, updateLeadStatus, logAuditEvent } from '@/lib/services/supabase-data';
 import { Client, Lead } from '@/lib/types';
 import { useSupabaseRealtime } from '@/components/providers/SupabaseRealtimeProvider';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/providers/ToastProvider';
 import { FunnelChart } from '@/components/charts/FunnelChart';
 import { BarChart } from '@/components/charts/BarChart';

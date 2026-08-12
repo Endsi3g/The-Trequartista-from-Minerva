@@ -1,11 +1,11 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { StatCard } from '@/components/ui/StatCard';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { StatCard } from '@/components/ui/stat-card';
 import {
   DollarSign,
   TrendingUp,
@@ -25,7 +25,7 @@ import {
 import { fetchClients } from '@/lib/services/supabase-data';
 import { Client } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
-import { Tooltip } from '@/components/ui/Tooltip';
+import { Tooltip } from '@/components/ui/tooltip';
 
 
 interface PendingMember {

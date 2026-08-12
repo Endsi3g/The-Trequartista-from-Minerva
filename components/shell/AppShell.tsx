@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { AppSidebar } from './AppSidebar';
 import { TopbarActions } from './TopbarActions';
 import { AppBreadcrumb } from './AppBreadcrumb';
-import { ShortcutsModal } from '@/components/ui/ShortcutsModal';
-import { UserFeedbackModal } from '@/components/ui/UserFeedbackModal';
+import { ShortcutsModal } from '@/components/ui/shortcuts-modal';
+import { UserFeedbackModal } from '@/components/ui/user-feedback-modal';
 import { Menu, X, Maximize2, Minimize2 } from 'lucide-react';
 
 

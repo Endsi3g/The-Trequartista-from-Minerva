@@ -1,9 +1,9 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   User,
   Bell,
@@ -144,19 +144,36 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!newKeyName.trim()) return;
 
-    const rawRandom = Math.random().toString(36).substring(2, 10);
-    const keyString = `mv_live_${rawRandom}${Date.now().toString(36)}`;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toastError('Non authentifié', 'Reconnectez-vous pour créer une clé API.');
+      return;
+    }
+
+    // Cryptographically random key — Math.random()/Date.now() are
+    // predictable and must never be used for secrets.
+    const randomBytes = crypto.getRandomValues(new Uint8Array(24));
+    const rawKey = Array.from(randomBytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    const keyString = `mv_live_${rawKey}`;
+
+    // Hash before storing — the raw key is shown to the user exactly once
+    // below (generatedKey) and is never persisted in plaintext.
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(keyString));
+    const keyHash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
 
     try {
-      await supabase.from('user_api_keys').insert([
+      const { error } = await supabase.from('user_api_keys').insert([
         {
+          user_id: user.id,
           key_name: newKeyName,
           key_prefix: keyString.substring(0, 12),
-          key_hash: keyString,
+          key_hash: keyHash,
         },
       ]);
+      if (error) throw error;
     } catch {
-      // Fallback
+      toastError('Erreur', 'Impossible d’enregistrer la clé API.');
+      return;
     }
 
     const created: ApiKey = {
@@ -169,7 +186,7 @@ export default function ProfilePage() {
     setApiKeys([created, ...apiKeys]);
     setGeneratedKey(keyString);
     setNewKeyName('');
-    toastSuccess('Clé API créée !', 'Conservez cette clé en lieu sûr.');
+    toastSuccess('Clé API créée !', 'Conservez cette clé en lieu sûr — elle ne sera plus affichée.');
   };
 
   return (

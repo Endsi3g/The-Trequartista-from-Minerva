@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { GalleryVerticalEnd, AlertCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import {
   Field,
   FieldDescription,
@@ -71,17 +71,12 @@ export function LoginForm({
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
       if (error) {
-        if (isAllowedDomain || isExplicitAllowed) {
-          document.cookie = `centurions_session=active; path=/; max-age=86400`;
-          router.push(redirectTo);
-          return;
-        }
         setErrorMsg(error.message);
         setLoading(false);
-      } else {
-        document.cookie = `centurions_session=active; path=/; max-age=86400`;
-        router.push(redirectTo);
+        return;
       }
+      router.push(redirectTo);
+      router.refresh();
     } catch {
       setErrorMsg('Erreur de connexion Supabase Auth.');
       setLoading(false);

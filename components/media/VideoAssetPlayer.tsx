@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { Play, Pause, Volume2, VolumeX, Download, Copy, Check, Maximize, Smartphone, Monitor } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 
 interface VideoAssetPlayerProps {
   src: string;

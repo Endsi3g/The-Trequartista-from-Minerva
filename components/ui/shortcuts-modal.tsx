@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Keyboard, X, Search, Sidebar, Plus, Printer } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 
 export function ShortcutsModal() {
   const [isOpen, setIsOpen] = useState(false);

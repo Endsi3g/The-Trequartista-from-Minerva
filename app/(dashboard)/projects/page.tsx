@@ -1,15 +1,25 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { FolderKanban, Plus, CheckCircle2, ArrowRight, Map } from 'lucide-react';
-import { INITIAL_PROJECTS } from '@/lib/mock-data';
+import { fetchProjects } from '@/lib/services/supabase-data';
+import type { Project } from '@/lib/types';
 
 export default function ProjectsPage() {
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setProjects(await fetchProjects());
+      setLoading(false);
+    })();
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -58,6 +68,11 @@ export default function ProjectsPage() {
           }
         >
           <div className="overflow-x-auto">
+            {loading ? (
+              <div className="py-12 text-center text-sm text-mv-ink-soft">Chargement des projets…</div>
+            ) : projects.length === 0 ? (
+              <div className="py-12 text-center text-sm text-mv-ink-soft">Aucun projet pour le moment.</div>
+            ) : (
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-mv-border text-mv-ink-soft uppercase text-[10px] tracking-wider">
@@ -70,7 +85,7 @@ export default function ProjectsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-mv-border/40">
-                {INITIAL_PROJECTS.map((proj) => (
+                {projects.map((proj) => (
                   <tr key={proj.id} className="hover:bg-mv-cream-soft/40 transition-colors">
                     <td className="py-4 pr-4">
                       <div className="font-bold text-mv-ink text-sm">{proj.name}</div>
@@ -114,12 +129,13 @@ export default function ProjectsPage() {
                 ))}
               </tbody>
             </table>
+            )}
           </div>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {['Onboarding', 'Design Framer', 'Launch Check', 'Live Production'].map((stage) => {
-            const stageProjects = INITIAL_PROJECTS.filter((p) => p.current_stage === stage);
+            const stageProjects = projects.filter((p) => p.current_stage === stage);
             return (
               <div key={stage} className="bg-mv-surface border border-mv-border rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-mv-border">

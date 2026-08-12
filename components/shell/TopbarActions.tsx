@@ -1,8 +1,8 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Bell, Moon, Sun, X } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/button';
 import { SearchDialog } from './SearchDialog';
 import Link from 'next/link';
 import { useTheme } from '@/components/theme/ThemeProvider';

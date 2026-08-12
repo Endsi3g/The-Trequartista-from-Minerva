@@ -1,17 +1,34 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { timingSafeEqual } from 'node:crypto';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseSecret = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const supabase = createClient(supabaseUrl, supabaseSecret);
 
+// No hardcoded fallback: if the secret isn't configured, every request is
+// rejected instead of silently trusting a value that has been public in
+// .env.example (and therefore in git history) since day one.
+function isValidWebhookSecret(authHeader: string | null): boolean {
+  const webhookSecret = process.env.CENTURIONS_WEBHOOK_SECRET;
+  if (!webhookSecret || !authHeader) return false;
+
+  const provided = authHeader.replace(/^Bearer\s+/i, '').trim();
+  const expected = Buffer.from(webhookSecret);
+  const received = Buffer.from(provided);
+
+  // Different lengths must fail before timingSafeEqual (it throws on
+  // mismatched buffer lengths rather than returning false).
+  if (expected.length !== received.length) return false;
+  return timingSafeEqual(expected, received);
+}
+
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get('authorization');
-    const webhookSecret = process.env.CENTURIONS_WEBHOOK_SECRET || 'centurions_wh_secret_2026';
 
-    if (!authHeader || !authHeader.includes(webhookSecret)) {
+    if (!isValidWebhookSecret(authHeader)) {
       return NextResponse.json({ error: 'Unauthorized webhook request' }, { status: 401 });
     }
 

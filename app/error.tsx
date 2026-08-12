@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCw, Home, Terminal } from 'lucide-react';
 import Link from 'next/link';
 
@@ -33,8 +33,11 @@ export default function GlobalErrorPage({
           L'application Minerva a rencontré une anomalie inattendue. Nos triggers de secours ont préservé vos données.
         </p>
 
-        {/* Technical Error Snippet */}
-        {error.message && (
+        {/* Technical error detail — dev only. In production this leaked
+            implementation details (queries, paths, table names) to end
+            users; only the opaque digest (safe to share with support) is
+            shown outside development. */}
+        {process.env.NODE_ENV === 'development' && error.message ? (
           <div className="p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-left text-[11px] font-mono text-mv-ink-soft overflow-x-auto space-y-1">
             <div className="flex items-center gap-1.5 font-bold text-mv-coral">
               <Terminal className="w-3.5 h-3.5" /> Diagnostic Error Message:
@@ -42,7 +45,9 @@ export default function GlobalErrorPage({
             <p className="text-mv-ink">{error.message}</p>
             {error.digest && <p className="text-[10px] text-mv-ink-faint">Digest: {error.digest}</p>}
           </div>
-        )}
+        ) : error.digest ? (
+          <p className="text-[10px] text-mv-ink-faint font-mono">Référence support : {error.digest}</p>
+        ) : null}
 
         {/* Action Buttons */}
         <div className="flex items-center justify-center gap-3 pt-2">

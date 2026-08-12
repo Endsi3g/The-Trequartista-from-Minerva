@@ -1,11 +1,15 @@
-﻿'use client';
+'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { UploadCloud, FileText, Image as ImageIcon, Video, Trash2, ExternalLink, Copy, Check, HardDrive } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useToast } from '@/components/providers/ToastProvider';
+import { UploadCloud, FileText, Image as ImageIcon, Video, Trash2, ExternalLink, Copy, Check, HardDrive, ChevronLeft, ChevronRight } from 'lucide-react';
+
+const PAGE_SIZE = 10;
 
 interface StorageFile {
   name: string;
@@ -31,33 +35,37 @@ export function StorageBrowser({
 }: StorageBrowserProps) {
   const [bucket, setBucket] = useState(defaultBucket);
   const [files, setFiles] = useState<StorageFile[]>([]);
+  const [totalFiles, setTotalFiles] = useState(0);
+  const [page, setPage] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [copiedName, setCopiedName] = useState<string | null>(null);
   const [videoImportUrl, setVideoImportUrl] = useState('');
   const [isImportingVideo, setIsImportingVideo] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const supabase = createClient();
+  const { toastError, toastSuccess } = useToast();
 
-  const loadFiles = async () => {
+  const loadFiles = useCallback(async () => {
     try {
       const { data, error } = await supabase.storage.from(bucket).list(folderPath, {
-        limit: 20,
-        offset: 0,
+        limit: PAGE_SIZE,
+        offset: page * PAGE_SIZE,
         sortBy: { column: 'name', order: 'asc' },
       });
-
       if (!error && data) {
         setFiles(data as unknown as StorageFile[]);
+        // If we got a full page, there may be more
+        setTotalFiles(page * PAGE_SIZE + data.length + (data.length === PAGE_SIZE ? 1 : 0));
       }
     } catch (err) {
       console.error('Error listing files from Supabase Storage:', err);
     }
-  };
+  }, [bucket, folderPath, page, supabase.storage]);
 
-  useEffect(() => {
-    loadFiles();
-  }, [bucket, folderPath]);
+  useEffect(() => { setPage(0); }, [bucket, folderPath]);
+  useEffect(() => { loadFiles(); }, [loadFiles]);
 
   const handleImportVideoUrl = async () => {
     if (!videoImportUrl.trim()) return;
@@ -72,9 +80,12 @@ export function StorageBrowser({
       if (data.success) {
         setVideoImportUrl('');
         await loadFiles();
+      } else {
+        toastError('Import impossible', data.error || 'Le service d’import vidéo a échoué.');
       }
     } catch (err) {
       console.error('Error importing video link:', err);
+      toastError('Import impossible', 'Erreur réseau lors de l’import vidéo.');
     } finally {
       setIsImportingVideo(false);
     }
@@ -113,10 +124,13 @@ export function StorageBrowser({
   const handleDeleteFile = async (fileName: string) => {
     const filePath = folderPath ? `${folderPath}/${fileName}` : fileName;
     const { error } = await supabase.storage.from(bucket).remove([filePath]);
-
     if (!error) {
+      toastSuccess('Fichier supprimé', fileName);
       setFiles(files.filter((f) => f.name !== fileName));
+    } else {
+      toastError('Erreur de suppression', error.message);
     }
+    setConfirmDelete(null);
   };
 
   const getPublicUrl = (fileName: string) => {
@@ -269,11 +283,12 @@ export function StorageBrowser({
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                         <button
-                          onClick={() => handleDeleteFile(file.name)}
+                          onClick={() => setConfirmDelete(file.name)}
                           className="p-1 text-mv-ink-soft hover:text-mv-red transition-colors cursor-pointer"
                           title="Supprimer le fichier"
+                          aria-label={`Supprimer ${file.name}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                         </button>
                       </div>
                     </div>
@@ -282,8 +297,47 @@ export function StorageBrowser({
               })}
             </div>
           )}
+
+          {/* Pagination Controls */}
+          {(page > 0 || files.length === PAGE_SIZE) && (
+            <div className="flex items-center justify-between pt-3 border-t border-mv-border text-xs text-mv-ink-soft">
+              <span>
+                Page {page + 1} &mdash; {page * PAGE_SIZE + 1}–{page * PAGE_SIZE + files.length} fichiers
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  aria-label="Page précédente"
+                  className="p-1 rounded-md border border-mv-border hover:bg-mv-cream disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" aria-hidden="true" />
+                </button>
+                <button
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={files.length < PAGE_SIZE}
+                  aria-label="Page suivante"
+                  className="p-1 rounded-md border border-mv-border hover:bg-mv-cream disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!confirmDelete}
+        title="Supprimer le fichier"
+        description={`Voulez-vous vraiment supprimer « ${confirmDelete} » ? Cette action est irréversible.`}
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        isDangerous
+        onConfirm={() => confirmDelete && handleDeleteFile(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </Card>
   );
 }
