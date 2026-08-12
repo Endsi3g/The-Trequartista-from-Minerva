@@ -1,40 +1,27 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { KanbanBoard } from '@/components/crm/KanbanBoard';
+import { LeadDetailDrawer } from '@/components/crm/LeadDetailDrawer';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
-  Users,
   Search,
-  Filter,
   Kanban,
   Table as TableIcon,
   Download,
-  Phone,
-  Mail,
   Plus,
-  Star,
+  DollarSign,
+  TrendingUp,
+  Target,
   CheckCircle2,
-  Clock,
-  ArrowRight,
-  UserCheck,
-  ChevronRight,
-  Shield,
-  Zap,
+  X,
 } from 'lucide-react';
-import { fetchClients, fetchLeads, updateLeadStatus, logAuditEvent } from '@/lib/services/supabase-data';
-import { Client, Lead } from '@/lib/types';
+import { fetchClients, fetchLeads, addLead } from '@/lib/services/supabase-data';
+import type { Client, Lead, LeadStage } from '@/lib/types';
 import { useSupabaseRealtime } from '@/components/providers/SupabaseRealtimeProvider';
-import { EmptyState } from '@/components/ui/empty-state';
-import { useToast } from '@/components/providers/ToastProvider';
-import { FunnelChart } from '@/components/charts/FunnelChart';
-import { BarChart } from '@/components/charts/BarChart';
-
 
 export default function LeadsCrmPage() {
-  const { toastSuccess, toastInfo } = useToast();
-
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('all');
@@ -43,55 +30,103 @@ export default function LeadsCrmPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
+  // New Lead Modal State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState('');
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactEmail, setNewContactEmail] = useState('');
+  const [newContactPhone, setNewContactPhone] = useState('');
+  const [newService, setNewService] = useState('Gestion Réseaux & Reels');
+  const [newMrr, setNewMrr] = useState<number>(1500);
+  const [newOneTime, setNewOneTime] = useState<number>(500);
+
   const { isConnected, lastUpdateTimestamp } = useSupabaseRealtime();
 
-  useEffect(() => {
-    async function loadData() {
-      setIsLoading(true);
-      const clientList = await fetchClients();
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [clientList, leadList] = await Promise.all([
+        fetchClients(),
+        fetchLeads(selectedClientId),
+      ]);
       setClients(clientList);
-
-      const leadList = await fetchLeads(selectedClientId);
       setLeads(leadList);
+    } catch (err) {
+      console.warn('[Leads] Error loading data:', err);
+    } finally {
       setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadData();
   }, [selectedClientId, lastUpdateTimestamp]);
 
   const filteredLeads = leads.filter((lead) => {
-    const matchesSearch =
-      lead.contact_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.contact_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.service_requested.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.client_name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+    const query = searchQuery.toLowerCase();
+    return (
+      (lead.company_name || '').toLowerCase().includes(query) ||
+      lead.contact_name.toLowerCase().includes(query) ||
+      lead.contact_email.toLowerCase().includes(query) ||
+      lead.service_requested.toLowerCase().includes(query) ||
+      lead.client_name.toLowerCase().includes(query)
+    );
   });
 
-  const handleStatusChange = async (leadId: string, newStatus: Lead['status']) => {
-    const targetLead = leads.find((l) => l.id === leadId);
-    const updated = leads.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l));
-    setLeads(updated);
+  // Calculate Pipeline Financial Metrics
+  const totalPipelineMrr = filteredLeads.reduce((acc, l) => acc + (l.mrr_value || 0), 0);
+  const totalPipelineOneTime = filteredLeads.reduce((acc, l) => acc + (l.one_time_value || 0), 0);
+  const totalGrossPipeline = totalPipelineMrr * 12 + totalPipelineOneTime;
 
-    await updateLeadStatus(leadId, newStatus);
-    await logAuditEvent(
-      `Mise à jour statut Lead CRM "${targetLead?.contact_name}" -> ${newStatus}`,
-      'leads',
-      leadId,
-      { client: targetLead?.client_name, oldStatus: targetLead?.status, newStatus }
-    );
+  const weightedForecastValue = filteredLeads.reduce((acc, l) => {
+    const prob = (l.probability_pct || 10) / 100;
+    const dealVal = (l.mrr_value || 0) * 12 + (l.one_time_value || 0);
+    return acc + dealVal * prob;
+  }, 0);
+
+  const wonLeadsCount = filteredLeads.filter((l) => l.status === 'Gagné' || l.stage === 'gagne').length;
+  const winRatePct = filteredLeads.length > 0 ? Math.round((wonLeadsCount / filteredLeads.length) * 100) : 0;
+
+  const handleCreateLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newContactEmail.trim()) return;
+
+    await addLead({
+      client_name: newCompanyName || newContactName,
+      company_name: newCompanyName,
+      contact_name: newContactName || newContactEmail.split('@')[0],
+      contact_email: newContactEmail.trim(),
+      contact_phone: newContactPhone,
+      service_requested: newService,
+      score_grade: 'A',
+      status: 'Nouveau',
+      stage: 'nouveau',
+      mrr_value: newMrr,
+      one_time_value: newOneTime,
+      probability_pct: 10,
+      notes: [],
+    });
+
+    setIsAddModalOpen(false);
+    setNewCompanyName('');
+    setNewContactName('');
+    setNewContactEmail('');
+    setNewContactPhone('');
+    loadData();
   };
 
   const handleExportCsv = () => {
-    const headers = ['ID', 'Client', 'Contact', 'Email', 'Téléphone', 'Service Requested', 'Score', 'Status', 'Date'];
+    const headers = ['ID', 'Société', 'Contact', 'Email', 'Téléphone', 'Service', 'Étape', 'MRR ($)', 'Setup ($)', 'Date'];
     const rows = filteredLeads.map((l) => [
       l.id,
-      `"${l.client_name}"`,
+      `"${l.company_name || l.client_name}"`,
       `"${l.contact_name}"`,
       l.contact_email,
       l.contact_phone || '',
       `"${l.service_requested}"`,
-      l.score_grade,
-      l.status,
+      l.stage || l.status,
+      l.mrr_value || 0,
+      l.one_time_value || 0,
       new Date(l.created_at).toLocaleDateString('fr-CA'),
     ]);
 
@@ -99,355 +134,276 @@ export default function LeadsCrmPage() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `leads-minerva-${selectedClientId}-${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `leads-minerva-${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    logAuditEvent(`Exportation CSV de ${filteredLeads.length} leads CRM`, 'leads');
-  };
-
-  const KANBAN_STAGES: Lead['status'][] = ['Nouveau', 'Contacté', 'RDV Fixé', 'Gagné', 'Perdu'];
-
-  const getScoreBadge = (score: Lead['score_grade']) => {
-    switch (score) {
-      case 'A':
-        return <Badge variant="green">Score A (Top Lead)</Badge>;
-      case 'B':
-        return <Badge variant="lime">Score B (Qualifié)</Badge>;
-      case 'C':
-        return <Badge variant="amber">Score C (À tiédir)</Badge>;
-      case 'D':
-        return <Badge variant="red">Score D (Faible)</Badge>;
-    }
   };
 
   return (
-    <div className="space-y-8">
-      {/* Top Header */}
+    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+      {/* ── Top Header ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
-              Pipeline & CRM Leads Clients
+              Pipeline & CRM Leads
             </h1>
             <Badge variant={isConnected ? 'green' : 'lime'}>
               {isConnected ? 'Realtime Postgres' : 'Central CRM'}
             </Badge>
           </div>
-          <p className="text-sm text-mv-ink-soft mt-1">
-            Gestion centralisée de la qualification des leads entrant depuis les formulaires Framer, WhatsApp IA & Ads.
+          <p className="text-xs text-mv-ink-soft mt-1">
+            Gestion Kanban interactif du pipeline de ventes avec calcul automatisé du MRR et conversion client.
           </p>
         </div>
 
         {/* Action Controls */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="px-4 py-2 bg-[#00a800] hover:bg-[#009000] text-white text-xs font-bold rounded-xl shadow-mv-sm transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span>Nouveau Lead</span>
+          </button>
+
           <Button variant="outline" size="sm" onClick={handleExportCsv} className="flex items-center gap-1.5">
             <Download className="w-4 h-4 text-mv-green" />
             Exporter CSV
           </Button>
 
-          {/* View Mode Toggle */}
-          <div className="flex items-center bg-mv-cream-soft border border-mv-border rounded-xl p-1">
+          {/* View Toggle */}
+          <div className="flex items-center bg-white border border-mv-border rounded-xl p-1 shadow-mv-sm">
             <button
               onClick={() => setViewMode('kanban')}
-              className={`p-2 rounded-lg transition-all flex items-center gap-1 text-xs font-bold cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer ${
                 viewMode === 'kanban'
-                  ? 'bg-mv-green text-mv-cream shadow-mv-sm'
+                  ? 'bg-[#00a800] text-white shadow-mv-sm'
                   : 'text-mv-ink-soft hover:text-mv-ink'
               }`}
             >
-              <Kanban className="w-4 h-4" />
+              <Kanban className="w-3.5 h-3.5" />
               Kanban
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`p-2 rounded-lg transition-all flex items-center gap-1 text-xs font-bold cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-mv-green text-mv-cream shadow-mv-sm'
+                  ? 'bg-[#00a800] text-white shadow-mv-sm'
                   : 'text-mv-ink-soft hover:text-mv-ink'
               }`}
             >
-              <TableIcon className="w-4 h-4" />
+              <TableIcon className="w-3.5 h-3.5" />
               Table
             </button>
           </div>
         </div>
       </div>
 
-      {/* Filter & Search Toolbar */}
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            {/* Search Input */}
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-mv-ink-soft" />
-              <input
-                type="text"
-                placeholder="Rechercher par nom, email, service..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-mv-cream-soft border border-mv-border rounded-xl pl-9 pr-4 py-2 text-xs text-mv-ink focus:outline-none focus:border-mv-green transition-all"
-              />
-            </div>
-
-            {/* Client Select */}
-            <div className="relative">
-              <select
-                value={selectedClientId}
-                onChange={(e) => setSelectedClientId(e.target.value)}
-                className="bg-mv-cream-soft border border-mv-border rounded-xl px-3 py-2 text-xs font-medium text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
-              >
-                <option value="all">Tous les clients ({clients.length})</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+      {/* ── Summary Financial Analytics Bar ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-mv-ink-soft uppercase tracking-wider">Valeur Brute Pipeline</p>
+            <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">${Math.round(totalGrossPipeline).toLocaleString()}</p>
+            <span className="text-[10px] font-semibold text-mv-green">${totalPipelineMrr.toLocaleString()}/mo MRR</span>
           </div>
-
-          <div className="text-xs text-mv-ink-soft font-mono">
-            Total Leads : <span className="font-bold text-mv-green">{filteredLeads.length}</span>
+          <div className="w-10 h-10 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center">
+            <DollarSign className="w-5 h-5" />
           </div>
         </div>
-      </Card>
 
-      {/* Visual Analytics Charts Grid */}
+        <div className="bg-white border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-mv-ink-soft uppercase tracking-wider">Prévisionnel Pondéré</p>
+            <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">${Math.round(weightedForecastValue).toLocaleString()}</p>
+            <span className="text-[10px] font-semibold text-mv-ink-soft">Basé sur % de fermeture</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center">
+            <TrendingUp className="w-5 h-5" />
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <FunnelChart
-          title="Entonnoir de Conversion des Leads CRM"
-          subtitle="Taux de passage entre les étapes de qualification"
-          stages={[
-            { label: 'Nouveau Lead', count: leads.filter((l) => l.status === 'Nouveau').length || 18, color: '#167f5b' },
-            { label: 'Contacté & Qualifié', count: leads.filter((l) => l.status === 'Contacté').length || 12, color: '#0e5a40' },
-            { label: 'Rendez-vous Fixé', count: leads.filter((l) => l.status === 'RDV Fixé').length || 7, color: '#dfff5f' },
-            { label: 'Vente Conclue', count: leads.filter((l) => l.status === 'Gagné').length || 4, color: '#ab7d1f' },
-          ]}
-        />
+        <div className="bg-white border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-mv-ink-soft uppercase tracking-wider">Taux de Conversion</p>
+            <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">{winRatePct}%</p>
+            <span className="text-[10px] font-semibold text-mv-green">{wonLeadsCount} deals gagnés</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+        </div>
 
-        <BarChart
-          title="Répartition par Score de Qualification (A / B / C / D)"
-          subtitle="Volume de leads selon le potentiel de conversion"
-          data={[
-            { label: 'Score A (Top)', value: leads.filter((l) => l.score_grade === 'A').length || 8 },
-            { label: 'Score B (Bon)', value: leads.filter((l) => l.score_grade === 'B').length || 6 },
-            { label: 'Score C (Moyen)', value: leads.filter((l) => l.score_grade === 'C').length || 3 },
-            { label: 'Score D (Faible)', value: leads.filter((l) => l.score_grade === 'D').length || 1 },
-          ]}
-          color="#167f5b"
-          valueSuffix=" leads"
-        />
+        <div className="bg-white border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-mv-ink-soft uppercase tracking-wider">Leads Actifs</p>
+            <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">{filteredLeads.length}</p>
+            <span className="text-[10px] font-semibold text-mv-ink-soft">En cours d&apos;échange</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 border border-purple-200 flex items-center justify-center">
+            <Target className="w-5 h-5" />
+          </div>
+        </div>
       </div>
 
-      {/* KANBAN BOARD VIEW */}
-      {viewMode === 'kanban' && (
-
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
-          {KANBAN_STAGES.map((stage) => {
-            const stageLeads = filteredLeads.filter((l) => l.status === stage);
-            return (
-              <div key={stage} className="bg-mv-cream-soft/60 border border-mv-border rounded-2xl p-3.5 space-y-3 min-w-[240px]">
-                {/* Stage Header */}
-                <div className="flex items-center justify-between border-b border-mv-border pb-2.5">
-                  <span className="font-extrabold text-xs text-mv-ink uppercase tracking-wider flex items-center gap-1.5">
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        stage === 'Gagné'
-                          ? 'bg-mv-green'
-                          : stage === 'Perdu'
-                          ? 'bg-mv-red'
-                          : stage === 'Nouveau'
-                          ? 'bg-mv-warm'
-                          : 'bg-mv-amber'
-                      }`}
-                    />
-                    {stage}
-                  </span>
-                  <span className="text-[11px] font-mono text-mv-ink-soft bg-mv-surface px-2 py-0.5 rounded-full border border-mv-border font-bold">
-                    {stageLeads.length}
-                  </span>
-                </div>
-
-                {/* Cards List */}
-                <div className="space-y-3">
-                  {stageLeads.map((lead) => (
-                    <div
-                      key={lead.id}
-                      className="p-3.5 rounded-xl bg-mv-surface border border-mv-border hover:border-mv-green transition-all shadow-mv-sm space-y-3 cursor-pointer"
-                      onClick={() => setSelectedLead(lead)}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="font-bold text-xs text-mv-ink leading-snug">{lead.contact_name}</span>
-                        {getScoreBadge(lead.score_grade)}
-                      </div>
-
-                      <div className="text-[11px] text-mv-ink-soft space-y-1">
-                        <p className="font-semibold text-mv-green">{lead.service_requested}</p>
-                        <p className="text-mv-ink-faint truncate">{lead.client_name}</p>
-                      </div>
-
-                      {/* Card Footer Actions */}
-                      <div className="pt-2 border-t border-mv-border/60 flex items-center justify-between text-[11px]">
-                        <div className="flex items-center gap-1.5 text-mv-ink-soft">
-                          <a
-                            href={`mailto:${lead.contact_email}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="hover:text-mv-green p-1 hover:bg-mv-cream rounded transition-colors"
-                            title="Envoyer Email"
-                          >
-                            <Mail className="w-3.5 h-3.5" />
-                          </a>
-                          {lead.contact_phone && (
-                            <a
-                              href={`tel:${lead.contact_phone}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="hover:text-mv-green p-1 hover:bg-mv-cream rounded transition-colors"
-                              title="Appeler"
-                            >
-                              <Phone className="w-3.5 h-3.5" />
-                            </a>
-                          )}
-                        </div>
-
-                        {/* Quick Stage Move Dropdown */}
-                        <select
-                          value={lead.status}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            handleStatusChange(lead.id, e.target.value as Lead['status']);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-[10px] bg-mv-cream-soft border border-mv-border rounded px-1.5 py-0.5 font-semibold text-mv-ink focus:outline-none cursor-pointer"
-                        >
-                          {KANBAN_STAGES.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  ))}
-
-                  {stageLeads.length === 0 && (
-                    <div className="p-4 text-center text-[11px] text-mv-ink-faint border border-dashed border-mv-border rounded-xl">
-                      Aucun lead dans cette étape
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+      {/* ── Toolbar Search & Filters ── */}
+      <div className="bg-white border border-mv-border rounded-2xl p-4 shadow-mv-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-mv-ink-soft" />
+          <input
+            type="text"
+            placeholder="Rechercher société, contact, email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-mv-surface border border-mv-border rounded-xl pl-9 pr-4 py-2 text-xs text-mv-ink placeholder-mv-ink-mute focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green"
+          />
         </div>
-      )}
 
-      {/* DATA TABLE VIEW */}
-      {viewMode === 'table' && (
-        <Card className="overflow-hidden">
+        <div className="text-xs text-mv-ink-soft font-semibold">
+          Affichage de <span className="font-bold text-mv-ink">{filteredLeads.length}</span> prospect(s)
+        </div>
+      </div>
+
+      {/* ── Main View (Kanban vs Table) ── */}
+      {viewMode === 'kanban' ? (
+        <KanbanBoard
+          leads={filteredLeads}
+          onSelectLead={(lead) => setSelectedLead(lead)}
+          onLeadsUpdated={loadData}
+        />
+      ) : (
+        <div className="bg-white border border-mv-border rounded-2xl overflow-hidden shadow-mv-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-mv-cream-soft border-b border-mv-border text-mv-ink-soft uppercase text-[10px] tracking-wider font-extrabold">
-                <tr>
-                  <th className="p-4">Contact</th>
-                  <th className="p-4">Client Minerva</th>
-                  <th className="p-4">Service Demandé</th>
-                  <th className="p-4">Score</th>
-                  <th className="p-4">Statut</th>
-                  <th className="p-4">Date Capture</th>
-                  <th className="p-4 text-right">Actions</th>
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-mv-surface border-b border-mv-border text-mv-ink-soft uppercase text-[10px] font-extrabold tracking-wider">
+                  <th className="py-3.5 px-4">Société / Contact</th>
+                  <th className="py-3.5 px-4">Service</th>
+                  <th className="py-3.5 px-4">Étape</th>
+                  <th className="py-3.5 px-4">MRR ($)</th>
+                  <th className="py-3.5 px-4">Frais Setup ($)</th>
+                  <th className="py-3.5 px-4">Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-mv-border">
                 {filteredLeads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-mv-cream-soft/50 transition-colors">
-                    <td className="p-4">
-                      <div className="font-bold text-mv-ink">{lead.contact_name}</div>
-                      <div className="text-[11px] text-mv-ink-faint">{lead.contact_email}</div>
+                  <tr
+                    key={lead.id}
+                    onClick={() => setSelectedLead(lead)}
+                    className="hover:bg-mv-surface/60 transition-colors cursor-pointer"
+                  >
+                    <td className="py-3.5 px-4">
+                      <p className="font-bold text-mv-ink">{lead.company_name || lead.client_name || lead.contact_name}</p>
+                      <p className="text-[11px] text-mv-ink-soft">{lead.contact_email}</p>
                     </td>
-                    <td className="p-4 font-semibold text-mv-ink-soft">{lead.client_name}</td>
-                    <td className="p-4 font-semibold text-mv-green">{lead.service_requested}</td>
-                    <td className="p-4">{getScoreBadge(lead.score_grade)}</td>
-                    <td className="p-4">
-                      <select
-                        value={lead.status}
-                        onChange={(e) => handleStatusChange(lead.id, e.target.value as Lead['status'])}
-                        className="bg-mv-cream-soft border border-mv-border rounded px-2 py-1 text-xs font-semibold text-mv-ink focus:outline-none cursor-pointer"
-                      >
-                        {KANBAN_STAGES.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="p-4 font-mono text-[11px] text-mv-ink-faint">
-                      {new Date(lead.created_at).toLocaleDateString('fr-CA')}
-                    </td>
-                    <td className="p-4 text-right space-x-2">
-                      <a
-                        href={`mailto:${lead.contact_email}`}
-                        className="inline-block p-1.5 bg-mv-cream border border-mv-border rounded-lg hover:border-mv-green text-mv-ink-soft hover:text-mv-green transition-all"
-                      >
-                        <Mail className="w-3.5 h-3.5" />
-                      </a>
-                      {lead.contact_phone && (
-                        <a
-                          href={`tel:${lead.contact_phone}`}
-                          className="inline-block p-1.5 bg-mv-cream border border-mv-border rounded-lg hover:border-mv-green text-mv-ink-soft hover:text-mv-green transition-all"
-                        >
-                          <Phone className="w-3.5 h-3.5" />
-                        </a>
-                      )}
-                    </td>
+                    <td className="py-3.5 px-4 font-semibold text-mv-green">{lead.service_requested}</td>
+                    <td className="py-3.5 px-4 font-bold capitalize text-mv-ink">{lead.stage || lead.status}</td>
+                    <td className="py-3.5 px-4 font-extrabold text-mv-ink">${(lead.mrr_value || 0).toLocaleString()}</td>
+                    <td className="py-3.5 px-4 font-semibold text-mv-ink-soft">${(lead.one_time_value || 0).toLocaleString()}</td>
+                    <td className="py-3.5 px-4 text-mv-ink-faint">{new Date(lead.created_at).toLocaleDateString('fr-CA')}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
       )}
 
-      {/* LEAD DETAIL MODAL */}
-      {selectedLead && (
-        <div className="fixed inset-0 bg-mv-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-mv-surface border border-mv-border rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-mv-lg animate-mv-scale-in">
-            <div className="flex items-center justify-between border-b border-mv-border pb-4">
-              <div>
-                <h3 className="text-lg font-extrabold text-mv-ink">{selectedLead.contact_name}</h3>
-                <p className="text-xs text-mv-ink-soft">{selectedLead.client_name}</p>
-              </div>
-              {getScoreBadge(selectedLead.score_grade)}
+      {/* ── Slide-Out Lead Detail Drawer ── */}
+      <LeadDetailDrawer
+        lead={selectedLead}
+        onClose={() => setSelectedLead(null)}
+        onLeadUpdated={loadData}
+      />
+
+      {/* ── New Lead Modal ── */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 bg-mv-ink/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-mv-border rounded-2xl p-6 max-w-md w-full shadow-mv-lg animate-mv-scale-in relative space-y-5">
+            <div className="flex items-center justify-between border-b border-mv-border pb-3">
+              <h3 className="text-lg font-extrabold text-mv-ink font-display">Nouveau Lead CRM</h3>
+              <button onClick={() => setIsAddModalOpen(false)} className="text-mv-ink-soft hover:text-mv-ink">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div className="flex justify-between py-1 border-b border-mv-border/40">
-                <span className="text-mv-ink-soft">Service demandée :</span>
-                <span className="font-bold text-mv-green">{selectedLead.service_requested}</span>
+            <form onSubmit={handleCreateLead} className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-mv-ink">Nom de l&apos;entreprise</label>
+                <input
+                  type="text"
+                  placeholder="ex: Apex Roofing Studio"
+                  value={newCompanyName}
+                  onChange={(e) => setNewCompanyName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-white border border-mv-border rounded-xl text-xs text-mv-ink focus:ring-2 focus:ring-mv-green/30"
+                />
               </div>
-              <div className="flex justify-between py-1 border-b border-mv-border/40">
-                <span className="text-mv-ink-soft">Email :</span>
-                <a href={`mailto:${selectedLead.contact_email}`} className="font-mono text-mv-ink hover:underline">
-                  {selectedLead.contact_email}
-                </a>
-              </div>
-              {selectedLead.contact_phone && (
-                <div className="flex justify-between py-1 border-b border-mv-border/40">
-                  <span className="text-mv-ink-soft">Téléphone :</span>
-                  <a href={`tel:${selectedLead.contact_phone}`} className="font-mono text-mv-ink hover:underline">
-                    {selectedLead.contact_phone}
-                  </a>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-mv-ink">Nom Contact</label>
+                  <input
+                    type="text"
+                    placeholder="Jean Dupont"
+                    value={newContactName}
+                    onChange={(e) => setNewContactName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white border border-mv-border rounded-xl text-xs text-mv-ink focus:ring-2 focus:ring-mv-green/30"
+                  />
                 </div>
-              )}
-            </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-mv-border">
-              <Button variant="outline" size="sm" onClick={() => setSelectedLead(null)}>
-                Fermer
-              </Button>
-            </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-mv-ink">Email Contact</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="jean@apex.com"
+                    value={newContactEmail}
+                    onChange={(e) => setNewContactEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white border border-mv-border rounded-xl text-xs text-mv-ink focus:ring-2 focus:ring-mv-green/30"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-mv-ink">MRR Estimé ($)</label>
+                  <input
+                    type="number"
+                    value={newMrr}
+                    onChange={(e) => setNewMrr(Number(e.target.value))}
+                    className="w-full px-3.5 py-2.5 bg-white border border-mv-border rounded-xl text-xs text-mv-ink focus:ring-2 focus:ring-mv-green/30"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-mv-ink">Setup Fee ($)</label>
+                  <input
+                    type="number"
+                    value={newOneTime}
+                    onChange={(e) => setNewOneTime(Number(e.target.value))}
+                    className="w-full px-3.5 py-2.5 bg-white border border-mv-border rounded-xl text-xs text-mv-ink focus:ring-2 focus:ring-mv-green/30"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-mv-border flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-4 py-2 bg-mv-surface border border-mv-border text-xs font-bold rounded-xl text-mv-ink"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-[#00a800] hover:bg-[#009000] text-white text-xs font-bold rounded-xl shadow-mv-sm transition-all"
+                >
+                  Créer Lead
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

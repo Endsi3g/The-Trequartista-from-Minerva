@@ -203,16 +203,23 @@ export interface LeadNote {
   created_at: string;
 }
 
+export type LeadStage = 'nouveau' | 'qualification' | 'proposition' | 'negociation' | 'gagne' | 'perdu';
+
 export interface Lead {
   id: string;
-  client_id: string;
+  client_id?: string;
   client_name: string;
+  company_name?: string;
   contact_name: string;
   contact_email: string;
   contact_phone?: string;
   service_requested: string;
   score_grade: 'A' | 'B' | 'C' | 'D';
   status: 'Nouveau' | 'Contacté' | 'RDV Fixé' | 'Gagné' | 'Perdu';
+  stage?: LeadStage;
+  mrr_value?: number;
+  one_time_value?: number;
+  probability_pct?: number;
   notes: LeadNote[];
   created_at: string;
 }

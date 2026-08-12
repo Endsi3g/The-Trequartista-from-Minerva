@@ -305,10 +305,30 @@ export async function addLead(lead: Omit<Lead, 'id' | 'created_at'>): Promise<Le
   return data as Lead;
 }
 
-export async function updateLeadStatus(leadId: string, status: Lead['status']): Promise<boolean> {
-  const { error } = await getSupabase().from('leads').update({ status }).eq('id', leadId);
+export async function updateLeadStatus(leadId: string, status: Lead['status'], stage?: string): Promise<boolean> {
+  const payload: Record<string, unknown> = { status };
+  if (stage) payload.stage = stage;
+  const { error } = await getSupabase().from('leads').update(payload).eq('id', leadId);
   if (error) {
     console.error('[Supabase] Error updating lead status:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function updateLead(leadId: string, updates: Partial<Lead>): Promise<boolean> {
+  const { error } = await getSupabase().from('leads').update(updates).eq('id', leadId);
+  if (error) {
+    console.error('[Supabase] Error updating lead:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteLead(leadId: string): Promise<boolean> {
+  const { error } = await getSupabase().from('leads').delete().eq('id', leadId);
+  if (error) {
+    console.error('[Supabase] Error deleting lead:', error);
     return false;
   }
   return true;
