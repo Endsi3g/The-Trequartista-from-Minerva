@@ -27,3 +27,15 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 - Les notifications demandent maintenant la permission du navigateur avant de s'activer.
 
 *Migrations en attente de déploiement : `time_entries` (chronomètre) et le correctif RLS des profils.*
+
+---
+
+## 2026-08-12 — Chantier 2 : vue d'ensemble
+
+**Vue d'ensemble**
+- La timeline de projets (3 rangées inventées) est remplacée par vos vrais projets.
+- Le graphique « Profit & Loss » (faux, en USD) est remplacé par un vrai graphique de MRR par client, en dollars canadiens seulement — plus aucun sélecteur de devise.
+- Les 4 raccourcis (« Send an invoice », etc., non fonctionnels) sont remplacés par 4 vrais raccourcis : nouveau lead, nouveau client, planifier un reel, voir les alertes.
+- La carte « Workflow Plus » (essai 14 jours) est remplacée par une vraie liste de démarrage qui suit votre progression réelle (profil complété, notifications activées, Notion connecté, Académie visitée).
+- Le message d'accueil est maintenant entièrement en français.
+- Ordre de priorité : clients → leads → projets en retard, comme demandé.
