@@ -75,12 +75,9 @@ export default function AcademyPage() {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
-              Académie Interne & SOPs Minerva
-            </h1>
-            <Badge variant="green">Video Tutorials Engine</Badge>
-          </div>
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
+            Académie Interne & SOPs Minerva
+          </h1>
           <p className="text-sm text-mv-ink-soft mt-1">
             Base de connaissances, tutoriels vidéo interactifs et guides d'exécution standardisés.
           </p>

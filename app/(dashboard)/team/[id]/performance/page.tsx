@@ -8,27 +8,22 @@ import { Button } from '@/components/ui/button';
 import { StorageBrowser } from '@/components/storage/StorageBrowser';
 import {
   Calendar,
-  Sparkles,
   Target,
   Award,
   MessageSquare,
   Clock,
-  RefreshCw,
 } from 'lucide-react';
 import { fetchTeamMemberPerformance } from '@/lib/services/supabase-data';
 import type { TeamMemberPerformance } from '@/lib/types';
 import { PerformanceBarChart } from '@/components/charts/PerformanceBarChart';
-import { useToast } from '@/components/providers/ToastProvider';
 
 
 export default function PerformancePage() {
   const params = useParams();
   const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const [activeTab, setActiveTab] = useState<'okrs' | 'skills' | 'feedbacks' | 'history'>('okrs');
-  const [isSyncing, setIsSyncing] = useState(false);
   const [member, setMember] = useState<TeamMemberPerformance | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toastSuccess } = useToast();
 
   useEffect(() => {
     if (!rawId) return;
@@ -37,29 +32,6 @@ export default function PerformancePage() {
       setLoading(false);
     })();
   }, [rawId]);
-
-  const triggerGoogleCalendarSync = async () => {
-    if (!member) return;
-    setIsSyncing(true);
-    try {
-      const res = await fetch('https://eobatkwbwcdsdqbemrma.supabase.co/functions/v1/google-calendar-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          memberId: member.id,
-          memberEmail: 'alex@minervaflow.com',
-          meetingDate: member.next_1on1_date,
-        }),
-      });
-      await res.json();
-    } catch {
-      // Fallback
-    }
-    setTimeout(() => {
-      setIsSyncing(false);
-      toastSuccess('Synchronisation réussie', 'Créneau Google Calendar verrouillé.');
-    }, 800);
-  };
 
   if (loading) {
     return <div className="py-16 text-center text-sm text-mv-ink-soft">Chargement du profil…</div>;
@@ -88,11 +60,8 @@ export default function PerformancePage() {
               <h1 className="text-xl lg:text-2xl font-extrabold text-mv-ink font-display">
                 {member.full_name}
               </h1>
-              <Badge variant="green">● Lead Tech & IA</Badge>
+              <Badge variant="green">{member.role}</Badge>
             </div>
-            <p className="text-xs text-mv-ink-soft mt-1">
-              {member.role} • Département Operations & IA
-            </p>
           </div>
         </div>
 
@@ -104,18 +73,15 @@ export default function PerformancePage() {
           <div>
             <div className="text-xs font-bold text-mv-ink">Prochain 1-on-1</div>
             <div className="text-[11px] text-mv-ink-soft">
-              Jeudi 13 Août à 14h00 (Sync Google Calendar)
+              {member.next_1on1_date
+                ? new Date(member.next_1on1_date).toLocaleDateString('fr-CA', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                  })
+                : 'Aucun rendez-vous planifié'}
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={triggerGoogleCalendarSync}
-            disabled={isSyncing}
-            icon={<RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />}
-          >
-            {isSyncing ? 'Sync...' : 'Replanifier'}
-          </Button>
         </div>
       </div>
 
@@ -185,51 +151,40 @@ export default function PerformancePage() {
       {/* Tab Content 2: Skills Matrix */}
       {activeTab === 'skills' && (
         <div className="space-y-6">
-          <PerformanceBarChart
-            title="Niveau de Maîtrise & Vélocité Équipe (%)"
-            subtitle="Évaluation continue des compétences techniques et opérationnelles"
-            skills={[
-              // TODO(chantier-4): remove fictional employee data
-              { skill: 'Supabase Postgres & Edge Functions', score: 95 },
-              { skill: 'Next.js 15 App Router & Server Actions', score: 92 },
-              { skill: 'Framer Design & Animations UI', score: 88 },
-              { skill: 'Google Ads & Tracking Conversion', score: 82 },
-              { skill: 'Automatisations Webhook & Zapier', score: 90 },
-            ]}
-          />
+          {member.skills.length === 0 ? (
+            <Card className="text-center py-16">
+              <p className="text-sm text-mv-ink-soft">Aucune compétence évaluée pour le moment.</p>
+            </Card>
+          ) : (
+            <PerformanceBarChart
+              title="Niveau de Maîtrise & Vélocité Équipe"
+              subtitle="Évaluation continue des compétences techniques et opérationnelles"
+              skills={member.skills.map((s) => ({
+                skill: s.skill,
+                score: { Expert: 95, 'Avancé': 75, 'En apprentissage': 45, Fondation: 25 }[s.level] ?? 0,
+              }))}
+            />
+          )}
         </div>
       )}
-
 
       {/* Tab Content 3: Feedbacks 360 */}
       {activeTab === 'feedbacks' && (
         <Card header={<h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">Feedbacks Récents</h3>}>
-          <div className="space-y-3 text-xs">
-            <div className="p-4 rounded-xl bg-mv-cream-soft border border-mv-border">
-              <div className="flex items-center justify-between font-bold text-mv-ink">
-                <span>Sarah Bouchard (Head of Success)</span>
-                <span className="text-[11px] text-mv-ink-soft">Il y a 3 jours</span>
-              </div>
-              <p className="mt-2 text-mv-ink-soft leading-relaxed">
-                "Excellente réactivité sur le fix des webhooks Stripe d'Apex Roofing. Le client a particulièrement apprécié l'intégration WhatsApp IA."
-              </p>
-            </div>
-          </div>
+          {member.feedbacks_count === 0 ? (
+            <p className="text-xs text-mv-ink-soft py-8 text-center">Aucun feedback pour le moment.</p>
+          ) : (
+            <p className="text-xs text-mv-ink-soft py-8 text-center">
+              {member.feedbacks_count} feedback(s) enregistré(s) — détail à venir.
+            </p>
+          )}
         </Card>
       )}
 
       {/* Tab Content 4: History */}
       {activeTab === 'history' && (
         <Card header={<h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">Historique des Rencontres 1-on-1</h3>}>
-          <div className="space-y-3 text-xs">
-            <div className="p-4 rounded-xl bg-mv-cream-soft border border-mv-border flex items-center justify-between">
-              <div>
-                <div className="font-bold text-mv-ink">Session 1-on-1 — 30 Juillet 2026</div>
-                <div className="text-[11px] text-mv-ink-soft">Bilan mi-trimestre & revue des compétences techniques.</div>
-              </div>
-              <Badge variant="green">Complété</Badge>
-            </div>
-          </div>
+          <p className="text-xs text-mv-ink-soft py-8 text-center">Aucune rencontre enregistrée pour le moment.</p>
         </Card>
       )}
 

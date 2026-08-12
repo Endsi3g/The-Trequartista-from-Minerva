@@ -12,31 +12,17 @@ import {
   Building,
   Save,
   CheckCircle2,
-  Lock,
-  Smartphone,
-  Globe,
   Upload,
-  Key,
-  Plus,
-  Copy,
-  Trash2,
-  Shield,
-  Zap,
+  Lock,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/providers/ToastProvider';
 
-interface ApiKey {
-  id: string;
-  name: string;
-  prefix: string;
-  created_at: string;
-}
-
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState<'info' | 'notifications' | 'security' | 'api_keys'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'notifications' | 'security'>('info');
 
   // Form State
+  const [userId, setUserId] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
@@ -50,6 +36,7 @@ export default function ProfilePage() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          setUserId(user.id);
           setEmail(user.email || '');
           // Try to load from profiles table
           const { data: profile } = await supabase
@@ -84,13 +71,9 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  // API Keys State
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([
-    { id: 'key-1', name: 'Webhook Production Lead Gen', prefix: 'mv_live_9a8b7c6d', created_at: '2026-08-01' },
-    { id: 'key-2', name: 'Notion Sync Agent Key', prefix: 'mv_live_3f4e5d6c', created_at: '2026-08-08' },
-  ]);
-  const [newKeyName, setNewKeyName] = useState('');
-  const [generatedKey, setGeneratedKey] = useState<string | null>(null);
+  // Change Password State
+  const [newPassword, setNewPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const supabase = createClient();
   const { toastSuccess, toastError } = useToast();
@@ -127,7 +110,7 @@ export default function ProfilePage() {
         role: role,
         avatar_url: avatarUrl,
         updated_at: new Date().toISOString(),
-      }).eq('email', email);
+      }).eq('id', userId);
     } catch {
       // Fallback
     }
@@ -140,53 +123,21 @@ export default function ProfilePage() {
     }, 600);
   };
 
-  const handleCreateApiKey = async (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newKeyName.trim()) return;
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toastError('Non authentifié', 'Reconnectez-vous pour créer une clé API.');
+    if (newPassword.length < 8) {
+      toastError('Mot de passe trop court', 'Minimum 8 caractères.');
       return;
     }
-
-    // Cryptographically random key — Math.random()/Date.now() are
-    // predictable and must never be used for secrets.
-    const randomBytes = crypto.getRandomValues(new Uint8Array(24));
-    const rawKey = Array.from(randomBytes, (b) => b.toString(16).padStart(2, '0')).join('');
-    const keyString = `mv_live_${rawKey}`;
-
-    // Hash before storing — the raw key is shown to the user exactly once
-    // below (generatedKey) and is never persisted in plaintext.
-    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(keyString));
-    const keyHash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
-
-    try {
-      const { error } = await supabase.from('user_api_keys').insert([
-        {
-          user_id: user.id,
-          key_name: newKeyName,
-          key_prefix: keyString.substring(0, 12),
-          key_hash: keyHash,
-        },
-      ]);
-      if (error) throw error;
-    } catch {
-      toastError('Erreur', 'Impossible d’enregistrer la clé API.');
+    setChangingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setChangingPassword(false);
+    if (error) {
+      toastError('Erreur', "Impossible de changer le mot de passe.");
       return;
     }
-
-    const created: ApiKey = {
-      id: `key-${Date.now()}`,
-      name: newKeyName,
-      prefix: keyString.substring(0, 14) + '...',
-      created_at: new Date().toISOString().split('T')[0],
-    };
-
-    setApiKeys([created, ...apiKeys]);
-    setGeneratedKey(keyString);
-    setNewKeyName('');
-    toastSuccess('Clé API créée !', 'Conservez cette clé en lieu sûr — elle ne sera plus affichée.');
+    setNewPassword('');
+    toastSuccess('Mot de passe changé', 'Votre mot de passe a été mis à jour.');
   };
 
   return (
@@ -194,14 +145,11 @@ export default function ProfilePage() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
-              Mon Profil
-            </h1>
-            <Badge variant="green">Profil & API Hub</Badge>
-          </div>
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
+            Mon Profil
+          </h1>
           <p className="text-sm text-mv-ink-soft mt-1">
-            Gérez votre compte, vos clés API Webhook, la sécurité 2FA et vos préférences d'alertes.
+            Gérez votre compte, votre sécurité et vos préférences d'alertes.
           </p>
         </div>
 
@@ -216,9 +164,8 @@ export default function ProfilePage() {
       <div className="flex border-b border-mv-border gap-2 text-xs font-bold overflow-x-auto">
         {[
           { id: 'info', label: '1. Informations & Rôle', icon: User },
-          { id: 'notifications', label: '2. Alertes & Webhooks', icon: Bell },
-          { id: 'security', label: '3. Sécurité & 2FA', icon: ShieldCheck },
-          { id: 'api_keys', label: '4. Clés API & Tokens', icon: Key },
+          { id: 'notifications', label: '2. Alertes', icon: Bell },
+          { id: 'security', label: '3. Sécurité', icon: ShieldCheck },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -393,139 +340,36 @@ export default function ProfilePage() {
         </Card>
       )}
 
-      {/* Tab 3: Sécurité & 2FA */}
+      {/* Tab 3: Sécurité */}
       {activeTab === 'security' && (
-        <div className="space-y-6">
-          <Card
-            header={
-              <div className="flex items-center justify-between w-full">
-                <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
-                  Sécurité 2FA & Authentification Multi-Facteurs
-                </h3>
-                <Badge variant="green">2FA Actif</Badge>
-              </div>
-            }
-          >
-            <div className="p-4 rounded-xl bg-mv-green-tint border border-mv-green/40 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-3">
-                <Shield className="w-5 h-5 text-mv-green" />
-                <div>
-                  <span className="font-bold text-mv-green">Double Authentification (TOTP) Activée</span>
-                  <p className="text-mv-ink-soft mt-0.5">Votre compte est protégé par application Authenticator (Google/1Password).</p>
-                </div>
-              </div>
+        <Card
+          header={
+            <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
+              Changer le mot de passe
+            </h3>
+          }
+        >
+          <form onSubmit={handleChangePassword} className="space-y-4 text-xs max-w-sm">
+            <div>
+              <label className="block font-bold text-mv-ink mb-1.5 flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-mv-green" /> Nouveau mot de passe
+              </label>
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••••••"
+                className="w-full p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink font-mono focus:outline-none focus:border-mv-green"
+              />
+              <p className="text-[11px] text-mv-ink-faint mt-1">Minimum 8 caractères.</p>
             </div>
-          </Card>
-
-          <Card
-            header={
-              <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
-                Session Active & Terminal
-              </h3>
-            }
-          >
-            <div className="space-y-4 text-xs">
-              <div className="p-4 rounded-xl bg-mv-cream-soft border border-mv-border flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-mv-green-tint text-mv-green">
-                    <Smartphone className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-mv-ink">Poste Actuel (Windows / Chrome)</div>
-                    <div className="text-mv-ink-soft mt-0.5 font-mono">Adresse IP : 192.168.1.104 • Montréal, CA</div>
-                  </div>
-                </div>
-                <Badge variant="green">Session Active</Badge>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Tab 4: Clés API & Tokens */}
-      {activeTab === 'api_keys' && (
-        <div className="space-y-6">
-          <Card
-            header={
-              <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
-                Générateur de Clés API Webhooks & Integrations
-              </h3>
-            }
-          >
-            <form onSubmit={handleCreateApiKey} className="space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-mv-ink">Nom de la Clé API</label>
-                <div className="flex gap-2 mt-1">
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Webhook Framer Leads Client"
-                    value={newKeyName}
-                    onChange={(e) => setNewKeyName(e.target.value)}
-                    className="flex-1 bg-mv-cream-soft border border-mv-border rounded-xl px-3 py-2 text-mv-ink focus:outline-none focus:border-mv-green font-medium"
-                  />
-                  <Button variant="primary" size="sm" type="submit" icon={<Plus className="w-4 h-4" />}>
-                    Générer la Clé
-                  </Button>
-                </div>
-              </div>
-
-              {generatedKey && (
-                <div className="p-4 rounded-xl bg-mv-green-tint border border-mv-green/40 space-y-2 animate-mv-scale-in">
-                  <div className="flex items-center justify-between text-xs font-bold text-mv-green">
-                    <span>Clé API Générée Avec Succès</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(generatedKey);
-                        toastSuccess('Clé copiée !');
-                      }}
-                      className="flex items-center gap-1 text-[11px] bg-mv-green text-white px-2 py-0.5 rounded font-mono hover:bg-mv-green-dark cursor-pointer"
-                    >
-                      <Copy className="w-3 h-3" /> Copier
-                    </button>
-                  </div>
-                  <code className="block p-2.5 rounded bg-mv-surface border border-mv-border font-mono text-xs text-mv-ink font-bold break-all">
-                    {generatedKey}
-                  </code>
-                </div>
-              )}
-            </form>
-          </Card>
-
-          <Card
-            header={
-              <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
-                Clés API Actives (`public.user_api_keys`)
-              </h3>
-            }
-          >
-            <div className="space-y-3 text-xs">
-              {apiKeys.map((k) => (
-                <div key={k.id} className="p-3.5 rounded-xl bg-mv-cream-soft border border-mv-border flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <div className="font-bold text-mv-ink">{k.name}</div>
-                    <code className="text-[11px] font-mono text-mv-ink-soft">{k.prefix}</code>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-mono text-mv-ink-faint">Créée le {k.created_at}</span>
-                    <button
-                      onClick={() => {
-                        setApiKeys(apiKeys.filter((item) => item.id !== k.id));
-                        toastSuccess('Clé révoquée');
-                      }}
-                      className="p-1.5 rounded-lg text-mv-coral hover:bg-mv-coral/10 transition-colors cursor-pointer"
-                      title="Révoquer cette clé"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
+            <Button type="submit" variant="primary" disabled={changingPassword} icon={<Save className="w-4 h-4" />}>
+              {changingPassword ? 'Mise à jour…' : 'Mettre à jour le mot de passe'}
+            </Button>
+          </form>
+        </Card>
       )}
     </div>
   );
