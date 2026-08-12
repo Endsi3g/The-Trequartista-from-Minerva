@@ -58,7 +58,7 @@ export function LoginForm({
 
     const normalizedEmail = email.trim().toLowerCase();
     const domain = normalizedEmail.split('@')[1];
-    const ALLOWED_EXPLICIT = ['kbelceus776@gmail.com'];
+    const ALLOWED_EXPLICIT = ['kbelceus776@gmail.com', 'theminervabrand@gmail.com'];
     const isAllowedDomain = domain === 'minervaflow.com' || domain === 'minerva.com';
     const isExplicitAllowed = ALLOWED_EXPLICIT.includes(normalizedEmail);
 
