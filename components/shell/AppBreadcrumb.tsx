@@ -16,7 +16,17 @@ const ROUTE_LABELS: Record<string, string> = {
   team: 'Équipe & RH',
   performance: '1-on-1 & OKRs',
   academy: 'Académie LMS & SOPs',
+  new: 'Nouveau',
+  leads: 'Leads',
+  integrations: 'Intégrations',
+  notion: 'Notion',
+  profil: 'Profil',
+  settings: 'Paramètres',
+  billing: 'Facturation',
+  'audit-logs': 'Journal d’activité',
 };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function AppBreadcrumb() {
   const pathname = usePathname();
@@ -25,37 +35,39 @@ export function AppBreadcrumb() {
   if (segments.length === 0) return null;
 
   return (
-    <nav className="flex items-center gap-1.5 text-xs text-mv-ink-soft mb-4">
+    <nav className="flex items-center gap-1.5 text-xs text-mv-ink-soft">
       <Link
         href="/overview"
-        className="flex items-center gap-1 hover:text-mv-green transition-colors"
+        className="flex items-center gap-1 hover:text-mv-green transition-colors shrink-0"
       >
         <Home className="w-3.5 h-3.5" />
         <span>Minerva</span>
       </Link>
 
-      {segments.map((segment: string, index: number) => {
-        const href = `/${segments.slice(0, index + 1).join('/')}`;
+      {(() => {
+        const visibleIndices = segments.map((_, i) => i).filter((i) => !UUID_RE.test(segments[i]));
+        const lastVisibleIndex = visibleIndices[visibleIndices.length - 1];
 
-        const isLast = index === segments.length - 1;
-        const label = ROUTE_LABELS[segment] || segment.replace(/-/g, ' ');
+        return visibleIndices.map((index) => {
+          const segment = segments[index];
+          const href = `/${segments.slice(0, index + 1).join('/')}`;
+          const isLast = index === lastVisibleIndex;
+          const label = ROUTE_LABELS[segment] || segment.replace(/-/g, ' ');
 
-        return (
-          <React.Fragment key={href}>
-            <ChevronRight className="w-3 h-3 text-mv-ink-mute shrink-0" />
-            {isLast ? (
-              <span className="font-semibold text-mv-ink capitalize">{label}</span>
-            ) : (
-              <Link
-                href={href}
-                className="hover:text-mv-green transition-colors capitalize"
-              >
-                {label}
-              </Link>
-            )}
-          </React.Fragment>
-        );
-      })}
+          return (
+            <React.Fragment key={href}>
+              <ChevronRight className="w-3 h-3 text-mv-ink-mute shrink-0" />
+              {isLast ? (
+                <span className="font-semibold text-mv-ink capitalize truncate">{label}</span>
+              ) : (
+                <Link href={href} className="hover:text-mv-green transition-colors capitalize shrink-0">
+                  {label}
+                </Link>
+              )}
+            </React.Fragment>
+          );
+        });
+      })()}
     </nav>
   );
 }

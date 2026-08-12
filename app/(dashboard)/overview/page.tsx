@@ -30,6 +30,40 @@ function moneyFmt(n: number) {
   return `${Math.round(n).toLocaleString('fr-CA')} $`;
 }
 
+interface Segment {
+  label: string;
+  value: number;
+  color: string;
+}
+
+function MiniDistribution({ segments }: { segments: Segment[] }) {
+  const total = segments.reduce((s, seg) => s + seg.value, 0);
+  const visible = segments.filter((s) => s.value > 0);
+  if (total === 0) return null;
+
+  return (
+    <div className="mt-3 space-y-1.5">
+      <div className="flex h-1.5 rounded-full overflow-hidden bg-mv-cream-soft">
+        {visible.map((seg) => (
+          <div
+            key={seg.label}
+            style={{ width: `${(seg.value / total) * 100}%`, backgroundColor: seg.color }}
+            title={`${seg.label}: ${seg.value}`}
+          />
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-x-2.5 gap-y-0.5">
+        {visible.map((seg) => (
+          <span key={seg.label} className="flex items-center gap-1 text-[10px] text-mv-ink-faint">
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+            {seg.label} {seg.value}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function OverviewPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -95,6 +129,26 @@ export default function OverviewPage() {
     return p.health === 'Needs Review' || isPastDue;
   });
 
+  const clientStatusSegments: Segment[] = [
+    { label: 'Actifs', value: clients.filter((c) => c.status === 'Active').length, color: '#167f5b' },
+    { label: 'Onboarding', value: clients.filter((c) => c.status === 'Onboarding').length, color: '#ab7d1f' },
+    { label: 'En pause', value: clients.filter((c) => c.status === 'Paused').length, color: '#b3b8a9' },
+    { label: 'Archivés', value: clients.filter((c) => c.status === 'Archived').length, color: '#e6e0d0' },
+  ];
+
+  const leadStatusSegments: Segment[] = [
+    { label: 'Nouveau', value: leads.filter((l) => l.status === 'Nouveau').length, color: '#b3b8a9' },
+    { label: 'Contacté', value: leads.filter((l) => l.status === 'Contacté').length, color: '#ab7d1f' },
+    { label: 'RDV Fixé', value: leads.filter((l) => l.status === 'RDV Fixé').length, color: '#4da37e' },
+    { label: 'Gagné', value: leads.filter((l) => l.status === 'Gagné').length, color: '#167f5b' },
+  ];
+
+  const projectHealthSegments: Segment[] = [
+    { label: 'Prêt', value: projects.filter((p) => p.health === 'Ready').length, color: '#167f5b' },
+    { label: 'En cours', value: projects.filter((p) => p.health === 'On Track').length, color: '#ab7d1f' },
+    { label: 'À revoir', value: projects.filter((p) => p.health === 'Needs Review').length, color: '#b5473a' },
+  ];
+
   const topClientsByMrr = [...activeClients]
     .sort((a, b) => (b.mrr || 0) - (a.mrr || 0))
     .slice(0, 6)
@@ -126,6 +180,7 @@ export default function OverviewPage() {
           </div>
           <div className="text-2xl font-extrabold text-mv-ink font-display">{loading ? '…' : activeClients.length}</div>
           <div className="text-xs text-mv-ink-faint mt-1">{loading ? '' : `${moneyFmt(totalMrr)} MRR total`}</div>
+          {!loading && <MiniDistribution segments={clientStatusSegments} />}
         </Link>
 
         <Link
@@ -138,6 +193,7 @@ export default function OverviewPage() {
           </div>
           <div className="text-2xl font-extrabold text-mv-ink font-display">{loading ? '…' : activeLeads.length}</div>
           <div className="text-xs text-mv-ink-faint mt-1">{loading ? '' : `${moneyFmt(pipelineValue)} en pipeline`}</div>
+          {!loading && <MiniDistribution segments={leadStatusSegments} />}
         </Link>
 
         <Link
@@ -152,6 +208,7 @@ export default function OverviewPage() {
           <div className="text-xs text-mv-ink-faint mt-1">
             {loading ? '' : lateProjects.length === 0 ? 'Tout est à jour' : 'à surveiller'}
           </div>
+          {!loading && <MiniDistribution segments={projectHealthSegments} />}
         </Link>
       </div>
 

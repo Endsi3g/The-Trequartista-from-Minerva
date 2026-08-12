@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, TimeEntry } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -211,6 +211,35 @@ export async function fetchAcademySops(): Promise<AcademySOP[]> {
   );
 }
 
+export async function fetchCompletedSopIds(userId: string): Promise<string[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase().from('sop_completions').select('sop_id').eq('user_id', userId);
+      if (error || !data) return [];
+      return data.map((r) => r.sop_id as string);
+    })(),
+    []
+  );
+}
+
+export async function markSopCompleted(userId: string, sopId: string): Promise<boolean> {
+  const { error } = await getSupabase().from('sop_completions').insert([{ user_id: userId, sop_id: sopId }]);
+  if (error) {
+    console.error('[Supabase] Error marking SOP complete:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function unmarkSopCompleted(userId: string, sopId: string): Promise<boolean> {
+  const { error } = await getSupabase().from('sop_completions').delete().eq('user_id', userId).eq('sop_id', sopId);
+  if (error) {
+    console.error('[Supabase] Error unmarking SOP complete:', error);
+    return false;
+  }
+  return true;
+}
+
 export async function fetchAcademySop(id: string): Promise<AcademySOP | null> {
   return withTimeout(
     (async () => {
@@ -346,50 +375,7 @@ export async function deleteLead(leadId: string): Promise<boolean> {
 }
 
 // ----------------------------------------------------
-// 9. TIME TRACKING DIRECT SUPABASE API
-// ----------------------------------------------------
-export async function fetchOpenTimeEntry(userId: string): Promise<TimeEntry | null> {
-  const { data, error } = await getSupabase()
-    .from('time_entries')
-    .select('*')
-    .eq('user_id', userId)
-    .is('ended_at', null)
-    .maybeSingle();
-
-  if (error || !data) return null;
-  return data as TimeEntry;
-}
-
-export async function startTimeEntry(userId: string, projectId: string): Promise<TimeEntry | null> {
-  const { data, error } = await getSupabase()
-    .from('time_entries')
-    .insert([{ user_id: userId, project_id: projectId, started_at: new Date().toISOString() }])
-    .select()
-    .single();
-
-  if (error) {
-    console.error('[Supabase] Error starting time entry:', error);
-    return null;
-  }
-  return data as TimeEntry;
-}
-
-export async function stopTimeEntry(entryId: string, startedAt: string): Promise<boolean> {
-  const durationSeconds = Math.max(0, Math.round((Date.now() - new Date(startedAt).getTime()) / 1000));
-  const { error } = await getSupabase()
-    .from('time_entries')
-    .update({ ended_at: new Date().toISOString(), duration_seconds: durationSeconds })
-    .eq('id', entryId);
-
-  if (error) {
-    console.error('[Supabase] Error stopping time entry:', error);
-    return false;
-  }
-  return true;
-}
-
-// ----------------------------------------------------
-// 10. CONTENT POSTS (REELS) DIRECT SUPABASE API
+// 9. CONTENT POSTS (REELS) DIRECT SUPABASE API
 // ----------------------------------------------------
 function mapContentPostRow(row: any): ContentPost {
   return {

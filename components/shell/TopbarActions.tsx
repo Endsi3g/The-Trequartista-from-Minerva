@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { Search, Bell, X } from 'lucide-react';
 import Link from 'next/link';
 import { SearchDialog } from './SearchDialog';
-import { TrackTimeButton } from './TrackTimeButton';
 import { NewMenu } from './NewMenu';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -89,7 +88,6 @@ export function TopbarActions() {
         </kbd>
       </button>
 
-      <TrackTimeButton />
       <NewMenu />
       <ThemeToggle />
 

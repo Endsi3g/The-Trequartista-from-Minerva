@@ -109,6 +109,12 @@ function MenuBody({
           <span className="font-semibold text-mv-ink">Mon profil</span>
         </Link>
       </DropdownMenuItem>
+      <DropdownMenuItem asChild onClick={onNavigate}>
+        <Link href="/team" className="flex items-center gap-2.5">
+          <Users size={15} className="shrink-0" />
+          <span className="font-semibold text-mv-ink">Équipe</span>
+        </Link>
+      </DropdownMenuItem>
 
       <DropdownMenuSeparator />
 
@@ -148,12 +154,6 @@ function MenuBody({
               <Link href="/settings/billing" className="flex items-center gap-2.5 pl-6">
                 <CreditCard size={14} className="shrink-0" />
                 <span>Facturation</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild onClick={onNavigate}>
-              <Link href="/team" className="flex items-center gap-2.5 pl-6">
-                <Users size={14} className="shrink-0" />
-                <span>Équipe</span>
               </Link>
             </DropdownMenuItem>
           </motion.div>

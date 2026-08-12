@@ -12,7 +12,6 @@ import {
   FolderKanban,
   Clapperboard,
   GraduationCap,
-  UserCheck,
   ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
@@ -126,8 +125,6 @@ export function AppSidebar() {
     { key: 'academy', label: 'Académie', href: '/academy', icon: GraduationCap },
   ];
 
-  const teamItem: NavItem = { key: 'team', label: 'Équipe', href: '/team', icon: UserCheck };
-
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   const body = (
@@ -150,10 +147,6 @@ export function AppSidebar() {
             <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
           ))}
         </CollapsibleGroup>
-
-        <div className="pt-1 border-t border-mv-border-soft space-y-0.5">
-          <NavLink item={teamItem} active={isActive(teamItem.href)} onNavigate={closeOnNavigate} />
-        </div>
       </div>
 
       {/* Footer — user menu */}
