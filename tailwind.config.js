@@ -56,8 +56,9 @@ module.exports = {
         'mv-lg': '0 8px 16px rgba(26,30,22,.06), 0 24px 48px rgba(26,30,22,.10)',
       },
       fontFamily: {
-        display: ['New York', '-apple-system-serif', 'ui-serif', 'Georgia', 'serif'],
-        sans: ['Plus Jakarta Sans', 'var(--font-jakarta)', 'sans-serif'],
+        display: ['var(--font-plus-jakarta)', 'Plus Jakarta Sans', 'Inter', '-apple-system', 'sans-serif'],
+        sans: ['var(--font-inter)', 'Inter', 'Plus Jakarta Sans', '-apple-system', 'sans-serif'],
+        mono: ['var(--font-mono)', 'JetBrains Mono', 'monospace'],
       },
       animation: {
         'mv-fade-up': 'mvFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',

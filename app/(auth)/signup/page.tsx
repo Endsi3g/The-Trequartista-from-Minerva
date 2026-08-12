@@ -24,30 +24,13 @@ export default function SignupPage() {
         <SignupForm />
       </main>
 
-      {/* Background Leaf Corner Illustrations (Image 3) */}
-      <div className="fixed bottom-12 left-0 z-10 pointer-events-none select-none">
+      {/* Background Leaf Corner Illustrations */}
+      <div className="fixed bottom-0 left-0 z-10 pointer-events-none select-none">
         <Image src="/leaf-bottom-left.svg" alt="Decoration" width={220} height={260} className="w-44 sm:w-56" />
       </div>
-      <div className="fixed bottom-12 right-0 z-10 pointer-events-none select-none">
+      <div className="fixed bottom-0 right-0 z-10 pointer-events-none select-none">
         <Image src="/leaf-bottom-right.svg" alt="Decoration" width={220} height={260} className="w-44 sm:w-56" />
       </div>
-
-      {/* Dark Footer Bar (Image 3) */}
-      <footer className="h-12 bg-[#242424] text-white px-6 sm:px-12 flex items-center justify-between text-xs z-20 relative">
-        <div className="flex items-center gap-2 font-bold tracking-tight text-white">
-          <span className="w-4 h-4 rounded bg-[#00a800] inline-block" />
-          <span>Minerva Trequartista</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-mv-ink-soft text-[11px]">
-          <span>curated by</span>
-          <span className="font-extrabold text-white tracking-tight flex items-center gap-1">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-white">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-            Mobbin
-          </span>
-        </div>
-      </footer>
     </div>
   );
 }
