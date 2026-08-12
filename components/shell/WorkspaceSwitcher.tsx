@@ -12,10 +12,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-// Single workspace for now (solo usage). The switcher UI is ready to grow into
-// multi-workspace / multi-role support (chantier équipe) without a rebuild —
-// just populate this list from the real workspaces table when it exists.
-const WORKSPACES = [{ id: 'minerva', name: 'Minerva Trequartista' }];
+// Single workspace for now (solo usage). Each role will get its own named
+// workspace once chantier équipe lands — just populate this list from the
+// real workspaces table then. The name shown here is the workspace's own
+// name, not the app's brand name (that only lives in the logo/tab/login).
+const WORKSPACES = [{ id: 'minerva', name: 'Agence Minerva' }];
 
 interface WorkspaceSwitcherProps {
   collapsed?: boolean;
@@ -32,8 +33,9 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 min-w-0 text-left transition-colors hover:bg-mv-cream-soft cursor-pointer">
-          <LogoMark size={28} />
-          <ChevronDown size={14} className="shrink-0 text-mv-ink-faint ml-auto" />
+          <LogoMark size={28} className="shrink-0" />
+          <span className="flex-1 min-w-0 truncate text-[13px] font-bold text-mv-ink">{current.name}</span>
+          <ChevronDown size={14} className="shrink-0 text-mv-ink-faint" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
