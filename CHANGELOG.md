@@ -47,3 +47,15 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 - Académie : retrait du badge « Video Tutorials Engine ».
 - Fiche de performance d'équipe : plus d'employé fictif — titre, date de rendez-vous, compétences (incluant la mention Supabase) et historique étaient tous inventés. Remplacés par les vraies données quand elles existent, par un état vide honnête sinon.
 - Profil : retrait complet du système de clés API (jamais vraiment utilisé) et de l'onglet Sécurité qui prétendait à tort qu'une double authentification était active. Remplacé par un vrai changement de mot de passe fonctionnel.
+
+---
+
+## 2026-08-12 — Chantier 3 : réels
+
+- Chaque reel a maintenant sa propre page (`/content-planner/[id]`) avec tout dessus : aperçu, légende, hashtags, statut et son historique, client, métriques, notes internes, lien vers la publication native. Fini le panneau superposé sans adresse propre.
+- Le calendrier éditorial est maintenant la vue par défaut, sur le vrai mois en cours, avec navigation mois précédent/suivant.
+- Les 3 contenus inventés et la vidéo de démo Google réutilisée partout ont disparu — tout vient de vraies données.
+- Le client dans le formulaire de planification vient maintenant de votre vrai Portefeuille Clients.
+- Téléversement de vidéo par glisser-déposer, ou lien externe — les deux fonctionnent.
+
+*Nouvelle migration en attente : `20260812000011` (colonnes du reel détaillé). Tant qu'elle n'est pas déployée, la création/modification de reels ne fonctionnera pas.*
