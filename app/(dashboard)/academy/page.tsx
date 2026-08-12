@@ -32,6 +32,9 @@ export default function AcademyPage() {
       setSops(await fetchAcademySops());
       setLoading(false);
     })();
+    try {
+      localStorage.setItem('mv-visited-academy', '1');
+    } catch {}
   }, []);
 
   const filteredSops = sops.filter((sop) => {

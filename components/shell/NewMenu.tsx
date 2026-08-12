@@ -14,9 +14,9 @@ export function NewMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-mv-green hover:bg-mv-green-dark text-white text-xs font-bold transition-all cursor-pointer shadow-mv-sm">
+        <button className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-full bg-mv-green hover:bg-mv-green-dark text-white text-xs font-bold transition-all cursor-pointer shadow-mv-sm">
           <Plus className="w-3.5 h-3.5 stroke-[3]" />
-          <span>Nouveau</span>
+          <span className="hidden sm:inline">Nouveau</span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">

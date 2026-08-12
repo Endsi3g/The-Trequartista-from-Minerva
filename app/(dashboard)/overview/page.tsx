@@ -2,52 +2,74 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
-  FileText,
-  Send,
-  FileCheck,
-  FilePlus,
-  Crown,
-  ChevronDown,
-  Lock,
+  Target,
+  Users,
+  AlertTriangle,
+  Plus,
+  Clapperboard,
+  Bell,
+  ArrowRight,
 } from 'lucide-react';
-import { fetchProjects, fetchClients } from '@/lib/services/supabase-data';
-import type { Project, Client } from '@/lib/types';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+  Cell,
+} from 'recharts';
+import { fetchProjects, fetchClients, fetchLeads } from '@/lib/services/supabase-data';
+import type { Project, Client, Lead } from '@/lib/types';
+import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
+
+const GREEN_SHADES = ['#167f5b', '#1c9a6f', '#4da37e', '#8fc7a9', '#c7e1d0'];
+
+function moneyFmt(n: number) {
+  return `${Math.round(n).toLocaleString('fr-CA')} $`;
+}
 
 export default function OverviewPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState<string>('Joe');
+  const [firstName, setFirstName] = useState('');
 
   useEffect(() => {
-    async function loadData() {
+    (async () => {
       setLoading(true);
       try {
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
         if (user) {
-          const rawName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Joe';
-          const firstName = rawName.split(/[\s._-]/)[0];
-          setUserName(firstName.charAt(0).toUpperCase() + firstName.slice(1));
+          const rawName = user.user_metadata?.full_name || user.email?.split('@')[0] || '';
+          const first = rawName.split(/[\s._-]/)[0] || '';
+          setFirstName(first.charAt(0).toUpperCase() + first.slice(1));
         }
 
-        const [projData, clientData] = await Promise.all([fetchProjects(), fetchClients()]);
+        const [projData, clientData, leadData] = await Promise.all([
+          fetchProjects(),
+          fetchClients(),
+          fetchLeads(),
+        ]);
         setProjects(projData);
         setClients(clientData);
+        setLeads(leadData);
       } catch (err) {
         console.warn('[Overview] Error loading data:', err);
       } finally {
         setLoading(false);
       }
-    }
-    loadData();
+    })();
   }, []);
 
-  const todayDateStr = new Date().toLocaleDateString('en-US', {
+  const todayDateStr = new Date().toLocaleDateString('fr-CA', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -55,215 +77,237 @@ export default function OverviewPage() {
 
   const getGreetingPrefix = () => {
     const hour = new Date().getHours();
-    if (hour >= 4 && hour < 12) return 'Good morning';
-    if (hour >= 12 && hour < 18) return 'Good afternoon';
-    return 'Good evening';
+    if (hour >= 4 && hour < 12) return 'Bon matin';
+    if (hour >= 12 && hour < 18) return 'Bon après-midi';
+    return 'Bonsoir';
   };
+
+  // ── Real KPIs ──────────────────────────────────────────────
+  const activeClients = clients.filter((c) => c.status === 'Active');
+  const totalMrr = activeClients.reduce((sum, c) => sum + (c.mrr || 0), 0);
+
+  const activeLeads = leads.filter((l) => l.status !== 'Gagné' && l.status !== 'Perdu');
+  const pipelineValue = activeLeads.reduce((sum, l) => sum + (l.mrr_value || 0) + (l.one_time_value || 0), 0);
+
+  const now = new Date();
+  const lateProjects = projects.filter((p) => {
+    const isPastDue = p.due_date && new Date(p.due_date) < now;
+    return p.health === 'Needs Review' || isPastDue;
+  });
+
+  const topClientsByMrr = [...activeClients]
+    .sort((a, b) => (b.mrr || 0) - (a.mrr || 0))
+    .slice(0, 6)
+    .map((c) => ({ name: c.name, mrr: c.mrr || 0 }));
+
+  const recentProjects = [...projects]
+    .sort((a, b) => (a.due_date && b.due_date ? new Date(a.due_date).getTime() - new Date(b.due_date).getTime() : 0))
+    .slice(0, 5);
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
-      {/* ── Dynamic Greeting Header (Image 2) ── */}
+      {/* ── Greeting ── */}
       <div className="space-y-1">
-        <p className="text-sm font-semibold text-mv-ink-soft">{todayDateStr}</p>
+        <p className="text-sm font-semibold text-mv-ink-soft capitalize">{todayDateStr}</p>
         <h1 className="text-3xl lg:text-4xl font-extrabold text-mv-ink tracking-tight font-display">
-          {getGreetingPrefix()}, {userName}.
+          {getGreetingPrefix()}{firstName ? `, ${firstName}` : ''}.
         </h1>
       </div>
 
-      {/* ── Main 2-Column Grid (Image 2) ── */}
+      {/* ── KPI row: Clients → Leads → Projets en retard ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Link
+          href="/clients"
+          className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green/40 hover:shadow-mv-md transition-all group"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-mv-ink-soft uppercase tracking-wider">Clients actifs</span>
+            <Users className="w-4 h-4 text-mv-green" />
+          </div>
+          <div className="text-2xl font-extrabold text-mv-ink font-display">{loading ? '…' : activeClients.length}</div>
+          <div className="text-xs text-mv-ink-faint mt-1">{loading ? '' : `${moneyFmt(totalMrr)} MRR total`}</div>
+        </Link>
+
+        <Link
+          href="/leads"
+          className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green/40 hover:shadow-mv-md transition-all group"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-mv-ink-soft uppercase tracking-wider">Leads actifs</span>
+            <Target className="w-4 h-4 text-mv-green" />
+          </div>
+          <div className="text-2xl font-extrabold text-mv-ink font-display">{loading ? '…' : activeLeads.length}</div>
+          <div className="text-xs text-mv-ink-faint mt-1">{loading ? '' : `${moneyFmt(pipelineValue)} en pipeline`}</div>
+        </Link>
+
+        <Link
+          href="/projects"
+          className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-red/40 hover:shadow-mv-md transition-all group"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-mv-ink-soft uppercase tracking-wider">Projets en retard</span>
+            <AlertTriangle className={`w-4 h-4 ${lateProjects.length > 0 ? 'text-mv-red' : 'text-mv-ink-faint'}`} />
+          </div>
+          <div className="text-2xl font-extrabold text-mv-ink font-display">{loading ? '…' : lateProjects.length}</div>
+          <div className="text-xs text-mv-ink-faint mt-1">
+            {loading ? '' : lateProjects.length === 0 ? 'Tout est à jour' : 'à surveiller'}
+          </div>
+        </Link>
+      </div>
+
+      {/* ── Main 2-Column Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Column (2 Cols wide) */}
+        {/* Left Column */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Project Timeline Card (Image 2) */}
+          {/* Real project list */}
           <div className="bg-white border border-mv-border rounded-2xl p-6 shadow-mv-sm">
-            <h2 className="text-lg font-bold text-mv-ink mb-4 font-display">Project Timeline</h2>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-mv-border text-mv-ink-soft uppercase text-[10px] font-bold tracking-wider">
-                    <th className="py-3 px-4 w-1/3">Project</th>
-                    <th className="py-3 px-4 text-center">Jan 31</th>
-                    <th className="py-3 px-4 text-center text-mv-ink font-extrabold">Today</th>
-                    <th className="py-3 px-4 text-center">Feb 28</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-mv-border/60">
-                  {/* Row 1 */}
-                  <tr className="hover:bg-mv-surface/50 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-mv-ink">Consulting Project</td>
-                    <td colSpan={3} className="py-3.5 px-4 relative">
-                      <div className="h-1.5 bg-mv-surface rounded-full w-full relative">
-                        <div className="absolute left-[15%] right-[25%] top-0 bottom-0 bg-mv-border/80 rounded-full" />
-                      </div>
-                    </td>
-                  </tr>
-
-                  {/* Row 2 */}
-                  <tr className="hover:bg-mv-surface/50 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-mv-ink">Design Project with...</td>
-                    <td colSpan={3} className="py-3.5 px-4 relative">
-                      <div className="h-1.5 bg-mv-surface rounded-full w-full relative flex items-center">
-                        <div className="absolute left-[30%] right-[10%] top-0 bottom-0 bg-mv-border/80 rounded-full" />
-                        <div className="absolute left-[45%] flex items-center -space-x-1.5">
-                          <span className="w-6 h-6 rounded-full bg-mv-green text-white text-[10px] font-bold flex items-center justify-center border-2 border-white shadow-sm">
-                            JS
-                          </span>
-                          <span className="w-6 h-6 rounded-full bg-mv-ink text-white text-[10px] font-bold flex items-center justify-center border-2 border-white shadow-sm">
-                            AT
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-
-                  {/* Row 3 */}
-                  <tr className="hover:bg-mv-surface/50 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-mv-ink">Rebranding Project</td>
-                    <td colSpan={3} className="py-3.5 px-4 relative">
-                      <div className="h-1.5 bg-mv-surface rounded-full w-full relative flex items-center">
-                        <div className="absolute left-[10%] right-[40%] top-0 bottom-0 bg-mv-border/80 rounded-full" />
-                        <div className="absolute left-[47%] flex items-center">
-                          <span className="w-6 h-6 rounded-full bg-mv-ink-soft text-white text-[10px] font-bold flex items-center justify-center border-2 border-white shadow-sm">
-                            <Lock className="w-3 h-3 text-white" />
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Profit & Loss Chart Card (Image 2) */}
-          <div className="bg-white border border-mv-border rounded-2xl p-6 shadow-mv-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-mv-ink font-display">Profit & Loss</h2>
-              <div className="flex items-center gap-3">
-                <button className="px-3 py-1 bg-mv-surface border border-mv-border rounded-full text-xs font-bold text-mv-ink flex items-center gap-1">
-                  <span>USD</span>
-                  <ChevronDown className="w-3 h-3 text-mv-ink-soft" />
-                </button>
-                <button className="px-3 py-1 bg-mv-surface border border-mv-border rounded-full text-xs font-bold text-mv-ink flex items-center gap-1">
-                  <span>Last 6 Months</span>
-                  <ChevronDown className="w-3 h-3 text-mv-ink-soft" />
-                </button>
-              </div>
-            </div>
-
-            {/* Tri-Color Curve Chart SVG matching Image 2 */}
-            <div className="w-full h-48 relative pt-4">
-              <svg viewBox="0 0 500 160" className="w-full h-full overflow-visible">
-                {/* Horizontal Baseline */}
-                <line x1="0" y1="120" x2="500" y2="120" stroke="#e5e7eb" strokeWidth="1.5" strokeDasharray="3 3" />
-
-                {/* Green Line (Top / Rising) */}
-                <path
-                  d="M 20 120 C 120 120, 160 30, 210 30 C 260 30, 280 90, 320 90 C 370 90, 420 70, 480 75"
-                  fill="none"
-                  stroke="#00a800"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                />
-
-                {/* Dark Charcoal Line (Middle / Stable) */}
-                <path
-                  d="M 20 120 C 120 120, 160 65, 210 65 C 260 65, 280 110, 320 110 C 370 110, 420 95, 480 100"
-                  fill="none"
-                  stroke="#242424"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-
-                {/* Amber/Gold Line (Bottom / Dipping) */}
-                <path
-                  d="M 20 120 C 120 120, 160 145, 210 145 C 260 145, 280 130, 320 130 C 370 130, 420 135, 480 135"
-                  fill="none"
-                  stroke="#eab308"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column (1 Col wide) */}
-        <div className="space-y-8">
-          {/* Quick Actions 2x2 Grid (Image 2) */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Action 1 */}
-            <Link
-              href="/clients"
-              className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
-            >
-              <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-[#00a800] flex items-center justify-center group-hover:scale-110 transition-transform">
-                <FileText className="w-6 h-6 stroke-[2]" />
-              </div>
-              <span className="text-xs font-bold text-mv-ink">Send an invoice</span>
-            </Link>
-
-            {/* Action 2 */}
-            <Link
-              href="/leads"
-              className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
-            >
-              <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-[#00a800] flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Send className="w-6 h-6 stroke-[2]" />
-              </div>
-              <span className="text-xs font-bold text-mv-ink">Draft a proposal</span>
-            </Link>
-
-            {/* Action 3 */}
-            <Link
-              href="/projects"
-              className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
-            >
-              <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-[#00a800] flex items-center justify-center group-hover:scale-110 transition-transform">
-                <FileCheck className="w-6 h-6 stroke-[2]" />
-              </div>
-              <span className="text-xs font-bold text-mv-ink">Create a contract</span>
-            </Link>
-
-            {/* Action 4 */}
-            <Link
-              href="/academy"
-              className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
-            >
-              <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-[#00a800] flex items-center justify-center group-hover:scale-110 transition-transform">
-                <FilePlus className="w-6 h-6 stroke-[2]" />
-              </div>
-              <span className="text-xs font-bold text-mv-ink">Add a form</span>
-            </Link>
-          </div>
-
-          {/* Workflow Plus Promo Card (Image 2) */}
-          <div className="bg-white border border-mv-border rounded-2xl p-6 relative overflow-hidden shadow-mv-sm flex flex-col justify-between min-h-[220px]">
-            <div className="space-y-3 z-10 relative pr-12">
-              <div className="flex items-center gap-2">
-                <Crown className="w-5 h-5 text-amber-500 fill-amber-500" />
-                <h3 className="text-lg font-extrabold text-mv-ink font-display">Workflow Plus</h3>
-              </div>
-              <p className="text-xs text-mv-ink-soft leading-relaxed">
-                Try out automations, white labeling, forms, client portal, and much more.
-              </p>
-            </div>
-
-            <div className="z-10 relative pt-6">
-              <Link
-                href="/settings/billing"
-                className="text-xs font-extrabold text-[#00a800] hover:underline tracking-wide uppercase flex items-center gap-1"
-              >
-                <span>START 14-DAY FREE TRIAL →</span>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-mv-ink font-display">Projets</h2>
+              <Link href="/projects" className="text-xs font-semibold text-mv-green hover:underline flex items-center gap-1">
+                Voir tout <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
 
-            {/* Green Leaf Graphic in bottom right corner (Image 2) */}
-            <div className="absolute bottom-0 right-0 z-0 pointer-events-none select-none">
-              <Image src="/workflow-leaf.svg" alt="Leaf" width={100} height={80} className="w-24 h-20 object-contain" />
-            </div>
+            {loading ? (
+              <p className="text-xs text-mv-ink-faint py-8 text-center">Chargement…</p>
+            ) : recentProjects.length === 0 ? (
+              <p className="text-xs text-mv-ink-faint py-8 text-center">Aucun projet pour le moment.</p>
+            ) : (
+              <div className="divide-y divide-mv-border/60">
+                {recentProjects.map((p) => (
+                  <div key={p.id} className="py-3.5 flex items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-mv-ink text-sm truncate">{p.name}</div>
+                      <div className="text-xs text-mv-ink-faint">{p.client_name || 'Client'} · {p.current_stage}</div>
+                    </div>
+                    <div className="w-32 shrink-0">
+                      <div className="h-1.5 bg-mv-cream-soft rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${p.health === 'Needs Review' ? 'bg-mv-red' : 'bg-mv-green'}`}
+                          style={{ width: `${p.progress_pct || 0}%` }}
+                        />
+                      </div>
+                    </div>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                        p.health === 'Needs Review'
+                          ? 'bg-mv-red-bg text-mv-red'
+                          : p.health === 'On Track'
+                            ? 'bg-mv-amber-bg text-mv-amber'
+                            : 'bg-mv-green-tint text-mv-green'
+                      }`}
+                    >
+                      {p.health}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* MRR by client — real data, CAD only */}
+          <div className="bg-white border border-mv-border rounded-2xl p-6 shadow-mv-sm">
+            <h2 className="text-lg font-bold text-mv-ink font-display mb-1">Revenu récurrent (MRR)</h2>
+            <p className="text-xs text-mv-ink-faint mb-6">Top clients par MRR mensuel, en dollars canadiens.</p>
+
+            {loading ? (
+              <p className="text-xs text-mv-ink-faint py-8 text-center">Chargement…</p>
+            ) : topClientsByMrr.length === 0 ? (
+              <p className="text-xs text-mv-ink-faint py-8 text-center">Aucun client actif pour le moment.</p>
+            ) : (
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topClientsByMrr} layout="vertical" margin={{ left: 8, right: 24 }}>
+                    <XAxis type="number" hide />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={110}
+                      tick={{ fontSize: 11, fill: '#565f52' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      formatter={(value) => [moneyFmt(Number(value)), 'MRR']}
+                      contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e6e0d0' }}
+                    />
+                    <Bar dataKey="mrr" radius={[0, 6, 6, 0]}>
+                      {topClientsByMrr.map((_, i) => (
+                        <Cell key={i} fill={GREEN_SHADES[i % GREEN_SHADES.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-8">
+          {/* Real quick actions */}
+          <div className="grid grid-cols-2 gap-4">
+            <Link
+              href="/leads?new=1"
+              className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Target className="w-6 h-6 stroke-[2]" />
+              </div>
+              <span className="text-xs font-bold text-mv-ink">Nouveau lead</span>
+            </Link>
+
+            <Link
+              href="/clients?new=1"
+              className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Plus className="w-6 h-6 stroke-[2]" />
+              </div>
+              <span className="text-xs font-bold text-mv-ink">Nouveau client</span>
+            </Link>
+
+            <Link
+              href="/content-planner"
+              className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Clapperboard className="w-6 h-6 stroke-[2]" />
+              </div>
+              <span className="text-xs font-bold text-mv-ink">Planifier un reel</span>
+            </Link>
+
+            <Link
+              href="/overview/audit-logs"
+              className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Bell className="w-6 h-6 stroke-[2]" />
+              </div>
+              <span className="text-xs font-bold text-mv-ink">Voir les alertes</span>
+            </Link>
+          </div>
+
+          <OnboardingChecklist />
+
+          {lateProjects.length > 0 && (
+            <div className="bg-mv-red-bg border border-mv-red/20 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-4 h-4 text-mv-red" />
+                <h3 className="text-sm font-extrabold text-mv-red font-display">Projets à surveiller</h3>
+              </div>
+              <ul className="space-y-2">
+                {lateProjects.slice(0, 4).map((p) => (
+                  <li key={p.id}>
+                    <Link href="/projects" className="text-xs text-mv-ink hover:text-mv-red transition-colors flex items-center justify-between">
+                      <span className="truncate">{p.name}</span>
+                      <ArrowRight className="w-3 h-3 shrink-0" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>

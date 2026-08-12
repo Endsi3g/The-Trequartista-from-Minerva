@@ -37,7 +37,9 @@ function AppShellInner({ children }: AppShellProps) {
         <header className="h-16 px-4 md:px-6 bg-white/90 backdrop-blur-md border-b border-mv-border sticky top-0 z-20 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <SidebarTrigger />
-            <AppBreadcrumb />
+            <div className="hidden sm:block min-w-0">
+              <AppBreadcrumb />
+            </div>
           </div>
           <TopbarActions />
         </header>
