@@ -80,11 +80,10 @@ export function SignupForm({
         return;
       }
 
-      setSuccessMsg('Compte créé. Redirection vers l’application...');
+      setSuccessMsg('Compte créé avec succès. Redirection...');
       setTimeout(() => {
-        router.push('/pending-approval');
-        router.refresh();
-      }, 1000);
+        window.location.href = '/overview';
+      }, 500);
     } catch {
       setErrorMsg('Erreur de création de compte.');
       setLoading(false);

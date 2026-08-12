@@ -75,10 +75,10 @@ export function LoginForm({
         setLoading(false);
         return;
       }
-      router.push(redirectTo);
-      router.refresh();
-    } catch {
-      setErrorMsg('Erreur de connexion Supabase Auth.');
+      window.location.href = redirectTo;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur de connexion Supabase Auth.';
+      setErrorMsg(msg);
       setLoading(false);
     }
   };
