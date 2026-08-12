@@ -43,20 +43,7 @@ export function SignupForm() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
     const normalizedEmail = email.trim().toLowerCase();
-    const domain = normalizedEmail.split('@')[1];
-    const ALLOWED_EXPLICIT = ['kbelceus776@gmail.com', 'theminervabrand@gmail.com'];
-    const isAllowedDomain = domain === 'minervaflow.com' || domain === 'minerva.com';
-    const isExplicitAllowed = ALLOWED_EXPLICIT.includes(normalizedEmail);
-
-    if (!isAllowedDomain && !isExplicitAllowed) {
-      setErrorMsg('Accès restreint aux adresses @minervaflow.com, @minerva.com ou autorisées');
-      setLoading(false);
-      return;
-    }
 
     try {
       const { error } = await supabase.auth.signUp({
@@ -75,10 +62,10 @@ export function SignupForm() {
         return;
       }
 
-      setSuccessMsg('Compte créé avec succès. Redirection...');
+      setSuccessMsg('Compte créé avec succès. Bienvenue !');
       setTimeout(() => {
-        window.location.href = '/overview';
-      }, 800);
+        window.location.href = '/onboarding';
+      }, 500);
     } catch {
       setErrorMsg('Erreur de création de compte.');
       setLoading(false);

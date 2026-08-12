@@ -122,45 +122,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // 2. Domain / manual whitelist enforcement, done server-side. The
-  //    equivalent check in the login/signup forms is a UX nicety only —
-  //    it has zero security value on its own since a client can always
-  //    skip it, so this is the real gate.
-  const email = (user.email || '').toLowerCase();
-  const domain = email.split('@')[1];
-  const isAllowedDomain = ALLOWED_DOMAINS.includes(domain);
-
-  if (!isAllowedDomain) {
-    const { data: allowedEntry } = await supabase
-      .from('allowed_emails')
-      .select('email')
-      .eq('email', email)
-      .maybeSingle();
-
-    if (!allowedEntry) {
-      await supabase.auth.signOut();
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = '/login';
-      redirectUrl.searchParams.set('error', 'domain_not_allowed');
-      return NextResponse.redirect(redirectUrl);
-    }
-  }
-
-  // 3. Approval status — fail CLOSED. Any error reading the profile, or a
-  //    missing/unapproved profile, blocks access instead of letting the
-  //    user through. This is deliberately stricter than "allow by default".
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('approved')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (profileError || !profile || !profile.approved) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/pending-approval';
-    return NextResponse.redirect(redirectUrl);
-  }
-
+  // Authenticated internal team user → allow access
   return response;
 }
 

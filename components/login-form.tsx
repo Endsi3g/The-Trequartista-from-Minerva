@@ -41,20 +41,7 @@ export function LoginForm() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setErrorMsg(null);
-
     const normalizedEmail = email.trim().toLowerCase();
-    const domain = normalizedEmail.split('@')[1];
-    const ALLOWED_EXPLICIT = ['kbelceus776@gmail.com', 'theminervabrand@gmail.com'];
-    const isAllowedDomain = domain === 'minervaflow.com' || domain === 'minerva.com';
-    const isExplicitAllowed = ALLOWED_EXPLICIT.includes(normalizedEmail);
-
-    if (!isAllowedDomain && !isExplicitAllowed) {
-      setErrorMsg('Accès restreint : Seules les adresses @minervaflow.com, @minerva.com ou autorisées sont admises.');
-      setLoading(false);
-      return;
-    }
 
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });

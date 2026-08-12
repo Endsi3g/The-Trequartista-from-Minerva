@@ -19,11 +19,22 @@ export default function OverviewPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState<string>('Joe');
 
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+          const rawName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Joe';
+          const firstName = rawName.split(/[\s._-]/)[0];
+          setUserName(firstName.charAt(0).toUpperCase() + firstName.slice(1));
+        }
+
         const [projData, clientData] = await Promise.all([fetchProjects(), fetchClients()]);
         setProjects(projData);
         setClients(clientData);
@@ -42,13 +53,20 @@ export default function OverviewPage() {
     day: 'numeric',
   });
 
+  const getGreetingPrefix = () => {
+    const hour = new Date().getHours();
+    if (hour >= 4 && hour < 12) return 'Good morning';
+    if (hour >= 12 && hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
-      {/* ── Greeting Header (Image 2) ── */}
+      {/* ── Dynamic Greeting Header (Image 2) ── */}
       <div className="space-y-1">
         <p className="text-sm font-semibold text-mv-ink-soft">{todayDateStr}</p>
         <h1 className="text-3xl lg:text-4xl font-extrabold text-mv-ink tracking-tight font-display">
-          Good evening, Joe.
+          {getGreetingPrefix()}, {userName}.
         </h1>
       </div>
 
