@@ -189,6 +189,7 @@ export default function PerformancePage() {
             title="Niveau de Maîtrise & Vélocité Équipe (%)"
             subtitle="Évaluation continue des compétences techniques et opérationnelles"
             skills={[
+              // TODO(chantier-4): remove fictional employee data
               { skill: 'Supabase Postgres & Edge Functions', score: 95 },
               { skill: 'Next.js 15 App Router & Server Actions', score: 92 },
               { skill: 'Framer Design & Animations UI', score: 88 },
@@ -224,7 +225,7 @@ export default function PerformancePage() {
             <div className="p-4 rounded-xl bg-mv-cream-soft border border-mv-border flex items-center justify-between">
               <div>
                 <div className="font-bold text-mv-ink">Session 1-on-1 — 30 Juillet 2026</div>
-                <div className="text-[11px] text-mv-ink-soft">Bilan mi-trimestre & revue des compétences Supabase Edge Functions.</div>
+                <div className="text-[11px] text-mv-ink-soft">Bilan mi-trimestre & revue des compétences techniques.</div>
               </div>
               <Badge variant="green">Complété</Badge>
             </div>
@@ -232,8 +233,8 @@ export default function PerformancePage() {
         </Card>
       )}
 
-      {/* Supabase Storage HR Documents */}
-      <StorageBrowser defaultBucket="team-documents" title="Documents & Fiches RH (Supabase Storage)" />
+      {/* HR Documents */}
+      <StorageBrowser defaultBucket="team-documents" title="Documents & Fiches RH" />
     </div>
   );
 }

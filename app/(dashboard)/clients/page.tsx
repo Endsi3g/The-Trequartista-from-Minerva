@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,9 +12,10 @@ import { fetchClients, addClient } from '@/lib/services/supabase-data';
 import { Client } from '@/lib/types';
 
 export default function ClientsPage() {
+  const searchParams = useSearchParams();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(searchParams.get('new') === '1');
 
   // Form State
   const [name, setName] = useState('');
@@ -71,12 +73,12 @@ export default function ClientsPage() {
             Répertoire Clients & Suivi MRR
           </h1>
           <p className="text-sm text-mv-ink-soft mt-1">
-            Gestion directe dans Supabase des abonnements mensuels.
+            Gestion directe des abonnements mensuels.
           </p>
         </div>
 
         <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={() => setIsModalOpen(true)}>
-          Nouveau Client Supabase
+          Nouveau Client
         </Button>
       </div>
 
@@ -85,7 +87,7 @@ export default function ClientsPage() {
         <StatCard
           title="Clients Actifs"
           value={loading ? '...' : clients.length}
-          change="Synchro Supabase Live"
+          change="Synchro en direct"
           changeType="positive"
           subtitle="Abonnements actifs"
           icon={<Users className="w-5 h-5" />}
@@ -123,7 +125,7 @@ export default function ClientsPage() {
           </div>
         ) : clients.length === 0 ? (
           <div className="p-8 text-center text-xs text-mv-ink-soft">
-            Aucun client enregistré. Cliquez sur "Nouveau Client Supabase" pour ajouter votre premier contrat.
+            Aucun client enregistré. Cliquez sur "Nouveau Client" pour ajouter votre premier contrat.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -194,7 +196,7 @@ export default function ClientsPage() {
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 max-w-lg w-full shadow-mv-lg animate-mv-scale-in space-y-4">
             <div className="flex items-center justify-between border-b border-mv-border pb-3">
-              <h3 className="text-lg font-bold text-mv-ink font-display">Nouveau Client Supabase</h3>
+              <h3 className="text-lg font-bold text-mv-ink font-display">Nouveau Client</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-mv-ink-soft hover:text-mv-ink">
                 <X className="w-5 h-5" />
               </button>
@@ -265,7 +267,7 @@ export default function ClientsPage() {
                   Annuler
                 </Button>
                 <Button type="submit" variant="primary" className="flex-1">
-                  Enregistrer dans Supabase
+                  Enregistrer
                 </Button>
               </div>
             </form>

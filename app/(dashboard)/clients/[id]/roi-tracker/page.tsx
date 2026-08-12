@@ -362,8 +362,8 @@ export default function RoiTrackerPage() {
           </div>
         </Card>
 
-        {/* Supabase Storage Files Manager */}
-        <StorageBrowser defaultBucket="client-assets" title="Ressources & Actifs Supabase Storage (Client Assets)" />
+        {/* Storage Files Manager */}
+        <StorageBrowser defaultBucket="client-assets" title="Ressources & Actifs (Client Assets)" />
 
       </div>
 

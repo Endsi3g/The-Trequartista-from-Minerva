@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { BonsaiPlantLoader } from '@/components/ui/bonsai-plant-loader';
@@ -12,7 +11,6 @@ export function SignupForm() {
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isCaptchaChecked, setIsCaptchaChecked] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -200,23 +198,6 @@ export function SignupForm() {
           <p className="text-[11px] text-mv-ink-soft mt-1">
             Your password must be at least 10 characters
           </p>
-        </div>
-
-        {/* reCAPTCHA Mock Box */}
-        <div className="p-3 bg-[#f9f9f9] border border-[#d3d3d3] rounded-md flex items-center justify-between">
-          <label className="flex items-center gap-3 cursor-pointer text-xs font-medium text-mv-ink">
-            <input
-              type="checkbox"
-              checked={isCaptchaChecked}
-              onChange={(e) => setIsCaptchaChecked(e.target.checked)}
-              className="w-5 h-5 rounded border-gray-300 text-mv-green focus:ring-mv-green"
-            />
-            <span>I&apos;m not a robot</span>
-          </label>
-          <div className="flex flex-col items-center text-[9px] text-mv-ink-soft">
-            <Image src="https://www.gstatic.com/recaptcha/api2/logo_48.png" alt="reCAPTCHA" width={24} height={24} />
-            <span>reCAPTCHA</span>
-          </div>
         </div>
 
         {/* Terms Disclaimer */}

@@ -24,20 +24,14 @@ interface LogoProps {
   collapsed?: boolean;
 }
 
-export function Logo({ size = 30, collapsed = false }: LogoProps) {
+export function Logo({ size = 28, collapsed = false }: LogoProps) {
   return (
-    <div className="flex items-center gap-2.5 overflow-hidden">
-      <LogoMark size={size} />
+    <div className="flex items-center gap-2 min-w-0">
+      <LogoMark size={size} className="shrink-0" />
       {!collapsed && (
-        <div className="flex flex-col whitespace-nowrap leading-tight">
-          <span className="font-extrabold text-sm tracking-tight text-mv-ink font-display">
-            MINERVA{' '}
-            <span className="text-mv-green">TREQUARTISTA</span>
-          </span>
-          <span className="text-[10px] font-semibold text-mv-ink-faint tracking-widest uppercase">
-            Internal Suite
-          </span>
-        </div>
+        <span className="truncate font-extrabold text-[13.5px] tracking-tight text-mv-ink font-display">
+          MINERVA <span className="text-mv-green">TREQUARTISTA</span>
+        </span>
       )}
     </div>
   );

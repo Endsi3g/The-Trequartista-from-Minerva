@@ -13,7 +13,7 @@ export function ClientExecutiveReport({ client, metrics }: ClientExecutiveReport
       <div className="flex items-center justify-between border-b-2 border-green-700 pb-6">
         <div>
           <div className="text-2xl font-bold tracking-tight text-green-800 font-serif">
-            MINERVA CENTURIONS
+            MINERVA TREQUARTISTA
           </div>
           <div className="text-xs uppercase tracking-widest text-gray-500 font-semibold mt-0.5">
             Rapport Exécutif d'Impact & ROI Client

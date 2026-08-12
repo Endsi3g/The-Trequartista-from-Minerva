@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Bell, Moon, Sun, X } from 'lucide-react';
-import { Button } from '../ui/button';
-import { SearchDialog } from './SearchDialog';
+import { Search, Bell, X } from 'lucide-react';
 import Link from 'next/link';
-import { useTheme } from '@/components/theme/ThemeProvider';
+import { SearchDialog } from './SearchDialog';
+import { TrackTimeButton } from './TrackTimeButton';
+import { NewMenu } from './NewMenu';
+import { ThemeToggle } from './ThemeToggle';
 
 type Alert = {
   id: string;
@@ -20,9 +21,14 @@ export function TopbarActions() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const { theme, toggleTheme } = useTheme();
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | null>(null);
 
-  // Fetch real alerts from Supabase
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotifPermission(Notification.permission);
+    }
+  }, []);
+
   useEffect(() => {
     (async () => {
       try {
@@ -36,13 +42,11 @@ export function TopbarActions() {
           .limit(10);
         if (data) setAlerts(data as Alert[]);
       } catch {
-        // Table might not exist yet — show empty state
         setAlerts([]);
       }
     })();
   }, []);
 
-  // Keyboard shortcut ⌘K / Ctrl+K
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -54,112 +58,103 @@ export function TopbarActions() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  const handleBellClick = async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window && notifPermission === 'default') {
+      const result = await Notification.requestPermission();
+      setNotifPermission(result);
+      if (result === 'granted') {
+        new Notification('Minerva Trequartista', {
+          body: 'Les notifications sont activées. Vous recevrez les alertes importantes ici.',
+          icon: '/icon-192.png',
+        });
+      }
+      return;
+    }
+    setIsNotifOpen((v) => !v);
+  };
+
+  const needsPermission = notifPermission === 'default';
+
   return (
-    <>
-      <div className="flex items-center gap-2">
-        {/* Command Search Trigger */}
+    <div className="flex items-center gap-2">
+      <button
+        id="topbar-search-btn"
+        onClick={() => setIsSearchOpen(true)}
+        className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-mv-surface border border-mv-border text-xs text-mv-ink-soft hover:border-mv-green/40 hover:text-mv-ink transition-all cursor-pointer"
+      >
+        <Search className="w-3.5 h-3.5 text-mv-green" />
+        <span className="hidden sm:inline">Rechercher...</span>
+        <kbd className="hidden sm:inline px-1.5 py-0.5 rounded bg-mv-cream-soft border border-mv-border text-[10px] font-mono text-mv-ink-faint">
+          ⌘K
+        </kbd>
+      </button>
+
+      <TrackTimeButton />
+      <NewMenu />
+      <ThemeToggle />
+
+      <div className="relative">
         <button
-          id="topbar-search-btn"
-          onClick={() => setIsSearchOpen(true)}
-          className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-mv-surface border border-mv-border text-xs text-mv-ink-soft hover:border-mv-green/40 hover:text-mv-ink transition-all cursor-pointer"
+          id="topbar-notif-btn"
+          onClick={handleBellClick}
+          className="relative p-2 rounded-lg bg-mv-surface border border-mv-border text-mv-ink-soft hover:text-mv-ink transition-colors cursor-pointer"
+          title={needsPermission ? 'Activer les notifications' : 'Notifications'}
         >
-          <Search className="w-3.5 h-3.5 text-mv-green" />
-          <span className="hidden sm:inline">Rechercher...</span>
-          <kbd className="px-1.5 py-0.5 rounded bg-mv-cream-soft border border-mv-border text-[10px] font-mono text-mv-ink-faint">
-            ⌘K
-          </kbd>
-        </button>
-
-        {/* Track Time Button (Image 2) */}
-        <button
-          onClick={() => alert('Chronomètre démarré pour la tâche active.')}
-          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-mv-border bg-white text-xs font-semibold text-mv-ink hover:bg-mv-surface transition-all cursor-pointer shadow-mv-sm"
-        >
-          <span className="w-4 h-4 rounded-full bg-mv-green/10 text-mv-green flex items-center justify-center text-[10px]">▶</span>
-          <span>Track Time</span>
-        </button>
-
-        {/* + New Button (Image 2) */}
-        <Link href="/projects">
-          <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#00a800] hover:bg-[#009000] text-white text-xs font-bold transition-all cursor-pointer shadow-mv-sm">
-            <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            <span>New</span>
-          </button>
-        </Link>
-
-        {/* Theme Toggle */}
-        <button
-          id="topbar-theme-toggle"
-          onClick={toggleTheme}
-          className="p-2 rounded-lg bg-mv-surface border border-mv-border text-mv-ink-soft hover:text-mv-ink hover:border-mv-green/40 transition-all cursor-pointer"
-          title={theme === 'dark' ? 'Passer en Mode Clair' : 'Passer en Mode Sombre'}
-        >
-          {theme === 'dark'
-            ? <Sun className="w-4 h-4 text-mv-warm" />
-            : <Moon className="w-4 h-4 text-mv-green" />
-          }
-        </button>
-
-        {/* Notifications Bell */}
-        <div className="relative">
-          <button
-            id="topbar-notif-btn"
-            onClick={() => setIsNotifOpen(!isNotifOpen)}
-            className="relative p-2 rounded-lg bg-mv-surface border border-mv-border text-mv-ink-soft hover:text-mv-ink transition-colors cursor-pointer"
-          >
-            <Bell className="w-4 h-4" />
-            {alerts.length > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-mv-red animate-pulse" />
-            )}
-          </button>
-
-          {/* Notifications Dropdown */}
-          {isNotifOpen && (
-            <div className="absolute right-0 mt-2 w-80 bg-mv-surface border border-mv-border rounded-xl shadow-mv-lg p-3 z-50 space-y-2">
-              <div className="flex items-center justify-between pb-2 border-b border-mv-border">
-                <span className="text-xs font-bold text-mv-ink uppercase tracking-wider">
-                  Alertes {alerts.length > 0 && `(${alerts.length})`}
-                </span>
-                <button onClick={() => setIsNotifOpen(false)} className="text-mv-ink-soft hover:text-mv-ink">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {alerts.length === 0 ? (
-                <div className="py-6 text-center">
-                  <p className="text-xs text-mv-ink-faint">Aucune alerte active</p>
-                  <p className="text-[11px] text-mv-ink-mute mt-1">Vous êtes à jour ✓</p>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {alerts.map((al) => (
-                    <Link
-                      key={al.id}
-                      href={al.url}
-                      onClick={() => setIsNotifOpen(false)}
-                      className="block p-2.5 rounded-lg bg-mv-cream-soft hover:bg-mv-green-tint border border-mv-border transition-colors text-xs space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-mv-ink truncate">{al.title}</span>
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                          al.severity === 'critical' ? 'bg-mv-red-bg text-mv-red' :
-                          al.severity === 'warning'  ? 'bg-mv-amber-bg text-mv-amber' :
-                                                       'bg-mv-green-tint text-mv-green'
-                        }`}>
-                          {al.severity}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-mv-ink-soft leading-tight">{al.description}</p>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+          <Bell className="w-4 h-4" />
+          {(alerts.length > 0 || needsPermission) && (
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-mv-red animate-pulse" />
           )}
-        </div>
+        </button>
+
+        {isNotifOpen && !needsPermission && (
+          <div className="absolute right-0 mt-2 w-80 bg-mv-surface border border-mv-border rounded-xl shadow-mv-lg p-3 z-50 space-y-2">
+            <div className="flex items-center justify-between pb-2 border-b border-mv-border">
+              <span className="text-xs font-bold text-mv-ink uppercase tracking-wider">
+                Alertes {alerts.length > 0 && `(${alerts.length})`}
+              </span>
+              <button onClick={() => setIsNotifOpen(false)} className="text-mv-ink-soft hover:text-mv-ink">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {alerts.length === 0 ? (
+              <div className="py-6 text-center">
+                <p className="text-xs text-mv-ink-faint">Aucune alerte active</p>
+                <p className="text-[11px] text-mv-ink-mute mt-1">Vous êtes à jour ✓</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {alerts.map((al) => (
+                  <Link
+                    key={al.id}
+                    href={al.url}
+                    onClick={() => setIsNotifOpen(false)}
+                    className="block p-2.5 rounded-lg bg-mv-cream-soft hover:bg-mv-green-tint border border-mv-border transition-colors text-xs space-y-1"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-mv-ink truncate">{al.title}</span>
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          al.severity === 'critical'
+                            ? 'bg-mv-red-bg text-mv-red'
+                            : al.severity === 'warning'
+                              ? 'bg-mv-amber-bg text-mv-amber'
+                              : 'bg-mv-green-tint text-mv-green'
+                        }`}
+                      >
+                        {al.severity}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-mv-ink-soft leading-tight">{al.description}</p>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <SearchDialog isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-    </>
+    </div>
   );
 }

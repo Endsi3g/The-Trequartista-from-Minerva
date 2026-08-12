@@ -58,7 +58,7 @@ export default function IntegrationsPage() {
     {
       id: 'google-calendar',
       name: 'Google Calendar 1-on-1 Sync',
-      description: 'Synchro des événements, réunions clients et revues 1-on-1 via Edge Function Supabase.',
+      description: 'Synchro des événements, réunions clients et revues 1-on-1 via une fonction serveur automatisée.',
       logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg',
       status: 'connected',
       href: '/team',
@@ -113,7 +113,7 @@ export default function IntegrationsPage() {
             <Badge variant="green">Connected Systems</Badge>
           </div>
           <p className="text-sm text-mv-ink-soft mt-1">
-            Connectez vos outils, le serveur Notion MCP et vos webhooks d'automatisation dans Centurions.
+            Connectez vos outils, le serveur Notion MCP et vos webhooks d'automatisation.
           </p>
         </div>
       </div>

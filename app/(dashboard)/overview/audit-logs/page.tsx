@@ -50,11 +50,11 @@ export default function AuditLogsPage() {
               Journal d'Audit & Traçabilité Ops
             </h1>
             <Badge variant={isConnected ? 'green' : 'amber'}>
-              {isConnected ? 'Realtime Connected' : 'Supabase Live'}
+              {isConnected ? 'Realtime Connected' : 'En direct'}
             </Badge>
           </div>
           <p className="text-sm text-mv-ink-soft mt-1">
-            Historique complet des actions d'équipe, validations de checklist et événements webhooks en direct de Supabase Postgres.
+            Historique complet des actions d'équipe, validations de checklist et événements webhooks en direct.
           </p>
         </div>
 
@@ -83,7 +83,7 @@ export default function AuditLogsPage() {
         <div className="p-4 rounded-xl bg-mv-green-tint border border-mv-green/40 flex items-center justify-between text-xs animate-mv-fade-up">
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-mv-green" />
-            <span className="font-bold text-mv-green">Dernier événement Supabase Realtime :</span>
+            <span className="font-bold text-mv-green">Dernier événement en temps réel :</span>
             <span className="text-mv-ink font-semibold">{latestAuditLog.action}</span>
           </div>
           <span className="text-[10px] font-mono text-mv-ink-faint">
@@ -103,7 +103,7 @@ export default function AuditLogsPage() {
               </h3>
             </div>
             <span className="text-[11px] font-mono text-mv-ink-soft">
-              {isLoading ? 'Chargement...' : 'Supabase Postgres Channel'}
+              {isLoading ? 'Chargement...' : 'Canal en temps réel'}
             </span>
           </div>
         }
@@ -159,7 +159,7 @@ export default function AuditLogsPage() {
             <EmptyState
               icon={Shield}
               title="Aucun Journal d'Audit"
-              description="Aucun événement d'audit n'a encore été enregistré dans la base de données Supabase public.audit_logs."
+              description="Aucun événement d'audit n'a encore été enregistré dans la base de données."
             />
           )}
         </div>

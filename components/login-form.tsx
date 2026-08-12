@@ -41,6 +41,8 @@ export function LoginForm() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setErrorMsg(null);
     const normalizedEmail = email.trim().toLowerCase();
 
     try {
@@ -52,7 +54,7 @@ export function LoginForm() {
       }
       window.location.href = redirectTo;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erreur de connexion Supabase Auth.';
+      const msg = err instanceof Error ? err.message : 'Erreur de connexion. Veuillez réessayer.';
       setErrorMsg(msg);
       setLoading(false);
     }

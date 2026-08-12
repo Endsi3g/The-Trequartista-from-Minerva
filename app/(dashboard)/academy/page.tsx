@@ -56,7 +56,7 @@ export default function AcademyPage() {
     });
 
     if (!created) {
-      toastError('Erreur', 'Impossible de créer la SOP dans Supabase.');
+      toastError('Erreur', 'Impossible de créer la SOP.');
       return;
     }
 
@@ -294,8 +294,8 @@ export default function AcademyPage() {
         </div>
       )}
 
-      {/* Supabase Storage Media & Video SOPs */}
-      <StorageBrowser defaultBucket="academy-media" title="Bibliothèque Média & Vidéos SOPs (Supabase Storage)" />
+      {/* Storage Media & Video SOPs */}
+      <StorageBrowser defaultBucket="academy-media" title="Bibliothèque Média & Vidéos SOPs" />
     </div>
   );
 }

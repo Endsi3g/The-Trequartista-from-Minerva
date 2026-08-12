@@ -203,6 +203,16 @@ export interface LeadNote {
   created_at: string;
 }
 
+export interface TimeEntry {
+  id: string;
+  user_id: string;
+  project_id: string;
+  started_at: string;
+  ended_at: string | null;
+  duration_seconds: number | null;
+  note?: string | null;
+}
+
 export type LeadStage = 'nouveau' | 'qualification' | 'proposition' | 'negociation' | 'gagne' | 'perdu';
 
 export interface Lead {

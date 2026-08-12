@@ -212,7 +212,7 @@ export default function ContentPlannerPage() {
       {/* STORAGE MEDIA EXPLORER VIEW */}
 
       {viewMode === 'storage' && (
-        <StorageBrowser defaultBucket="academy-media" title="Bibliothèque Vidéos & Assets Supabase" />
+        <StorageBrowser defaultBucket="academy-media" title="Bibliothèque Vidéos & Assets" />
       )}
 
       {/* KANBAN WORKFLOW VIEW */}
@@ -502,7 +502,7 @@ export default function ContentPlannerPage() {
                   className="w-full mt-1 bg-mv-cream-soft border border-mv-border rounded-xl px-3 py-2 text-mv-ink focus:outline-none focus:border-mv-green font-mono"
                 />
                 <span className="text-[10px] text-mv-ink-faint">
-                  Le service Downloader téléchargera automatiquement le fichier MP4 dans Supabase Storage.
+                  Le service Downloader téléchargera automatiquement le fichier MP4 dans le stockage.
                 </span>
               </div>
 

@@ -31,7 +31,7 @@ interface StorageBrowserProps {
 export function StorageBrowser({
   defaultBucket = 'client-assets',
   folderPath = '',
-  title = 'Gestionnaire Supabase Storage',
+  title = 'Gestionnaire de Stockage',
 }: StorageBrowserProps) {
   const [bucket, setBucket] = useState(defaultBucket);
   const [files, setFiles] = useState<StorageFile[]>([]);
@@ -198,7 +198,7 @@ export function StorageBrowser({
           {uploading && (
             <div className="w-full max-w-xs mt-2 space-y-1">
               <div className="flex justify-between text-[10px] font-mono text-mv-green">
-                <span>Upload vers Supabase...</span>
+                <span>Envoi en cours...</span>
                 <span>{uploadProgress}%</span>
               </div>
               <div className="w-full h-1.5 bg-mv-border rounded-full overflow-hidden">
@@ -215,7 +215,7 @@ export function StorageBrowser({
         <div className="space-y-3">
           <div className="text-xs font-bold text-mv-ink-soft uppercase tracking-wider flex items-center justify-between">
             <span>Fichiers en Stockage ({files.length})</span>
-            <span className="text-[11px] font-normal text-mv-ink-faint">Supabase Storage API</span>
+            <span className="text-[11px] font-normal text-mv-ink-faint">Stockage cloud</span>
           </div>
 
           {files.length === 0 ? (

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { KanbanBoard } from '@/components/crm/KanbanBoard';
 import { LeadDetailDrawer } from '@/components/crm/LeadDetailDrawer';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ import type { Client, Lead, LeadStage } from '@/lib/types';
 import { useSupabaseRealtime } from '@/components/providers/SupabaseRealtimeProvider';
 
 export default function LeadsCrmPage() {
+  const searchParams = useSearchParams();
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('all');
@@ -31,7 +33,7 @@ export default function LeadsCrmPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   // New Lead Modal State
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(searchParams.get('new') === '1');
   const [newCompanyName, setNewCompanyName] = useState('');
   const [newContactName, setNewContactName] = useState('');
   const [newContactEmail, setNewContactEmail] = useState('');

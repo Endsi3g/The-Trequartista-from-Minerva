@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, TimeEntry } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -335,7 +335,50 @@ export async function deleteLead(leadId: string): Promise<boolean> {
 }
 
 // ----------------------------------------------------
-// 9. USER FEEDBACK DIRECT SUPABASE API
+// 9. TIME TRACKING DIRECT SUPABASE API
+// ----------------------------------------------------
+export async function fetchOpenTimeEntry(userId: string): Promise<TimeEntry | null> {
+  const { data, error } = await getSupabase()
+    .from('time_entries')
+    .select('*')
+    .eq('user_id', userId)
+    .is('ended_at', null)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as TimeEntry;
+}
+
+export async function startTimeEntry(userId: string, projectId: string): Promise<TimeEntry | null> {
+  const { data, error } = await getSupabase()
+    .from('time_entries')
+    .insert([{ user_id: userId, project_id: projectId, started_at: new Date().toISOString() }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[Supabase] Error starting time entry:', error);
+    return null;
+  }
+  return data as TimeEntry;
+}
+
+export async function stopTimeEntry(entryId: string, startedAt: string): Promise<boolean> {
+  const durationSeconds = Math.max(0, Math.round((Date.now() - new Date(startedAt).getTime()) / 1000));
+  const { error } = await getSupabase()
+    .from('time_entries')
+    .update({ ended_at: new Date().toISOString(), duration_seconds: durationSeconds })
+    .eq('id', entryId);
+
+  if (error) {
+    console.error('[Supabase] Error stopping time entry:', error);
+    return false;
+  }
+  return true;
+}
+
+// ----------------------------------------------------
+// 10. USER FEEDBACK DIRECT SUPABASE API
 // ----------------------------------------------------
 export async function submitUserFeedback(feedback: {
   rating: number;

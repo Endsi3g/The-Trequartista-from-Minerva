@@ -158,7 +158,7 @@ export default function BillingPage() {
           value={`${totalArr.toLocaleString('fr-CA')} $`}
           change="Projection à 12 mois"
           changeType="positive"
-          subtitle="Base clients Centurions"
+          subtitle="Base clients"
           icon={<TrendingUp className="w-5 h-5" />}
         />
         <StatCard

@@ -99,14 +99,14 @@ export default function LaunchCheckPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl lg:text-2xl font-extrabold text-mv-ink font-display">
-              Checklist Qualité 20-Points (Supabase Sync)
+              Checklist Qualité 20-Points
             </h1>
             <Badge variant={isComplete ? 'green' : 'amber'}>
               {isComplete ? '● 100% Conforme' : '● Validation en cours'}
             </Badge>
           </div>
           <p className="text-xs text-mv-ink-soft mt-1">
-            Projet : <strong>Apex Roofing — Refonte Framer</strong>. Synchronisation des cases cochées directement dans Supabase.
+            Projet : <strong>Apex Roofing — Refonte Framer</strong>. Synchronisation des cases cochées en temps réel.
           </p>
         </div>
 
@@ -131,7 +131,7 @@ export default function LaunchCheckPage() {
               onClick={resetAll}
               className="text-xs text-mv-ink-soft hover:text-mv-red flex items-center gap-1 cursor-pointer transition-colors"
             >
-              <RefreshCw className="w-3.5 h-3.5" /> Réinitialiser Supabase
+              <RefreshCw className="w-3.5 h-3.5" /> Réinitialiser
             </button>
           </div>
         }
@@ -193,8 +193,8 @@ export default function LaunchCheckPage() {
           <AlertCircle className={`w-5 h-5 ${isComplete ? 'text-mv-green' : 'text-mv-amber'}`} />
           <span className="text-xs text-mv-ink-soft">
             {isComplete
-              ? 'Tous les 20 critères sont validés dans Supabase. Vous pouvez débloquer la mise en production.'
-              : `Il reste ${totalCount - checkedCount} critère(s) obligatoire(s) à valider dans Supabase.`}
+              ? 'Tous les 20 critères sont validés. Vous pouvez débloquer la mise en production.'
+              : `Il reste ${totalCount - checkedCount} critère(s) obligatoire(s) à valider.`}
           </span>
         </div>
 
@@ -222,7 +222,7 @@ export default function LaunchCheckPage() {
                 Projet Prêt pour la Production !
               </h3>
               <p className="text-xs text-mv-ink-soft mt-2 leading-relaxed">
-                Les 20 critères de qualité Minerva ont été certifiés et sauvegardés dans la base de données Supabase.
+                Les 20 critères de qualité Minerva ont été certifiés et sauvegardés dans la base de données.
               </p>
             </div>
 
@@ -234,7 +234,7 @@ export default function LaunchCheckPage() {
                 variant="lime"
                 className="flex-1"
                 onClick={() => {
-                  alert('Validation transmise au webhook Supabase Edge Function (launch-check-validator) !');
+                  alert('Validation transmise au webhook de validation (launch-check-validator) !');
                   setIsModalOpen(false);
                 }}
               >

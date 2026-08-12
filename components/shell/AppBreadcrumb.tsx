@@ -31,7 +31,7 @@ export function AppBreadcrumb() {
         className="flex items-center gap-1 hover:text-mv-green transition-colors"
       >
         <Home className="w-3.5 h-3.5" />
-        <span>Trequartista</span>
+        <span>Minerva</span>
       </Link>
 
       {segments.map((segment: string, index: number) => {

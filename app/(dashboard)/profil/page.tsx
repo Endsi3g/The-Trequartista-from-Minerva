@@ -108,7 +108,7 @@ export default function ProfilePage() {
       if (!error) {
         const { data } = supabase.storage.from('team-documents').getPublicUrl(filePath);
         setAvatarUrl(data.publicUrl);
-        toastSuccess('Photo mise à jour', 'Votre avatar a été mis à jour dans Supabase Storage.');
+        toastSuccess('Photo mise à jour', 'Votre avatar a été mis à jour.');
       }
     } catch (err) {
       console.error('Avatar upload error:', err);
@@ -196,7 +196,7 @@ export default function ProfilePage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
-              Mon Profil & Écosystème Centurions
+              Mon Profil
             </h1>
             <Badge variant="green">Profil & API Hub</Badge>
           </div>
@@ -207,7 +207,7 @@ export default function ProfilePage() {
 
         {savedSuccess && (
           <Badge variant="green" className="animate-mv-fade-up">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Modifications sauvegardées dans Supabase
+            <CheckCircle2 className="w-3.5 h-3.5" /> Modifications sauvegardées
           </Badge>
         )}
       </div>
@@ -259,7 +259,7 @@ export default function ProfilePage() {
               <div className="space-y-2">
                 <div className="font-bold text-mv-ink">Photo de Profil Collaborateur</div>
                 <div className="text-[11px] text-mv-ink-soft">
-                  Fichier sauvegardé automatiquement dans le bucket Supabase <strong>team-documents</strong>.
+                  Fichier sauvegardé automatiquement dans le bucket <strong>team-documents</strong>.
                 </div>
                 <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-mv-surface hover:bg-mv-green-tint border border-mv-border text-mv-green font-bold cursor-pointer transition-all">
                   <Upload className="w-3.5 h-3.5" /> Changer la photo
@@ -367,7 +367,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between p-4 rounded-xl bg-mv-cream-soft border border-mv-border">
               <div>
                 <div className="font-bold text-mv-ink">Intégration Slack Webhook</div>
-                <div className="text-mv-ink-soft mt-0.5">Push automatique des alertes vers le canal Slack #centurions-alerts.</div>
+                <div className="text-mv-ink-soft mt-0.5">Push automatique des alertes vers le canal Slack #minerva-alertes.</div>
               </div>
               <input
                 type="checkbox"
@@ -473,7 +473,7 @@ export default function ProfilePage() {
               {generatedKey && (
                 <div className="p-4 rounded-xl bg-mv-green-tint border border-mv-green/40 space-y-2 animate-mv-scale-in">
                   <div className="flex items-center justify-between text-xs font-bold text-mv-green">
-                    <span>Clé API Générée Avec Succès (Supabase Postgres)</span>
+                    <span>Clé API Générée Avec Succès</span>
                     <button
                       type="button"
                       onClick={() => {
