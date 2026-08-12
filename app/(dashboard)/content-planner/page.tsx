@@ -6,17 +6,15 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StorageBrowser } from '@/components/storage/StorageBrowser';
-import { VideoUploadField } from '@/components/media/VideoUploadField';
 import {
   Plus,
   Calendar,
   Kanban as KanbanIcon,
-  X,
   Film,
 } from 'lucide-react';
-import { ContentPost, Client } from '@/lib/types';
+import { ContentPost } from '@/lib/types';
 import { DonutChart } from '@/components/charts/DonutChart';
-import { fetchContentPosts, addContentPost, fetchClients } from '@/lib/services/supabase-data';
+import { fetchContentPosts } from '@/lib/services/supabase-data';
 
 const KANBAN_STAGES: ContentPost['status'][] = ['Idéation', 'Rédigé', 'Enregistré', 'Publié'];
 const PLATFORM_COLORS: Record<string, string> = {
@@ -55,9 +53,7 @@ function ContentCard({ post }: { post: ContentPost }) {
 
 export default function ContentPlannerPage() {
   const [viewMode, setViewMode] = useState<'calendar' | 'kanban' | 'storage'>('calendar');
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [posts, setPosts] = useState<ContentPost[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
@@ -66,46 +62,10 @@ export default function ContentPlannerPage() {
 
   useEffect(() => {
     (async () => {
-      const [postData, clientData] = await Promise.all([fetchContentPosts(), fetchClients()]);
-      setPosts(postData);
-      setClients(clientData);
+      setPosts(await fetchContentPosts());
       setLoading(false);
     })();
   }, []);
-
-  // Modal Form State
-  const [newTitle, setNewTitle] = useState('');
-  const [newClientId, setNewClientId] = useState('');
-  const [newFormat, setNewFormat] = useState<ContentPost['format']>('Reel 60s');
-  const [newPlatform, setNewPlatform] = useState<ContentPost['platform']>('Instagram');
-  const [newDate, setNewDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [newVideoUrl, setNewVideoUrl] = useState('');
-  const [newScript, setNewScript] = useState('');
-
-  const handleCreatePost = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim() || !newClientId) return;
-
-    const created = await addContentPost({
-      client_id: newClientId,
-      title: newTitle,
-      format: newFormat,
-      platform: newPlatform,
-      scheduled_date: newDate,
-      status: 'Idéation',
-      thumbnail_url: '',
-      video_url: newVideoUrl || undefined,
-      script_notes: newScript,
-    });
-
-    if (created) {
-      setPosts([created, ...posts]);
-      setIsModalOpen(false);
-      setNewTitle('');
-      setNewVideoUrl('');
-      setNewScript('');
-    }
-  };
 
   const handleStatusMove = (postId: string, newStatus: ContentPost['status']) => {
     setPosts(posts.map((p) => (p.id === postId ? { ...p, status: newStatus } : p)));
@@ -157,40 +117,46 @@ export default function ContentPlannerPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center bg-mv-cream-soft border border-mv-border rounded-xl p-1 text-xs">
+        <div className="flex items-center flex-wrap gap-3">
+          <div className="flex items-center bg-mv-cream-soft border border-mv-border rounded-xl p-1 text-xs flex-wrap">
             <button
               onClick={() => setViewMode('calendar')}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
+              title="Calendrier"
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
                 viewMode === 'calendar' ? 'bg-mv-green text-white shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
               }`}
             >
-              <Calendar className="w-3.5 h-3.5" />
-              Calendrier
+              <Calendar className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Calendrier</span>
             </button>
             <button
               onClick={() => setViewMode('kanban')}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
+              title="Kanban"
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
                 viewMode === 'kanban' ? 'bg-mv-green text-white shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
               }`}
             >
-              <KanbanIcon className="w-3.5 h-3.5" />
-              Kanban
+              <KanbanIcon className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Kanban</span>
             </button>
             <button
               onClick={() => setViewMode('storage')}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
+              title="Bibliothèque Médias"
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
                 viewMode === 'storage' ? 'bg-mv-green text-white shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
               }`}
             >
-              <Film className="w-3.5 h-3.5" />
-              Bibliothèque Médias
+              <Film className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden lg:inline">Bibliothèque Médias</span>
+              <span className="hidden sm:inline lg:hidden">Médias</span>
             </button>
           </div>
 
-          <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={() => setIsModalOpen(true)}>
-            + Planifier un Reel
-          </Button>
+          <Link href="/content-planner/new">
+            <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
+              + Planifier un Reel
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -301,106 +267,6 @@ export default function ContentPlannerPage() {
         </>
       )}
 
-      {/* MODAL: + PLANIFIER UN REEL */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-mv-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-mv-surface border border-mv-border rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-mv-lg animate-mv-scale-in max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-mv-border pb-3">
-              <h3 className="text-base font-extrabold text-mv-ink">Planifier un Nouveau Reel / Content</h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg text-mv-ink-soft hover:text-mv-ink hover:bg-mv-cream cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreatePost} className="space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-mv-ink">Titre du Reel / Content</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Reel 60s - Remplacement Toiture Commerciale"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full mt-1 bg-mv-cream-soft border border-mv-border rounded-xl px-3 py-2 text-mv-ink focus:outline-none focus:border-mv-green"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-mv-ink">Client</label>
-                  <select
-                    required
-                    value={newClientId}
-                    onChange={(e) => setNewClientId(e.target.value)}
-                    className="w-full mt-1 bg-mv-cream-soft border border-mv-border rounded-xl px-3 py-2 text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer font-medium"
-                  >
-                    <option value="" disabled>
-                      {clients.length === 0 ? 'Aucun client' : 'Choisir…'}
-                    </option>
-                    {clients.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="font-bold text-mv-ink">Plateforme Cible</label>
-                  <select
-                    value={newPlatform}
-                    onChange={(e) => setNewPlatform(e.target.value as ContentPost['platform'])}
-                    className="w-full mt-1 bg-mv-cream-soft border border-mv-border rounded-xl px-3 py-2 text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer font-medium"
-                  >
-                    <option value="Instagram">Instagram Reels</option>
-                    <option value="TikTok">TikTok</option>
-                    <option value="YouTube Shorts">YouTube Shorts</option>
-                    <option value="LinkedIn">LinkedIn Video</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-mv-ink">Date planifiée</label>
-                <input
-                  type="date"
-                  required
-                  value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
-                  className="w-full mt-1 bg-mv-cream-soft border border-mv-border rounded-xl px-3 py-2 text-mv-ink focus:outline-none focus:border-mv-green"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-mv-ink mb-1 block">Vidéo</label>
-                <VideoUploadField value={newVideoUrl} onChange={setNewVideoUrl} />
-              </div>
-
-              <div>
-                <label className="font-bold text-mv-ink">Script & Hook Notes</label>
-                <textarea
-                  rows={3}
-                  placeholder="Saisissez les notes de hook et d'appel à l'action..."
-                  value={newScript}
-                  onChange={(e) => setNewScript(e.target.value)}
-                  className="w-full mt-1 bg-mv-cream-soft border border-mv-border rounded-xl p-3 text-mv-ink focus:outline-none focus:border-mv-green"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-3 border-t border-mv-border">
-                <Button variant="outline" size="sm" type="button" onClick={() => setIsModalOpen(false)}>
-                  Annuler
-                </Button>
-                <Button variant="primary" size="sm" type="submit">
-                  Enregistrer & Planifier
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

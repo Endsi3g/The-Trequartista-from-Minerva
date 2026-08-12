@@ -211,6 +211,17 @@ export async function fetchAcademySops(): Promise<AcademySOP[]> {
   );
 }
 
+export async function fetchAcademySop(id: string): Promise<AcademySOP | null> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase().from('academy_sops').select('*').eq('id', id).maybeSingle();
+      if (error || !data) return null;
+      return data as AcademySOP;
+    })(),
+    null
+  );
+}
+
 export async function addAcademySop(sop: Omit<AcademySOP, 'id'>): Promise<AcademySOP | null> {
   const { data, error } = await getSupabase().from('academy_sops').insert([sop]).select().single();
   if (error) {

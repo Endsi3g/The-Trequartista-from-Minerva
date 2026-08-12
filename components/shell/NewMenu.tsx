@@ -21,13 +21,13 @@ export function NewMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
         <DropdownMenuItem asChild>
-          <Link href="/leads?new=1" className="flex items-center gap-2.5">
+          <Link href="/leads/new" className="flex items-center gap-2.5">
             <Target size={15} className="text-mv-green shrink-0" />
             <span>Nouveau lead</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/clients?new=1" className="flex items-center gap-2.5">
+          <Link href="/clients/new" className="flex items-center gap-2.5">
             <Users size={15} className="text-mv-green shrink-0" />
             <span>Nouveau client</span>
           </Link>

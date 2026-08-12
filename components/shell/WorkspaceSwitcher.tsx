@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ChevronDown, Check, Plus } from 'lucide-react';
-import { Logo, LogoMark } from './Logo';
+import { LogoMark } from './Logo';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +32,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 min-w-0 text-left transition-colors hover:bg-mv-cream-soft cursor-pointer">
-          <Logo />
+          <LogoMark size={28} />
           <ChevronDown size={14} className="shrink-0 text-mv-ink-faint ml-auto" />
         </button>
       </DropdownMenuTrigger>

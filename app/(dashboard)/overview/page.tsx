@@ -248,7 +248,7 @@ export default function OverviewPage() {
           {/* Real quick actions */}
           <div className="grid grid-cols-2 gap-4">
             <Link
-              href="/leads?new=1"
+              href="/leads/new"
               className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
             >
               <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -258,7 +258,7 @@ export default function OverviewPage() {
             </Link>
 
             <Link
-              href="/clients?new=1"
+              href="/clients/new"
               className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
             >
               <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center group-hover:scale-110 transition-transform">

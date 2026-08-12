@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { KanbanBoard } from '@/components/crm/KanbanBoard';
 import { LeadDetailDrawer } from '@/components/crm/LeadDetailDrawer';
 import { Button } from '@/components/ui/button';
@@ -16,14 +16,12 @@ import {
   TrendingUp,
   Target,
   CheckCircle2,
-  X,
 } from 'lucide-react';
-import { fetchClients, fetchLeads, addLead } from '@/lib/services/supabase-data';
-import type { Client, Lead, LeadStage } from '@/lib/types';
+import { fetchClients, fetchLeads } from '@/lib/services/supabase-data';
+import type { Client, Lead } from '@/lib/types';
 import { useSupabaseRealtime } from '@/components/providers/SupabaseRealtimeProvider';
 
 export default function LeadsCrmPage() {
-  const searchParams = useSearchParams();
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('all');
@@ -31,16 +29,6 @@ export default function LeadsCrmPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-
-  // New Lead Modal State
-  const [isAddModalOpen, setIsAddModalOpen] = useState(searchParams.get('new') === '1');
-  const [newCompanyName, setNewCompanyName] = useState('');
-  const [newContactName, setNewContactName] = useState('');
-  const [newContactEmail, setNewContactEmail] = useState('');
-  const [newContactPhone, setNewContactPhone] = useState('');
-  const [newService, setNewService] = useState('Gestion Réseaux & Reels');
-  const [newMrr, setNewMrr] = useState<number>(1500);
-  const [newOneTime, setNewOneTime] = useState<number>(500);
 
   const { isConnected, lastUpdateTimestamp } = useSupabaseRealtime();
 
@@ -89,34 +77,6 @@ export default function LeadsCrmPage() {
   const wonLeadsCount = filteredLeads.filter((l) => l.status === 'Gagné' || l.stage === 'gagne').length;
   const winRatePct = filteredLeads.length > 0 ? Math.round((wonLeadsCount / filteredLeads.length) * 100) : 0;
 
-  const handleCreateLead = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newContactEmail.trim()) return;
-
-    await addLead({
-      client_name: newCompanyName || newContactName,
-      company_name: newCompanyName,
-      contact_name: newContactName || newContactEmail.split('@')[0],
-      contact_email: newContactEmail.trim(),
-      contact_phone: newContactPhone,
-      service_requested: newService,
-      score_grade: 'A',
-      status: 'Nouveau',
-      stage: 'nouveau',
-      mrr_value: newMrr,
-      one_time_value: newOneTime,
-      probability_pct: 10,
-      notes: [],
-    });
-
-    setIsAddModalOpen(false);
-    setNewCompanyName('');
-    setNewContactName('');
-    setNewContactEmail('');
-    setNewContactPhone('');
-    loadData();
-  };
-
   const handleExportCsv = () => {
     const headers = ['ID', 'Société', 'Contact', 'Email', 'Téléphone', 'Service', 'Étape', 'MRR ($)', 'Setup ($)', 'Date'];
     const rows = filteredLeads.map((l) => [
@@ -162,13 +122,13 @@ export default function LeadsCrmPage() {
 
         {/* Action Controls */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-4 py-2 bg-[#00a800] hover:bg-[#009000] text-white text-xs font-bold rounded-xl shadow-mv-sm transition-all cursor-pointer flex items-center gap-1.5"
+          <Link
+            href="/leads/new"
+            className="px-4 py-2 bg-mv-green hover:bg-mv-green-dark text-white text-xs font-bold rounded-xl shadow-mv-sm transition-all cursor-pointer flex items-center gap-1.5"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             <span>Nouveau Lead</span>
-          </button>
+          </Link>
 
           <Button variant="outline" size="sm" onClick={handleExportCsv} className="flex items-center gap-1.5">
             <Download className="w-4 h-4 text-mv-green" />
@@ -320,95 +280,6 @@ export default function LeadsCrmPage() {
         onLeadUpdated={loadData}
       />
 
-      {/* ── New Lead Modal ── */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-mv-ink/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-mv-border rounded-2xl p-6 max-w-md w-full shadow-mv-lg animate-mv-scale-in relative space-y-5">
-            <div className="flex items-center justify-between border-b border-mv-border pb-3">
-              <h3 className="text-lg font-extrabold text-mv-ink font-display">Nouveau Lead CRM</h3>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-mv-ink-soft hover:text-mv-ink">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateLead} className="space-y-4">
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-mv-ink">Nom de l&apos;entreprise</label>
-                <input
-                  type="text"
-                  placeholder="ex: Apex Roofing Studio"
-                  value={newCompanyName}
-                  onChange={(e) => setNewCompanyName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-white border border-mv-border rounded-xl text-xs text-mv-ink focus:ring-2 focus:ring-mv-green/30"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-mv-ink">Nom Contact</label>
-                  <input
-                    type="text"
-                    placeholder="Jean Dupont"
-                    value={newContactName}
-                    onChange={(e) => setNewContactName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-white border border-mv-border rounded-xl text-xs text-mv-ink focus:ring-2 focus:ring-mv-green/30"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-mv-ink">Email Contact</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="jean@apex.com"
-                    value={newContactEmail}
-                    onChange={(e) => setNewContactEmail(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-white border border-mv-border rounded-xl text-xs text-mv-ink focus:ring-2 focus:ring-mv-green/30"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-mv-ink">MRR Estimé ($)</label>
-                  <input
-                    type="number"
-                    value={newMrr}
-                    onChange={(e) => setNewMrr(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 bg-white border border-mv-border rounded-xl text-xs text-mv-ink focus:ring-2 focus:ring-mv-green/30"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-mv-ink">Setup Fee ($)</label>
-                  <input
-                    type="number"
-                    value={newOneTime}
-                    onChange={(e) => setNewOneTime(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 bg-white border border-mv-border rounded-xl text-xs text-mv-ink focus:ring-2 focus:ring-mv-green/30"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-mv-border flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 bg-mv-surface border border-mv-border text-xs font-bold rounded-xl text-mv-ink"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-[#00a800] hover:bg-[#009000] text-white text-xs font-bold rounded-xl shadow-mv-sm transition-all"
-                >
-                  Créer Lead
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

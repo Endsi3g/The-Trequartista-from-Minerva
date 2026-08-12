@@ -2,27 +2,17 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/ui/stat-card';
-import { Users, Plus, TrendingUp, DollarSign, ExternalLink, X } from 'lucide-react';
-import { fetchClients, addClient } from '@/lib/services/supabase-data';
+import { Users, Plus, TrendingUp, DollarSign, ExternalLink } from 'lucide-react';
+import { fetchClients } from '@/lib/services/supabase-data';
 import { Client } from '@/lib/types';
 
 export default function ClientsPage() {
-  const searchParams = useSearchParams();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(searchParams.get('new') === '1');
-
-  // Form State
-  const [name, setName] = useState('');
-  const [industry, setIndustry] = useState('');
-  const [mrr, setMrr] = useState(3000);
-  const [contactName, setContactName] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
 
   useEffect(() => {
     async function loadData() {
@@ -39,29 +29,6 @@ export default function ClientsPage() {
     loadData();
   }, []);
 
-  const handleCreateClient = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || !industry) return;
-
-    const newClient = await addClient({
-      name,
-      industry,
-      status: 'Active',
-      mrr: Number(mrr),
-      health_status: 'Ready',
-      contact_name: contactName || 'Contact Principal',
-      contact_email: contactEmail || 'contact@client.com',
-      logo_url: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?w=150&auto=format&fit=crop&q=80',
-    });
-
-    if (newClient) {
-      setClients([newClient, ...clients]);
-      setIsModalOpen(false);
-      setName('');
-      setIndustry('');
-    }
-  };
-
   const totalMrr = clients.reduce((acc, c) => acc + c.mrr, 0);
 
   return (
@@ -77,9 +44,11 @@ export default function ClientsPage() {
           </p>
         </div>
 
-        <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={() => setIsModalOpen(true)}>
-          Nouveau Client
-        </Button>
+        <Link href="/clients/new">
+          <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
+            Nouveau Client
+          </Button>
+        </Link>
       </div>
 
       {/* 3 Summary StatCards */}
@@ -190,90 +159,6 @@ export default function ClientsPage() {
           </div>
         )}
       </Card>
-
-      {/* Modal Add Client */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 max-w-lg w-full shadow-mv-lg animate-mv-scale-in space-y-4">
-            <div className="flex items-center justify-between border-b border-mv-border pb-3">
-              <h3 className="text-lg font-bold text-mv-ink font-display">Nouveau Client</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-mv-ink-soft hover:text-mv-ink">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateClient} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-mv-ink mb-1">Nom du Client</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Apex Roofing"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full p-2.5 rounded-lg bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-mv-ink mb-1">Secteur d'Activité</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Bâtiment & Toiture"
-                  value={industry}
-                  onChange={(e) => setIndustry(e.target.value)}
-                  className="w-full p-2.5 rounded-lg bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-mv-ink mb-1">MRR ($)</label>
-                  <input
-                    type="number"
-                    required
-                    value={mrr}
-                    onChange={(e) => setMrr(Number(e.target.value))}
-                    className="w-full p-2.5 rounded-lg bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-mv-ink mb-1">Contact Nom</label>
-                  <input
-                    type="text"
-                    placeholder="David Miller"
-                    value={contactName}
-                    onChange={(e) => setContactName(e.target.value)}
-                    className="w-full p-2.5 rounded-lg bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-mv-ink mb-1">Contact Email</label>
-                <input
-                  type="email"
-                  placeholder="david@client.com"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  className="w-full p-2.5 rounded-lg bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-3">
-                <Button type="button" variant="secondary" className="flex-1" onClick={() => setIsModalOpen(false)}>
-                  Annuler
-                </Button>
-                <Button type="submit" variant="primary" className="flex-1">
-                  Enregistrer
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
