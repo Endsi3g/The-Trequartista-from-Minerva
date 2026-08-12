@@ -172,7 +172,7 @@ export default function OverviewPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Link
           href="/clients"
-          className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green/40 hover:shadow-mv-md transition-all group"
+          className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green/40 hover:shadow-mv-md transition-all group"
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-mv-ink-soft uppercase tracking-wider">Clients actifs</span>
@@ -185,7 +185,7 @@ export default function OverviewPage() {
 
         <Link
           href="/leads"
-          className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green/40 hover:shadow-mv-md transition-all group"
+          className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green/40 hover:shadow-mv-md transition-all group"
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-mv-ink-soft uppercase tracking-wider">Leads actifs</span>
@@ -198,7 +198,7 @@ export default function OverviewPage() {
 
         <Link
           href="/projects"
-          className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-red/40 hover:shadow-mv-md transition-all group"
+          className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-red/40 hover:shadow-mv-md transition-all group"
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-mv-ink-soft uppercase tracking-wider">Projets en retard</span>
@@ -217,7 +217,7 @@ export default function OverviewPage() {
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-8">
           {/* Real project list */}
-          <div className="bg-white border border-mv-border rounded-2xl p-6 shadow-mv-sm">
+          <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-mv-ink font-display">Projets</h2>
               <Link href="/projects" className="text-xs font-semibold text-mv-green hover:underline flex items-center gap-1">
@@ -263,7 +263,7 @@ export default function OverviewPage() {
           </div>
 
           {/* MRR by client — real data, CAD only */}
-          <div className="bg-white border border-mv-border rounded-2xl p-6 shadow-mv-sm">
+          <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm">
             <h2 className="text-lg font-bold text-mv-ink font-display mb-1">Revenu récurrent (MRR)</h2>
             <p className="text-xs text-mv-ink-faint mb-6">Top clients par MRR mensuel, en dollars canadiens.</p>
 
@@ -306,7 +306,7 @@ export default function OverviewPage() {
           <div className="grid grid-cols-2 gap-4">
             <Link
               href="/leads/new"
-              className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
+              className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
             >
               <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Target className="w-6 h-6 stroke-[2]" />
@@ -316,7 +316,7 @@ export default function OverviewPage() {
 
             <Link
               href="/clients/new"
-              className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
+              className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
             >
               <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Plus className="w-6 h-6 stroke-[2]" />
@@ -326,7 +326,7 @@ export default function OverviewPage() {
 
             <Link
               href="/content-planner"
-              className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
+              className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
             >
               <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Clapperboard className="w-6 h-6 stroke-[2]" />
@@ -336,7 +336,7 @@ export default function OverviewPage() {
 
             <Link
               href="/overview/audit-logs"
-              className="bg-white border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
+              className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
             >
               <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Bell className="w-6 h-6 stroke-[2]" />

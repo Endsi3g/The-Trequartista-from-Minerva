@@ -18,9 +18,9 @@
     --mv-warm-dark: #c8c5b8;
     --mv-warm-tint: #f8f7f3;
 
-    --mv-cream: #f5f1e6;
+    --mv-cream: #f7f4ec;
     --mv-cream-soft: #fbf9f3;
-    --mv-surface: #fffefa;
+    --mv-surface: #fdfcf8;
 
     --mv-ink: #1a1e16;
     --mv-ink-soft: #565f52;
@@ -152,8 +152,9 @@
 /* ── Utility classes ── */
 /* .font-display intentionally not redefined here — the Tailwind utility
    generated from theme.fontFamily.display (tailwind.config.js) is the only
-   definition, so it actually loads Fraunces via next/font instead of being
-   silently overridden by a hardcoded system-serif fallback. */
+   definition. Don't add a manual override back in: that's exactly what
+   used to silently force every heading into a hardcoded system serif
+   regardless of what the config said. */
 
 .shimmer-bg {
   background: linear-gradient(90deg, var(--mv-surface) 25%, var(--mv-border) 50%, var(--mv-surface) 75%);

@@ -14,9 +14,12 @@ export function NewMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-full bg-mv-green hover:bg-mv-green-dark text-white text-xs font-bold transition-all cursor-pointer shadow-mv-sm">
-          <Plus className="w-3.5 h-3.5 stroke-[3]" />
-          <span className="hidden sm:inline">Nouveau</span>
+        <button
+          aria-label="Nouveau"
+          title="Nouveau"
+          className="p-2 rounded-lg bg-mv-surface border border-mv-border text-mv-ink-soft hover:text-mv-green hover:border-mv-green/40 transition-all cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">

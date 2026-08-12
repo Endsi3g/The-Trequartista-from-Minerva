@@ -67,8 +67,8 @@ module.exports = {
   		},
   		fontFamily: {
   			display: [
-  				'var(--font-display)',
-  				'Fraunces',
+  				'Times New Roman',
+  				'Times',
   				'Georgia',
   				'serif'
   			],

@@ -99,7 +99,7 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
                 <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${col.badgeBg} ${col.badgeText}`}>
                   {col.title}
                 </span>
-                <span className="text-xs font-extrabold text-mv-ink-soft bg-white border border-mv-border px-2 py-0.5 rounded-full">
+                <span className="text-xs font-extrabold text-mv-ink-soft bg-mv-surface border border-mv-border px-2 py-0.5 rounded-full">
                   {columnLeads.length}
                 </span>
               </div>
@@ -119,7 +119,7 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
                   draggable
                   onDragStart={(e) => handleDragStart(e, lead.id)}
                   onClick={() => onSelectLead(lead)}
-                  className="bg-white border border-mv-border rounded-xl p-3.5 shadow-mv-sm hover:shadow-mv-md hover:border-mv-green transition-all cursor-grab active:cursor-grabbing space-y-2 group relative"
+                  className="bg-mv-surface border border-mv-border rounded-xl p-3.5 shadow-mv-sm hover:shadow-mv-md hover:border-mv-green transition-all cursor-grab active:cursor-grabbing space-y-2 group relative"
                 >
                   <div className="flex items-start justify-between">
                     <h4 className="text-xs font-bold text-mv-ink group-hover:text-mv-green transition-colors line-clamp-1">

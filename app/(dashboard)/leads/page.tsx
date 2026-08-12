@@ -136,7 +136,7 @@ export default function LeadsCrmPage() {
           </Button>
 
           {/* View Toggle */}
-          <div className="flex items-center bg-white border border-mv-border rounded-xl p-1 shadow-mv-sm">
+          <div className="flex items-center bg-mv-surface border border-mv-border rounded-xl p-1 shadow-mv-sm">
             <button
               onClick={() => setViewMode('kanban')}
               className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer ${
@@ -165,7 +165,7 @@ export default function LeadsCrmPage() {
 
       {/* ── Summary Financial Analytics Bar ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
+        <div className="bg-mv-surface border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold text-mv-ink-soft uppercase tracking-wider">Valeur Brute Pipeline</p>
             <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">${Math.round(totalGrossPipeline).toLocaleString()}</p>
@@ -176,7 +176,7 @@ export default function LeadsCrmPage() {
           </div>
         </div>
 
-        <div className="bg-white border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
+        <div className="bg-mv-surface border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold text-mv-ink-soft uppercase tracking-wider">Prévisionnel Pondéré</p>
             <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">${Math.round(weightedForecastValue).toLocaleString()}</p>
@@ -187,7 +187,7 @@ export default function LeadsCrmPage() {
           </div>
         </div>
 
-        <div className="bg-white border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
+        <div className="bg-mv-surface border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold text-mv-ink-soft uppercase tracking-wider">Taux de Conversion</p>
             <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">{winRatePct}%</p>
@@ -198,7 +198,7 @@ export default function LeadsCrmPage() {
           </div>
         </div>
 
-        <div className="bg-white border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
+        <div className="bg-mv-surface border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold text-mv-ink-soft uppercase tracking-wider">Leads Actifs</p>
             <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">{filteredLeads.length}</p>
@@ -211,7 +211,7 @@ export default function LeadsCrmPage() {
       </div>
 
       {/* ── Toolbar Search & Filters ── */}
-      <div className="bg-white border border-mv-border rounded-2xl p-4 shadow-mv-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="bg-mv-surface border border-mv-border rounded-2xl p-4 shadow-mv-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-mv-ink-soft" />
           <input
@@ -236,7 +236,7 @@ export default function LeadsCrmPage() {
           onLeadsUpdated={loadData}
         />
       ) : (
-        <div className="bg-white border border-mv-border rounded-2xl overflow-hidden shadow-mv-sm">
+        <div className="bg-mv-surface border border-mv-border rounded-2xl overflow-hidden shadow-mv-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>

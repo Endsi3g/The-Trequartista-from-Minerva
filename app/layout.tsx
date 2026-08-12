@@ -1,20 +1,14 @@
 import type { Metadata } from 'next';
-import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { SupabaseRealtimeProvider } from '@/components/providers/SupabaseRealtimeProvider';
 import { ToastProvider } from '@/components/providers/ToastProvider';
 
-// Display face: an elegant editorial serif for headings — titles, page
-// headers, the greeting on Overview. Paired with Inter for body copy.
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  variable: '--font-display',
-  display: 'swap',
-  weight: 'variable',
-  style: ['normal', 'italic'],
-  axes: ['opsz', 'SOFT', 'WONK'],
-});
+// Display face: Times New Roman — a licensed system font, not on Google
+// Fonts, so it's declared directly in tailwind.config.js (theme.fontFamily
+// .display) instead of loaded through next/font. No variable/class needed
+// here for it.
 
 const inter = Inter({
   subsets: ['latin'],
@@ -65,7 +59,7 @@ export default function RootLayout({
     <html
       lang="fr"
       suppressHydrationWarning
-      className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${inter.variable} ${jetbrainsMono.variable}`}
     >
       <head>
         <meta name="theme-color" content="#167f5b" />

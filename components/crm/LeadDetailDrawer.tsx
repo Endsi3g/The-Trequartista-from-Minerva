@@ -79,7 +79,7 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-xl bg-white border-l border-mv-border h-full shadow-mv-lg flex flex-col z-10 animate-mv-scale-in">
+      <div className="relative w-full max-w-xl bg-mv-surface border-l border-mv-border h-full shadow-mv-lg flex flex-col z-10 animate-mv-scale-in">
         {/* Header */}
         <div className="p-6 border-b border-mv-border flex items-center justify-between bg-mv-cream-soft">
           <div>
@@ -124,7 +124,7 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
             <select
               value={stage}
               onChange={(e) => setStage(e.target.value as LeadStage)}
-              className="w-full px-3.5 py-2.5 bg-white border border-mv-border rounded-xl text-xs font-bold text-mv-ink focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green transition-all"
+              className="w-full px-3.5 py-2.5 bg-mv-surface border border-mv-border rounded-xl text-xs font-bold text-mv-ink focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green transition-all"
             >
               <option value="nouveau">1. Nouveau Lead (10%)</option>
               <option value="qualification">2. Qualification (30%)</option>
@@ -144,7 +144,7 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
                   type="number"
                   value={mrrValue}
                   onChange={(e) => setMrrValue(Number(e.target.value))}
-                  className="w-full px-3.5 py-2 pl-8 bg-white border border-mv-border rounded-xl text-xs font-bold text-mv-ink focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green"
+                  className="w-full px-3.5 py-2 pl-8 bg-mv-surface border border-mv-border rounded-xl text-xs font-bold text-mv-ink focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green"
                 />
                 <DollarSign className="w-3.5 h-3.5 text-mv-ink-soft absolute left-2.5 top-1/2 -translate-y-1/2" />
               </div>
@@ -157,7 +157,7 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
                   type="number"
                   value={oneTimeValue}
                   onChange={(e) => setOneTimeValue(Number(e.target.value))}
-                  className="w-full px-3.5 py-2 pl-8 bg-white border border-mv-border rounded-xl text-xs font-bold text-mv-ink focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green"
+                  className="w-full px-3.5 py-2 pl-8 bg-mv-surface border border-mv-border rounded-xl text-xs font-bold text-mv-ink focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green"
                 />
                 <DollarSign className="w-3.5 h-3.5 text-mv-ink-soft absolute left-2.5 top-1/2 -translate-y-1/2" />
               </div>
@@ -177,7 +177,7 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
                 value={newNoteText}
                 onChange={(e) => setNewNoteText(e.target.value)}
                 placeholder="Ajouter une note de suivi..."
-                className="flex-1 px-3 py-2 bg-white border border-mv-border rounded-xl text-xs text-mv-ink placeholder-mv-ink-mute focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green"
+                className="flex-1 px-3 py-2 bg-mv-surface border border-mv-border rounded-xl text-xs text-mv-ink placeholder-mv-ink-mute focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green"
               />
               <button
                 type="submit"

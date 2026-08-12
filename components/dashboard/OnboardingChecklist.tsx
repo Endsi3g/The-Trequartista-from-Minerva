@@ -15,7 +15,7 @@ export function OnboardingChecklist() {
   const pct = Math.round((doneCount / total) * 100);
 
   return (
-    <div className="bg-white border border-mv-border rounded-2xl p-6 shadow-mv-sm">
+    <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm">
       <div className="flex items-center gap-2 mb-1">
         <Sparkles className="w-4 h-4 text-mv-green" />
         <h3 className="text-base font-extrabold text-mv-ink font-display">
