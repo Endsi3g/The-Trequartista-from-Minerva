@@ -39,3 +39,11 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 - La carte « Workflow Plus » (essai 14 jours) est remplacée par une vraie liste de démarrage qui suit votre progression réelle (profil complété, notifications activées, Notion connecté, Académie visitée).
 - Le message d'accueil est maintenant entièrement en français.
 - Ordre de priorité : clients → leads → projets en retard, comme demandé.
+
+---
+
+## 2026-08-12 — Chantier 4 : académie, équipe, profil
+
+- Académie : retrait du badge « Video Tutorials Engine ».
+- Fiche de performance d'équipe : plus d'employé fictif — titre, date de rendez-vous, compétences (incluant la mention Supabase) et historique étaient tous inventés. Remplacés par les vraies données quand elles existent, par un état vide honnête sinon.
+- Profil : retrait complet du système de clés API (jamais vraiment utilisé) et de l'onglet Sécurité qui prétendait à tort qu'une double authentification était active. Remplacé par un vrai changement de mot de passe fonctionnel.
