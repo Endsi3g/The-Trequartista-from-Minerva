@@ -25,7 +25,11 @@ import { useNavCounts } from '@/hooks/use-nav-counts';
 
 const SIDEBAR_WIDTH = 268;
 
-type NavItem = { key: string; label: string; href: string; icon: LucideIcon; count?: number };
+// Set isNew: true on an item to flag it as a freshly-launched section —
+// shows a small "Nouveau" pill until you remove the flag (no auto-expiry,
+// this is a manual "still worth calling out" switch for whoever ships the
+// next feature).
+type NavItem = { key: string; label: string; href: string; icon: LucideIcon; count?: number; isNew?: boolean };
 
 function NavLink({ item, active, onNavigate }: { item: NavItem; active: boolean; onNavigate?: () => void }) {
   const Icon = item.icon;
@@ -42,6 +46,16 @@ function NavLink({ item, active, onNavigate }: { item: NavItem; active: boolean;
     >
       <Icon size={16} strokeWidth={active ? 2.2 : 1.6} className={cn('shrink-0', active ? 'text-white' : 'opacity-70')} />
       <span className="truncate flex-1">{item.label}</span>
+      {item.isNew && (
+        <span
+          className={cn(
+            'shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide leading-none',
+            active ? 'bg-white/20 text-white' : 'bg-mv-amber-bg text-mv-amber'
+          )}
+        >
+          Nouveau
+        </span>
+      )}
       {typeof item.count === 'number' && item.count > 0 && (
         <span
           className={cn(
@@ -119,7 +133,7 @@ export function AppSidebar() {
   const body = (
     <div className="flex h-full w-[268px] min-w-[268px] flex-col bg-mv-cream-soft">
       {/* Header — workspace switcher */}
-      <div className="flex h-14 items-center border-b border-mv-border px-3">
+      <div className="flex h-16 items-center border-b border-mv-border px-3">
         <WorkspaceSwitcher />
       </div>
 

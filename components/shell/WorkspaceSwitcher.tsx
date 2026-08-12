@@ -3,6 +3,7 @@
 import React from 'react';
 import { ChevronDown, Check, Plus } from 'lucide-react';
 import { LogoMark } from './Logo';
+import { useCurrentUser } from '@/hooks/use-current-user';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,18 +13,22 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-// Single workspace for now (solo usage). Each role will get its own named
-// workspace once chantier équipe lands — just populate this list from the
-// real workspaces table then. The name shown here is the workspace's own
-// name, not the app's brand name (that only lives in the logo/tab/login).
-const WORKSPACES = [{ id: 'minerva', name: 'Agence Minerva' }];
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Admin',
+  member: 'Membre',
+};
 
 interface WorkspaceSwitcherProps {
   collapsed?: boolean;
 }
 
 export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps) {
-  const current = WORKSPACES[0];
+  const { role } = useCurrentUser();
+  // The workspace shown here IS the current user's role — once chantier
+  // équipe lands, each role (admin, prospecteur, etc.) becomes its own
+  // workspace with its own nav. For now there's just the one, named after
+  // whatever role the signed-in profile actually has.
+  const workspaceName = ROLE_LABELS[role] || role || 'Espace de travail';
 
   if (collapsed) {
     return <LogoMark size={26} />;
@@ -34,19 +39,17 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
       <DropdownMenuTrigger asChild>
         <button className="flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 min-w-0 text-left transition-colors hover:bg-mv-cream-soft cursor-pointer">
           <LogoMark size={28} className="shrink-0" />
-          <span className="flex-1 min-w-0 truncate text-[13px] font-bold text-mv-ink">{current.name}</span>
+          <span className="flex-1 min-w-0 truncate text-[13px] font-bold text-mv-ink">{workspaceName}</span>
           <ChevronDown size={14} className="shrink-0 text-mv-ink-faint" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
-        <DropdownMenuLabel>Espaces de travail</DropdownMenuLabel>
-        {WORKSPACES.map((ws) => (
-          <DropdownMenuItem key={ws.id} className="flex items-center gap-2.5">
-            <LogoMark size={18} />
-            <span className="flex-1 text-mv-ink font-semibold">{ws.name}</span>
-            <Check size={14} className="text-mv-green" />
-          </DropdownMenuItem>
-        ))}
+        <DropdownMenuLabel>Espace de travail</DropdownMenuLabel>
+        <DropdownMenuItem className="flex items-center gap-2.5">
+          <LogoMark size={18} />
+          <span className="flex-1 text-mv-ink font-semibold">{workspaceName}</span>
+          <Check size={14} className="text-mv-green" />
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled className="flex items-center gap-2.5 text-mv-ink-faint">
           <Plus size={14} />

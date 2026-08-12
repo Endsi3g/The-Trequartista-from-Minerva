@@ -67,11 +67,10 @@ module.exports = {
   		},
   		fontFamily: {
   			display: [
-  				'var(--font-plus-jakarta)',
-  				'Plus Jakarta Sans',
-  				'Inter',
-  				'-apple-system',
-  				'sans-serif'
+  				'var(--font-display)',
+  				'Fraunces',
+  				'Georgia',
+  				'serif'
   			],
   			sans: [
   				'var(--font-inter)',
