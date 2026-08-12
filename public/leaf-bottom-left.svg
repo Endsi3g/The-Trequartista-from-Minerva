@@ -1,0 +1,10 @@
+<svg width="220" height="260" viewBox="0 0 220 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g opacity="0.95">
+    <path d="M-40 260 C-10 180 30 110 110 70 C80 140 30 200 -40 260 Z" fill="#388e3c" />
+    <path d="M-40 260 C20 180 70 120 110 70" stroke="#1b5e20" stroke-width="2" />
+    <path d="M-10 260 C40 190 90 140 160 110 C120 180 60 220 -10 260 Z" fill="#4caf50" />
+    <path d="M-10 260 C50 190 110 150 160 110" stroke="#2e7d32" stroke-width="2" />
+    <path d="M20 260 C70 200 130 160 210 160 C160 210 100 240 20 260 Z" fill="#81c784" />
+    <path d="M20 260 C90 210 150 180 210 160" stroke="#388e3c" stroke-width="2" />
+  </g>
+</svg>

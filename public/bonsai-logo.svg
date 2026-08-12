@@ -1,0 +1,9 @@
+<svg width="120" height="32" viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bonsai Logo Icon -->
+  <rect x="2" y="4" width="24" height="24" rx="6" stroke="#00a800" stroke-width="2.5" fill="none" />
+  <path d="M10 16C10 12.6863 12.6863 10 16 10C16 13.3137 13.3137 16 10 16Z" fill="#00a800" />
+  <path d="M18 16C18 19.3137 15.3137 22 12 22C12 18.6863 14.6863 16 18 16Z" fill="#00a800" />
+
+  <!-- Wordmark "bonsai" -->
+  <text x="34" y="22" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="800" fill="#14170f" letter-spacing="-0.5px">bonsai</text>
+</svg>

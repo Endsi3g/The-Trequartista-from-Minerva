@@ -70,11 +70,21 @@ export function TopbarActions() {
           </kbd>
         </button>
 
-        {/* Quick Add Client */}
-        <Link href="/clients">
-          <Button variant="primary" size="sm" icon={<Plus className="w-3.5 h-3.5" />}>
-            <span className="hidden sm:inline">Nouveau Client</span>
-          </Button>
+        {/* Track Time Button (Image 2) */}
+        <button
+          onClick={() => alert('Chronomètre démarré pour la tâche active.')}
+          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-mv-border bg-white text-xs font-semibold text-mv-ink hover:bg-mv-surface transition-all cursor-pointer shadow-mv-sm"
+        >
+          <span className="w-4 h-4 rounded-full bg-mv-green/10 text-mv-green flex items-center justify-center text-[10px]">▶</span>
+          <span>Track Time</span>
+        </button>
+
+        {/* + New Button (Image 2) */}
+        <Link href="/projects">
+          <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#00a800] hover:bg-[#009000] text-white text-xs font-bold transition-all cursor-pointer shadow-mv-sm">
+            <Plus className="w-3.5 h-3.5 stroke-[3]" />
+            <span>New</span>
+          </button>
         </Link>
 
         {/* Theme Toggle */}

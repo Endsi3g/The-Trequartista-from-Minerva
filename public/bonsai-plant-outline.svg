@@ -1,0 +1,17 @@
+<svg width="180" height="200" viewBox="0 0 180 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Top Leaves Outline -->
+  <path d="M82 70 C55 50, 48 18, 78 12 C92 38, 88 62, 82 70 Z" stroke="#00a800" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <path d="M82 70 C70 48, 72 28, 78 12" stroke="#00a800" stroke-width="2" stroke-linecap="round" fill="none" />
+  
+  <path d="M98 70 C125 48, 132 12, 102 8 C88 34, 92 58, 98 70 Z" stroke="#00a800" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <path d="M98 70 C110 42, 108 22, 102 8" stroke="#00a800" stroke-width="2" stroke-linecap="round" fill="none" />
+  
+  <!-- Main Stem -->
+  <path d="M90 115 C90 92, 86 82, 90 70" stroke="#00a800" stroke-width="3.5" stroke-linecap="round" fill="none" />
+  
+  <!-- Pot Rim -->
+  <rect x="52" y="115" width="76" height="16" rx="8" stroke="#00a800" stroke-width="3.5" fill="#ffffff" />
+  
+  <!-- Pot Body -->
+  <path d="M58 131 L65 180 C66 185, 71 189, 77 189 L103 189 C109 189, 114 185, 115 180 L122 131 Z" stroke="#00a800" stroke-width="3.5" stroke-linejoin="round" fill="#ffffff" />
+</svg>
