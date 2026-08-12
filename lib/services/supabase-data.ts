@@ -378,18 +378,72 @@ export async function stopTimeEntry(entryId: string, startedAt: string): Promise
 }
 
 // ----------------------------------------------------
-// 10. USER FEEDBACK DIRECT SUPABASE API
+// 10. CONTENT POSTS (REELS) DIRECT SUPABASE API
 // ----------------------------------------------------
-export async function submitUserFeedback(feedback: {
-  rating: number;
-  category: string;
-  message: string;
-  user_name?: string;
-  user_email?: string;
-}): Promise<boolean> {
-  const { error } = await getSupabase().from('user_feedbacks').insert([feedback]);
+function mapContentPostRow(row: any): ContentPost {
+  return {
+    ...row,
+    client_name: row.client?.name || 'Client',
+    hashtags: row.hashtags || [],
+    status_history: row.status_history || [],
+  } as ContentPost;
+}
+
+export async function fetchContentPosts(): Promise<ContentPost[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('content_posts')
+        .select('*, client:clients(name)')
+        .order('scheduled_date', { ascending: true });
+
+      if (error || !data) {
+        console.warn('[Supabase] Error fetching content posts:', error);
+        return [];
+      }
+      return data.map(mapContentPostRow);
+    })(),
+    []
+  );
+}
+
+export async function fetchContentPost(id: string): Promise<ContentPost | null> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('content_posts')
+        .select('*, client:clients(name)')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error || !data) return null;
+      return mapContentPostRow(data);
+    })(),
+    null
+  );
+}
+
+export async function addContentPost(
+  post: Omit<ContentPost, 'id' | 'client_name' | 'status_history' | 'created_at' | 'updated_at'>
+): Promise<ContentPost | null> {
+  const { data, error } = await getSupabase()
+    .from('content_posts')
+    .insert([post])
+    .select('*, client:clients(name)')
+    .single();
+
   if (error) {
-    console.error('[Supabase] Error submitting user feedback:', error);
+    console.error('[Supabase] Error adding content post:', error);
+    return null;
+  }
+  return mapContentPostRow(data);
+}
+
+export async function updateContentPost(id: string, updates: Partial<ContentPost>): Promise<boolean> {
+  const { client_name: _client_name, status_history: _status_history, ...safeUpdates } = updates;
+  const { error } = await getSupabase().from('content_posts').update(safeUpdates).eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error updating content post:', error);
     return false;
   }
   return true;

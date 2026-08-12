@@ -83,6 +83,11 @@ export interface LaunchChecklist {
   items: LaunchCheckItem[];
 }
 
+export interface ContentPostStatusEvent {
+  status: string;
+  changed_at: string;
+}
+
 export interface ContentPost {
   id: string;
   client_id: string;
@@ -94,9 +99,16 @@ export interface ContentPost {
   status: 'Idéation' | 'Rédigé' | 'Enregistré' | 'Publié';
   thumbnail_url: string;
   video_url?: string;
+  caption?: string;
+  hashtags?: string[];
   script_notes?: string;
+  internal_notes?: string;
+  native_url?: string;
   metrics_views?: number;
-  metrics_clicks?: number;
+  metrics_likes?: number;
+  status_history?: ContentPostStatusEvent[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 
