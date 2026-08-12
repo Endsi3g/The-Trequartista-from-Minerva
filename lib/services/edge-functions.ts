@@ -1,7 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
 
-const supabase = createClient();
-
 export interface LaunchCheckValidationResult {
   projectId: string;
   totalCount: number;
@@ -27,6 +25,7 @@ export async function invokeLaunchCheckValidator(
   projectId: string,
   items: Array<{ checked: boolean; title?: string }>
 ): Promise<LaunchCheckValidationResult> {
+  const supabase = createClient();
   try {
     const { data, error } = await supabase.functions.invoke('launch-check-validator', {
       body: { projectId, items },
@@ -35,7 +34,7 @@ export async function invokeLaunchCheckValidator(
     if (error || !data) {
       console.warn('[Edge Function] launch-check-validator fallback:', error);
       const totalCount = items.length;
-      const checkedCount = items.filter(i => i.checked).length;
+      const checkedCount = items.filter((i) => i.checked).length;
       return {
         projectId,
         totalCount,
@@ -50,7 +49,7 @@ export async function invokeLaunchCheckValidator(
   } catch (err) {
     console.warn('[Edge Function] Exception in launch-check-validator, using fallback:', err);
     const totalCount = items.length;
-    const checkedCount = items.filter(i => i.checked).length;
+    const checkedCount = items.filter((i) => i.checked).length;
     return {
       projectId,
       totalCount,
@@ -72,6 +71,7 @@ export async function invokeRoiAggregator(
   leadsSent: number,
   costPerLead: number
 ): Promise<RoiAggregationResult> {
+  const supabase = createClient();
   try {
     const { data, error } = await supabase.functions.invoke('roi-aggregator', {
       body: { clientId, totalInvested, leadsSent, costPerLead },
@@ -112,6 +112,7 @@ export async function invokeRoiAggregator(
 export async function invokeAlertDispatcher(
   alertPayload: { title: string; description: string; severity: 'critical' | 'warning' | 'info'; url?: string }
 ): Promise<boolean> {
+  const supabase = createClient();
   try {
     const { error } = await supabase.functions.invoke('alert-dispatcher', {
       body: alertPayload,

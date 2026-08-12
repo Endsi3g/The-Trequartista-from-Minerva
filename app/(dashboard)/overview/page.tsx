@@ -34,10 +34,15 @@ export default function OverviewPage() {
   useEffect(() => {
     async function loadData() {
       setLoading(true);
-      const [projData, clientData] = await Promise.all([fetchProjects(), fetchClients()]);
-      setProjects(projData);
-      setClients(clientData);
-      setLoading(false);
+      try {
+        const [projData, clientData] = await Promise.all([fetchProjects(), fetchClients()]);
+        setProjects(projData);
+        setClients(clientData);
+      } catch (err) {
+        console.warn('[Overview] Error loading data:', err);
+      } finally {
+        setLoading(false);
+      }
     }
     loadData();
   }, []);

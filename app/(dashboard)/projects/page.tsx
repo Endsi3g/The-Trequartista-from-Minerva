@@ -16,8 +16,14 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     (async () => {
-      setProjects(await fetchProjects());
-      setLoading(false);
+      setLoading(true);
+      try {
+        setProjects(await fetchProjects());
+      } catch (err) {
+        console.warn('[Projects] Error loading projects:', err);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 

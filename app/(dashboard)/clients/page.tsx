@@ -25,9 +25,14 @@ export default function ClientsPage() {
   useEffect(() => {
     async function loadData() {
       setLoading(true);
-      const data = await fetchClients();
-      setClients(data);
-      setLoading(false);
+      try {
+        const data = await fetchClients();
+        setClients(data);
+      } catch (err) {
+        console.warn('[Clients] Error loading data:', err);
+      } finally {
+        setLoading(false);
+      }
     }
     loadData();
   }, []);
