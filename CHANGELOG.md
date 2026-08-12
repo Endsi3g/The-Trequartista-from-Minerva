@@ -67,3 +67,12 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 - Le logo de la sidebar n'affiche plus le nom « Trequartista » — juste l'icône.
 - Les boutons Calendrier/Kanban/Bibliothèque Médias du planificateur de contenu restent lisibles sur petit écran au lieu de se faire couper.
 - Toutes les fenêtres superposées restantes (nouveau client, nouveau lead, nouveau reel, créer une SOP, voir une SOP) sont maintenant de vraies pages avec leur propre adresse, comme demandé.
+
+---
+
+## 2026-08-12 — Typographie et sidebar
+
+- Nouvelle police de titres : Fraunces (serif élégante), avec Inter pour le texte courant. Au passage, j'ai trouvé et corrigé un bug de CSS qui forçait discrètement tous les titres en serif système depuis un moment, peu importe la police configurée.
+- La sidebar affiche maintenant ton rôle (Admin, Membre) à côté du logo plutôt qu'un nom fixe — la base pour l'espace de travail par rôle à venir.
+- Bordure de la sidebar maintenant alignée avec celle du bandeau du haut.
+- Nouvelle capacité technique : un item de navigation peut être marqué « Nouveau » pour signaler une section fraîchement lancée.
