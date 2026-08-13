@@ -176,6 +176,14 @@ function MenuBody({
                 </Link>
               </DropdownMenuItem>
             )}
+            {role === 'admin' && (
+              <DropdownMenuItem asChild onClick={onNavigate}>
+                <Link href="/acquisition" className="flex items-center gap-2.5 pl-6">
+                  <Users size={14} className="shrink-0" />
+                  <span>Acquisition</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

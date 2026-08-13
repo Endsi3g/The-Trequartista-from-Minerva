@@ -153,6 +153,7 @@ export const config = {
     '/content-planner/:path*',
     '/leads/:path*',
     '/audits/:path*',
+    '/acquisition/:path*',
     '/profil/:path*',
     '/settings/:path*',
     '/integrations/:path*',

@@ -130,7 +130,7 @@ export default function RoiTrackerPage() {
         <div className="bg-mv-surface border border-mv-border rounded-xl p-6 shadow-mv-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <img
-              src={client.logo_url}
+              src={client.logo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(client.name)}&backgroundColor=1c9a6f&fontColor=ffffff`}
               alt={client.name}
               className="w-14 h-14 rounded-xl object-cover border border-mv-border shadow-mv-sm"
             />

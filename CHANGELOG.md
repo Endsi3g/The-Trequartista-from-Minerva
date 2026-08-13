@@ -251,3 +251,47 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 **Chantier 5 est maintenant complet.** La feuille de route dans `CLAUDE.md` a été renumérotée pour correspondre à la planification d'origine (les 8 chantiers sont tous livrés, mais construits dans un ordre différent — voir `CLAUDE.md` pour le mapping exact).
 
 *Nouvelle migration en attente : `20260813000004` (sous-tâches + révocation d'invitation).*
+
+---
+
+## 2026-08-13 — Audit complet de l'app : ponts manquants et données honnêtes
+
+Balayage systématique de toute l'application (pas un chantier planifié — une demande de « trouve et corrige tout ce qui manque, sans que j'aie à insister »).
+
+**Corrigé**
+- Le pipeline CRM était cassé en silence : marquer un lead « Gagné » plantait côté base de données (mauvaises colonnes) et l'échec n'était jamais affiché — le lead restait « Gagné » à l'écran sans qu'aucun client ni projet ne soit créé.
+- `/clients` affichait un delta de MRR et un taux de rétention inventés ; retirés. Le repli du logo client était une photo stock — remplacé par un avatar à initiales généré, comme partout ailleurs dans l'app.
+- Nouvelle fiche client complète (`/clients/[id]`) : projets, leads, tâches, liens de paiement, contenus et messages du portail, tous réels. Le tableau `/clients` n'y menait nulle part avant.
+- Le bouton « Nouveau Projet » ne faisait rien ; nouvelle page `/projects/new`.
+- L'upload de photo de profil échouait sans le moindre message d'erreur.
+- L'onglet OKR de la fiche de performance était vide en permanence, sans explication, avec un bouton « + Nouvel OKR » mort. Le « Prochain 1-on-1 » est maintenant réellement modifiable (c'était en lecture seule malgré le texte de la page qui promettait de pouvoir le planifier).
+- La page Intégrations affichait « Connecté » pour Google Calendar (jamais implémenté, fonction factice supprimée) et l'import vidéo par URL (toujours en échec côté serveur) — statuts corrigés pour refléter la réalité.
+- Le Kanban du planificateur de contenu promettait le glisser-déposer depuis toujours ; jamais câblé. C'est fait.
+- Police d'affichage remplacée : Georgia (serif) → Sora + Inter.
+
+*Nouvelles migrations en attente : `20260813000005` (correctif du déclencheur lead→client), `20260813000006` (contrainte unique pour le 1-on-1 planifiable).*
+
+---
+
+## 2026-08-13 — Nouveau système d'acquisition & d'audit IA
+
+Nouveau système de bout en bout, en dehors des 8 chantiers d'origine : capture de leads depuis le site Framer, relance SMS automatique, moteur d'audit IA post-appel de diagnostic, générateur de propositions PDF, et livrable web interactif pour le client.
+
+**Capture de leads & relance SMS**
+- `/api/leads/step-1` et `/step-2` : webhooks publics pour le formulaire Framer (Étape 1 = prénom + téléphone, Étape 2 = qualification). Le domaine Framer exact doit être renseigné dans `FRAMER_ORIGIN` avant mise en ligne.
+- Relance SMS 5 minutes après un abandon à l'Étape 1, planifiée par lead via Upstash QStash plutôt qu'une tâche périodique — timing précis sans plan Vercel payant.
+- Un lead qualifié crée automatiquement une vraie carte dans le pipeline CRM (`/leads`).
+
+**Moteur d'audit IA** (`/audits`, admin seulement)
+- Transcription collée manuellement (fonctionne toujours) ou récupérée via Granola/Composio (câblage non vérifié en conditions réelles — répond honnêtement « non disponible » en attendant).
+- Extraction par Claude : goulots d'étranglement, coûts cachés, compatibilité des outils, initiatives IA avec score impact/effort. Les montants en dollars sont calculés côté serveur à partir des taux horaires configurés (`/settings/audit-reference`), jamais inventés par le modèle.
+
+**Proposition & livrable client**
+- PDF généré et envoyé par courriel (Brevo) avec lien de réservation Calendly pour le 2e appel.
+- Page client interactive et sécurisée par jeton (`/audit/view`) : diagramme avant/après, matrice impact/effort, réactions et commentaires en direct.
+
+**Tableau de bord** (`/acquisition`, admin seulement) : leads captés, SMS envoyés, taux de qualification, audits complétés, propositions envoyées.
+
+Toutes les clés API (Twilio, Anthropic, Brevo, Calendly, QStash, Composio) restent à configurer — chaque intégration répond honnêtement « non configuré » plutôt que de simuler un succès. Voir `.env.example` pour la liste complète.
+
+*Nouvelles migrations en attente : `20260813000007` (leads entrants), `20260813000008` (audits, propositions, données de référence). Nouveau bucket Storage `proposals` à créer manuellement dans le dashboard Supabase (comme `client-assets`/`team-documents`/`academy-media`).*
