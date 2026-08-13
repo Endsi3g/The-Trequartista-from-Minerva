@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -560,4 +560,27 @@ export async function deletePushSubscription(endpoint: string): Promise<void> {
   if (error) {
     console.warn('[Supabase] Error deleting push subscription:', error);
   }
+}
+
+// ── 14. Stripe Payment Links ────────────────────────────────────────────────
+
+export async function fetchClientPaymentLinks(): Promise<ClientPaymentLink[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('client_payment_links')
+        .select('*, client:clients(name)')
+        .order('created_at', { ascending: false });
+
+      if (error || !data) {
+        console.warn('[Supabase] Error fetching client payment links:', error);
+        return [];
+      }
+      return data.map((row: Record<string, unknown>) => ({
+        ...row,
+        client_name: (row.client as { name?: string } | null)?.name,
+      })) as ClientPaymentLink[];
+    })(),
+    []
+  );
 }

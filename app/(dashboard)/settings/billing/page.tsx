@@ -16,9 +16,10 @@ import {
   Shield,
   Link2,
   Loader2,
+  Copy,
 } from 'lucide-react';
-import { fetchClients } from '@/lib/services/supabase-data';
-import { Client } from '@/lib/types';
+import { fetchClients, fetchClientPaymentLinks } from '@/lib/services/supabase-data';
+import { Client, ClientPaymentLink } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { Tooltip } from '@/components/ui/tooltip';
 
@@ -32,12 +33,14 @@ interface PendingMember {
 
 export default function BillingPage() {
   const [clients, setClients] = useState<Client[]>([]);
+  const [paymentLinks, setPaymentLinks] = useState<ClientPaymentLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [pendingMembers, setPendingMembers] = useState<PendingMember[]>([]);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [generatingLinkFor, setGeneratingLinkFor] = useState<string | null>(null);
 
+  const loadPaymentLinks = async () => setPaymentLinks(await fetchClientPaymentLinks());
 
   useEffect(() => {
     async function loadData() {
@@ -47,6 +50,7 @@ export default function BillingPage() {
       setLoading(false);
     }
     loadData();
+    loadPaymentLinks();
 
     async function loadPending() {
       try {
@@ -80,6 +84,7 @@ export default function BillingPage() {
       } else {
         await navigator.clipboard.writeText(data.url);
         setToastMsg(`Lien de paiement copié pour ${client.name}.`);
+        await loadPaymentLinks();
       }
     } catch {
       setToastMsg('Erreur lors de la génération du lien de paiement.');
@@ -202,6 +207,62 @@ export default function BillingPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </Card>
+
+      {/* Real generated Stripe Payment Links -- paid status flips
+          automatically via /api/webhooks/stripe once that's configured. */}
+      <Card
+        header={
+          <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
+            Liens de Paiement Générés ({paymentLinks.length})
+          </h3>
+        }
+      >
+        {paymentLinks.length === 0 ? (
+          <div className="py-8 text-center text-xs text-mv-ink-faint">
+            Aucun lien de paiement généré pour le moment. Utilisez « Lien Stripe » sur un client ci-dessus.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {paymentLinks.map((link) => (
+              <div
+                key={link.id}
+                className="p-4 rounded-xl bg-mv-cream-soft border border-mv-border flex items-center justify-between gap-4 text-xs"
+              >
+                <div>
+                  <div className="font-bold text-mv-ink">{link.client_name || 'Client'}</div>
+                  <div className="text-[11px] text-mv-ink-soft">
+                    Généré le {new Date(link.created_at).toLocaleDateString('fr-CA')}
+                    {link.paid_at && ` · Payé le ${new Date(link.paid_at).toLocaleDateString('fr-CA')}`}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <div className="font-mono font-extrabold text-mv-ink text-sm">
+                      {link.amount.toLocaleString('fr-CA')} $
+                    </div>
+                    <Badge variant={link.status === 'paid' ? 'green' : link.status === 'expired' ? 'red' : 'amber'}>
+                      {link.status === 'paid' ? 'Payé' : link.status === 'expired' ? 'Expiré' : 'En attente'}
+                    </Badge>
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(link.url);
+                      setToastMsg('Lien copié.');
+                      setTimeout(() => setToastMsg(null), 2500);
+                    }}
+                    className="p-2 rounded-lg bg-mv-surface hover:bg-mv-green-tint border border-mv-border text-mv-green transition-all cursor-pointer"
+                    title="Copier le lien"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </Card>

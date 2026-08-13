@@ -57,7 +57,25 @@ export async function POST(req: Request) {
 
     const paymentLink = await stripe.paymentLinks.create({
       line_items: [{ price: price.id, quantity: 1 }],
+      metadata: { client_id: client.id },
+      // This Stripe account has Managed Payments (automatic tax) on by
+      // default, which requires a product tax_code we have no reliable
+      // way to assign per service line -- disable it for these links
+      // rather than mis-tag every product with a guessed tax code.
+      managed_payments: { enabled: false },
     });
+
+    await authed.from('client_payment_links').insert([
+      {
+        client_id: client.id,
+        created_by: user.id,
+        stripe_payment_link_id: paymentLink.id,
+        stripe_price_id: price.id,
+        url: paymentLink.url,
+        amount: client.mrr,
+        currency: 'cad',
+      },
+    ]);
 
     return NextResponse.json({ url: paymentLink.url });
   } catch (err: unknown) {

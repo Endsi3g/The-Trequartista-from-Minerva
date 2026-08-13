@@ -43,6 +43,19 @@ export interface ClientMessage {
   created_at: string;
 }
 
+export interface ClientPaymentLink {
+  id: string;
+  client_id: string;
+  client_name?: string;
+  stripe_payment_link_id: string;
+  url: string;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'paid' | 'expired';
+  paid_at: string | null;
+  created_at: string;
+}
+
 export interface ClientRoiMetrics {
   id: string;
   client_id: string;
