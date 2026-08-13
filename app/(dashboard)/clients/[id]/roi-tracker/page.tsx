@@ -31,8 +31,7 @@ import { Client, ClientRoiMetrics, ContentPost } from '@/lib/types';
 
 export default function RoiTrackerPage() {
   const params = useParams();
-  const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
-  const clientId = rawId || 'client-apex-roofing';
+  const clientId = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'ytd'>('30d');
   const [client, setClient] = useState<Client | null>(null);

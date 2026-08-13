@@ -23,7 +23,7 @@ Every create/edit/detail view is a routed page (`/clients/new`, `/leads/new`, `/
 
 ## Typography
 
-Display face is **Georgia**, body is **Helvetica Neue** (both declared directly in `tailwind.config.js` theme.fontFamily as system-stack fallback chains — neither is on Google Fonts, so neither is loaded via `next/font`; `app/layout.tsx` only loads JetBrains Mono that way). `.font-display` used to be silently overridden by a hardcoded system-serif rule left in `globals.css`; that's been removed, so the Tailwind utility is now the only source of truth for it. Don't reintroduce a manual `.font-display` (or similar) override in `globals.css`. (This pairing has changed twice before this session: Fraunces → Times New Roman → Georgia/Helvetica Neue. If display typography comes up again, check `git log -- tailwind.config.js app/layout.tsx` for the current state rather than assuming any of these.)
+Display face is **Sora**, body is **Inter** — both loaded via `next/font/google` in `app/layout.tsx` (alongside JetBrains Mono) and exposed as CSS variables (`--font-sora`, `--font-inter`) consumed by `tailwind.config.js`'s `theme.fontFamily.display`/`.sans`. `.font-display` used to be silently overridden by a hardcoded system-serif rule left in `globals.css`; that's been removed, so the Tailwind utility is now the only source of truth for it. Don't reintroduce a manual `.font-display` (or similar) override in `globals.css`. (This pairing has changed several times before this session: Fraunces → Times New Roman → Georgia/Helvetica Neue → Sora/Inter. If display typography comes up again, check `git log -- tailwind.config.js app/layout.tsx` for the current state rather than assuming any of these.)
 
 ## Real data only
 

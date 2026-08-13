@@ -56,24 +56,18 @@ export default function ClientsPage() {
         <StatCard
           title="Clients Actifs"
           value={loading ? '...' : clients.length}
-          change="Synchro en direct"
-          changeType="positive"
           subtitle="Abonnements actifs"
           icon={<Users className="w-5 h-5" />}
         />
         <StatCard
           title="MRR Total Sous Gestion"
           value={loading ? '...' : `${totalMrr.toLocaleString('fr-CA')} $`}
-          change="+2 400 $ ce trimestre"
-          changeType="positive"
           subtitle="Revenu récurrent mensuel"
           icon={<DollarSign className="w-5 h-5" />}
         />
         <StatCard
           title="Moyenne MRR / Client"
           value={loading || clients.length === 0 ? '...' : `${Math.round(totalMrr / clients.length).toLocaleString('fr-CA')} $`}
-          change="+12% retention"
-          changeType="positive"
           subtitle="Valeur moyenne de contrat"
           icon={<TrendingUp className="w-5 h-5" />}
         />
@@ -115,12 +109,14 @@ export default function ClientsPage() {
                     <td className="py-4 pr-4">
                       <div className="flex items-center gap-3">
                         <img
-                          src={client.logo_url || 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?w=150&auto=format&fit=crop&q=80'}
+                          src={client.logo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(client.name)}&backgroundColor=1c9a6f&fontColor=ffffff`}
                           alt={client.name}
                           className="w-9 h-9 rounded-lg object-cover border border-mv-border shrink-0"
                         />
                         <div>
-                          <div className="font-bold text-mv-ink text-sm">{client.name}</div>
+                          <Link href={`/clients/${client.id}`} className="font-bold text-mv-ink text-sm hover:text-mv-green transition-colors">
+                            {client.name}
+                          </Link>
                           <div className="text-[11px] text-mv-ink-soft">Réf: {client.id.slice(0, 8)}</div>
                         </div>
                       </div>

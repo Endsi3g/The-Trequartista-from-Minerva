@@ -7,18 +7,18 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, AlertCircle, ShieldCheck, Sparkles, Rocket, RefreshCw, Zap } from 'lucide-react';
-import { fetchLaunchChecklist, saveLaunchChecklist, logAuditEvent } from '@/lib/services/supabase-data';
+import { fetchLaunchChecklist, saveLaunchChecklist, fetchProjects, logAuditEvent } from '@/lib/services/supabase-data';
 import { invokeLaunchCheckValidator } from '@/lib/services/edge-functions';
-import { LaunchCheckItem } from '@/lib/types';
+import { LaunchCheckItem, Project } from '@/lib/types';
 import confetti from 'canvas-confetti';
 import { GaugeChart } from '@/components/charts/GaugeChart';
 
 
 export default function LaunchCheckPage() {
   const params = useParams();
-  const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
-  const projectId = rawId || 'proj-apex-launch';
+  const projectId = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
+  const [project, setProject] = useState<Project | null>(null);
   const [items, setItems] = useState<LaunchCheckItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isValidating, setIsValidating] = useState(false);
@@ -27,10 +27,18 @@ export default function LaunchCheckPage() {
 
 
   useEffect(() => {
+    if (!projectId) {
+      setLoading(false);
+      return;
+    }
     async function loadChecklist() {
       setLoading(true);
-      const data = await fetchLaunchChecklist(projectId);
+      const [data, projects] = await Promise.all([
+        fetchLaunchChecklist(projectId as string),
+        fetchProjects(),
+      ]);
       setItems(data);
+      setProject(projects.find((p) => p.id === projectId) || null);
       setLoading(false);
     }
     loadChecklist();
@@ -42,6 +50,7 @@ export default function LaunchCheckPage() {
   const isComplete = checkedCount === totalCount && totalCount > 0;
 
   const toggleCheck = async (id: number) => {
+    if (!projectId) return;
     const targetItem = items.find(i => i.id === id);
     const newCheckedState = !targetItem?.checked;
 
@@ -81,6 +90,7 @@ export default function LaunchCheckPage() {
   };
 
   const resetAll = async () => {
+    if (!projectId) return;
     const resetItems = items.map((i) => ({ ...i, checked: false }));
     setItems(resetItems);
     await saveLaunchChecklist(projectId, resetItems);
@@ -91,6 +101,15 @@ export default function LaunchCheckPage() {
     );
 
   };
+
+  if (!loading && !project) {
+    return (
+      <div className="p-12 text-center space-y-2">
+        <p className="text-sm font-bold text-mv-ink">Projet introuvable.</p>
+        <p className="text-xs text-mv-ink-soft">Ce projet n'existe pas ou a été retiré.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -106,7 +125,7 @@ export default function LaunchCheckPage() {
             </Badge>
           </div>
           <p className="text-xs text-mv-ink-soft mt-1">
-            Projet : <strong>Apex Roofing — Refonte Framer</strong>. Synchronisation des cases cochées en temps réel.
+            Projet : <strong>{loading ? '...' : `${project?.client_name} — ${project?.name}`}</strong>. Synchronisation des cases cochées en temps réel.
           </p>
         </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,7 @@ import {
   Copy,
 } from 'lucide-react';
 import { useToast } from '@/components/providers/ToastProvider';
+import { fetchClients } from '@/lib/services/supabase-data';
 
 interface IntegrationCard {
   id: string;
@@ -32,9 +33,20 @@ interface IntegrationCard {
 }
 
 export default function IntegrationsPage() {
-  const { toastSuccess, toastInfo } = useToast();
+  const { toastSuccess, toastInfo, toastError } = useToast();
   const [testWebhookUrl, setTestWebhookUrl] = useState('http://localhost:3000/api/webhooks/roi-event');
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
+  const [testClientId, setTestClientId] = useState<string | null>(null);
+  const [loadingTestClient, setLoadingTestClient] = useState(true);
+
+  useEffect(() => {
+    async function loadTestClient() {
+      const clients = await fetchClients();
+      setTestClientId(clients[0]?.id || null);
+      setLoadingTestClient(false);
+    }
+    loadTestClient();
+  }, []);
 
   const INTEGRATIONS: IntegrationCard[] = [
     {
@@ -76,16 +88,20 @@ export default function IntegrationsPage() {
   ];
 
   const handleTestWebhook = async () => {
+    if (!testClientId) {
+      toastError('Aucun client disponible', 'Créez au moins un client avant de tester ce webhook.');
+      return;
+    }
     setIsTestingWebhook(true);
     try {
       const res = await fetch('/api/webhooks/roi-event', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          client_id: 'client-apex-roofing',
+          client_id: testClientId,
           event: 'lead_captured',
           lead_name: 'Test Audit Lead',
-          lead_email: 'test@apexroofing.ca',
+          lead_email: 'test@minerva-webhook-test.internal',
         }),
       });
       const data = await res.json();
@@ -143,11 +159,17 @@ export default function IntegrationsPage() {
             <Button
               variant="primary"
               size="sm"
-              disabled={isTestingWebhook}
+              disabled={isTestingWebhook || loadingTestClient || !testClientId}
               icon={<Send className="w-4 h-4" />}
               onClick={handleTestWebhook}
             >
-              {isTestingWebhook ? 'Envoi Signal...' : 'Tester le Webhook'}
+              {isTestingWebhook
+                ? 'Envoi Signal...'
+                : loadingTestClient
+                ? 'Chargement...'
+                : !testClientId
+                ? 'Aucun client disponible'
+                : 'Tester le Webhook'}
             </Button>
           </div>
         </div>

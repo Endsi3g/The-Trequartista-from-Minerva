@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { StorageBrowser } from '@/components/storage/StorageBrowser';
 import {
   Calendar,
@@ -117,33 +116,32 @@ export default function PerformancePage() {
         <div className="space-y-6">
           <Card
             header={
-              <div className="flex items-center justify-between w-full">
-                <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
-                  Objectifs Trimestriels Q3 (Juillet - Septembre 2026)
-                </h3>
-                <Button variant="primary" size="sm">
-                  + Nouvel OKR
-                </Button>
-              </div>
+              <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
+                Objectifs Trimestriels Q3 (Juillet - Septembre 2026)
+              </h3>
             }
           >
-            <div className="space-y-5">
-              {member.okrs.map((okr) => (
-                <div key={okr.id} className="p-4 rounded-xl bg-mv-cream-soft border border-mv-border space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-mv-ink">{okr.title}</span>
-                    <span className="text-xs font-mono font-bold text-mv-green">{okr.current_pct}%</span>
-                  </div>
+            {member.okrs.length === 0 ? (
+              <p className="text-xs text-mv-ink-soft py-8 text-center">Aucun OKR défini pour le moment.</p>
+            ) : (
+              <div className="space-y-5">
+                {member.okrs.map((okr) => (
+                  <div key={okr.id} className="p-4 rounded-xl bg-mv-cream-soft border border-mv-border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-mv-ink">{okr.title}</span>
+                      <span className="text-xs font-mono font-bold text-mv-green">{okr.current_pct}%</span>
+                    </div>
 
-                  <div className="w-full h-2.5 bg-mv-border rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-mv-green rounded-full transition-all duration-500"
-                      style={{ width: `${okr.current_pct}%` }}
-                    />
+                    <div className="w-full h-2.5 bg-mv-border rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-mv-green rounded-full transition-all duration-500"
+                        style={{ width: `${okr.current_pct}%` }}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
       )}

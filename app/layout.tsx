@@ -1,15 +1,28 @@
 import type { Metadata } from 'next';
-import { JetBrains_Mono } from 'next/font/google';
+import { JetBrains_Mono, Sora, Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { SupabaseRealtimeProvider } from '@/components/providers/SupabaseRealtimeProvider';
 import { ToastProvider } from '@/components/providers/ToastProvider';
 
-// Body face (Helvetica Neue) and display face (Georgia) are both licensed
-// system fonts, not on Google Fonts -- declared directly in
-// tailwind.config.js (theme.fontFamily.sans / .display) as system-stack
-// fallback chains instead of loaded through next/font. No variable/class
-// needed here for either.
+// Display face (Sora) and body face (Inter), loaded via next/font/google
+// and exposed as CSS variables consumed by tailwind.config.js
+// (theme.fontFamily.display / .sans). See CLAUDE.md Typographie for the
+// pairing history -- check git log before assuming this is still current.
+
+const sora = Sora({
+  subsets: ['latin'],
+  variable: '--font-sora',
+  display: 'swap',
+  weight: ['400', '600', '700', '800'],
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+});
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
@@ -53,7 +66,7 @@ export default function RootLayout({
     <html
       lang="fr"
       suppressHydrationWarning
-      className={`${jetbrainsMono.variable}`}
+      className={`${sora.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <head>
         <meta name="theme-color" content="#167f5b" />

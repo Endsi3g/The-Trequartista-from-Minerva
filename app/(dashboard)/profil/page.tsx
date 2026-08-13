@@ -86,16 +86,34 @@ export default function ProfilePage() {
     const filePath = `avatars/${Date.now()}-${file.name}`;
 
     try {
-      const { error } = await supabase.storage.from('team-documents').upload(filePath, file, { upsert: true });
+      const { error: uploadError } = await supabase.storage.from('team-documents').upload(filePath, file, { upsert: true });
 
-      if (!error) {
-        const { data } = supabase.storage.from('team-documents').getPublicUrl(filePath);
-        setAvatarUrl(data.publicUrl);
-        toastSuccess('Photo mise à jour', 'Votre avatar a été mis à jour.');
+      if (uploadError) {
+        console.error('Avatar upload error:', uploadError);
+        toastError("Erreur d'upload", `Impossible d'enregistrer l'image : ${uploadError.message}`);
+        return;
       }
+
+      const { data } = supabase.storage.from('team-documents').getPublicUrl(filePath);
+      setAvatarUrl(data.publicUrl);
+
+      // Persist immediately -- don't leave the new photo stranded in local
+      // state waiting on a separate "Enregistrer le Profil" click.
+      const { error: persistError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: data.publicUrl, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+
+      if (persistError) {
+        console.error('Avatar persist error:', persistError);
+        toastError('Erreur de sauvegarde', "La photo a été téléversée mais n'a pas pu être enregistrée sur votre profil.");
+        return;
+      }
+
+      toastSuccess('Photo mise à jour', 'Votre avatar a été mis à jour.');
     } catch (err) {
       console.error('Avatar upload error:', err);
-      toastError('Erreur d\'upload', 'Impossible d\'enregistrer l\'image.');
+      toastError("Erreur d'upload", "Impossible d'enregistrer l'image.");
     }
   };
 
@@ -104,23 +122,24 @@ export default function ProfilePage() {
     setSaving(true);
     setSavedSuccess(false);
 
-    try {
-      await supabase.from('profiles').update({
-        full_name: fullName,
-        role: role,
-        avatar_url: avatarUrl,
-        updated_at: new Date().toISOString(),
-      }).eq('id', userId);
-    } catch {
-      // Fallback
+    const { error } = await supabase.from('profiles').update({
+      full_name: fullName,
+      role: role,
+      avatar_url: avatarUrl,
+      updated_at: new Date().toISOString(),
+    }).eq('id', userId);
+
+    setSaving(false);
+
+    if (error) {
+      console.error('Profile save error:', error);
+      toastError('Erreur de sauvegarde', "Impossible d'enregistrer le profil.");
+      return;
     }
 
-    setTimeout(() => {
-      setSaving(false);
-      setSavedSuccess(true);
-      toastSuccess('Profil sauvegardé !');
-      setTimeout(() => setSavedSuccess(false), 3000);
-    }, 600);
+    setSavedSuccess(true);
+    toastSuccess('Profil sauvegardé !');
+    setTimeout(() => setSavedSuccess(false), 3000);
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
