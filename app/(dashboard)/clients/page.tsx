@@ -40,7 +40,7 @@ export default function ClientsPage() {
             Répertoire Clients & Suivi MRR
           </h1>
           <p className="text-sm text-mv-ink-soft mt-1">
-            Gestion directe des abonnements mensuels.
+            Cliquez sur un client pour voir sa fiche complète ; utilisez « Suivi ROI » pour consulter ses performances ou l'inviter sur son portail.
           </p>
         </div>
 

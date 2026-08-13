@@ -67,15 +67,15 @@ module.exports = {
   		},
   		fontFamily: {
   			display: [
+  				'Georgia',
   				'Times New Roman',
   				'Times',
-  				'Georgia',
   				'serif'
   			],
   			sans: [
-  				'var(--font-inter)',
-  				'Inter',
-  				'Plus Jakarta Sans',
+  				'Helvetica Neue',
+  				'Helvetica',
+  				'Arial',
   				'-apple-system',
   				'sans-serif'
   			],

@@ -120,7 +120,7 @@ export default function BillingPage() {
             Facturation Agence & Abonnements Stripe
           </h1>
           <p className="text-sm text-mv-ink-soft mt-1">
-            Gestion du Chiffre d'Affaires Récurrent (MRR), suivi des contrats et récapitulatif des paiements clients.
+            Le MRR total et le détail par client se calculent automatiquement à partir des fiches clients — rien à saisir ici.
           </p>
         </div>
 

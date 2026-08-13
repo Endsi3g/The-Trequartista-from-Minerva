@@ -116,7 +116,7 @@ export default function LeadsCrmPage() {
             </Badge>
           </div>
           <p className="text-xs text-mv-ink-soft mt-1">
-            Gestion Kanban interactif du pipeline de ventes avec calcul automatisé du MRR et conversion client.
+            Glissez une carte d'une colonne à l'autre pour faire avancer un lead ; cliquez dessus pour voir ses détails et le convertir en client.
           </p>
         </div>
 

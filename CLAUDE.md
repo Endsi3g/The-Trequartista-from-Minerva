@@ -23,7 +23,7 @@ Every create/edit/detail view is a routed page (`/clients/new`, `/leads/new`, `/
 
 ## Typography
 
-Display face is **Times New Roman** (declared directly in `tailwind.config.js` theme.fontFamily.display — it's a licensed system font, not on Google Fonts, so it isn't loaded via `next/font`), body is **Inter**, mono is **JetBrains Mono** (both via `next/font/google`). `.font-display` used to be silently overridden by a hardcoded system-serif rule left in `globals.css`; that's been removed, so the Tailwind utility is now the only source of truth for it. Don't reintroduce a manual `.font-display` (or similar) override in `globals.css`. (Earlier in this same session the display face was briefly Fraunces, a Google-hosted variable serif — reverted per direct instruction. If display typography comes up again, check `git log -- tailwind.config.js app/layout.tsx` for the current state rather than assuming either choice.)
+Display face is **Georgia**, body is **Helvetica Neue** (both declared directly in `tailwind.config.js` theme.fontFamily as system-stack fallback chains — neither is on Google Fonts, so neither is loaded via `next/font`; `app/layout.tsx` only loads JetBrains Mono that way). `.font-display` used to be silently overridden by a hardcoded system-serif rule left in `globals.css`; that's been removed, so the Tailwind utility is now the only source of truth for it. Don't reintroduce a manual `.font-display` (or similar) override in `globals.css`. (This pairing has changed twice before this session: Fraunces → Times New Roman → Georgia/Helvetica Neue. If display typography comes up again, check `git log -- tailwind.config.js app/layout.tsx` for the current state rather than assuming any of these.)
 
 ## Real data only
 

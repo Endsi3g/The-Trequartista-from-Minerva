@@ -113,7 +113,7 @@ export default function ContentPlannerPage() {
             Social Reels Studio & Contenus
           </h1>
           <p className="text-sm text-mv-ink-soft mt-1">
-            Studio centralisé de création, prévisualisation 9:16 mobile et diffusion.
+            Planifiez un nouveau contenu, glissez-le dans le calendrier selon sa date, et cliquez dessus pour l'éditer ou téléverser sa vidéo.
           </p>
         </div>
 

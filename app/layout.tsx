@@ -1,21 +1,15 @@
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { SupabaseRealtimeProvider } from '@/components/providers/SupabaseRealtimeProvider';
 import { ToastProvider } from '@/components/providers/ToastProvider';
 
-// Display face: Times New Roman — a licensed system font, not on Google
-// Fonts, so it's declared directly in tailwind.config.js (theme.fontFamily
-// .display) instead of loaded through next/font. No variable/class needed
-// here for it.
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-});
+// Body face (Helvetica Neue) and display face (Georgia) are both licensed
+// system fonts, not on Google Fonts -- declared directly in
+// tailwind.config.js (theme.fontFamily.sans / .display) as system-stack
+// fallback chains instead of loaded through next/font. No variable/class
+// needed here for either.
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
@@ -59,7 +53,7 @@ export default function RootLayout({
     <html
       lang="fr"
       suppressHydrationWarning
-      className={`${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${jetbrainsMono.variable}`}
     >
       <head>
         <meta name="theme-color" content="#167f5b" />

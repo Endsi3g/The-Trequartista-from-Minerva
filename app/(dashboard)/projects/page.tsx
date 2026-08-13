@@ -35,7 +35,7 @@ export default function ProjectsPage() {
             Pipeline Projets & Delivery
           </h1>
           <p className="text-sm text-mv-ink-soft mt-1">
-            Suivi Kanban et liste de tous les projets clients en cours d'exécution.
+            Basculez entre vue Kanban et liste ; cliquez sur un projet pour voir sa feuille de route et sa checklist de lancement.
           </p>
         </div>
 

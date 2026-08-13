@@ -50,7 +50,10 @@ export default function PortalQuestionsPage() {
 
   return (
     <div className="space-y-6 pb-12 flex flex-col h-[calc(100vh-160px)]">
-      <h1 className="text-2xl font-extrabold text-mv-ink font-display">Questions à l'équipe Minerva</h1>
+      <div>
+        <h1 className="text-2xl font-extrabold text-mv-ink font-display">Questions à l'équipe Minerva</h1>
+        <p className="text-xs text-mv-ink-faint mt-1">Écrivez votre message ci-dessous ; votre équipe Minerva y répondra directement ici.</p>
+      </div>
 
       <Card className="flex-1 flex flex-col overflow-hidden p-0">
         <div className="flex-1 overflow-y-auto p-5 space-y-3">

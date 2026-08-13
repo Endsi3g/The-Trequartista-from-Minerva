@@ -44,7 +44,10 @@ export default function PortalCalendarPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      <h1 className="text-2xl font-extrabold text-mv-ink font-display">Calendrier éditorial</h1>
+      <div>
+        <h1 className="text-2xl font-extrabold text-mv-ink font-display">Calendrier éditorial</h1>
+        <p className="text-xs text-mv-ink-faint mt-1">Les contenus planifiés et publiés pour votre compte, mois par mois. Cliquez sur une case pour voir les détails.</p>
+      </div>
 
       <Card className="p-6">
         <div className="flex items-center justify-between mb-6">

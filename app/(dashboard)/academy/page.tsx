@@ -41,7 +41,7 @@ export default function AcademyPage() {
             Académie Interne & SOPs Minerva
           </h1>
           <p className="text-sm text-mv-ink-soft mt-1">
-            Base de connaissances, tutoriels vidéo interactifs et guides d'exécution standardisés.
+            Ouvrez une SOP pour suivre le guide, puis marquez-la comme complétée une fois terminée.
           </p>
         </div>
 

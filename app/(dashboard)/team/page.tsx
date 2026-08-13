@@ -61,7 +61,7 @@ export default function TeamPage() {
             Répertoire Équipe In-House Minerva
           </h1>
           <p className="text-sm text-mv-ink-soft mt-1">
-            Gestion des collaborateurs, des sessions 1-on-1 et du développement des compétences.
+            Cliquez sur un membre pour voir sa fiche de performance, ses objectifs et planifier son prochain 1-on-1.
           </p>
         </div>
 

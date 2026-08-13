@@ -53,6 +53,9 @@ export default function PortalOverviewPage() {
       <div>
         <p className="text-sm font-semibold text-mv-ink-soft">Bienvenue,</p>
         <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink font-display">{client.name}</h1>
+        <p className="text-xs text-mv-ink-faint mt-1">
+          Votre aperçu de performance en un coup d'œil — utilisez les onglets ci-dessus pour voir le calendrier de vos publications ou écrire à votre équipe.
+        </p>
       </div>
 
       <Card header={<h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider flex items-center gap-2"><Sparkles className="w-4 h-4 text-mv-green" /> Ce que Minerva fait pour vous en ce moment</h3>}>
