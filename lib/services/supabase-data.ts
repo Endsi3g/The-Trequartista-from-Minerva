@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -908,4 +908,252 @@ export async function addChangelogEntry(entry: {
     return null;
   }
   return data as ChangelogEntry;
+}
+
+// ── 18. Acquisition: Intake Leads ───────────────────────────────────────────
+
+export async function fetchIntakeLeads(): Promise<IntakeLead[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('intake_leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error || !data) {
+        console.warn('[Supabase] Error fetching intake leads:', error);
+        return [];
+      }
+      return data as IntakeLead[];
+    })(),
+    []
+  );
+}
+
+export async function updateIntakeLead(id: string, updates: Partial<IntakeLead>): Promise<boolean> {
+  const { error } = await getSupabase().from('intake_leads').update(updates).eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error updating intake lead:', error);
+    return false;
+  }
+  return true;
+}
+
+// ── 19. Acquisition: Audits ─────────────────────────────────────────────────
+
+export async function fetchAudits(): Promise<Audit[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('audits')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error || !data) {
+        console.warn('[Supabase] Error fetching audits:', error);
+        return [];
+      }
+      return data as Audit[];
+    })(),
+    []
+  );
+}
+
+export async function fetchAuditWithFindings(id: string): Promise<AuditWithFindings | null> {
+  const supabase = getSupabase();
+  const [
+    { data: audit },
+    { data: processSteps },
+    { data: costItems },
+    { data: toolFindings },
+    { data: initiatives },
+    { data: comments },
+  ] = await Promise.all([
+    supabase.from('audits').select('*').eq('id', id).maybeSingle(),
+    supabase.from('audit_process_steps').select('*').eq('audit_id', id).order('sort_order'),
+    supabase.from('audit_cost_items').select('*').eq('audit_id', id),
+    supabase.from('audit_tool_findings').select('*').eq('audit_id', id),
+    supabase.from('audit_initiatives').select('*').eq('audit_id', id).order('sort_order'),
+    supabase.from('audit_comments').select('*').eq('audit_id', id).order('created_at'),
+  ]);
+
+  if (!audit) return null;
+
+  const initiativeIds = (initiatives || []).map((i: { id: string }) => i.id);
+  const { data: reactions } = initiativeIds.length
+    ? await supabase.from('audit_initiative_reactions').select('*').in('initiative_id', initiativeIds)
+    : { data: [] };
+
+  return {
+    ...(audit as Audit),
+    process_steps: (processSteps || []) as AuditProcessStep[],
+    cost_items: (costItems || []) as AuditCostItem[],
+    tool_findings: (toolFindings || []) as AuditToolFinding[],
+    initiatives: (initiatives || []) as AuditInitiative[],
+    reactions: (reactions || []) as AuditInitiativeReaction[],
+    comments: (comments || []) as AuditComment[],
+  };
+}
+
+export async function createAudit(audit: {
+  prospect_name: string;
+  intake_lead_id?: string | null;
+  client_id?: string | null;
+  crm_lead_id?: string | null;
+  created_by: string;
+}): Promise<Audit | null> {
+  const { data, error } = await getSupabase().from('audits').insert([audit]).select().single();
+  if (error) {
+    console.error('[Supabase] Error creating audit:', error);
+    return null;
+  }
+  return data as Audit;
+}
+
+export async function updateAudit(id: string, updates: Partial<Audit>): Promise<boolean> {
+  const { error } = await getSupabase().from('audits').update(updates).eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error updating audit:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function updateAuditProcessStep(id: string, updates: Partial<AuditProcessStep>): Promise<boolean> {
+  const { error } = await getSupabase().from('audit_process_steps').update(updates).eq('id', id);
+  return !error;
+}
+
+export async function deleteAuditProcessStep(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('audit_process_steps').delete().eq('id', id);
+  return !error;
+}
+
+export async function updateAuditCostItem(id: string, updates: Partial<AuditCostItem>): Promise<boolean> {
+  const { error } = await getSupabase().from('audit_cost_items').update(updates).eq('id', id);
+  return !error;
+}
+
+export async function deleteAuditCostItem(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('audit_cost_items').delete().eq('id', id);
+  return !error;
+}
+
+export async function updateAuditToolFinding(id: string, updates: Partial<AuditToolFinding>): Promise<boolean> {
+  const { error } = await getSupabase().from('audit_tool_findings').update(updates).eq('id', id);
+  return !error;
+}
+
+export async function updateAuditInitiative(id: string, updates: Partial<AuditInitiative>): Promise<boolean> {
+  const { error } = await getSupabase().from('audit_initiatives').update(updates).eq('id', id);
+  return !error;
+}
+
+export async function deleteAuditInitiative(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('audit_initiatives').delete().eq('id', id);
+  return !error;
+}
+
+// ── 20. Acquisition: Reference Data (rates & tool compatibility) ───────────
+
+export async function fetchRoleHourlyRates(): Promise<RoleHourlyRate[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase().from('role_hourly_rates').select('*').order('role_name');
+      if (error || !data) return [];
+      return data as RoleHourlyRate[];
+    })(),
+    []
+  );
+}
+
+export async function upsertRoleHourlyRate(roleName: string, hourlyRateCad: number, updatedBy: string): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('role_hourly_rates')
+    .upsert({ role_name: roleName, hourly_rate_cad: hourlyRateCad, updated_by: updatedBy, updated_at: new Date().toISOString() }, { onConflict: 'role_name' });
+  return !error;
+}
+
+export async function fetchToolCompatibilityDictionary(): Promise<ToolCompatibilityEntry[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase().from('tool_compatibility_dictionary').select('*').order('tool_name');
+      if (error || !data) return [];
+      return data as ToolCompatibilityEntry[];
+    })(),
+    []
+  );
+}
+
+export async function upsertToolCompatibilityEntry(entry: {
+  tool_name: string;
+  category?: string;
+  has_rest_api?: boolean;
+  has_graphql_api?: boolean;
+  integration_feasibility?: ToolCompatibilityEntry['integration_feasibility'];
+  api_notes?: string;
+}): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('tool_compatibility_dictionary')
+    .upsert({ ...entry, updated_at: new Date().toISOString() }, { onConflict: 'tool_name' });
+  return !error;
+}
+
+// ── 21. Acquisition: Proposals ──────────────────────────────────────────────
+
+export async function fetchProposalsByAudit(auditId: string): Promise<Proposal[]> {
+  const { data, error } = await getSupabase().from('proposals').select('*').eq('audit_id', auditId).order('created_at', { ascending: false });
+  if (error || !data) return [];
+  return data as Proposal[];
+}
+
+export async function fetchProposals(): Promise<Proposal[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase().from('proposals').select('*').order('created_at', { ascending: false });
+      if (error || !data) return [];
+      return data as Proposal[];
+    })(),
+    []
+  );
+}
+
+// ── 22. Acquisition: Telemetry ──────────────────────────────────────────────
+
+export interface AcquisitionFunnelStats {
+  totalIntakeLeads: number;
+  step1Abandoned: number;
+  qualified: number;
+  smsSent: number;
+  qualificationRatePct: number;
+  totalAudits: number;
+  auditsExtracted: number;
+  totalProposals: number;
+  proposalsSent: number;
+  closeRatePct: number;
+}
+
+export async function fetchAcquisitionFunnelStats(): Promise<AcquisitionFunnelStats> {
+  const [intakeLeads, audits, proposals] = await Promise.all([
+    fetchIntakeLeads(),
+    fetchAudits(),
+    fetchProposals(),
+  ]);
+
+  const step1Abandoned = intakeLeads.filter((l) => l.status === 'step1_abandoned').length;
+  const qualified = intakeLeads.filter((l) => l.status === 'qualified' || l.status === 'converted').length;
+  const smsSent = intakeLeads.filter((l) => l.sms_follow_up_status === 'sent').length;
+  const auditsExtracted = audits.filter((a) => a.status === 'extracted' || a.status === 'reviewed' || a.status === 'proposal_sent').length;
+  const proposalsSent = proposals.filter((p) => p.status === 'sent').length;
+
+  return {
+    totalIntakeLeads: intakeLeads.length,
+    step1Abandoned,
+    qualified,
+    smsSent,
+    qualificationRatePct: intakeLeads.length > 0 ? Math.round((qualified / intakeLeads.length) * 100) : 0,
+    totalAudits: audits.length,
+    auditsExtracted,
+    totalProposals: proposals.length,
+    proposalsSent,
+    closeRatePct: intakeLeads.length > 0 ? Math.round((proposalsSent / intakeLeads.length) * 100) : 0,
+  };
 }

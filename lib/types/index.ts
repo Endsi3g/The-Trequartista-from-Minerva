@@ -337,4 +337,143 @@ export interface Lead {
   created_at: string;
 }
 
+// ── Acquisition: intake, audits, proposals ──────────────────────────────────
+
+export interface IntakeLead {
+  id: string;
+  first_name: string;
+  phone: string;
+  email?: string | null;
+  status: 'step1_abandoned' | 'qualified' | 'converted' | 'discarded';
+  qualification_data: Record<string, unknown>;
+  source: string;
+  sms_follow_up_status: 'pending' | 'sent' | 'failed' | 'skipped_qualified' | 'skipped_no_config';
+  sms_follow_up_sent_at?: string | null;
+  qualified_at?: string | null;
+  crm_lead_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Audit {
+  id: string;
+  intake_lead_id?: string | null;
+  client_id?: string | null;
+  crm_lead_id?: string | null;
+  prospect_name: string;
+  status: 'awaiting_transcript' | 'transcript_ready' | 'extracting' | 'extracted' | 'reviewed' | 'proposal_sent';
+  transcript_source?: 'granola' | 'manual_paste' | null;
+  transcript_raw?: string | null;
+  transcript_fetched_at?: string | null;
+  extraction_raw?: unknown;
+  extraction_error?: string | null;
+  view_token?: string | null;
+  view_token_expires_at?: string | null;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AuditProcessStep {
+  id: string;
+  audit_id: string;
+  title: string;
+  description?: string | null;
+  role_involved?: string | null;
+  is_bottleneck: boolean;
+  is_duplicate_entry: boolean;
+  source_quote?: string | null;
+  sort_order: number;
+}
+
+export interface AuditCostItem {
+  id: string;
+  audit_id: string;
+  task_description: string;
+  role_name: string;
+  hours_wasted_per_week: number;
+  hourly_rate_cad?: number | null;
+  annual_cost_cad?: number | null;
+  source_quote?: string | null;
+}
+
+export interface AuditToolFinding {
+  id: string;
+  audit_id: string;
+  tool_name: string;
+  category?: string | null;
+  has_rest_api?: boolean | null;
+  has_graphql_api?: boolean | null;
+  integration_feasibility: 'high' | 'medium' | 'low' | 'unknown';
+  notes?: string | null;
+}
+
+export interface AuditInitiative {
+  id: string;
+  audit_id: string;
+  title: string;
+  description?: string | null;
+  impact_score: number;
+  effort_score: number;
+  sort_order: number;
+}
+
+export interface AuditInitiativeReaction {
+  id: string;
+  initiative_id: string;
+  reaction: 'interested' | 'not_priority';
+  created_at: string;
+}
+
+export interface AuditComment {
+  id: string;
+  audit_id: string;
+  target_type: 'process_step' | 'cost_item' | 'initiative' | 'general';
+  target_id?: string | null;
+  author: string;
+  body: string;
+  created_at: string;
+}
+
+export interface AuditWithFindings extends Audit {
+  process_steps: AuditProcessStep[];
+  cost_items: AuditCostItem[];
+  tool_findings: AuditToolFinding[];
+  initiatives: AuditInitiative[];
+  reactions: AuditInitiativeReaction[];
+  comments: AuditComment[];
+}
+
+export interface RoleHourlyRate {
+  id: string;
+  role_name: string;
+  hourly_rate_cad: number;
+  updated_at: string;
+  updated_by?: string | null;
+}
+
+export interface ToolCompatibilityEntry {
+  id: string;
+  tool_name: string;
+  category?: string | null;
+  has_rest_api?: boolean | null;
+  has_graphql_api?: boolean | null;
+  integration_feasibility: 'high' | 'medium' | 'low' | 'unknown';
+  api_notes?: string | null;
+  updated_at: string;
+}
+
+export interface Proposal {
+  id: string;
+  audit_id: string;
+  status: 'draft' | 'generated' | 'sent' | 'failed';
+  pdf_storage_path?: string | null;
+  calendly_link?: string | null;
+  brevo_message_id?: string | null;
+  sent_at?: string | null;
+  send_error?: string | null;
+  created_by?: string | null;
+  created_at: string;
+}
+
 
