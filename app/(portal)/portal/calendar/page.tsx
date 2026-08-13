@@ -74,31 +74,33 @@ export default function PortalCalendarPage() {
         {loading ? (
           <p className="text-xs text-mv-ink-faint py-8 text-center">Chargement…</p>
         ) : (
-          <>
-            <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-mv-ink-soft mb-2">
-              {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((d) => (
-                <div key={d}>{d}</div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-2">
-              {calendarDays.map((day, i) =>
-                day.date === null ? (
-                  <div key={i} className="min-h-[100px]" />
-                ) : (
-                  <div key={i} className="min-h-[100px] max-h-[150px] p-2 bg-mv-cream-soft border border-mv-border rounded-xl flex flex-col gap-1.5 overflow-hidden">
-                    <span className="font-bold text-[11px] text-mv-ink-faint text-right shrink-0">{day.date.getDate()}</span>
-                    <div className="space-y-1 overflow-y-auto flex-1">
-                      {day.posts.map((p) => (
-                        <div key={p.id} className="p-1 rounded bg-mv-green/10 border border-mv-green/30 text-[10px] font-bold text-mv-green truncate">
-                          {p.title}
-                        </div>
-                      ))}
+          <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
+            <div className="min-w-[560px]">
+              <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-mv-ink-soft mb-2">
+                {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((d) => (
+                  <div key={d}>{d}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {calendarDays.map((day, i) =>
+                  day.date === null ? (
+                    <div key={i} className="min-h-[100px]" />
+                  ) : (
+                    <div key={i} className="min-h-[100px] max-h-[150px] p-2 bg-mv-cream-soft border border-mv-border rounded-xl flex flex-col gap-1.5 overflow-hidden">
+                      <span className="font-bold text-[11px] text-mv-ink-faint text-right shrink-0">{day.date.getDate()}</span>
+                      <div className="space-y-1 overflow-y-auto flex-1">
+                        {day.posts.map((p) => (
+                          <div key={p.id} className="p-1 rounded bg-mv-green/10 border border-mv-green/30 text-[10px] font-bold text-mv-green truncate">
+                            {p.title}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )
-              )}
+                  )
+                )}
+              </div>
             </div>
-          </>
+          </div>
         )}
       </Card>
     </div>

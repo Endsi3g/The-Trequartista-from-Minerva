@@ -74,7 +74,7 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 overflow-x-auto pb-6">
+    <div className="flex gap-4 overflow-x-auto pb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
       {KANBAN_COLUMNS.map((col) => {
         const columnLeads = leads.filter((l) => getStageForLead(l) === col.id);
         const totalMrr = columnLeads.reduce((acc, l) => acc + (l.mrr_value || 0), 0);
@@ -89,7 +89,7 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
             onDragOver={(e) => handleDragOver(e, col.id)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, col.id)}
-            className={`flex flex-col bg-mv-surface/60 border rounded-2xl p-3 min-h-[500px] transition-all ${
+            className={`flex flex-col w-[280px] min-w-[280px] shrink-0 bg-mv-surface/60 border rounded-2xl p-3 min-h-[400px] max-h-[calc(100vh-320px)] transition-all ${
               isOver ? 'border-mv-green ring-2 ring-mv-green/20 bg-mv-green-tint/40' : 'border-mv-border'
             }`}
           >

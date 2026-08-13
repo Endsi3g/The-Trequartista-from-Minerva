@@ -139,11 +139,11 @@ export default function ProjectsPage() {
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
           {['Onboarding', 'Design Framer', 'Launch Check', 'Live Production'].map((stage) => {
             const stageProjects = projects.filter((p) => p.current_stage === stage);
             return (
-              <div key={stage} className="bg-mv-surface border border-mv-border rounded-xl p-4 space-y-3">
+              <div key={stage} className="bg-mv-surface border border-mv-border rounded-xl p-4 space-y-3 w-[280px] min-w-[280px] shrink-0">
                 <div className="flex items-center justify-between pb-2 border-b border-mv-border">
                   <span className="text-xs font-extrabold text-mv-ink uppercase tracking-wider">
                     {stage}

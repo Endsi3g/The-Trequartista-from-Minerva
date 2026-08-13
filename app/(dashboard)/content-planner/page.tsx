@@ -177,11 +177,11 @@ export default function ContentPlannerPage() {
       ) : (
         <>
           {viewMode === 'kanban' && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 overflow-x-auto pb-4">
+            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
               {KANBAN_STAGES.map((stage) => {
                 const stagePosts = posts.filter((p) => p.status === stage);
                 return (
-                  <div key={stage} className="bg-mv-cream-soft/60 border border-mv-border rounded-2xl p-4 space-y-3 min-w-[260px]">
+                  <div key={stage} className="bg-mv-cream-soft/60 border border-mv-border rounded-2xl p-4 space-y-3 w-[280px] min-w-[280px] shrink-0">
                     <div className="flex items-center justify-between border-b border-mv-border pb-2.5">
                       <span className="font-extrabold text-xs text-mv-ink uppercase tracking-wider">{stage}</span>
                       <span className="text-[11px] font-mono text-mv-ink-soft bg-mv-surface px-2 py-0.5 rounded-full border border-mv-border font-bold">
@@ -231,36 +231,43 @@ export default function ContentPlannerPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-mv-ink-soft mb-2">
-                {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((d) => (
-                  <div key={d}>{d}</div>
-                ))}
-              </div>
+              {/* Horizontal scroll on narrow screens so day cells keep a
+                  usable, near-square shape instead of squeezing into tall
+                  skinny slivers at 7 columns wide. */}
+              <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
+                <div className="min-w-[560px]">
+                  <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-mv-ink-soft mb-2">
+                    {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((d) => (
+                      <div key={d}>{d}</div>
+                    ))}
+                  </div>
 
-              <div className="grid grid-cols-7 gap-2">
-                {calendarDays.map((day, i) =>
-                  day.date === null ? (
-                    <div key={i} className="min-h-[110px]" />
-                  ) : (
-                    <div
-                      key={i}
-                      className="min-h-[110px] max-h-[160px] p-2 bg-mv-cream-soft border border-mv-border rounded-xl flex flex-col gap-1.5 overflow-hidden"
-                    >
-                      <span className="font-bold text-[11px] text-mv-ink-faint text-right shrink-0">{day.date.getDate()}</span>
-                      <div className="space-y-1 overflow-y-auto flex-1">
-                        {day.posts.map((p) => (
-                          <Link
-                            key={p.id}
-                            href={`/content-planner/${p.id}`}
-                            className="block p-1 rounded bg-mv-green/10 border border-mv-green/30 text-[10px] font-bold text-mv-green truncate hover:bg-mv-green hover:text-white transition-all"
-                          >
-                            {p.title}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                )}
+                  <div className="grid grid-cols-7 gap-2">
+                    {calendarDays.map((day, i) =>
+                      day.date === null ? (
+                        <div key={i} className="min-h-[110px]" />
+                      ) : (
+                        <div
+                          key={i}
+                          className="min-h-[110px] max-h-[160px] p-2 bg-mv-cream-soft border border-mv-border rounded-xl flex flex-col gap-1.5 overflow-hidden"
+                        >
+                          <span className="font-bold text-[11px] text-mv-ink-faint text-right shrink-0">{day.date.getDate()}</span>
+                          <div className="space-y-1 overflow-y-auto flex-1">
+                            {day.posts.map((p) => (
+                              <Link
+                                key={p.id}
+                                href={`/content-planner/${p.id}`}
+                                className="block p-1 rounded bg-mv-green/10 border border-mv-green/30 text-[10px] font-bold text-mv-green truncate hover:bg-mv-green hover:text-white transition-all"
+                              >
+                                {p.title}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
               </div>
             </Card>
           )}

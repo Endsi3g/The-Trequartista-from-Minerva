@@ -131,23 +131,23 @@ export default function TeamPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {members.map((member) => (
             <Card key={member.id}>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
+                <div className="flex items-center gap-4 min-w-0">
                   <img
                     src={getAvatarSrc(member)}
                     alt={member.full_name || member.email || 'Membre'}
-                    className="w-14 h-14 rounded-full object-cover border-2 border-mv-green"
+                    className="w-14 h-14 rounded-full object-cover border-2 border-mv-green shrink-0"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${getInitials(member.full_name, member.email)}&backgroundColor=1c9a6f&fontColor=ffffff`;
                     }}
                   />
-                  <div>
-                    <div className="font-extrabold text-sm text-mv-ink">
+                  <div className="min-w-0">
+                    <div className="font-extrabold text-sm text-mv-ink truncate">
                       {member.full_name || 'Membre Minerva'}
                     </div>
-                    <div className="text-xs text-mv-ink-soft flex items-center gap-1">
-                      <Mail className="w-3 h-3" />
-                      {member.email}
+                    <div className="text-xs text-mv-ink-soft flex items-center gap-1 truncate">
+                      <Mail className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{member.email}</span>
                     </div>
                     <div className="flex items-center gap-1.5 mt-1">
                       <Badge variant="green">● Actif</Badge>
@@ -164,8 +164,8 @@ export default function TeamPage() {
                 </div>
 
                 <Tooltip content="Voir la fiche 1-on-1 et les performances" position="left">
-                  <Link href={`/team/${member.id}/performance`}>
-                    <Button variant="outline" size="sm" icon={<ExternalLink className="w-3.5 h-3.5" />}>
+                  <Link href={`/team/${member.id}/performance`} className="w-full sm:w-auto">
+                    <Button variant="outline" size="sm" icon={<ExternalLink className="w-3.5 h-3.5" />} className="w-full sm:w-auto">
                       Fiche 1-on-1
                     </Button>
                   </Link>
