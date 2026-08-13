@@ -112,7 +112,7 @@ export default function LeadsCrmPage() {
               Pipeline & CRM Leads
             </h1>
             <Badge variant={isConnected ? 'green' : 'lime'}>
-              {isConnected ? 'Realtime Postgres' : 'Central CRM'}
+              {isConnected ? 'Synchronisé en direct' : 'CRM central'}
             </Badge>
           </div>
           <p className="text-xs text-mv-ink-soft mt-1">
@@ -141,7 +141,7 @@ export default function LeadsCrmPage() {
               onClick={() => setViewMode('kanban')}
               className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer ${
                 viewMode === 'kanban'
-                  ? 'bg-[#00a800] text-white shadow-mv-sm'
+                  ? 'bg-mv-green text-white shadow-mv-sm'
                   : 'text-mv-ink-soft hover:text-mv-ink'
               }`}
             >
@@ -152,7 +152,7 @@ export default function LeadsCrmPage() {
               onClick={() => setViewMode('table')}
               className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-[#00a800] text-white shadow-mv-sm'
+                  ? 'bg-mv-green text-white shadow-mv-sm'
                   : 'text-mv-ink-soft hover:text-mv-ink'
               }`}
             >
@@ -182,7 +182,7 @@ export default function LeadsCrmPage() {
             <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">{Math.round(weightedForecastValue).toLocaleString('fr-CA')} $</p>
             <span className="text-[10px] font-semibold text-mv-ink-soft">Basé sur % de fermeture</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-mv-amber-bg text-mv-amber border border-mv-amber/30 flex items-center justify-center">
             <TrendingUp className="w-5 h-5" />
           </div>
         </div>
@@ -193,7 +193,7 @@ export default function LeadsCrmPage() {
             <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">{winRatePct}%</p>
             <span className="text-[10px] font-semibold text-mv-green">{wonLeadsCount} deals gagnés</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-mv-green-tint text-mv-green border border-mv-green/30 flex items-center justify-center">
             <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
@@ -204,7 +204,7 @@ export default function LeadsCrmPage() {
             <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">{filteredLeads.length}</p>
             <span className="text-[10px] font-semibold text-mv-ink-soft">En cours d&apos;échange</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 border border-purple-200 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/30 flex items-center justify-center">
             <Target className="w-5 h-5" />
           </div>
         </div>

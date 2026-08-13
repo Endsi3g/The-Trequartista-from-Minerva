@@ -8,16 +8,16 @@ export const dynamic = 'force-dynamic';
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-[#fcfcfd] flex flex-col justify-between relative overflow-hidden text-mv-ink">
+    <div className="min-h-screen bg-mv-cream flex flex-col justify-between relative overflow-hidden text-mv-ink">
       {/* Top Header Bar */}
-      <header className="h-16 px-6 sm:px-12 flex items-center justify-between z-20 relative bg-white/60 backdrop-blur-sm border-b border-mv-border/40">
+      <header className="h-16 px-6 sm:px-12 flex items-center justify-between z-20 relative bg-mv-surface/60 backdrop-blur-sm border-b border-mv-border/40">
         <Link href="/" className="flex items-center gap-2">
           <Logo />
         </Link>
         <div className="text-xs text-mv-ink-soft">
-          Don&apos;t have an account?{' '}
+          Pas encore de compte ?{' '}
           <Link href="/signup" className="font-extrabold text-mv-ink underline hover:text-mv-green ml-1">
-            Sign up
+            Créer un compte
           </Link>
         </div>
       </header>

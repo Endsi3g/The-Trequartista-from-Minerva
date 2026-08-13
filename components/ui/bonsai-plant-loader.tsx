@@ -13,7 +13,7 @@ export function BonsaiPlantLoader({
   subtitle = 'Your account is being configured...',
 }: BonsaiPlantLoaderProps) {
   return (
-    <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-6 text-center animate-mv-scale-in rounded-2xl">
+    <div className="absolute inset-0 bg-mv-surface/95 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-6 text-center animate-mv-scale-in rounded-2xl">
       <div className="relative w-36 h-40 mb-4 flex items-center justify-center animate-pulse">
         <Image
           src="/bonsai-plant-outline.svg"

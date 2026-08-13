@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Check, ArrowRight, User, Briefcase, DollarSign, Sparkles } from 'lucide-react';
+import { Check, ArrowRight, User, Briefcase, Sparkles } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { BonsaiPlantLoader } from '@/components/ui/bonsai-plant-loader';
 import { Logo } from '@/components/shell/Logo';
@@ -11,7 +11,6 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [fullName, setFullName] = useState('');
   const [department, setDepartment] = useState('Direction & Management');
-  const [currency, setCurrency] = useState('CAD');
   const [defaultView, setDefaultView] = useState('/overview');
   const [loading, setLoading] = useState(false);
   const [userEmail, setUserEmail] = useState('');
@@ -61,9 +60,9 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fcfcfd] flex flex-col justify-between relative overflow-hidden text-mv-ink">
+    <div className="min-h-screen bg-mv-cream flex flex-col justify-between relative overflow-hidden text-mv-ink">
       {/* Top Bar */}
-      <header className="h-16 px-6 sm:px-12 flex items-center justify-between z-20 relative bg-white/60 backdrop-blur-sm border-b border-mv-border/40">
+      <header className="h-16 px-6 sm:px-12 flex items-center justify-between z-20 relative bg-mv-surface/60 backdrop-blur-sm border-b border-mv-border/40">
         <Logo />
         <div className="flex items-center gap-2 text-xs font-bold text-mv-ink-soft">
           <span>Étape {step} sur 3</span>
@@ -72,19 +71,19 @@ export default function OnboardingPage() {
 
       {/* Main Wizard Card */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 z-20 relative my-6">
-        <div className="bg-white border border-mv-border rounded-[16px] shadow-mv-md p-6 sm:p-8 max-w-[500px] w-full relative overflow-hidden">
+        <div className="bg-mv-surface border border-mv-border rounded-[16px] shadow-mv-md p-6 sm:p-8 max-w-[500px] w-full relative overflow-hidden">
           {loading && (
             <BonsaiPlantLoader
-              title="Hold tight!"
-              subtitle="Configuring your workspace..."
+              title="Un instant !"
+              subtitle="Configuration de votre espace…"
             />
           )}
 
           {/* Stepper Progress Bar */}
           <div className="flex items-center gap-2 mb-8">
-            <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? 'bg-[#00a800]' : 'bg-mv-border'}`} />
-            <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? 'bg-[#00a800]' : 'bg-mv-border'}`} />
-            <div className={`h-1.5 flex-1 rounded-full ${step >= 3 ? 'bg-[#00a800]' : 'bg-mv-border'}`} />
+            <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? 'bg-mv-green' : 'bg-mv-border'}`} />
+            <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? 'bg-mv-green' : 'bg-mv-border'}`} />
+            <div className={`h-1.5 flex-1 rounded-full ${step >= 3 ? 'bg-mv-green' : 'bg-mv-border'}`} />
           </div>
 
           {/* Step 1: Personal Profile */}
@@ -110,8 +109,8 @@ export default function OnboardingPage() {
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Jane Smith"
-                      className="w-full px-3.5 py-2.5 pl-10 bg-white border border-mv-border rounded-xl text-sm text-mv-ink placeholder-mv-ink-mute focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green transition-all"
+                      placeholder="Marie Tremblay"
+                      className="w-full px-3.5 py-2.5 pl-10 bg-mv-surface border border-mv-border rounded-xl text-sm text-mv-ink placeholder-mv-ink-mute focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green transition-all"
                     />
                     <User className="w-4 h-4 text-mv-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2" />
                   </div>
@@ -126,7 +125,7 @@ export default function OnboardingPage() {
                       id="department"
                       value={department}
                       onChange={(e) => setDepartment(e.target.value)}
-                      className="w-full px-3.5 py-2.5 pl-10 bg-white border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green transition-all appearance-none"
+                      className="w-full px-3.5 py-2.5 pl-10 bg-mv-surface border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green transition-all appearance-none"
                     >
                       <option value="Direction & Management">Direction & Management</option>
                       <option value="Design & UX Studio">Design & UX Studio</option>
@@ -142,7 +141,7 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="w-full py-3 px-4 bg-[#00a800] hover:bg-[#009000] text-white font-bold text-sm rounded-xl shadow-mv-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 bg-mv-green hover:bg-mv-green-dark text-white font-bold text-sm rounded-xl shadow-mv-sm transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <span>Continuer</span>
                 <ArrowRight className="w-4 h-4" />
@@ -164,25 +163,6 @@ export default function OnboardingPage() {
 
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <label htmlFor="currency" className="block text-xs font-bold text-mv-ink">
-                    Devise principale des rapports
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="currency"
-                      value={currency}
-                      onChange={(e) => setCurrency(e.target.value)}
-                      className="w-full px-3.5 py-2.5 pl-10 bg-white border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green transition-all appearance-none"
-                    >
-                      <option value="CAD">CAD ($ - Dollar Canadien)</option>
-                      <option value="USD">USD ($ - Dollar Américain)</option>
-                      <option value="EUR">EUR (€ - Euro)</option>
-                    </select>
-                    <DollarSign className="w-4 h-4 text-mv-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
                   <label htmlFor="defaultView" className="block text-xs font-bold text-mv-ink">
                     Vue initiale au démarrage
                   </label>
@@ -191,7 +171,7 @@ export default function OnboardingPage() {
                       id="defaultView"
                       value={defaultView}
                       onChange={(e) => setDefaultView(e.target.value)}
-                      className="w-full px-3.5 py-2.5 pl-10 bg-white border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green transition-all appearance-none"
+                      className="w-full px-3.5 py-2.5 pl-10 bg-mv-surface border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green transition-all appearance-none"
                     >
                       <option value="/overview">Vue d&apos;ensemble (Overview Dashboard)</option>
                       <option value="/leads">CRM Leads & Pipeline Sales</option>
@@ -214,7 +194,7 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={handleCompleteOnboarding}
-                  className="flex-1 py-3 px-4 bg-[#00a800] hover:bg-[#009000] text-white font-bold text-sm rounded-xl shadow-mv-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="flex-1 py-3 px-4 bg-mv-green hover:bg-mv-green-dark text-white font-bold text-sm rounded-xl shadow-mv-sm transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   <span>Lancer mon espace</span>
                   <Check className="w-4 h-4" />
@@ -226,7 +206,7 @@ export default function OnboardingPage() {
           {/* Step 3: Success */}
           {step === 3 && (
             <div className="text-center py-6 space-y-4 animate-mv-scale-in">
-              <div className="w-16 h-16 rounded-full bg-mv-green-tint text-[#00a800] flex items-center justify-center mx-auto mb-2">
+              <div className="w-16 h-16 rounded-full bg-mv-green-tint text-mv-green flex items-center justify-center mx-auto mb-2">
                 <Check className="w-8 h-8 stroke-[3]" />
               </div>
               <h1 className="text-2xl font-extrabold text-mv-ink font-display">

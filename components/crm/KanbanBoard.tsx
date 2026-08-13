@@ -14,12 +14,12 @@ interface KanbanColumn {
 }
 
 const KANBAN_COLUMNS: KanbanColumn[] = [
-  { id: 'nouveau', title: '1. Nouveau Lead', probabilityPct: 10, badgeBg: 'bg-gray-100 border-gray-200', badgeText: 'text-gray-700' },
-  { id: 'qualification', title: '2. Qualification', probabilityPct: 30, badgeBg: 'bg-blue-50 border-blue-200', badgeText: 'text-blue-700' },
-  { id: 'proposition', title: '3. Proposition Envoyée', probabilityPct: 60, badgeBg: 'bg-purple-50 border-purple-200', badgeText: 'text-purple-700' },
-  { id: 'negociation', title: '4. Négociation', probabilityPct: 80, badgeBg: 'bg-amber-50 border-amber-200', badgeText: 'text-amber-700' },
-  { id: 'gagne', title: '5. Gagné / Signé', probabilityPct: 100, badgeBg: 'bg-emerald-50 border-emerald-200', badgeText: 'text-emerald-700' },
-  { id: 'perdu', title: '6. Perdu', probabilityPct: 0, badgeBg: 'bg-red-50 border-red-200', badgeText: 'text-red-700' },
+  { id: 'nouveau', title: '1. Nouveau Lead', probabilityPct: 10, badgeBg: 'bg-mv-cream-soft border-mv-border', badgeText: 'text-mv-ink-soft' },
+  { id: 'qualification', title: '2. Qualification', probabilityPct: 30, badgeBg: 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30', badgeText: 'text-blue-700 dark:text-blue-400' },
+  { id: 'proposition', title: '3. Proposition Envoyée', probabilityPct: 60, badgeBg: 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30', badgeText: 'text-purple-700 dark:text-purple-400' },
+  { id: 'negociation', title: '4. Négociation', probabilityPct: 80, badgeBg: 'bg-mv-amber-bg border-mv-amber/30', badgeText: 'text-mv-amber' },
+  { id: 'gagne', title: '5. Gagné / Signé', probabilityPct: 100, badgeBg: 'bg-mv-green-tint border-mv-green/30', badgeText: 'text-mv-green' },
+  { id: 'perdu', title: '6. Perdu', probabilityPct: 0, badgeBg: 'bg-mv-red-bg border-mv-red/30', badgeText: 'text-mv-red' },
 ];
 
 interface KanbanBoardProps {
@@ -90,7 +90,7 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, col.id)}
             className={`flex flex-col bg-mv-surface/60 border rounded-2xl p-3 min-h-[500px] transition-all ${
-              isOver ? 'border-[#00a800] ring-2 ring-[#00a800]/20 bg-mv-green-tint/40' : 'border-mv-border'
+              isOver ? 'border-mv-green ring-2 ring-mv-green/20 bg-mv-green-tint/40' : 'border-mv-border'
             }`}
           >
             {/* Column Header */}

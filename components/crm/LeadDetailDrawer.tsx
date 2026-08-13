@@ -210,7 +210,7 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
           <button
             type="button"
             onClick={handleDeleteLead}
-            className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl flex items-center gap-1.5 border border-red-200 transition-colors cursor-pointer"
+            className="px-3 py-2 bg-mv-red-bg hover:bg-mv-red/20 text-mv-red font-bold text-xs rounded-xl flex items-center gap-1.5 border border-mv-red/30 transition-colors cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>Supprimer</span>
@@ -220,7 +220,7 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
             type="button"
             onClick={handleSaveLead}
             disabled={isSaving}
-            className="px-5 py-2.5 bg-[#00a800] hover:bg-[#009000] text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-mv-sm transition-all cursor-pointer"
+            className="px-5 py-2.5 bg-mv-green hover:bg-mv-green-dark text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-mv-sm transition-all cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>{isSaving ? 'Enregistrement...' : 'Sauvegarder'}</span>

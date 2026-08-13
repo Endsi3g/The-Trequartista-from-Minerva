@@ -61,24 +61,24 @@ export function LoginForm() {
   };
 
   return (
-    <div className="bg-white border border-mv-border rounded-[16px] shadow-mv-md p-6 sm:p-8 max-w-[460px] w-full relative overflow-hidden">
+    <div className="bg-mv-surface border border-mv-border rounded-[16px] shadow-mv-md p-6 sm:p-8 max-w-[460px] w-full relative overflow-hidden">
       {/* Loading Overlay from Image 1 */}
       {loading && (
         <BonsaiPlantLoader
-          title="Hold tight!"
-          subtitle="Logging in to your account..."
+          title="Un instant !"
+          subtitle="Connexion à votre compte…"
         />
       )}
 
       <h1 className="text-2xl font-extrabold text-mv-ink text-center tracking-tight font-display mb-6">
-        Log in to your account
+        Connexion à votre compte
       </h1>
 
       {/* Google SSO Button */}
       <button
         type="button"
         onClick={handleGoogleSso}
-        className="w-full py-2.5 px-4 bg-white border border-mv-border rounded-xl text-sm font-semibold text-mv-ink hover:bg-mv-surface transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-mv-sm"
+        className="w-full py-2.5 px-4 bg-mv-surface border border-mv-border rounded-xl text-sm font-semibold text-mv-ink hover:bg-mv-cream-soft transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-mv-sm"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
           <path
@@ -98,7 +98,7 @@ export function LoginForm() {
             fill="#EA4335"
           />
         </svg>
-        Sign in with Google
+        Continuer avec Google
       </button>
 
       {/* Or Divider */}
@@ -106,13 +106,13 @@ export function LoginForm() {
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-mv-border" />
         </div>
-        <span className="relative bg-white px-3 text-xs font-semibold text-mv-ink-soft uppercase tracking-wider">
-          or
+        <span className="relative bg-mv-surface px-3 text-xs font-semibold text-mv-ink-soft uppercase tracking-wider">
+          ou
         </span>
       </div>
 
       {errorMsg && (
-        <div className="mb-4 flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
+        <div className="mb-4 flex items-start gap-2 p-3 rounded-xl bg-mv-red-bg border border-mv-red/30 text-mv-red text-xs font-medium">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{errorMsg}</span>
         </div>
@@ -123,29 +123,24 @@ export function LoginForm() {
         {/* Email Input */}
         <div className="space-y-1 text-left">
           <label htmlFor="email" className="block text-xs font-bold text-mv-ink">
-            Email
+            Courriel
           </label>
           <input
             id="email"
             type="email"
-            placeholder="jdoe.mobbin@gmail.com"
+            placeholder="vous@minerva.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-3.5 py-2.5 bg-white border border-mv-border rounded-xl text-sm text-mv-ink placeholder-mv-ink-mute focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green transition-all"
+            className="w-full px-3.5 py-2.5 bg-mv-surface border border-mv-border rounded-xl text-sm text-mv-ink placeholder-mv-ink-mute focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green transition-all"
           />
         </div>
 
         {/* Password Input */}
         <div className="space-y-1 text-left">
-          <div className="flex items-center justify-between">
-            <label htmlFor="password" className="block text-xs font-bold text-mv-ink">
-              Password
-            </label>
-            <a href="#" className="text-[11px] font-semibold text-mv-green hover:underline">
-              Forgot password?
-            </a>
-          </div>
+          <label htmlFor="password" className="block text-xs font-bold text-mv-ink">
+            Mot de passe
+          </label>
           <div className="relative">
             <input
               id="password"
@@ -154,7 +149,7 @@ export function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3.5 py-2.5 pr-10 bg-white border border-mv-border rounded-xl text-sm text-mv-ink placeholder-mv-ink-mute focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green transition-all font-mono"
+              className="w-full px-3.5 py-2.5 pr-10 bg-mv-surface border border-mv-border rounded-xl text-sm text-mv-ink placeholder-mv-ink-mute focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green transition-all font-mono"
             />
             <button
               type="button"
@@ -170,9 +165,9 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 px-4 bg-[#00a800] hover:bg-[#009000] text-white font-bold text-sm rounded-xl shadow-mv-sm transition-all cursor-pointer disabled:opacity-50 mt-4"
+          className="w-full py-3 px-4 bg-mv-green hover:bg-mv-green-dark text-white font-bold text-sm rounded-xl shadow-mv-sm transition-all cursor-pointer disabled:opacity-50 mt-4"
         >
-          {loading ? 'Logging in...' : 'Log In'}
+          {loading ? 'Connexion…' : 'Se connecter'}
         </button>
       </form>
     </div>
