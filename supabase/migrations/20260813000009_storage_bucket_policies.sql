@@ -8,7 +8,11 @@
 -- existed at all (default-deny), and avatars/videos/SOP media were
 -- never readable without a public SELECT policy either.
 
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- storage.objects already has RLS enabled by default on every Supabase
+-- project (Supabase turns it on at project creation) -- the migration
+-- role isn't the table owner, so ALTER TABLE ... ENABLE ROW LEVEL
+-- SECURITY here fails with "must be owner of table objects" and isn't
+-- needed anyway.
 
 -- getPublicUrl() always builds a /storage/v1/object/public/... URL,
 -- which Supabase serves purely based on storage.buckets.public -- it does
