@@ -49,7 +49,6 @@ export function ClientExecutiveReport({ client, metrics }: ClientExecutiveReport
           <div className="p-4 border rounded-lg bg-gray-50">
             <div className="text-xs text-gray-500 uppercase">Cost Per Lead (CPL)</div>
             <div className="text-2xl font-bold text-gray-900 mt-1">{metrics.cost_per_lead} $</div>
-            <div className="text-[10px] text-green-600 font-semibold mt-0.5">Optimisé</div>
           </div>
 
           <div className="p-4 border rounded-lg bg-green-50 border-green-200">
@@ -97,23 +96,6 @@ export function ClientExecutiveReport({ client, metrics }: ClientExecutiveReport
               <span>Retour Publicitaire ROAS :</span>
               <span className="font-bold text-green-700">{metrics.google_ads_roas}x ROAS</span>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Section 4: 20-Point Quality Standards Certification */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-green-800 border-b border-gray-200 pb-1">
-          3. Certification Qualité 20-Points Minerva
-        </h3>
-
-        <div className="p-4 border rounded-lg bg-green-50 border-green-200 text-xs flex items-center justify-between">
-          <div>
-            <div className="font-bold text-green-900">Statut du Déploiement : 100% Conforme (20/20)</div>
-            <div className="text-gray-600 mt-0.5">Le projet a validé l’ensemble des standards de vitesse, SEO, Loi 25 et tracking.</div>
-          </div>
-          <div className="text-right font-mono font-bold text-green-800 text-base">
-            CERTIFIÉ MINERVA
           </div>
         </div>
       </div>

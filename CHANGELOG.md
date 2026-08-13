@@ -89,3 +89,29 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 - Police des titres changée pour Times New Roman.
 - Bouton « Nouveau » du bandeau simplifié en icône neutre plutôt qu'un gros bouton vert.
 - Fond de page et fond des cartes rapprochés pour un contraste plus doux (moins de beige contre blanc pur).
+
+---
+
+## 2026-08-12 — Chantier 6 : portail client
+
+- Nouveau portail client (`/portal`) : chaque client peut maintenant se connecter à son propre espace — aperçu de sa performance, calendrier éditorial partagé, messagerie de questions avec l'équipe.
+- Chaque client peut être invité par lien sécurisé (bouton « Inviter au portail » sur sa fiche Suivi ROI), valide 14 jours.
+- Un client redirige automatiquement vers son portail et n'a jamais accès au reste de l'application interne.
+
+*Nouvelle migration en attente : `20260812000013` (portail client). Tant qu'elle n'est pas déployée, l'invitation et le portail ne fonctionneront pas.*
+
+---
+
+## 2026-08-12 — Suivi ROI : fin des chiffres inventés
+
+- La fiche Suivi ROI d'un client affichait de fausses données impressionnantes (48 leads, 12 ventes, 85 000 $ de pipeline, deux graphiques inventés, deux vidéos de démo Google) dès qu'un client réel n'avait pas encore de métriques saisies. Retiré au complet : la page montre maintenant un état vide honnête tant qu'aucune donnée n'existe.
+- Le graphique de tendance hebdomadaire vient maintenant des vraies données du client ; la répartition budgétaire compare le budget Google Ads réel au reste du budget investi, plus des canaux inventés.
+- Les « créatifs vidéo top performance » viennent maintenant des vrais contenus publiés pour ce client (masqué s'il n'y en a pas), au lieu de deux vidéos d'exemple Google avec des statistiques inventées.
+- Le rapport PDF exécutif ne prétend plus à une fausse « Certification Qualité 20-Points » systématiquement à 100 %.
+- Badge « All Systems Live » traduit en « Suivi en direct » ; bouton Imprimer/Exporter PDF réduit à une simple icône.
+- Composant de graphique à barres inutilisé (jamais importé nulle part, données de démonstration en anglais) supprimé du projet.
+
+**Interface**
+- La sidebar était plus large que nécessaire pour ses libellés — réduite pour coller à son contenu.
+- Le contenu principal restait à largeur fixe même quand la sidebar était réduite, laissant un vide inutile ; il utilise maintenant tout l'espace disponible.
+- Quelques montants encore affichés en convention anglaise (`$X/mo`, `$X setup`) corrigés en convention québécoise (`X $/mois`, `X $ mise en place`).

@@ -106,8 +106,8 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
 
               {/* Column Financial Summary */}
               <div className="pt-1 flex items-center justify-between text-[10px] text-mv-ink-soft font-semibold">
-                <span>MRR: ${totalMrr.toLocaleString()}/mo</span>
-                <span>Est: ${Math.round(weightedForecast).toLocaleString()}</span>
+                <span>MRR : {totalMrr.toLocaleString('fr-CA')} $/mois</span>
+                <span>Est. : {Math.round(weightedForecast).toLocaleString('fr-CA')} $</span>
               </div>
             </div>
 
@@ -139,12 +139,12 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
                   <div className="flex items-center gap-1.5 pt-1">
                     {(lead.mrr_value || 0) > 0 && (
                       <span className="text-[10px] font-bold text-mv-green bg-mv-green-tint border border-mv-green/20 px-2 py-0.5 rounded-md">
-                        ${lead.mrr_value}/mo
+                        {(lead.mrr_value || 0).toLocaleString('fr-CA')} $/mois
                       </span>
                     )}
                     {(lead.one_time_value || 0) > 0 && (
                       <span className="text-[10px] font-bold text-mv-ink bg-mv-surface border border-mv-border px-2 py-0.5 rounded-md">
-                        ${lead.one_time_value} setup
+                        {(lead.one_time_value || 0).toLocaleString('fr-CA')} $ mise en place
                       </span>
                     )}
                   </div>

@@ -22,6 +22,25 @@ export interface Client {
   contact_name: string;
   contact_email: string;
   created_at: string;
+  current_focus?: string | null;
+}
+
+export interface ClientInvite {
+  id: string;
+  client_id: string;
+  token: string;
+  created_at: string;
+  expires_at: string;
+  used_at: string | null;
+}
+
+export interface ClientMessage {
+  id: string;
+  client_id: string;
+  sender_id: string;
+  sender_role: 'client' | 'team';
+  body: string;
+  created_at: string;
 }
 
 export interface ClientRoiMetrics {

@@ -44,8 +44,10 @@ function AppShellInner({ children }: AppShellProps) {
           <TopbarActions />
         </header>
 
-        {/* Page Content */}
-        <main className="p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        {/* Page Content -- full width of whatever the sidebar leaves
+            available, so collapsing it actually gives pages more room
+            instead of just growing empty margins. */}
+        <main className="p-4 md:p-6 lg:p-8 w-full">
           {children}
         </main>
       </div>

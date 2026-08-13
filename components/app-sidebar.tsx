@@ -22,7 +22,9 @@ import { WorkspaceSwitcher } from '@/components/shell/WorkspaceSwitcher';
 import { UserMenu } from '@/components/shell/UserMenu';
 import { useNavCounts } from '@/hooks/use-nav-counts';
 
-const SIDEBAR_WIDTH = 268;
+// Sized to fit the nav labels themselves (short French words + icon + a
+// badge) with a little breathing room -- not an arbitrary wide default.
+const SIDEBAR_WIDTH = 212;
 
 // Set isNew: true on an item to flag it as a freshly-launched section —
 // shows a small "Nouveau" pill until you remove the flag (no auto-expiry,
@@ -128,21 +130,23 @@ export function AppSidebar() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   const body = (
-    <div className="flex h-full w-[268px] min-w-[268px] flex-col bg-mv-cream-soft">
+    <div className="flex h-full w-[212px] min-w-[212px] flex-col bg-mv-cream-soft">
       {/* Header — workspace switcher */}
       <div className="flex h-16 items-center border-b border-mv-border px-3">
         <WorkspaceSwitcher />
       </div>
 
-      {/* Nav */}
-      <div className="flex-1 space-y-4 overflow-y-auto px-2.5 py-3">
+      {/* Nav — few enough items right now that everything just stays
+          expanded and nothing needs to scroll. Revisit (re-add
+          overflow-y-auto, default groups to collapsed) once the nav grows. */}
+      <div className="flex-1 space-y-4 px-2.5 py-3">
         <div className="space-y-0.5">
           {coreItems.map((item) => (
             <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
           ))}
         </div>
 
-        <CollapsibleGroup label="Contenu" defaultOpen={contentItems.some((i) => isActive(i.href))}>
+        <CollapsibleGroup label="Contenu" defaultOpen>
           {contentItems.map((item) => (
             <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
           ))}

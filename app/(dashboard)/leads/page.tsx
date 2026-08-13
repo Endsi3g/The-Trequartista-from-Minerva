@@ -168,8 +168,8 @@ export default function LeadsCrmPage() {
         <div className="bg-mv-surface border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold text-mv-ink-soft uppercase tracking-wider">Valeur Brute Pipeline</p>
-            <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">${Math.round(totalGrossPipeline).toLocaleString()}</p>
-            <span className="text-[10px] font-semibold text-mv-green">${totalPipelineMrr.toLocaleString()}/mo MRR</span>
+            <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">{Math.round(totalGrossPipeline).toLocaleString('fr-CA')} $</p>
+            <span className="text-[10px] font-semibold text-mv-green">{totalPipelineMrr.toLocaleString('fr-CA')} $/mois MRR</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center">
             <DollarSign className="w-5 h-5" />
@@ -179,7 +179,7 @@ export default function LeadsCrmPage() {
         <div className="bg-mv-surface border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold text-mv-ink-soft uppercase tracking-wider">Prévisionnel Pondéré</p>
-            <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">${Math.round(weightedForecastValue).toLocaleString()}</p>
+            <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">{Math.round(weightedForecastValue).toLocaleString('fr-CA')} $</p>
             <span className="text-[10px] font-semibold text-mv-ink-soft">Basé sur % de fermeture</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center">
@@ -262,8 +262,8 @@ export default function LeadsCrmPage() {
                     </td>
                     <td className="py-3.5 px-4 font-semibold text-mv-green">{lead.service_requested}</td>
                     <td className="py-3.5 px-4 font-bold capitalize text-mv-ink">{lead.stage || lead.status}</td>
-                    <td className="py-3.5 px-4 font-extrabold text-mv-ink">${(lead.mrr_value || 0).toLocaleString()}</td>
-                    <td className="py-3.5 px-4 font-semibold text-mv-ink-soft">${(lead.one_time_value || 0).toLocaleString()}</td>
+                    <td className="py-3.5 px-4 font-extrabold text-mv-ink">{(lead.mrr_value || 0).toLocaleString('fr-CA')} $</td>
+                    <td className="py-3.5 px-4 font-semibold text-mv-ink-soft">{(lead.one_time_value || 0).toLocaleString('fr-CA')} $</td>
                     <td className="py-3.5 px-4 text-mv-ink-faint">{new Date(lead.created_at).toLocaleDateString('fr-CA')}</td>
                   </tr>
                 ))}

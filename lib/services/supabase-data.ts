@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -441,6 +441,100 @@ export async function updateContentPost(id: string, updates: Partial<ContentPost
   const { error } = await getSupabase().from('content_posts').update(safeUpdates).eq('id', id);
   if (error) {
     console.error('[Supabase] Error updating content post:', error);
+    return false;
+  }
+  return true;
+}
+
+// ----------------------------------------------------
+// 11. CLIENT PORTAL — INVITES DIRECT SUPABASE API
+// ----------------------------------------------------
+export async function createClientInvite(clientId: string, createdBy: string): Promise<ClientInvite | null> {
+  const token = Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => b.toString(16).padStart(2, '0')).join('');
+  const { data, error } = await getSupabase()
+    .from('client_invites')
+    .insert([{ client_id: clientId, token, created_by: createdBy }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[Supabase] Error creating client invite:', error);
+    return null;
+  }
+  return data as ClientInvite;
+}
+
+export async function fetchInviteByToken(token: string): Promise<(ClientInvite & { client_name: string }) | null> {
+  const { data, error } = await getSupabase()
+    .from('client_invites')
+    .select('*, client:clients(name)')
+    .eq('token', token)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  if (data.used_at) return null;
+  if (new Date(data.expires_at) < new Date()) return null;
+
+  return { ...data, client_name: (data as any).client?.name || 'Client' };
+}
+
+export async function redeemClientInvite(token: string, userId: string): Promise<string | null> {
+  const invite = await fetchInviteByToken(token);
+  if (!invite) return null;
+
+  const supabase = getSupabase();
+  const [{ error: profileError }, { error: inviteError }] = await Promise.all([
+    supabase.from('profiles').update({ role: 'client', client_id: invite.client_id }).eq('id', userId),
+    supabase.from('client_invites').update({ used_at: new Date().toISOString(), used_by: userId }).eq('token', token),
+  ]);
+
+  if (profileError || inviteError) {
+    console.error('[Supabase] Error redeeming client invite:', profileError || inviteError);
+    return null;
+  }
+  return invite.client_id;
+}
+
+// ----------------------------------------------------
+// 12. CLIENT PORTAL — Q&A MESSAGES DIRECT SUPABASE API
+// ----------------------------------------------------
+export async function fetchClientMessages(clientId: string): Promise<ClientMessage[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('client_messages')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: true });
+
+      if (error || !data) return [];
+      return data as ClientMessage[];
+    })(),
+    []
+  );
+}
+
+export async function sendClientMessage(
+  clientId: string,
+  senderId: string,
+  senderRole: 'client' | 'team',
+  body: string
+): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('client_messages')
+    .insert([{ client_id: clientId, sender_id: senderId, sender_role: senderRole, body }]);
+
+  if (error) {
+    console.error('[Supabase] Error sending client message:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function updateClientFocus(clientId: string, currentFocus: string): Promise<boolean> {
+  const { error } = await getSupabase().from('clients').update({ current_focus: currentFocus }).eq('id', clientId);
+  if (error) {
+    console.error('[Supabase] Error updating client focus:', error);
     return false;
   }
   return true;

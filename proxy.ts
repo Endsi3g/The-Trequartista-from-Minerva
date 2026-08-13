@@ -80,7 +80,8 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/opengraph-image') ||
     pathname === '/login' ||
     pathname === '/signup' ||
-    pathname === '/pending-approval'
+    pathname === '/pending-approval' ||
+    pathname.startsWith('/portal/join')
   ) {
     return NextResponse.next();
   }
@@ -122,6 +123,19 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  // 2. Client-role accounts only ever see the portal — bounce any attempt
+  //    at the internal dashboard straight there. Internal team can still
+  //    reach /portal (useful for previewing what a client sees).
+  const isPortalRoute = pathname.startsWith('/portal');
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  const isClient = profile?.role === 'client';
+
+  if (isClient && !isPortalRoute) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = '/portal';
+    return NextResponse.redirect(redirectUrl);
+  }
+
   // Authenticated internal team user → allow access
   return response;
 }
@@ -138,6 +152,7 @@ export const config = {
     '/profil/:path*',
     '/settings/:path*',
     '/integrations/:path*',
+    '/portal/:path*',
     '/api/media/:path*',
     '/api/integrations/:path*',
   ],
