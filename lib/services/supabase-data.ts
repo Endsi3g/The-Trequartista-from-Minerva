@@ -539,3 +539,25 @@ export async function updateClientFocus(clientId: string, currentFocus: string):
   }
   return true;
 }
+
+// ── 13. Push Notifications ─────────────────────────────────────────────────
+
+export async function savePushSubscription(userId: string, sub: PushSubscriptionJSON): Promise<boolean> {
+  if (!sub.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) return false;
+  const { error } = await getSupabase().from('push_subscriptions').upsert(
+    { user_id: userId, endpoint: sub.endpoint, p256dh: sub.keys.p256dh, auth_key: sub.keys.auth },
+    { onConflict: 'endpoint' }
+  );
+  if (error) {
+    console.warn('[Supabase] Error saving push subscription:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deletePushSubscription(endpoint: string): Promise<void> {
+  const { error } = await getSupabase().from('push_subscriptions').delete().eq('endpoint', endpoint);
+  if (error) {
+    console.warn('[Supabase] Error deleting push subscription:', error);
+  }
+}

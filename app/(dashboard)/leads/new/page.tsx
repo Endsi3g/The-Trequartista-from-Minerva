@@ -23,7 +23,7 @@ export default function NewLeadPage() {
     if (!newContactEmail.trim()) return;
     setSaving(true);
 
-    await addLead({
+    const lead = await addLead({
       client_name: newCompanyName || newContactName,
       company_name: newCompanyName,
       contact_name: newContactName || newContactEmail.split('@')[0],
@@ -37,6 +37,20 @@ export default function NewLeadPage() {
       probability_pct: 10,
       notes: [],
     });
+
+    if (lead) {
+      // Fire-and-forget: notify the team's subscribed devices. A missing
+      // VAPID config or a failed send should never block lead creation.
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Nouveau lead',
+          body: `${lead.company_name || lead.contact_name} vient d'entrer dans le pipeline.`,
+          url: '/leads',
+        }),
+      }).catch(() => {});
+    }
 
     setSaving(false);
     router.push('/leads');

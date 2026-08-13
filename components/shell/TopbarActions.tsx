@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { SearchDialog } from './SearchDialog';
 import { NewMenu } from './NewMenu';
 import { ThemeToggle } from './ThemeToggle';
+import { enablePushNotifications } from '@/lib/push-client';
 
 type Alert = {
   id: string;
@@ -66,6 +67,15 @@ export function TopbarActions() {
           body: 'Les notifications sont activées. Vous recevrez les alertes importantes ici.',
           icon: '/icon-192.png',
         });
+        try {
+          const { createClient } = await import('@/lib/supabase/client');
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) await enablePushNotifications(user.id);
+        } catch {
+          // Push registration is a bonus on top of the in-app permission --
+          // never block the bell UI on it.
+        }
       }
       return;
     }

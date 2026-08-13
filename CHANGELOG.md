@@ -145,3 +145,22 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 **Nettoyage**
 - Trois fichiers de l'ancien bloc sidebar shadcn (jamais utilisés depuis la reconstruction sur mesure) supprimés : `search-form.tsx`, `ui/sidebar.tsx`, `ui/sheet.tsx`.
+
+---
+
+## 2026-08-12 — Chantier 7 (suite) : recherche ⌘K élargie et vraies notifications push
+
+**Recherche ⌘K**
+- La recherche couvre maintenant aussi les SOPs de l'Académie (titre + description) et les contenus/reels (titre + légende), plus seulement les clients, projets et leads.
+
+**Notifications push**
+- La cloche du bandeau active maintenant un vrai abonnement Web Push (norme VAPID) en plus de la permission du navigateur — l'appareil reçoit des notifications même app fermée.
+- Nouvelle route `POST /api/push/send` (authentifiée) qui envoie réellement les notifications aux appareils abonnés et retire automatiquement les abonnements expirés.
+- Premier déclencheur réel branché : la création d'un nouveau lead notifie l'équipe. Le même mécanisme peut être réutilisé pour d'autres événements (projet en retard, etc.).
+
+**Export CRM**
+- L'export CSV du pipeline de leads (déjà fonctionnel, données réelles) couvre le besoin d'export Excel — aucun exporteur redondant ajouté.
+
+*Nouvelle migration en attente : `20260812000014` (`push_subscriptions`). Sans elle, la cloche fonctionne (permission + notification locale) mais l'abonnement au vrai push échoue silencieusement en arrière-plan.*
+
+**Reste de Chantier 7** : liens de paiement Stripe (bloqué — nécessite les clés API Stripe du studio) et un passage d'audit responsive dédié.
