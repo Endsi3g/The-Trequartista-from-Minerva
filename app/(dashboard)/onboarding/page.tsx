@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Check, ArrowRight, User, Briefcase, Sparkles } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { BonsaiPlantLoader } from '@/components/ui/bonsai-plant-loader';
-import { Logo } from '@/components/shell/Logo';
+import { LogoMark } from '@/components/shell/Logo';
 
 export default function OnboardingPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -63,7 +63,7 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-mv-cream flex flex-col justify-between relative overflow-hidden text-mv-ink">
       {/* Top Bar */}
       <header className="h-16 px-6 sm:px-12 flex items-center justify-between z-20 relative bg-mv-surface/60 backdrop-blur-sm border-b border-mv-border/40">
-        <Logo />
+        <LogoMark />
         <div className="flex items-center gap-2 text-xs font-bold text-mv-ink-soft">
           <span>Étape {step} sur 3</span>
         </div>

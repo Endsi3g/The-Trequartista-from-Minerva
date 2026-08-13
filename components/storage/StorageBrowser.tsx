@@ -40,8 +40,6 @@ export function StorageBrowser({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [copiedName, setCopiedName] = useState<string | null>(null);
-  const [videoImportUrl, setVideoImportUrl] = useState('');
-  const [isImportingVideo, setIsImportingVideo] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const supabase = createClient();
@@ -67,31 +65,6 @@ export function StorageBrowser({
   useEffect(() => { setPage(0); }, [bucket, folderPath]);
   useEffect(() => { loadFiles(); }, [loadFiles]);
 
-  const handleImportVideoUrl = async () => {
-    if (!videoImportUrl.trim()) return;
-    setIsImportingVideo(true);
-    try {
-      const res = await fetch('/api/media/download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoUrl: videoImportUrl, bucket }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setVideoImportUrl('');
-        await loadFiles();
-      } else {
-        toastError('Import impossible', data.error || 'Le service d’import vidéo a échoué.');
-      }
-    } catch (err) {
-      console.error('Error importing video link:', err);
-      toastError('Import impossible', 'Erreur réseau lors de l’import vidéo.');
-    } finally {
-      setIsImportingVideo(false);
-    }
-  };
-
-
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
     if (!selectedFiles || selectedFiles.length === 0) return;
@@ -110,7 +83,7 @@ export function StorageBrowser({
     setUploadProgress(100);
 
     if (error) {
-      alert(`Erreur d'upload: ${error.message}`);
+      toastError("Erreur d'upload", error.message);
     } else {
       await loadFiles();
     }

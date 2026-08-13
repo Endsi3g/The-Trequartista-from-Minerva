@@ -150,7 +150,7 @@ export default function NotionIntegrationPage() {
         <div>
           <h1 className="text-xl font-bold text-mv-ink">Connecter Notion & Service MCP</h1>
           <p className="text-sm text-mv-ink-soft">
-            Liez vos pages Notion et le serveur MCP à Minerva Trequartista.
+            Liez vos pages Notion et le serveur MCP à cette application.
           </p>
         </div>
       </div>
@@ -175,9 +175,9 @@ export default function NotionIntegrationPage() {
         </h2>
         <ol className="space-y-2 text-xs text-mv-ink-soft list-decimal list-inside leading-relaxed">
           <li>Allez sur <a href="https://www.notion.so/my-integrations" target="_blank" rel="noopener noreferrer" className="text-mv-green underline underline-offset-2 hover:text-mv-green-dark">notion.so/my-integrations</a></li>
-          <li>Cliquez <strong>+ New integration</strong>, nommez-la "Minerva Trequartista"</li>
+          <li>Cliquez <strong>+ New integration</strong>, nommez-la comme vous le souhaitez (ex: "Trequartista Ops")</li>
           <li>Copiez le <strong>Internal Integration Token</strong> (commence par <code className="bg-mv-border px-1 rounded font-mono">secret_</code>)</li>
-          <li>Dans vos pages Notion, cliquez <strong>...</strong> → <strong>Connections</strong> → ajoutez "Minerva Trequartista"</li>
+          <li>Dans vos pages Notion, cliquez <strong>...</strong> → <strong>Connections</strong> → ajoutez l'intégration que vous venez de créer</li>
         </ol>
       </div>
 

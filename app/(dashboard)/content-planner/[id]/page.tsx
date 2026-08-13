@@ -114,7 +114,13 @@ export default function ReelDetailPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="green">{post.client_name}</Badge>
+            {post.client_id ? (
+              <Link href={`/clients/${post.client_id}`}>
+                <Badge variant="green">{post.client_name}</Badge>
+              </Link>
+            ) : (
+              <Badge variant="green">{post.client_name}</Badge>
+            )}
             {post.platform && <Badge variant="lime">{post.platform}</Badge>}
           </div>
           <h1 className="text-xl lg:text-2xl font-extrabold text-mv-ink font-display mt-2">{post.title}</h1>

@@ -2,27 +2,33 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StorageBrowser } from '@/components/storage/StorageBrowser';
 import {
+  ArrowLeft,
   Calendar,
   Target,
   Award,
   MessageSquare,
   Clock,
 } from 'lucide-react';
-import { fetchTeamMemberPerformance } from '@/lib/services/supabase-data';
+import { fetchTeamMemberPerformance, updateNext1on1Date } from '@/lib/services/supabase-data';
 import type { TeamMemberPerformance } from '@/lib/types';
 import { PerformanceBarChart } from '@/components/charts/PerformanceBarChart';
+import { useToast } from '@/components/providers/ToastProvider';
 
 
 export default function PerformancePage() {
   const params = useParams();
   const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const { toastSuccess, toastError } = useToast();
   const [activeTab, setActiveTab] = useState<'okrs' | 'skills' | 'feedbacks' | 'history'>('okrs');
   const [member, setMember] = useState<TeamMemberPerformance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editingDate, setEditingDate] = useState(false);
+  const [savingDate, setSavingDate] = useState(false);
 
   useEffect(() => {
     if (!rawId) return;
@@ -46,6 +52,10 @@ export default function PerformancePage() {
 
   return (
     <div className="space-y-8">
+      <Link href="/team" className="text-xs font-semibold text-mv-green hover:underline flex items-center gap-1.5 w-fit">
+        <ArrowLeft className="w-3.5 h-3.5" /> Retour à l'équipe
+      </Link>
+
       {/* Header Profile Banner */}
       <div className="bg-mv-surface border border-mv-border rounded-xl p-6 shadow-mv-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
@@ -69,17 +79,44 @@ export default function PerformancePage() {
           <div className="p-3 rounded-lg bg-mv-green-tint text-mv-green">
             <Calendar className="w-5 h-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="text-xs font-bold text-mv-ink">Prochain 1-on-1</div>
-            <div className="text-[11px] text-mv-ink-soft">
-              {member.next_1on1_date
-                ? new Date(member.next_1on1_date).toLocaleDateString('fr-CA', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                  })
-                : 'Aucun rendez-vous planifié'}
-            </div>
+            {editingDate ? (
+              <input
+                type="date"
+                autoFocus
+                defaultValue={member.next_1on1_date ? member.next_1on1_date.slice(0, 10) : ''}
+                disabled={savingDate}
+                onBlur={async (e) => {
+                  const value = e.target.value;
+                  setEditingDate(false);
+                  if (!value || !rawId) return;
+                  setSavingDate(true);
+                  const success = await updateNext1on1Date(rawId, value);
+                  setSavingDate(false);
+                  if (!success) {
+                    toastError('Erreur', "Impossible d'enregistrer la date -- la migration requise n'a peut-être pas encore été déployée.");
+                    return;
+                  }
+                  setMember((prev) => (prev ? { ...prev, next_1on1_date: value } : prev));
+                  toastSuccess('Prochain 1-on-1 planifié');
+                }}
+                className="text-[11px] text-mv-ink bg-mv-surface border border-mv-border rounded px-1.5 py-0.5 focus:outline-none focus:border-mv-green"
+              />
+            ) : (
+              <button
+                onClick={() => setEditingDate(true)}
+                className="text-[11px] text-mv-ink-soft hover:text-mv-green transition-colors cursor-pointer underline decoration-dotted underline-offset-2"
+              >
+                {member.next_1on1_date
+                  ? new Date(member.next_1on1_date).toLocaleDateString('fr-CA', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                    })
+                  : 'Planifier une date'}
+              </button>
+            )}
           </div>
         </div>
       </div>

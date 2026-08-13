@@ -226,6 +226,18 @@ export async function fetchTeamMemberPerformance(profileId: string): Promise<Tea
   );
 }
 
+export async function updateNext1on1Date(profileId: string, date: string): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('team_performance_reviews')
+    .upsert({ profile_id: profileId, next_1on1_date: date }, { onConflict: 'profile_id' });
+
+  if (error) {
+    console.error('[Supabase] Error updating next 1-on-1 date:', error);
+    return false;
+  }
+  return true;
+}
+
 // ----------------------------------------------------
 // 6. ACADEMY SOPs DIRECT SUPABASE API
 // ----------------------------------------------------

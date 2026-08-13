@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { addAcademySop } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
+import { VideoUploadField } from '@/components/media/VideoUploadField';
 import type { AcademySOP } from '@/lib/types';
 
 export default function NewSopPage() {
@@ -20,6 +21,7 @@ export default function NewSopPage() {
   const [author, setAuthor] = useState('');
   const [readTime, setReadTime] = useState(5);
   const [description, setDescription] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +34,7 @@ export default function NewSopPage() {
       read_time_min: Number(readTime),
       author,
       description,
+      video_url: videoUrl || undefined,
     });
 
     setSaving(false);
@@ -99,6 +102,13 @@ export default function NewSopPage() {
               onChange={(e) => setAuthor(e.target.value)}
               className="w-full mt-1 bg-mv-cream-soft border border-mv-border rounded-xl px-3 py-2 text-mv-ink focus:outline-none focus:border-mv-green"
             />
+          </div>
+
+          <div>
+            <label className="font-bold text-mv-ink">Vidéo (optionnelle)</label>
+            <div className="mt-1">
+              <VideoUploadField value={videoUrl} onChange={setVideoUrl} />
+            </div>
           </div>
 
           <div>

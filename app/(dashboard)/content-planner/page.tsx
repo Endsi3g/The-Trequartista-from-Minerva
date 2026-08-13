@@ -14,7 +14,8 @@ import {
 } from 'lucide-react';
 import { ContentPost } from '@/lib/types';
 import { DonutChart } from '@/components/charts/DonutChart';
-import { fetchContentPosts } from '@/lib/services/supabase-data';
+import { fetchContentPosts, updateContentPost } from '@/lib/services/supabase-data';
+import { useToast } from '@/components/providers/ToastProvider';
 
 const KANBAN_STAGES: ContentPost['status'][] = ['Idéation', 'Rédigé', 'Enregistré', 'Publié'];
 const PLATFORM_COLORS: Record<string, string> = {
@@ -24,11 +25,13 @@ const PLATFORM_COLORS: Record<string, string> = {
   LinkedIn: '#0e5a40',
 };
 
-function ContentCard({ post }: { post: ContentPost }) {
+function ContentCard({ post, onDragStart }: { post: ContentPost; onDragStart?: (e: React.DragEvent, postId: string) => void }) {
   return (
     <Link
       href={`/content-planner/${post.id}`}
-      className="block p-3.5 rounded-xl bg-mv-surface border border-mv-border hover:border-mv-green transition-all shadow-mv-sm space-y-3 group"
+      draggable={!!onDragStart}
+      onDragStart={(e) => onDragStart?.(e, post.id)}
+      className="block p-3.5 rounded-xl bg-mv-surface border border-mv-border hover:border-mv-green transition-all shadow-mv-sm space-y-3 group cursor-grab active:cursor-grabbing"
     >
       <div className="flex items-center justify-between">
         <Badge variant="green">{post.client_name}</Badge>
@@ -52,9 +55,12 @@ function ContentCard({ post }: { post: ContentPost }) {
 }
 
 export default function ContentPlannerPage() {
+  const { toastError } = useToast();
   const [viewMode, setViewMode] = useState<'calendar' | 'kanban' | 'storage'>('calendar');
   const [posts, setPosts] = useState<ContentPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [draggedPostId, setDraggedPostId] = useState<string | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<ContentPost['status'] | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
@@ -67,8 +73,26 @@ export default function ContentPlannerPage() {
     })();
   }, []);
 
-  const handleStatusMove = (postId: string, newStatus: ContentPost['status']) => {
+  const handleDragStart = (e: React.DragEvent, postId: string) => {
+    setDraggedPostId(postId);
+    e.dataTransfer.setData('text/plain', postId);
+  };
+
+  const handleStageDrop = async (e: React.DragEvent, newStatus: ContentPost['status']) => {
+    e.preventDefault();
+    setDragOverStage(null);
+    const postId = e.dataTransfer.getData('text/plain') || draggedPostId;
+    setDraggedPostId(null);
+    if (!postId) return;
+
+    const previous = posts;
     setPosts(posts.map((p) => (p.id === postId ? { ...p, status: newStatus } : p)));
+
+    const success = await updateContentPost(postId, { status: newStatus });
+    if (!success) {
+      setPosts(previous);
+      toastError('Erreur', "Impossible de déplacer ce contenu -- le changement n'a pas été enregistré.");
+    }
   };
 
   const platformDistribution = useMemo(() => {
@@ -113,7 +137,7 @@ export default function ContentPlannerPage() {
             Social Reels Studio & Contenus
           </h1>
           <p className="text-sm text-mv-ink-soft mt-1">
-            Planifiez un nouveau contenu, glissez-le dans le calendrier selon sa date, et cliquez dessus pour l'éditer ou téléverser sa vidéo.
+            Planifiez un nouveau contenu, glissez-le d'une étape à l'autre en vue Kanban, et cliquez dessus pour l'éditer ou téléverser sa vidéo.
           </p>
         </div>
 
@@ -180,8 +204,20 @@ export default function ContentPlannerPage() {
             <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
               {KANBAN_STAGES.map((stage) => {
                 const stagePosts = posts.filter((p) => p.status === stage);
+                const isOver = dragOverStage === stage;
                 return (
-                  <div key={stage} className="bg-mv-cream-soft/60 border border-mv-border rounded-2xl p-4 space-y-3 w-[280px] min-w-[280px] shrink-0">
+                  <div
+                    key={stage}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverStage(stage);
+                    }}
+                    onDragLeave={() => setDragOverStage(null)}
+                    onDrop={(e) => handleStageDrop(e, stage)}
+                    className={`bg-mv-cream-soft/60 border rounded-2xl p-4 space-y-3 w-[280px] min-w-[280px] shrink-0 transition-colors ${
+                      isOver ? 'border-mv-green bg-mv-green-tint/40' : 'border-mv-border'
+                    }`}
+                  >
                     <div className="flex items-center justify-between border-b border-mv-border pb-2.5">
                       <span className="font-extrabold text-xs text-mv-ink uppercase tracking-wider">{stage}</span>
                       <span className="text-[11px] font-mono text-mv-ink-soft bg-mv-surface px-2 py-0.5 rounded-full border border-mv-border font-bold">
@@ -190,7 +226,7 @@ export default function ContentPlannerPage() {
                     </div>
                     <div className="space-y-3">
                       {stagePosts.map((post) => (
-                        <ContentCard key={post.id} post={post} />
+                        <ContentCard key={post.id} post={post} onDragStart={handleDragStart} />
                       ))}
                       {stagePosts.length === 0 && (
                         <div className="p-4 text-center text-[11px] text-mv-ink-faint border border-dashed border-mv-border rounded-xl">

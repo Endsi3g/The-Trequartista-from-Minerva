@@ -61,20 +61,20 @@ export default function IntegrationsPage() {
     {
       id: 'media-downloader',
       name: 'Service Media Downloader (yt-dlp)',
-      description: 'API /api/media/download pour l’importation et le téléchargement .mp4 direct des vidéos sociales.',
+      description: "L'import automatique de vidéo par URL (/api/media/download) n'est pas encore disponible sur cet environnement -- téléversez vos fichiers manuellement depuis le Content Planner en attendant.",
       logoUrl: null,
-      status: 'connected',
+      status: 'coming_soon',
       href: '/content-planner',
       tag: 'yt-dlp Downloader',
     },
     {
       id: 'google-calendar',
       name: 'Google Calendar 1-on-1 Sync',
-      description: 'Synchro des événements, réunions clients et revues 1-on-1 via une fonction serveur automatisée.',
+      description: "Synchro automatique des rencontres 1-on-1 avec Google Calendar -- pas encore implémentée. Les dates de 1-on-1 sont pour l'instant saisies manuellement sur la fiche de chaque membre.",
       logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg',
-      status: 'connected',
+      status: 'coming_soon',
       href: '/team',
-      tag: 'Edge Function',
+      tag: 'Bientôt',
     },
     {
       id: 'webhook-roi',
@@ -191,7 +191,13 @@ export default function IntegrationsPage() {
 
                 <div className="flex items-center gap-2">
                   {int.tag && <Badge variant="lime">{int.tag}</Badge>}
-                  <Badge variant="green">Connecté</Badge>
+                  {int.status === 'connected' ? (
+                    <Badge variant="green">Connecté</Badge>
+                  ) : int.status === 'coming_soon' ? (
+                    <Badge variant="neutral">Bientôt disponible</Badge>
+                  ) : (
+                    <Badge variant="amber">Non connecté</Badge>
+                  )}
                 </div>
               </div>
 
@@ -204,7 +210,7 @@ export default function IntegrationsPage() {
             <div className="mt-6 pt-4 border-t border-mv-border flex items-center justify-between text-xs font-bold">
               {int.href ? (
                 <Link href={int.href} className="text-mv-green hover:underline flex items-center gap-1">
-                  Accéder à l'intégration <ArrowRight className="w-3.5 h-3.5" />
+                  {int.status === 'coming_soon' ? 'Voir la page associée' : "Accéder à l'intégration"} <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               ) : (
                 <span className="text-mv-ink-faint">Intégration active</span>

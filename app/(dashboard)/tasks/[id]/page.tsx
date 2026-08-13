@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, FolderKanban, Target, Calendar, Trash2, Send, Plus, X, Check } from 'lucide-react';
+import { ArrowLeft, User, FolderKanban, Building2, Target, Calendar, Trash2, Send, Plus, X, Check } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import {
   fetchTask,
@@ -146,14 +146,25 @@ export default function TaskDetailPage() {
           {task.description && <p className="text-sm text-mv-ink-soft leading-relaxed">{task.description}</p>}
 
           <div className="flex flex-wrap gap-4 text-xs text-mv-ink-faint pt-2 border-t border-mv-border">
-            {task.assignee_name && (
-              <span className="flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> {task.assignee_name}</span>
+            {task.assignee_name && task.assignee_id && (
+              <Link href={`/team/${task.assignee_id}/performance`} className="flex items-center gap-1.5 hover:text-mv-green transition-colors">
+                <User className="w-3.5 h-3.5" /> {task.assignee_name}
+              </Link>
             )}
-            {task.project_name && (
-              <span className="flex items-center gap-1.5"><FolderKanban className="w-3.5 h-3.5" /> {task.project_name}</span>
+            {task.project_name && task.project_id && (
+              <Link href={`/projects/${task.project_id}/roadmap`} className="flex items-center gap-1.5 hover:text-mv-green transition-colors">
+                <FolderKanban className="w-3.5 h-3.5" /> {task.project_name}
+              </Link>
             )}
-            {task.lead_name && (
-              <span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5" /> {task.lead_name}</span>
+            {task.client_name && task.client_id && (
+              <Link href={`/clients/${task.client_id}`} className="flex items-center gap-1.5 hover:text-mv-green transition-colors">
+                <Building2 className="w-3.5 h-3.5" /> {task.client_name}
+              </Link>
+            )}
+            {task.lead_name && task.lead_id && (
+              <Link href={`/leads?leadId=${task.lead_id}`} className="flex items-center gap-1.5 hover:text-mv-green transition-colors">
+                <Target className="w-3.5 h-3.5" /> {task.lead_name}
+              </Link>
             )}
             {task.due_date && (
               <span className="flex items-center gap-1.5">

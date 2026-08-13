@@ -1,7 +1,7 @@
-# Minerva Centurions - Automated Supabase Deployment Script
+# Minerva Trequartista - Automated Supabase Deployment Script
 
 Write-Host "====================================================" -ForegroundColor Green
-Write-Host " Minerva Centurions - Supabase Automated Deployment " -ForegroundColor Green
+Write-Host " Minerva Trequartista - Supabase Automated Deployment " -ForegroundColor Green
 Write-Host "====================================================" -ForegroundColor Green
 
 $PROJECT_REF = "eobatkwbwcdsdqbemrma"
@@ -12,7 +12,6 @@ npx supabase db push --project-ref $PROJECT_REF
 Write-Host "[2/3] Deploying Supabase Edge Functions..." -ForegroundColor Yellow
 $functions = @(
   "launch-check-validator",
-  "google-calendar-sync",
   "roi-aggregator",
   "webhook-validator",
   "alert-dispatcher"
