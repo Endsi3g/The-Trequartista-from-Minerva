@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Plus, ExternalLink, UserPlus, Users, Shield, Mail } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useCurrentUser } from '@/hooks/use-current-user';
 
 interface TeamMember {
   id: string;
@@ -22,6 +23,7 @@ interface TeamMember {
 export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const { role: currentUserRole } = useCurrentUser();
 
   useEffect(() => {
     async function loadTeam() {
@@ -65,11 +67,15 @@ export default function TeamPage() {
           </p>
         </div>
 
-        <Tooltip content="Inviter un nouveau membre" position="left">
-          <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
-            Inviter un Collaborateur
-          </Button>
-        </Tooltip>
+        {currentUserRole === 'admin' && (
+          <Tooltip content="Générer un lien d'invitation pour un nouveau membre" position="left">
+            <Link href="/team/invite">
+              <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
+                Inviter un Collaborateur
+              </Button>
+            </Link>
+          </Tooltip>
+        )}
       </div>
 
       {/* Stats */}

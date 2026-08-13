@@ -81,7 +81,8 @@ export async function proxy(request: NextRequest) {
     pathname === '/login' ||
     pathname === '/signup' ||
     pathname === '/pending-approval' ||
-    pathname.startsWith('/portal/join')
+    pathname.startsWith('/portal/join') ||
+    pathname.startsWith('/team/join')
   ) {
     return NextResponse.next();
   }
@@ -146,6 +147,7 @@ export const config = {
     '/clients/:path*',
     '/projects/:path*',
     '/team/:path*',
+    '/tasks/:path*',
     '/academy/:path*',
     '/content-planner/:path*',
     '/leads/:path*',

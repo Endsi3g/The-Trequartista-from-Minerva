@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Plus, Target, Users, FolderKanban } from 'lucide-react';
+import { Plus, Target, Users, FolderKanban, CheckSquare } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +39,12 @@ export function NewMenu() {
           <Link href="/projects" className="flex items-center gap-2.5">
             <FolderKanban size={15} className="text-mv-green shrink-0" />
             <span>Voir les projets</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/tasks/new" className="flex items-center gap-2.5">
+            <CheckSquare size={15} className="text-mv-green shrink-0" />
+            <span>Nouvelle tâche</span>
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

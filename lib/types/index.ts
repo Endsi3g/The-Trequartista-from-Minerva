@@ -1,4 +1,4 @@
-export type Role = 'Admin' | 'Manager' | 'Collaborateur';
+export type Role = 'admin' | 'member' | 'client';
 
 export interface Profile {
   id: string;
@@ -32,6 +32,35 @@ export interface ClientInvite {
   created_at: string;
   expires_at: string;
   used_at: string | null;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  project_id: string | null;
+  project_name?: string;
+  client_id: string | null;
+  client_name?: string;
+  assignee_id: string | null;
+  assignee_name?: string;
+  created_by: string | null;
+  status: 'todo' | 'in_progress' | 'done';
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeamInvite {
+  id: string;
+  token: string;
+  role: 'admin' | 'member';
+  department: string | null;
+  created_by: string | null;
+  created_at: string;
+  expires_at: string;
+  used_at: string | null;
+  used_by: string | null;
 }
 
 export interface ClientMessage {

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, X, Users, FolderKanban, Target, GraduationCap, Clapperboard, ArrowRight, Loader2 } from 'lucide-react';
+import { Search, X, Users, FolderKanban, Target, GraduationCap, Clapperboard, CheckSquare, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
@@ -56,12 +56,13 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
       setLoading(true);
       const supabase = createClient();
       const term = `%${query.trim()}%`;
-      const [clients, projects, leads, sops, posts] = await Promise.all([
+      const [clients, projects, leads, sops, posts, tasks] = await Promise.all([
         supabase.from('clients').select('id, name, industry').ilike('name', term).limit(5),
         supabase.from('projects').select('id, name, client_name').ilike('name', term).limit(5),
         supabase.from('leads').select('id, contact_name, company_name, client_name').or(`contact_name.ilike.${term},company_name.ilike.${term}`).limit(5),
         supabase.from('academy_sops').select('id, title, category, description').or(`title.ilike.${term},description.ilike.${term}`).limit(5),
         supabase.from('content_posts').select('id, title, caption, platform').or(`title.ilike.${term},caption.ilike.${term}`).limit(5),
+        supabase.from('tasks').select('id, title, status').ilike('title', term).limit(5),
       ]);
 
       const found: Result[] = [
@@ -99,6 +100,13 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
           category: 'Réel',
           href: `/content-planner/${p.id}`,
           icon: Clapperboard,
+        })),
+        ...(tasks.data || []).map((t) => ({
+          title: t.title,
+          subtitle: t.status === 'done' ? 'Terminé' : t.status === 'in_progress' ? 'En cours' : 'À faire',
+          category: 'Tâche',
+          href: `/tasks`,
+          icon: CheckSquare,
         })),
       ];
       setResults(found);

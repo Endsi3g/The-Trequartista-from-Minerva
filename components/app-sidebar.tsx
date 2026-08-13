@@ -13,6 +13,7 @@ import {
   Clapperboard,
   GraduationCap,
   ChevronDown,
+  CheckSquare,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -120,6 +121,7 @@ export function AppSidebar() {
     { key: 'leads', label: 'Leads', href: '/leads', icon: Target, count: counts.leads ?? undefined },
     { key: 'clients', label: 'Clients', href: '/clients', icon: Users, count: counts.clients ?? undefined },
     { key: 'projects', label: 'Projets', href: '/projects', icon: FolderKanban, count: counts.projects ?? undefined },
+    { key: 'tasks', label: 'Tâches', href: '/tasks', icon: CheckSquare, count: counts.myTasks ?? undefined, isNew: true },
   ];
 
   const contentItems: NavItem[] = [

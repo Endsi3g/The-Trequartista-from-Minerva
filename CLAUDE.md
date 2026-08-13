@@ -40,9 +40,11 @@ Tracked as an informal sequence, not a hard spec — check recent `git log` and 
 2. ✅ Overview dashboard on real data
 3. ✅ Reels: dedicated page, real Storage upload, editorial calendar
 4. ✅ Academy/Team/Profil: removed fictional data and dead features
-5. ⏳ Roles, per-role workspaces, invite links, task delegation (deliberately last — solo usage today)
-6. ⏳ Client portal (blocked on deciding the Minerva Flow integration — no credentials for that project in this repo)
-7. ⏳ Push notifications, dark mode repaint (foundation is solid, coverage is the gap — see literal `bg-white`/hex colors instead of `mv-*` tokens), Stripe payment links
+5. ✅ Client portal (invite links, editorial calendar, Q&A messaging — cross-project Minerva Flow sync remains explicitly out of scope, no credentials for that project in this repo)
+6. ✅ Push notifications (real VAPID Web Push), dark mode repaint, responsive audit, Stripe payment links (real Price + Payment Link generation, verified against a live test key)
+7. ✅ Roles (admin/member/client confirmed as the only real values), team invite links (`/team/invite`, admin-only), task delegation (`/tasks`)
 8. ⏳ Deploy pipeline automation, in-app changelog with image support
+
+Note: chantiers were completed roughly in this order but not exactly the numbering above — check `CHANGELOG.md` for the accurate dated sequence.
 
 `CHANGELOG.md` at the repo root has the human-readable version of what's shipped so far.

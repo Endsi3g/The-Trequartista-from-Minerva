@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -103,7 +103,7 @@ export async function fetchProjects(): Promise<Project[]> {
       return data.map((p) => ({
         ...p,
         client_name: p.client_name || 'Client Minerva',
-        assignees: p.assignees || ['Alex Tremblay', 'Sarah Bouchard'],
+        assignees: p.assignees || [],
       })) as Project[];
     })(),
     []
@@ -562,7 +562,78 @@ export async function deletePushSubscription(endpoint: string): Promise<void> {
   }
 }
 
-// ── 14. Stripe Payment Links ────────────────────────────────────────────────
+// ── 14. Team Invites ─────────────────────────────────────────────────────────
+
+export async function createTeamInvite(
+  role: 'admin' | 'member',
+  department: string | null,
+  createdBy: string
+): Promise<TeamInvite | null> {
+  const token = Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => b.toString(16).padStart(2, '0')).join('');
+  const { data, error } = await getSupabase()
+    .from('team_invites')
+    .insert([{ token, role, department, created_by: createdBy }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[Supabase] Error creating team invite:', error);
+    return null;
+  }
+  return data as TeamInvite;
+}
+
+export async function fetchTeamInvites(): Promise<TeamInvite[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('team_invites')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error || !data) {
+        console.warn('[Supabase] Error fetching team invites:', error);
+        return [];
+      }
+      return data as TeamInvite[];
+    })(),
+    []
+  );
+}
+
+export async function fetchTeamInviteByToken(token: string): Promise<TeamInvite | null> {
+  const { data, error } = await getSupabase()
+    .from('team_invites')
+    .select('*')
+    .eq('token', token)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  if (data.used_at) return null;
+  if (new Date(data.expires_at) < new Date()) return null;
+  return data as TeamInvite;
+}
+
+export async function redeemTeamInvite(token: string, userId: string): Promise<boolean> {
+  const invite = await fetchTeamInviteByToken(token);
+  if (!invite) return false;
+
+  const supabase = getSupabase();
+  const profileUpdate: Record<string, unknown> = { role: invite.role };
+  if (invite.department) profileUpdate.department = invite.department;
+
+  const [{ error: profileError }, { error: inviteError }] = await Promise.all([
+    supabase.from('profiles').update(profileUpdate).eq('id', userId),
+    supabase.from('team_invites').update({ used_at: new Date().toISOString(), used_by: userId }).eq('token', token),
+  ]);
+
+  if (profileError || inviteError) {
+    console.error('[Supabase] Error redeeming team invite:', profileError || inviteError);
+    return false;
+  }
+  return true;
+}
+
+// ── 15. Stripe Payment Links ────────────────────────────────────────────────
 
 export async function fetchClientPaymentLinks(): Promise<ClientPaymentLink[]> {
   return withTimeout(
@@ -583,4 +654,73 @@ export async function fetchClientPaymentLinks(): Promise<ClientPaymentLink[]> {
     })(),
     []
   );
+}
+
+// ── 16. Task Delegation ─────────────────────────────────────────────────────
+
+function mapTaskRow(row: Record<string, unknown>): Task {
+  return {
+    ...row,
+    project_name: (row.project as { name?: string } | null)?.name,
+    client_name: (row.client as { name?: string } | null)?.name,
+    assignee_name: (row.assignee as { full_name?: string } | null)?.full_name,
+  } as Task;
+}
+
+export async function fetchTasks(): Promise<Task[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('tasks')
+        .select('*, project:projects(name), client:clients(name), assignee:profiles(full_name)')
+        .order('created_at', { ascending: false });
+
+      if (error || !data) {
+        console.warn('[Supabase] Error fetching tasks:', error);
+        return [];
+      }
+      return data.map(mapTaskRow);
+    })(),
+    []
+  );
+}
+
+export async function addTask(task: {
+  title: string;
+  description?: string | null;
+  project_id?: string | null;
+  client_id?: string | null;
+  assignee_id?: string | null;
+  created_by: string;
+  due_date?: string | null;
+}): Promise<Task | null> {
+  const { data, error } = await getSupabase()
+    .from('tasks')
+    .insert([task])
+    .select('*, project:projects(name), client:clients(name), assignee:profiles(full_name)')
+    .single();
+
+  if (error) {
+    console.error('[Supabase] Error adding task:', error);
+    return null;
+  }
+  return mapTaskRow(data);
+}
+
+export async function updateTaskStatus(taskId: string, status: Task['status']): Promise<boolean> {
+  const { error } = await getSupabase().from('tasks').update({ status }).eq('id', taskId);
+  if (error) {
+    console.error('[Supabase] Error updating task status:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteTask(taskId: string): Promise<boolean> {
+  const { error } = await getSupabase().from('tasks').delete().eq('id', taskId);
+  if (error) {
+    console.error('[Supabase] Error deleting task:', error);
+    return false;
+  }
+  return true;
 }

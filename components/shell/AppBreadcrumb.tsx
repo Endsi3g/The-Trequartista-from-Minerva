@@ -24,6 +24,9 @@ const ROUTE_LABELS: Record<string, string> = {
   settings: 'Paramètres',
   billing: 'Facturation',
   'audit-logs': 'Journal d’activité',
+  tasks: 'Tâches',
+  invite: 'Inviter',
+  join: 'Rejoindre',
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
