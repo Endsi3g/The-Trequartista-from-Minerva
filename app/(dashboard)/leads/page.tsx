@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { KanbanBoard } from '@/components/crm/KanbanBoard';
 import { LeadDetailDrawer } from '@/components/crm/LeadDetailDrawer';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,10 @@ import { fetchClients, fetchLeads } from '@/lib/services/supabase-data';
 import type { Client, Lead } from '@/lib/types';
 import { useSupabaseRealtime } from '@/components/providers/SupabaseRealtimeProvider';
 
-export default function LeadsCrmPage() {
+function LeadsCrmContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('all');
@@ -51,6 +55,18 @@ export default function LeadsCrmPage() {
   useEffect(() => {
     loadData();
   }, [selectedClientId, lastUpdateTimestamp]);
+
+  // Deep-link support: /leads?leadId=... (e.g. from a client's detail page)
+  // opens that lead's drawer directly once it's loaded.
+  useEffect(() => {
+    const targetId = searchParams.get('leadId');
+    if (!targetId || leads.length === 0) return;
+    const target = leads.find((l) => l.id === targetId);
+    if (target) {
+      setSelectedLead(target);
+      router.replace(pathname);
+    }
+  }, [searchParams, leads, router, pathname]);
 
   const filteredLeads = leads.filter((lead) => {
     const query = searchQuery.toLowerCase();
@@ -281,5 +297,13 @@ export default function LeadsCrmPage() {
       />
 
     </div>
+  );
+}
+
+export default function LeadsCrmPage() {
+  return (
+    <Suspense fallback={<div className="p-12 text-center text-sm text-mv-ink-soft">Chargement…</div>}>
+      <LeadsCrmContent />
+    </Suspense>
   );
 }

@@ -7,18 +7,21 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, AlertCircle, ShieldCheck, Sparkles, Rocket, RefreshCw, Zap } from 'lucide-react';
-import { fetchLaunchChecklist, saveLaunchChecklist, fetchProjects, logAuditEvent } from '@/lib/services/supabase-data';
+import { fetchLaunchChecklist, saveLaunchChecklist, fetchProjects, updateProjectStage, logAuditEvent } from '@/lib/services/supabase-data';
 import { invokeLaunchCheckValidator } from '@/lib/services/edge-functions';
 import { LaunchCheckItem, Project } from '@/lib/types';
 import confetti from 'canvas-confetti';
 import { GaugeChart } from '@/components/charts/GaugeChart';
+import { useToast } from '@/components/providers/ToastProvider';
 
 
 export default function LaunchCheckPage() {
   const params = useParams();
   const projectId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const { toastSuccess, toastError } = useToast();
 
   const [project, setProject] = useState<Project | null>(null);
+  const [publishing, setPublishing] = useState(false);
   const [items, setItems] = useState<LaunchCheckItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isValidating, setIsValidating] = useState(false);
@@ -252,12 +255,27 @@ export default function LaunchCheckPage() {
               <Button
                 variant="lime"
                 className="flex-1"
-                onClick={() => {
-                  alert('Validation transmise au webhook de validation (launch-check-validator) !');
+                disabled={publishing}
+                onClick={async () => {
+                  if (!projectId) return;
+                  setPublishing(true);
+                  const success = await updateProjectStage(projectId, 'Live Production');
+                  setPublishing(false);
+                  if (!success) {
+                    toastError('Erreur', "Impossible de mettre à jour l'étape du projet.");
+                    return;
+                  }
+                  setProject((prev) => (prev ? { ...prev, current_stage: 'Live Production' } : prev));
+                  await logAuditEvent(
+                    `Projet "${project?.name}" passé en Live Production après validation de la checklist 20-points`,
+                    'project_launch_checks',
+                    projectId
+                  );
+                  toastSuccess('Projet publié', 'Le projet est maintenant en Live Production.');
                   setIsModalOpen(false);
                 }}
               >
-                Confirmer la Publication
+                {publishing ? 'Publication…' : 'Confirmer la Publication'}
               </Button>
             </div>
           </div>

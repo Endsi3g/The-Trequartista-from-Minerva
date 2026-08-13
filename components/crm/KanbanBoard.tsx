@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Plus, Mail, DollarSign, ArrowRight, User } from 'lucide-react';
 import type { Lead, LeadStage } from '@/lib/types';
 import { updateLeadStatus } from '@/lib/services/supabase-data';
+import { useToast } from '@/components/providers/ToastProvider';
 
 interface KanbanColumn {
   id: LeadStage;
@@ -29,6 +30,7 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoardProps) {
+  const { toastError } = useToast();
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
 
@@ -68,8 +70,14 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
     if (newStage === 'gagne') statusText = 'Gagné';
     if (newStage === 'perdu') statusText = 'Perdu';
 
-    await updateLeadStatus(leadId, statusText, newStage);
+    const success = await updateLeadStatus(leadId, statusText, newStage);
     setDraggedLeadId(null);
+
+    if (!success) {
+      toastError('Erreur', "Impossible de déplacer ce lead -- les changements n'ont pas été enregistrés.");
+      return;
+    }
+
     onLeadsUpdated();
   };
 

@@ -224,7 +224,11 @@ export default function ClientDetailPage() {
           ) : (
             <div className="space-y-2">
               {leads.map((lead) => (
-                <div key={lead.id} className="flex items-center justify-between p-3 rounded-lg bg-mv-cream-soft border border-mv-border text-xs">
+                <Link
+                  key={lead.id}
+                  href={`/leads?leadId=${lead.id}`}
+                  className="flex items-center justify-between p-3 rounded-lg bg-mv-cream-soft border border-mv-border hover:border-mv-green/50 transition-colors text-xs"
+                >
                   <div>
                     <div className="font-bold text-mv-ink">{lead.contact_name}</div>
                     <div className="text-mv-ink-soft mt-0.5">{lead.service_requested}</div>
@@ -232,7 +236,7 @@ export default function ClientDetailPage() {
                   <Badge variant={lead.status === 'Gagné' ? 'green' : lead.status === 'Perdu' ? 'red' : 'neutral'}>
                     {lead.status}
                   </Badge>
-                </div>
+                </Link>
               ))}
             </div>
           )}

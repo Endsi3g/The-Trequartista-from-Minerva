@@ -7,9 +7,11 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { addClient } from '@/lib/services/supabase-data';
+import { useToast } from '@/components/providers/ToastProvider';
 
 export default function NewClientPage() {
   const router = useRouter();
+  const { toastError } = useToast();
   const [saving, setSaving] = useState(false);
 
   const [name, setName] = useState('');
@@ -31,12 +33,14 @@ export default function NewClientPage() {
       health_status: 'Ready',
       contact_name: contactName || 'Contact Principal',
       contact_email: contactEmail || 'contact@client.com',
-      logo_url: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?w=150&auto=format&fit=crop&q=80',
+      logo_url: '',
     });
 
     setSaving(false);
     if (newClient) {
       router.push('/clients');
+    } else {
+      toastError('Erreur', "Impossible de créer ce client. Réessayez.");
     }
   };
 

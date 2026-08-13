@@ -6,9 +6,11 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
 import { addLead } from '@/lib/services/supabase-data';
+import { useToast } from '@/components/providers/ToastProvider';
 
 export default function NewLeadPage() {
   const router = useRouter();
+  const { toastError } = useToast();
   const [saving, setSaving] = useState(false);
 
   const [newCompanyName, setNewCompanyName] = useState('');
@@ -38,21 +40,25 @@ export default function NewLeadPage() {
       notes: [],
     });
 
-    if (lead) {
-      // Fire-and-forget: notify the team's subscribed devices. A missing
-      // VAPID config or a failed send should never block lead creation.
-      fetch('/api/push/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: 'Nouveau lead',
-          body: `${lead.company_name || lead.contact_name} vient d'entrer dans le pipeline.`,
-          url: '/leads',
-        }),
-      }).catch(() => {});
+    setSaving(false);
+
+    if (!lead) {
+      toastError('Erreur', 'Impossible de créer ce lead. Réessayez.');
+      return;
     }
 
-    setSaving(false);
+    // Fire-and-forget: notify the team's subscribed devices. A missing
+    // VAPID config or a failed send should never block lead creation.
+    fetch('/api/push/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Nouveau lead',
+        body: `${lead.company_name || lead.contact_name} vient d'entrer dans le pipeline.`,
+        url: '/leads',
+      }),
+    }).catch(() => {});
+
     router.push('/leads');
   };
 

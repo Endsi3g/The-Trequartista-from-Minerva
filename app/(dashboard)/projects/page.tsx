@@ -59,9 +59,11 @@ export default function ProjectsPage() {
             </button>
           </div>
 
-          <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
-            Nouveau Projet
-          </Button>
+          <Link href="/projects/new">
+            <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
+              Nouveau Projet
+            </Button>
+          </Link>
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { X, Mail, Phone, Building, DollarSign, Calendar, MessageSquare, Trash2, Save, ArrowRight } from 'lucide-react';
 import type { Lead, LeadNote, LeadStage } from '@/lib/types';
 import { updateLead, deleteLead } from '@/lib/services/supabase-data';
+import { useToast } from '@/components/providers/ToastProvider';
 
 interface LeadDetailDrawerProps {
   lead: Lead | null;
@@ -12,6 +13,7 @@ interface LeadDetailDrawerProps {
 }
 
 export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDrawerProps) {
+  const { toastError } = useToast();
   const [newNoteText, setNewNoteText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [stage, setStage] = useState<LeadStage>(lead?.stage || 'nouveau');
@@ -36,7 +38,7 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
     if (stage === 'gagne') probPct = 100;
     if (stage === 'perdu') probPct = 0;
 
-    await updateLead(lead.id, {
+    const success = await updateLead(lead.id, {
       stage,
       status: statusText,
       mrr_value: mrrValue,
@@ -46,6 +48,12 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
     });
 
     setIsSaving(false);
+
+    if (!success) {
+      toastError('Erreur de sauvegarde', "Impossible d'enregistrer les changements sur ce lead.");
+      return;
+    }
+
     onLeadUpdated();
     onClose();
   };

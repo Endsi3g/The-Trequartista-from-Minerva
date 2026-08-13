@@ -90,9 +90,12 @@ export async function fetchClientRoiMetrics(clientId: string): Promise<ClientRoi
 export async function fetchProjects(): Promise<Project[]> {
   return withTimeout(
     (async () => {
+      // projects has no client_name column of its own -- the real name
+      // lives on clients and must be joined, or every project silently
+      // falls back to the generic "Client Minerva" placeholder forever.
       const { data, error } = await getSupabase()
         .from('projects')
-        .select('*')
+        .select('*, client:clients(name)')
         .order('created_at', { ascending: false });
 
       if (error || !data) {
@@ -100,14 +103,48 @@ export async function fetchProjects(): Promise<Project[]> {
         return [];
       }
 
-      return data.map((p) => ({
+      return data.map((p: Record<string, unknown>) => ({
         ...p,
-        client_name: p.client_name || 'Client Minerva',
+        client_name: (p.client as { name?: string } | null)?.name || 'Client Minerva',
         assignees: p.assignees || [],
       })) as Project[];
     })(),
     []
   );
+}
+
+export async function addProject(project: {
+  client_id: string;
+  name: string;
+  current_stage: Project['current_stage'];
+  health: Project['health'];
+  due_date: string;
+}): Promise<Project | null> {
+  const { data, error } = await getSupabase()
+    .from('projects')
+    .insert([{ ...project, progress_pct: 0 }])
+    .select('*, client:clients(name)')
+    .single();
+
+  if (error || !data) {
+    console.error('[Supabase] Error adding project:', error);
+    return null;
+  }
+  const row = data as Record<string, unknown>;
+  return {
+    ...row,
+    client_name: (row.client as { name?: string } | null)?.name || 'Client Minerva',
+    assignees: [],
+  } as unknown as Project;
+}
+
+export async function updateProjectStage(projectId: string, currentStage: Project['current_stage']): Promise<boolean> {
+  const { error } = await getSupabase().from('projects').update({ current_stage: currentStage }).eq('id', projectId);
+  if (error) {
+    console.error('[Supabase] Error updating project stage:', error);
+    return false;
+  }
+  return true;
 }
 
 // ----------------------------------------------------
