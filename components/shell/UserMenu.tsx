@@ -168,6 +168,14 @@ function MenuBody({
                 </Link>
               </DropdownMenuItem>
             )}
+            {role === 'admin' && (
+              <DropdownMenuItem asChild onClick={onNavigate}>
+                <Link href="/audits" className="flex items-center gap-2.5 pl-6">
+                  <Sparkles size={14} className="shrink-0" />
+                  <span>Audits IA</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
