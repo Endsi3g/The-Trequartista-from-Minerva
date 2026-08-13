@@ -14,19 +14,19 @@ import {
   Copy,
   Check,
   Link as LinkIcon,
+  Send,
+  FileDown,
 } from 'lucide-react';
 import {
   fetchAuditWithFindings,
   updateAudit,
-  updateAuditProcessStep,
   deleteAuditProcessStep,
-  updateAuditCostItem,
   deleteAuditCostItem,
-  updateAuditInitiative,
   deleteAuditInitiative,
+  fetchProposalsByAudit,
 } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
-import type { AuditWithFindings } from '@/lib/types';
+import type { AuditWithFindings, Proposal } from '@/lib/types';
 
 export default function AuditDetailPage() {
   const params = useParams();
@@ -34,6 +34,7 @@ export default function AuditDetailPage() {
   const { toastSuccess, toastError } = useToast();
 
   const [audit, setAudit] = useState<AuditWithFindings | null>(null);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [transcript, setTranscript] = useState('');
   const [savingTranscript, setSavingTranscript] = useState(false);
@@ -41,12 +42,15 @@ export default function AuditDetailPage() {
   const [fetchingGranola, setFetchingGranola] = useState(false);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [generatingProposal, setGeneratingProposal] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState('');
 
   const load = useCallback(async () => {
     if (!auditId) return;
-    const data = await fetchAuditWithFindings(auditId);
+    const [data, proposalsData] = await Promise.all([fetchAuditWithFindings(auditId), fetchProposalsByAudit(auditId)]);
     setAudit(data);
     setTranscript(data?.transcript_raw || '');
+    setProposals(proposalsData);
     setLoading(false);
   }, [auditId]);
 
@@ -104,6 +108,29 @@ export default function AuditDetailPage() {
     if (!success) {
       toastError('Erreur', 'Impossible de générer le lien.');
       return;
+    }
+    await load();
+  };
+
+  const handleGenerateProposal = async () => {
+    setGeneratingProposal(true);
+    const res = await fetch(`/api/proposals/${audit.id}/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(recipientEmail ? { recipientEmail } : {}),
+    });
+    const data = await res.json();
+    setGeneratingProposal(false);
+    if (!res.ok) {
+      toastError('Erreur', data.error || 'Impossible de générer la proposition.');
+      return;
+    }
+    if (recipientEmail && !data.emailSent) {
+      toastError('PDF généré, envoi échoué', data.emailError || "L'email n'a pas pu être envoyé.");
+    } else if (recipientEmail) {
+      toastSuccess('Proposition envoyée', `Email envoyé à ${recipientEmail}`);
+    } else {
+      toastSuccess('Proposition générée');
     }
     await load();
   };
@@ -278,6 +305,42 @@ export default function AuditDetailPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </Card>
+      )}
+
+      {(audit.status === 'extracted' || audit.status === 'reviewed' || audit.status === 'proposal_sent') && (
+        <Card header={<h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">Proposition Client</h3>}>
+          <div className="space-y-3 text-xs">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="email"
+                placeholder="email@prospect.com (laisser vide pour générer sans envoyer)"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                className="flex-1 bg-mv-cream-soft border border-mv-border rounded-xl px-3 py-2 text-mv-ink focus:outline-none focus:border-mv-green"
+              />
+              <Button
+                variant="primary"
+                size="sm"
+                icon={recipientEmail ? <Send className="w-3.5 h-3.5" /> : <FileDown className="w-3.5 h-3.5" />}
+                onClick={handleGenerateProposal}
+                disabled={generatingProposal}
+              >
+                {generatingProposal ? 'Génération…' : recipientEmail ? 'Générer et envoyer' : 'Générer le PDF'}
+              </Button>
+            </div>
+
+            {proposals.length > 0 && (
+              <div className="space-y-1.5 pt-2 border-t border-mv-border">
+                {proposals.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-mv-cream-soft border border-mv-border">
+                    <span className="text-mv-ink-soft">{new Date(p.created_at).toLocaleString('fr-CA')}</span>
+                    <Badge variant={p.status === 'sent' ? 'green' : p.status === 'failed' ? 'red' : 'neutral'}>{p.status}</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </Card>
       )}
