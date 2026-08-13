@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, FolderKanban, Target, Calendar, Trash2, Send } from 'lucide-react';
+import { ArrowLeft, User, FolderKanban, Target, Calendar, Trash2, Send, Plus, X, Check } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import {
   fetchTask,
@@ -11,9 +11,13 @@ import {
   deleteTask,
   fetchTaskComments,
   addTaskComment,
+  fetchTaskSubitems,
+  addTaskSubitem,
+  toggleTaskSubitem,
+  deleteTaskSubitem,
 } from '@/lib/services/supabase-data';
 import { createClient } from '@/lib/supabase/client';
-import { Task, TaskComment } from '@/lib/types';
+import { Task, TaskComment, TaskSubitem } from '@/lib/types';
 
 const STATUS_COLUMNS: { key: Task['status']; label: string }[] = [
   { key: 'todo', label: 'À faire' },
@@ -28,10 +32,13 @@ export default function TaskDetailPage() {
 
   const [task, setTask] = useState<Task | null>(null);
   const [comments, setComments] = useState<TaskComment[]>([]);
+  const [subitems, setSubitems] = useState<TaskSubitem[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [posting, setPosting] = useState(false);
+  const [newSubitem, setNewSubitem] = useState('');
+  const [addingSubitem, setAddingSubitem] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,16 +48,39 @@ export default function TaskDetailPage() {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
 
-      const [t, c] = await Promise.all([fetchTask(taskId), fetchTaskComments(taskId)]);
+      const [t, c, s] = await Promise.all([fetchTask(taskId), fetchTaskComments(taskId), fetchTaskSubitems(taskId)]);
       if (!t) {
         setNotFound(true);
       } else {
         setTask(t);
         setComments(c);
+        setSubitems(s);
       }
       setLoading(false);
     })();
   }, [taskId]);
+
+  const handleAddSubitem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubitem.trim()) return;
+    setAddingSubitem(true);
+    const ok = await addTaskSubitem(taskId, newSubitem.trim(), subitems.length);
+    if (ok) {
+      setSubitems(await fetchTaskSubitems(taskId));
+      setNewSubitem('');
+    }
+    setAddingSubitem(false);
+  };
+
+  const handleToggleSubitem = async (item: TaskSubitem) => {
+    setSubitems((prev) => prev.map((s) => (s.id === item.id ? { ...s, done: !s.done } : s)));
+    await toggleTaskSubitem(item.id, !item.done);
+  };
+
+  const handleDeleteSubitem = async (item: TaskSubitem) => {
+    setSubitems((prev) => prev.filter((s) => s.id !== item.id));
+    await deleteTaskSubitem(item.id);
+  };
 
   const handleStatusChange = async (status: Task['status']) => {
     if (!task) return;
@@ -146,6 +176,70 @@ export default function TaskDetailPage() {
               </button>
             ))}
           </div>
+        </div>
+      </Card>
+
+      <Card
+        header={
+          <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
+            Sous-tâches ({subitems.filter((s) => s.done).length}/{subitems.length})
+          </h3>
+        }
+      >
+        <div className="space-y-3">
+          {subitems.length > 0 && (
+            <div className="h-1.5 bg-mv-cream-soft rounded-full overflow-hidden">
+              <div
+                className="h-full bg-mv-green rounded-full transition-all"
+                style={{ width: `${(subitems.filter((s) => s.done).length / subitems.length) * 100}%` }}
+              />
+            </div>
+          )}
+
+          {subitems.length === 0 ? (
+            <p className="text-xs text-mv-ink-faint text-center py-2">Aucune sous-tâche pour le moment.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {subitems.map((item) => (
+                <li key={item.id} className="flex items-center gap-2.5 group">
+                  <button
+                    onClick={() => handleToggleSubitem(item)}
+                    className={`w-4 h-4 rounded border shrink-0 flex items-center justify-center transition-all cursor-pointer ${
+                      item.done ? 'bg-mv-green border-mv-green' : 'border-mv-border hover:border-mv-green'
+                    }`}
+                  >
+                    {item.done && <Check className="w-3 h-3 text-white" />}
+                  </button>
+                  <span className={`text-xs flex-1 ${item.done ? 'line-through text-mv-ink-faint' : 'text-mv-ink'}`}>
+                    {item.title}
+                  </span>
+                  <button
+                    onClick={() => handleDeleteSubitem(item)}
+                    className="opacity-0 group-hover:opacity-100 text-mv-ink-faint hover:text-mv-red transition-all cursor-pointer shrink-0"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form onSubmit={handleAddSubitem} className="flex items-center gap-2 pt-1">
+            <input
+              type="text"
+              value={newSubitem}
+              onChange={(e) => setNewSubitem(e.target.value)}
+              placeholder="Ajouter une sous-tâche…"
+              className="flex-1 px-3 py-2 bg-mv-cream-soft border border-mv-border rounded-lg text-xs text-mv-ink focus:outline-none focus:border-mv-green"
+            />
+            <button
+              type="submit"
+              disabled={addingSubitem || !newSubitem.trim()}
+              className="p-2 rounded-lg bg-mv-cream-soft hover:bg-mv-green-tint border border-mv-border text-mv-green transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </form>
         </div>
       </Card>
 

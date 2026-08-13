@@ -68,13 +68,21 @@ export default function TeamPage() {
         </div>
 
         {currentUserRole === 'admin' && (
-          <Tooltip content="Générer un lien d'invitation pour un nouveau membre" position="left">
-            <Link href="/team/invite">
-              <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
-                Inviter un Collaborateur
-              </Button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/team/workload"
+              className="px-4 py-2 bg-mv-surface border border-mv-border hover:border-mv-green/40 text-mv-ink text-xs font-bold rounded-xl transition-all cursor-pointer"
+            >
+              Charge de travail
             </Link>
-          </Tooltip>
+            <Tooltip content="Générer un lien d'invitation pour un nouveau membre" position="left">
+              <Link href="/team/invite">
+                <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
+                  Inviter un Collaborateur
+                </Button>
+              </Link>
+            </Tooltip>
+          </div>
         )}
       </div>
 

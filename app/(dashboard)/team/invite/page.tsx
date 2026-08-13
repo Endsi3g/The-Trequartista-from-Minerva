@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Copy, Check, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Copy, Check, ShieldAlert, Ban } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { createClient } from '@/lib/supabase/client';
-import { createTeamInvite, fetchTeamInvites } from '@/lib/services/supabase-data';
+import { createTeamInvite, fetchTeamInvites, revokeTeamInvite } from '@/lib/services/supabase-data';
 import { TeamInvite } from '@/lib/types';
 
 export default function TeamInvitePage() {
@@ -19,6 +19,7 @@ export default function TeamInvitePage() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [invites, setInvites] = useState<TeamInvite[]>([]);
   const [loadingInvites, setLoadingInvites] = useState(true);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   const loadInvites = async () => {
     setLoadingInvites(true);
@@ -51,6 +52,14 @@ export default function TeamInvitePage() {
     await navigator.clipboard.writeText(url);
     setCopiedToken(token);
     setTimeout(() => setCopiedToken(null), 2500);
+  };
+
+  const handleRevoke = async (invite: TeamInvite) => {
+    if (!confirm("Révoquer ce lien d'invitation ? Il ne pourra plus être utilisé.")) return;
+    setRevokingId(invite.id);
+    await revokeTeamInvite(invite.id);
+    await loadInvites();
+    setRevokingId(null);
   };
 
   if (!userLoading && currentUserRole !== 'admin') {
@@ -154,13 +163,23 @@ export default function TeamInvitePage() {
                       {status === 'used' ? 'Utilisée' : status === 'expired' ? 'Expirée' : 'Active'}
                     </Badge>
                     {status === 'active' && (
-                      <button
-                        onClick={() => handleCopy(inv.token)}
-                        className="p-1.5 rounded-lg bg-mv-surface hover:bg-mv-green-tint border border-mv-border text-mv-green transition-all cursor-pointer"
-                        title="Copier le lien"
-                      >
-                        {copiedToken === inv.token ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleCopy(inv.token)}
+                          className="p-1.5 rounded-lg bg-mv-surface hover:bg-mv-green-tint border border-mv-border text-mv-green transition-all cursor-pointer"
+                          title="Copier le lien"
+                        >
+                          {copiedToken === inv.token ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
+                          onClick={() => handleRevoke(inv)}
+                          disabled={revokingId === inv.id}
+                          className="p-1.5 rounded-lg bg-mv-surface hover:bg-mv-red-bg border border-mv-border text-mv-red transition-all cursor-pointer disabled:opacity-50"
+                          title="Révoquer ce lien"
+                        >
+                          <Ban className="w-3.5 h-3.5" />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

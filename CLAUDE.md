@@ -36,15 +36,17 @@ Several migrations are written but **not yet applied** to the live Supabase proj
 ## Roadmap (chantiers)
 
 Tracked as an informal sequence, not a hard spec — check recent `git log` and `CHANGELOG.md` for what's actually shipped:
+All 8 chantiers below are shipped and deployed. Numbering matches the original roadmap this project was planned against — use these numbers, not any other ordering, when referring to a chantier.
+
 1. ✅ Rebrand cleanup, sidebar/topbar rebuild
 2. ✅ Overview dashboard on real data
 3. ✅ Reels: dedicated page, real Storage upload, editorial calendar
 4. ✅ Academy/Team/Profil: removed fictional data and dead features
-5. ✅ Client portal (invite links, editorial calendar, Q&A messaging — cross-project Minerva Flow sync remains explicitly out of scope, no credentials for that project in this repo)
-6. ✅ Push notifications (real VAPID Web Push), dark mode repaint, responsive audit, Stripe payment links (real Price + Payment Link generation, verified against a live test key)
-7. ✅ Roles (admin/member/client confirmed as the only real values), team invite links (`/team/invite`, admin-only), task delegation (`/tasks`)
-8. ⏳ Deploy pipeline automation, in-app changelog with image support
+5. ✅ Roles (admin/member/client — the only real values), team invite links (`/team/invite`, admin-only, revocable), task delegation (`/tasks`: subtasks, comments, lead links, overdue push reminders via Vercel Cron), admin-only Facturation as the first real per-role permission split, `/team/workload` admin view
+6. ✅ Client portal (invite links, editorial calendar, Q&A messaging — cross-project Minerva Flow sync remains explicitly out of scope, no credentials for that project in this repo)
+7. ✅ Push notifications (real VAPID Web Push), dark mode repaint, responsive audit, Stripe payment links (real Price + Payment Link generation, verified against a live test key, persisted history)
+8. ✅ Deploy pipeline automation (GitHub Actions CI on push to main), in-app changelog with image support (`/changelog`, admin-only publishing)
 
-Note: chantiers were completed roughly in this order but not exactly the numbering above — check `CHANGELOG.md` for the accurate dated sequence.
+Check `CHANGELOG.md` for the accurate dated sequence — chantiers were built in a different order than this numbering (6 and 7 shipped before 5 and 8, for instance) and revisited multiple times as gaps were found.
 
 `CHANGELOG.md` at the repo root has the human-readable version of what's shipped so far.

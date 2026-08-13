@@ -235,3 +235,19 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 - Corrigé au passage : la jointure vers les profils échouait silencieusement côté navigateur (deux clés étrangères ambiguës vers `profiles`) — les tâches ne se chargeaient jamais tant que ce n'était pas précisé.
 
 *Nouvelles migrations en attente : `20260813000002` (permissions facturation), `20260813000003` (lead lié + commentaires de tâches).*
+
+---
+
+## 2026-08-13 — Toutes les migrations déployées ; Chantier 5 : dernier tour
+
+**Migrations** : les 13 migrations en attente ont été appliquées par vos soins. Vérifié en direct : création de tâches, commentaires, sous-tâches, notifications, page Nouveautés — tout fonctionne désormais sans dégradation.
+
+**Charge de travail équipe** — nouvelle page `/team/workload` (admins seulement) : nombre de tâches par membre (à faire / en cours / terminé), avec les tâches en retard mises en évidence et cliquables.
+
+**Révocation d'invitation** — un admin peut maintenant invalider un lien d'invitation avant l'expiration de 14 jours, plutôt que d'attendre.
+
+**Sous-tâches** — chaque tâche a maintenant une liste de sous-tâches à cocher, avec barre de progression.
+
+**Chantier 5 est maintenant complet.** La feuille de route dans `CLAUDE.md` a été renumérotée pour correspondre à la planification d'origine (les 8 chantiers sont tous livrés, mais construits dans un ordre différent — voir `CLAUDE.md` pour le mapping exact).
+
+*Nouvelle migration en attente : `20260813000004` (sous-tâches + révocation d'invitation).*

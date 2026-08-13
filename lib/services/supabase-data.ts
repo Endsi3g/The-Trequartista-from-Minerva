@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, ChangelogEntry } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -633,6 +633,18 @@ export async function redeemTeamInvite(token: string, userId: string): Promise<b
   return true;
 }
 
+export async function revokeTeamInvite(inviteId: string): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('team_invites')
+    .update({ expires_at: new Date().toISOString() })
+    .eq('id', inviteId);
+  if (error) {
+    console.error('[Supabase] Error revoking team invite:', error);
+    return false;
+  }
+  return true;
+}
+
 // ── 15. Stripe Payment Links ────────────────────────────────────────────────
 
 export async function fetchClientPaymentLinks(): Promise<ClientPaymentLink[]> {
@@ -762,6 +774,51 @@ export async function addTaskComment(taskId: string, authorId: string, body: str
   const { error } = await getSupabase().from('task_comments').insert([{ task_id: taskId, author_id: authorId, body }]);
   if (error) {
     console.error('[Supabase] Error adding task comment:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function fetchTaskSubitems(taskId: string): Promise<TaskSubitem[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('task_subitems')
+        .select('*')
+        .eq('task_id', taskId)
+        .order('position', { ascending: true });
+      if (error || !data) {
+        console.warn('[Supabase] Error fetching task subitems:', error);
+        return [];
+      }
+      return data as TaskSubitem[];
+    })(),
+    []
+  );
+}
+
+export async function addTaskSubitem(taskId: string, title: string, position: number): Promise<boolean> {
+  const { error } = await getSupabase().from('task_subitems').insert([{ task_id: taskId, title, position }]);
+  if (error) {
+    console.error('[Supabase] Error adding task subitem:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function toggleTaskSubitem(id: string, done: boolean): Promise<boolean> {
+  const { error } = await getSupabase().from('task_subitems').update({ done }).eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error toggling task subitem:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteTaskSubitem(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('task_subitems').delete().eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error deleting task subitem:', error);
     return false;
   }
   return true;
