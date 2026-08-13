@@ -123,7 +123,9 @@ export default function TasksPage() {
                         className="bg-mv-surface border border-mv-border rounded-xl p-3.5 shadow-mv-sm space-y-2.5 group"
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <h4 className="text-xs font-bold text-mv-ink">{task.title}</h4>
+                          <Link href={`/tasks/${task.id}`} className="text-xs font-bold text-mv-ink hover:text-mv-green transition-colors">
+                            {task.title}
+                          </Link>
                           <button
                             onClick={() => handleDelete(task)}
                             className="opacity-0 group-hover:opacity-100 text-mv-ink-faint hover:text-mv-red transition-all cursor-pointer shrink-0"
@@ -144,10 +146,10 @@ export default function TasksPage() {
                               <span className="truncate">{task.assignee_name}</span>
                             </div>
                           )}
-                          {(task.project_name || task.client_name) && (
+                          {(task.project_name || task.client_name || task.lead_name) && (
                             <div className="flex items-center gap-1.5">
                               <FolderKanban className="w-3 h-3 shrink-0" />
-                              <span className="truncate">{task.project_name || task.client_name}</span>
+                              <span className="truncate">{task.project_name || task.client_name || task.lead_name}</span>
                             </div>
                           )}
                           {task.due_date && (

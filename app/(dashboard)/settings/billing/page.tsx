@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   ArrowUpRight,
   ShieldCheck,
+  ShieldAlert,
   UserCheck,
   X,
   Shield,
@@ -22,6 +23,7 @@ import { fetchClients, fetchClientPaymentLinks } from '@/lib/services/supabase-d
 import { Client, ClientPaymentLink } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { Tooltip } from '@/components/ui/tooltip';
+import { useCurrentUser } from '@/hooks/use-current-user';
 
 
 interface PendingMember {
@@ -32,6 +34,7 @@ interface PendingMember {
 }
 
 export default function BillingPage() {
+  const { role: currentUserRole, loading: userLoading } = useCurrentUser();
   const [clients, setClients] = useState<Client[]>([]);
   const [paymentLinks, setPaymentLinks] = useState<ClientPaymentLink[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,6 +95,15 @@ export default function BillingPage() {
     setTimeout(() => setToastMsg(null), 4000);
     setGeneratingLinkFor(null);
   };
+
+  if (!userLoading && currentUserRole !== 'admin') {
+    return (
+      <div className="max-w-lg mx-auto py-16 text-center space-y-3">
+        <ShieldAlert className="w-8 h-8 text-mv-amber mx-auto" />
+        <p className="text-sm font-bold text-mv-ink">Réservé aux administrateurs.</p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

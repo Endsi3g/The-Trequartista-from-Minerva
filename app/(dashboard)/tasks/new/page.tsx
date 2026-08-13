@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
-import { addTask, fetchClients, fetchProjects } from '@/lib/services/supabase-data';
+import { addTask, fetchClients, fetchProjects, fetchLeads } from '@/lib/services/supabase-data';
 import { createClient } from '@/lib/supabase/client';
-import { Client, Project } from '@/lib/types';
+import { Client, Project, Lead } from '@/lib/types';
 
 interface TeamMember {
   id: string;
@@ -24,23 +24,27 @@ export default function NewTaskPage() {
   const [assigneeId, setAssigneeId] = useState('');
   const [projectId, setProjectId] = useState('');
   const [clientId, setClientId] = useState('');
+  const [leadId, setLeadId] = useState('');
   const [dueDate, setDueDate] = useState('');
 
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
 
   useEffect(() => {
     (async () => {
       const supabase = createClient();
-      const [{ data: profiles }, projectsData, clientsData] = await Promise.all([
+      const [{ data: profiles }, projectsData, clientsData, leadsData] = await Promise.all([
         supabase.from('profiles').select('id, full_name, email').eq('approved', true).order('full_name'),
         fetchProjects(),
         fetchClients(),
+        fetchLeads(),
       ]);
       setMembers(profiles || []);
       setProjects(projectsData);
       setClients(clientsData);
+      setLeads(leadsData);
     })();
   }, []);
 
@@ -62,6 +66,7 @@ export default function NewTaskPage() {
       assignee_id: assigneeId || null,
       project_id: projectId || null,
       client_id: clientId || null,
+      lead_id: leadId || null,
       created_by: user.id,
       due_date: dueDate || null,
     });
@@ -144,6 +149,20 @@ export default function NewTaskPage() {
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-xs font-bold text-mv-ink">Lead lié (optionnel)</label>
+            <select
+              value={leadId}
+              onChange={(e) => setLeadId(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
+            >
+              <option value="">Aucun</option>
+              {leads.map((l) => (
+                <option key={l.id} value={l.id}>{l.company_name || l.contact_name}</option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1">

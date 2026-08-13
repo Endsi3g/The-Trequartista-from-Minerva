@@ -52,6 +52,8 @@ export interface Task {
   project_name?: string;
   client_id: string | null;
   client_name?: string;
+  lead_id: string | null;
+  lead_name?: string;
   assignee_id: string | null;
   assignee_name?: string;
   created_by: string | null;
@@ -59,6 +61,15 @@ export interface Task {
   due_date: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface TaskComment {
+  id: string;
+  task_id: string;
+  author_id: string | null;
+  author_name?: string;
+  body: string;
+  created_at: string;
 }
 
 export interface TeamInvite {

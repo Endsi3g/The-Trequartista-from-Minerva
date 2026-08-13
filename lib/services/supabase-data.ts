@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, ChangelogEntry } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, ChangelogEntry } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -658,11 +658,19 @@ export async function fetchClientPaymentLinks(): Promise<ClientPaymentLink[]> {
 
 // ── 16. Task Delegation ─────────────────────────────────────────────────────
 
+// tasks has two FKs into profiles (assignee_id, created_by), so the
+// assignee embed must disambiguate which relationship to follow --
+// PostgREST otherwise rejects the whole query as ambiguous.
+const TASK_SELECT =
+  '*, project:projects(name), client:clients(name), lead:leads(company_name, contact_name), assignee:profiles!tasks_assignee_id_fkey(full_name)';
+
 function mapTaskRow(row: Record<string, unknown>): Task {
+  const lead = row.lead as { company_name?: string; contact_name?: string } | null;
   return {
     ...row,
     project_name: (row.project as { name?: string } | null)?.name,
     client_name: (row.client as { name?: string } | null)?.name,
+    lead_name: lead ? lead.company_name || lead.contact_name : undefined,
     assignee_name: (row.assignee as { full_name?: string } | null)?.full_name,
   } as Task;
 }
@@ -672,7 +680,7 @@ export async function fetchTasks(): Promise<Task[]> {
     (async () => {
       const { data, error } = await getSupabase()
         .from('tasks')
-        .select('*, project:projects(name), client:clients(name), assignee:profiles(full_name)')
+        .select(TASK_SELECT)
         .order('created_at', { ascending: false });
 
       if (error || !data) {
@@ -685,20 +693,23 @@ export async function fetchTasks(): Promise<Task[]> {
   );
 }
 
+export async function fetchTask(taskId: string): Promise<Task | null> {
+  const { data, error } = await getSupabase().from('tasks').select(TASK_SELECT).eq('id', taskId).maybeSingle();
+  if (error || !data) return null;
+  return mapTaskRow(data);
+}
+
 export async function addTask(task: {
   title: string;
   description?: string | null;
   project_id?: string | null;
   client_id?: string | null;
+  lead_id?: string | null;
   assignee_id?: string | null;
   created_by: string;
   due_date?: string | null;
 }): Promise<Task | null> {
-  const { data, error } = await getSupabase()
-    .from('tasks')
-    .insert([task])
-    .select('*, project:projects(name), client:clients(name), assignee:profiles(full_name)')
-    .single();
+  const { data, error } = await getSupabase().from('tasks').insert([task]).select(TASK_SELECT).single();
 
   if (error) {
     console.error('[Supabase] Error adding task:', error);
@@ -720,6 +731,37 @@ export async function deleteTask(taskId: string): Promise<boolean> {
   const { error } = await getSupabase().from('tasks').delete().eq('id', taskId);
   if (error) {
     console.error('[Supabase] Error deleting task:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function fetchTaskComments(taskId: string): Promise<TaskComment[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('task_comments')
+        .select('*, author:profiles(full_name)')
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: true });
+
+      if (error || !data) {
+        console.warn('[Supabase] Error fetching task comments:', error);
+        return [];
+      }
+      return data.map((row: Record<string, unknown>) => ({
+        ...row,
+        author_name: (row.author as { full_name?: string } | null)?.full_name,
+      })) as TaskComment[];
+    })(),
+    []
+  );
+}
+
+export async function addTaskComment(taskId: string, authorId: string, body: string): Promise<boolean> {
+  const { error } = await getSupabase().from('task_comments').insert([{ task_id: taskId, author_id: authorId, body }]);
+  if (error) {
+    console.error('[Supabase] Error adding task comment:', error);
     return false;
   }
   return true;

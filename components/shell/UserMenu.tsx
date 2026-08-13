@@ -21,7 +21,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ collapsed = false, onNavigate }: UserMenuProps) {
-  const { fullName, email, avatarUrl } = useCurrentUser();
+  const { fullName, email, avatarUrl, role } = useCurrentUser();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const router = useRouter();
 
@@ -50,6 +50,7 @@ export function UserMenu({ collapsed = false, onNavigate }: UserMenuProps) {
           <MenuBody
             fullName={fullName}
             email={email}
+            role={role}
             settingsOpen={settingsOpen}
             setSettingsOpen={setSettingsOpen}
             onNavigate={onNavigate}
@@ -78,6 +79,7 @@ export function UserMenu({ collapsed = false, onNavigate }: UserMenuProps) {
         <MenuBody
           fullName={fullName}
           email={email}
+          role={role}
           settingsOpen={settingsOpen}
           setSettingsOpen={setSettingsOpen}
           onNavigate={onNavigate}
@@ -89,6 +91,7 @@ export function UserMenu({ collapsed = false, onNavigate }: UserMenuProps) {
 }
 
 function MenuBody({
+  role,
   settingsOpen,
   setSettingsOpen,
   onNavigate,
@@ -96,6 +99,7 @@ function MenuBody({
 }: {
   fullName: string;
   email: string;
+  role: string;
   settingsOpen: boolean;
   setSettingsOpen: (v: boolean) => void;
   onNavigate?: () => void;
@@ -156,12 +160,14 @@ function MenuBody({
                 <span>Intégrations</span>
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild onClick={onNavigate}>
-              <Link href="/settings/billing" className="flex items-center gap-2.5 pl-6">
-                <CreditCard size={14} className="shrink-0" />
-                <span>Facturation</span>
-              </Link>
-            </DropdownMenuItem>
+            {role === 'admin' && (
+              <DropdownMenuItem asChild onClick={onNavigate}>
+                <Link href="/settings/billing" className="flex items-center gap-2.5 pl-6">
+                  <CreditCard size={14} className="shrink-0" />
+                  <span>Facturation</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

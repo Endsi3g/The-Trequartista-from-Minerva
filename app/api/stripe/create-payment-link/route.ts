@@ -14,6 +14,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
   }
 
+  const { data: profile } = await authed.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  if (profile?.role !== 'admin') {
+    return NextResponse.json({ error: 'Réservé aux administrateurs.' }, { status: 403 });
+  }
+
   const secretKey = process.env.STRIPE_SECRET_KEY;
   if (!secretKey) {
     return NextResponse.json(

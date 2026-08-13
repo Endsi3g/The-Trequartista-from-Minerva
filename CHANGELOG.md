@@ -220,3 +220,18 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 - Le déploiement automatique des migrations Supabase (pour éliminer le `npm run deploy:supabase` manuel) n'a pas été automatisé — appliquer des changements de schéma en production sur chaque push est un risque d'une autre nature que déployer du code, à valider avec vous avant de le mettre en place.
 
 *Nouvelle migration en attente : `20260813000001` (`changelog_entries`).*
+
+---
+
+## 2026-08-13 — Chantier 5 (approfondissement) : facturation admin seulement, tâches avancées
+
+**Facturation réservée aux admins**
+- Première vraie différence de permissions entre rôles dans l'app : n'importe quel membre pouvait auparavant voir tout le détail MRR et générer de vrais liens de paiement Stripe. Désormais réservé aux admins — page bloquée, lien retiré du menu, et la route `/api/stripe/create-payment-link` elle-même refuse la requête (pas seulement l'interface).
+
+**Tâches avancées**
+- Une tâche peut maintenant être liée à un lead, pas seulement un projet ou un client.
+- Chaque tâche a sa propre page (`/tasks/[id]`) avec un fil de commentaires réel.
+- Nouveau : rappel automatique par notification push pour les tâches en retard, via une tâche planifiée Vercel Cron quotidienne (`/api/cron/task-reminders`). Nécessite `CRON_SECRET` (optionnel mais recommandé) en plus des clés VAPID déjà documentées.
+- Corrigé au passage : la jointure vers les profils échouait silencieusement côté navigateur (deux clés étrangères ambiguës vers `profiles`) — les tâches ne se chargeaient jamais tant que ce n'était pas précisé.
+
+*Nouvelles migrations en attente : `20260813000002` (permissions facturation), `20260813000003` (lead lié + commentaires de tâches).*
