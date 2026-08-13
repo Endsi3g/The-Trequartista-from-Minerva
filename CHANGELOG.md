@@ -207,3 +207,16 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 - Recherche ⌘K et menu « Nouveau » mis à jour pour inclure les tâches.
 
 *Nouvelles migrations en attente : `20260812000016` (`team_invites`), `20260812000017` (`tasks`).*
+
+---
+
+## 2026-08-13 — Chantier 8 : nouveautés dans l'app, automatisation CI
+
+**Nouveautés (in-app)**
+- Le fichier `CHANGELOG.md` n'était visible que sur GitHub. Nouvelle page « Nouveautés » (accessible depuis le menu utilisateur) qui affiche les mêmes annonces dans l'app, avec image optionnelle par entrée. Publication réservée aux admins (`/changelog/new`).
+
+**Automatisation**
+- Nouveau pipeline CI GitHub Actions (`.github/workflows/ci.yml`) : vérifie le typage et le build à chaque push sur `main`. Nécessite que `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` soient ajoutés comme secrets GitHub (Settings → Secrets and variables → Actions) du dépôt — distinct des variables d'environnement Vercel. Sans ça, l'étape de build échouera (sans impact sur le déploiement Vercel, qui reste indépendant).
+- Le déploiement automatique des migrations Supabase (pour éliminer le `npm run deploy:supabase` manuel) n'a pas été automatisé — appliquer des changements de schéma en production sur chaque push est un risque d'une autre nature que déployer du code, à valider avec vous avant de le mettre en place.
+
+*Nouvelle migration en attente : `20260813000001` (`changelog_entries`).*

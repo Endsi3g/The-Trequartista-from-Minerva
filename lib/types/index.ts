@@ -34,6 +34,16 @@ export interface ClientInvite {
   used_at: string | null;
 }
 
+export interface ChangelogEntry {
+  id: string;
+  title: string;
+  body: string;
+  image_url: string | null;
+  created_by: string | null;
+  author_name?: string;
+  created_at: string;
+}
+
 export interface Task {
   id: string;
   title: string;

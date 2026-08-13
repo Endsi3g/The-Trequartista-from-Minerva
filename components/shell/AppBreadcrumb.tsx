@@ -25,6 +25,7 @@ const ROUTE_LABELS: Record<string, string> = {
   billing: 'Facturation',
   'audit-logs': 'Journal d’activité',
   tasks: 'Tâches',
+  changelog: 'Nouveautés',
   invite: 'Inviter',
   join: 'Rejoindre',
 };

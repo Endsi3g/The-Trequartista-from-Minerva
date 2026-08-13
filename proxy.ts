@@ -148,6 +148,7 @@ export const config = {
     '/projects/:path*',
     '/team/:path*',
     '/tasks/:path*',
+    '/changelog/:path*',
     '/academy/:path*',
     '/content-planner/:path*',
     '/leads/:path*',

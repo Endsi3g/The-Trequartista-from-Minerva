@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, User, Settings2, CreditCard, Users, Zap, LogOut } from 'lucide-react';
+import { ChevronDown, User, Settings2, CreditCard, Users, Zap, LogOut, Sparkles } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import {
@@ -113,6 +113,12 @@ function MenuBody({
         <Link href="/team" className="flex items-center gap-2.5">
           <Users size={15} className="shrink-0" />
           <span className="font-semibold text-mv-ink">Équipe</span>
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild onClick={onNavigate}>
+        <Link href="/changelog" className="flex items-center gap-2.5">
+          <Sparkles size={15} className="shrink-0" />
+          <span className="font-semibold text-mv-ink">Nouveautés</span>
         </Link>
       </DropdownMenuItem>
 

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, ChangelogEntry } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -723,4 +723,41 @@ export async function deleteTask(taskId: string): Promise<boolean> {
     return false;
   }
   return true;
+}
+
+// ── 17. In-App Changelog ────────────────────────────────────────────────────
+
+export async function fetchChangelogEntries(): Promise<ChangelogEntry[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('changelog_entries')
+        .select('*, author:profiles(full_name)')
+        .order('created_at', { ascending: false });
+
+      if (error || !data) {
+        console.warn('[Supabase] Error fetching changelog entries:', error);
+        return [];
+      }
+      return data.map((row: Record<string, unknown>) => ({
+        ...row,
+        author_name: (row.author as { full_name?: string } | null)?.full_name,
+      })) as ChangelogEntry[];
+    })(),
+    []
+  );
+}
+
+export async function addChangelogEntry(entry: {
+  title: string;
+  body: string;
+  image_url?: string | null;
+  created_by: string;
+}): Promise<ChangelogEntry | null> {
+  const { data, error } = await getSupabase().from('changelog_entries').insert([entry]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding changelog entry:', error);
+    return null;
+  }
+  return data as ChangelogEntry;
 }
