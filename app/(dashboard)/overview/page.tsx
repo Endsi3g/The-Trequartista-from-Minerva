@@ -24,6 +24,7 @@ import { fetchProjects, fetchClients, fetchLeads } from '@/lib/services/supabase
 import type { Project, Client, Lead } from '@/lib/types';
 import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
 import { PageFadeIn } from '@/components/ui/page-transition';
+import { DotBarShape } from '@/components/charts/DotBarShape';
 
 const GREEN_SHADES = ['#1E4B33', '#3d7a5a', '#6ba585', '#a8c9b8', '#c0cdc6'];
 
@@ -349,7 +350,7 @@ export default function OverviewPage() {
                     formatter={(value) => [moneyFmt(Number(value)), 'MRR']}
                     contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #DDD9CA', fontFamily: 'var(--font-mono)' }}
                   />
-                  <Bar dataKey="mrr" radius={[0, 6, 6, 0]}>
+                  <Bar dataKey="mrr" shape={DotBarShape}>
                     {topClientsByMrr.map((_, i) => (
                       <Cell key={i} fill={GREEN_SHADES[i % GREEN_SHADES.length]} />
                     ))}
