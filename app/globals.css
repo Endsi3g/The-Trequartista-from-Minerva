@@ -21,22 +21,34 @@
     --mv-warm-dark: #c6c3b7;
     --mv-warm-tint: #f8f7f2;
 
+    /* mv-cream stays the warm ivory tone for standalone full-bleed moments
+       (login, onboarding) -- the working app chrome below is Minerva
+       Reach's literal neutral white/grey app shell (their root div is a
+       plain bg-white with a #f4f4f3 sidebar and #e5e5e0 borders, not the
+       cream tokens), so mv-cream-soft/mv-surface/mv-border are pinned to
+       those exact literals rather than derived from the cream family. */
     --mv-cream: #F0EDE0;
-    --mv-cream-soft: #f7f5ee;
-    --mv-surface: #FAFAF5;
+    --mv-cream-soft: #f4f4f3;
+    --mv-surface: #ffffff;
 
     --mv-ink: #1a1f1c;
     --mv-ink-soft: #717472;
     --mv-ink-faint: #a8aaa9;
     --mv-ink-mute: #cdcecd;
 
-    --mv-border: #DDD9CA;
-    --mv-border-soft: #dfdbcc;
+    --mv-border: #e5e5e0;
+    --mv-border-soft: #ececea;
 
     --mv-red: #cf2d56;
     --mv-red-bg: #faeaee;
-    --mv-amber: #E8A33D;
-    --mv-amber-bg: #fcf2e4;
+    /* mv-amber is deliberately aliased to green, not a distinct hue --
+       the app uses a single accent color everywhere (a past design
+       decision), red remains the only other color and is reserved for
+       destructive/error states. Every mv-amber/mv-amber-bg class across
+       the app inherits this automatically -- don't hand-pick a new
+       amber value without re-checking that decision first. */
+    --mv-amber: #1E4B33;
+    --mv-amber-bg: #edf0ee;
 
     /* Revenue-intensity heatmap scale — mirrors Minerva OS Lite's chart-1..5 */
     --mv-heat-1: #edf0ee;
@@ -97,8 +109,8 @@
 
     --mv-red: #e0395c;
     --mv-red-bg: #2d1917;
-    --mv-amber: #d99b26;
-    --mv-amber-bg: #2b2210;
+    --mv-amber: #4a9e6e;
+    --mv-amber-bg: #0f2016;
 
     --mv-heat-1: #21291c;
     --mv-heat-2: #164030;

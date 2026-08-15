@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { FolderKanban, Plus, CheckCircle2, ArrowRight, Map } from 'lucide-react';
 import { fetchProjects } from '@/lib/services/supabase-data';
 import type { Project } from '@/lib/types';
+import { SkeletonRows } from '@/components/ui/skeleton-rows';
+import { PageFadeIn } from '@/components/ui/page-transition';
 
 export default function ProjectsPage() {
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
@@ -28,7 +30,7 @@ export default function ProjectsPage() {
   }, []);
 
   return (
-    <div className="space-y-8">
+    <PageFadeIn className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
@@ -77,7 +79,7 @@ export default function ProjectsPage() {
         >
           <div className="overflow-x-auto">
             {loading ? (
-              <div className="py-12 text-center text-sm text-mv-ink-soft">Chargement des projets…</div>
+              <SkeletonRows count={5} className="p-2" />
             ) : projects.length === 0 ? (
               <div className="py-12 text-center text-sm text-mv-ink-soft">Aucun projet pour le moment.</div>
             ) : (
@@ -174,6 +176,6 @@ export default function ProjectsPage() {
           })}
         </div>
       )}
-    </div>
+    </PageFadeIn>
   );
 }

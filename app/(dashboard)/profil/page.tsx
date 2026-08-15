@@ -23,8 +23,10 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/providers/ToastProvider';
+import { useCurrentUser } from '@/hooks/use-current-user';
 
 export default function ProfilePage() {
+  const { refresh: refreshCurrentUser } = useCurrentUser();
   const [activeTab, setActiveTab] = useState<'info' | 'notifications' | 'security'>('info');
 
   // Form State
@@ -156,6 +158,7 @@ export default function ProfilePage() {
       }
 
       toastSuccess('Photo mise à jour', 'Votre avatar a été mis à jour.');
+      refreshCurrentUser();
     } catch (err) {
       console.error('Avatar upload error:', err);
       toastError("Erreur d'upload", "Impossible d'enregistrer l'image.");
@@ -192,6 +195,7 @@ export default function ProfilePage() {
 
     setSavedSuccess(true);
     toastSuccess('Profil sauvegardé !');
+    refreshCurrentUser();
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 

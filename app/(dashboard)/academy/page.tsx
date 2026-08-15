@@ -9,6 +9,7 @@ import { StorageBrowser } from '@/components/storage/StorageBrowser';
 import { GraduationCap, BookOpen, Clock, ArrowRight, Search, Film } from 'lucide-react';
 import { fetchAcademySops } from '@/lib/services/supabase-data';
 import { AcademySOP } from '@/lib/types';
+import { PageFadeIn } from '@/components/ui/page-transition';
 
 export default function AcademyPage() {
   const [sops, setSops] = useState<AcademySOP[]>([]);
@@ -33,7 +34,7 @@ export default function AcademyPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <PageFadeIn className="space-y-8">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -136,6 +137,6 @@ export default function AcademyPage() {
 
       {/* Storage Media & Video SOPs */}
       <StorageBrowser defaultBucket="academy-media" title="Bibliothèque Média & Vidéos SOPs" />
-    </div>
+    </PageFadeIn>
   );
 }

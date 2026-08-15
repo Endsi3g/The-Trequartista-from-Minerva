@@ -325,3 +325,20 @@ Rebrand complet aligné sur le produit jumeau Minerva Reach (`minerva-os-lite-de
 - Menu de compte ajouté dans le coin supérieur droit de la barre du haut (en plus de celui du pied de sidebar).
 
 *Nouvelles migrations en attente : `20260815000001` (profils étendus + nouveautés structurées + préférences de notifications), `20260815000002` (suivi d'import Notion), `20260815000003` (vue par défaut du profil). Clé `COMPOSIO_API_KEY` fournie invalide (format ne correspondant pas à une clé projet) — à revérifier dans le dashboard Composio avant que les connexions OAuth ne fonctionnent réellement.*
+
+---
+
+## 2026-08-15 — Refonte du fond d'app, éradication de l'ambre, bug de photo de profil, agent vocal ElevenLabs
+
+**Corrigé**
+- La sidebar poussait son pied (Démarrage, Paramètres & Plus, compte) hors de l'écran sur les pages hautes — la coquille de l'app utilisait `min-h-screen` (hauteur minimale, extensible) au lieu de `h-screen` (hauteur fixe), donc toute la page défilait plutôt que juste le contenu central. Corrigé : la sidebar reste fixe, seul le contenu principal défile.
+- La photo de profil en haut à droite ne se mettait jamais à jour après modification sur `/profil` : chaque instance de `useCurrentUser()` (sidebar, barre du haut, 14 pages) faisait sa propre requête unique au montage, sans lien entre elles. Remplacé par un contexte partagé (`CurrentUserProvider`) avec `refresh()`, appelé après chaque sauvegarde de profil/avatar.
+- Le fond de l'app ne reprenait pas vraiment celui de Minerva Reach : leurs jetons de couleur Forêt & Crème étaient corrects, mais leur coquille d'app réelle utilise un blanc pur + gris neutre (`#f4f4f3`), pas les tons crème. `--mv-surface`/`--mv-cream-soft`/`--mv-border` alignés sur ces valeurs exactes (le crème reste réservé aux pages plein écran comme l'accueil/onboarding).
+- Flou de la barre du haut (`backdrop-blur`) retiré — fond opaque uni.
+- L'accent ambre/orange restant (23 fichiers, badges, jauges, graphiques) est maintenant du vert partout, y compris les états d'avertissement — une seule couleur d'accent dans toute l'app.
+- `/leads` et `/projets` chargeaient sans aucun état de chargement (flash de contenu vide) — squelettes ajoutés.
+
+**Nouveau**
+- Animation d'entrée (fondu + léger décalage, via Motion) sur les 8 pages principales.
+
+*À faire : appliquer `npm run deploy:supabase`, corriger `COMPOSIO_API_KEY`. Intégration de l'agent vocal ElevenLabs (clé et agent "Alex" déjà vérifiés fonctionnels) en cours.*

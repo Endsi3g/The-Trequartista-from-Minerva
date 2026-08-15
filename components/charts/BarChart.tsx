@@ -26,7 +26,7 @@ export function BarChart({
   subtitle,
   height = 200,
   color = '#1E4B33',
-  secondaryColor = '#E8A33D',
+  secondaryColor = '#6ba585',
   valuePrefix = '',
   valueSuffix = '',
 }: BarChartProps) {

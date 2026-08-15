@@ -4,6 +4,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { SupabaseRealtimeProvider } from '@/components/providers/SupabaseRealtimeProvider';
 import { ToastProvider } from '@/components/providers/ToastProvider';
+import { CurrentUserProvider } from '@/components/providers/CurrentUserProvider';
 
 // Display face (Playfair Display) and body face (Plus Jakarta Sans), loaded
 // via next/font/google and exposed as CSS variables consumed by
@@ -115,9 +116,11 @@ export default function RootLayout({
       <body className="antialiased font-sans">
         <ThemeProvider>
           <ToastProvider>
-            <SupabaseRealtimeProvider>
-              {children}
-            </SupabaseRealtimeProvider>
+            <CurrentUserProvider>
+              <SupabaseRealtimeProvider>
+                {children}
+              </SupabaseRealtimeProvider>
+            </CurrentUserProvider>
           </ToastProvider>
         </ThemeProvider>
       </body>

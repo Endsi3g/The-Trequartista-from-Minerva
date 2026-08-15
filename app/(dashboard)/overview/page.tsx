@@ -23,6 +23,7 @@ import {
 import { fetchProjects, fetchClients, fetchLeads } from '@/lib/services/supabase-data';
 import type { Project, Client, Lead } from '@/lib/types';
 import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
+import { PageFadeIn } from '@/components/ui/page-transition';
 
 const GREEN_SHADES = ['#1E4B33', '#3d7a5a', '#6ba585', '#a8c9b8', '#c0cdc6'];
 
@@ -131,21 +132,21 @@ export default function OverviewPage() {
 
   const clientStatusSegments: Segment[] = [
     { label: 'Actifs', value: clients.filter((c) => c.status === 'Active').length, color: '#1E4B33' },
-    { label: 'Onboarding', value: clients.filter((c) => c.status === 'Onboarding').length, color: '#E8A33D' },
+    { label: 'Onboarding', value: clients.filter((c) => c.status === 'Onboarding').length, color: '#6ba585' },
     { label: 'En pause', value: clients.filter((c) => c.status === 'Paused').length, color: '#cdcecd' },
     { label: 'Archivés', value: clients.filter((c) => c.status === 'Archived').length, color: '#DDD9CA' },
   ];
 
   const leadStatusSegments: Segment[] = [
     { label: 'Nouveau', value: leads.filter((l) => l.status === 'Nouveau').length, color: '#cdcecd' },
-    { label: 'Contacté', value: leads.filter((l) => l.status === 'Contacté').length, color: '#E8A33D' },
+    { label: 'Contacté', value: leads.filter((l) => l.status === 'Contacté').length, color: '#6ba585' },
     { label: 'RDV Fixé', value: leads.filter((l) => l.status === 'RDV Fixé').length, color: '#4da37e' },
     { label: 'Gagné', value: leads.filter((l) => l.status === 'Gagné').length, color: '#1E4B33' },
   ];
 
   const projectHealthSegments: Segment[] = [
     { label: 'Prêt', value: projects.filter((p) => p.health === 'Ready').length, color: '#1E4B33' },
-    { label: 'En cours', value: projects.filter((p) => p.health === 'On Track').length, color: '#E8A33D' },
+    { label: 'En cours', value: projects.filter((p) => p.health === 'On Track').length, color: '#6ba585' },
     { label: 'À revoir', value: projects.filter((p) => p.health === 'Needs Review').length, color: '#cf2d56' },
   ];
 
@@ -159,7 +160,7 @@ export default function OverviewPage() {
     .slice(0, 5);
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+    <PageFadeIn className="space-y-8 max-w-7xl mx-auto pb-12">
       {/* ── Greeting ── */}
       <div className="space-y-1">
         <p className="text-sm font-semibold text-mv-ink-soft capitalize">{todayDateStr}</p>
@@ -370,6 +371,6 @@ export default function OverviewPage() {
           </div>
         )}
       </div>
-    </div>
+    </PageFadeIn>
   );
 }

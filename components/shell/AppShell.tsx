@@ -29,15 +29,16 @@ function SidebarTrigger() {
 
 function AppShellInner({ children }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-mv-surface text-mv-ink flex flex-col w-full relative font-sans">
+    <div className="h-screen bg-mv-surface text-mv-ink flex flex-col w-full relative font-sans overflow-hidden">
       <ChangelogBanner />
       <div className="flex flex-1 w-full min-h-0">
         <AppSidebar />
 
         {/* Main Content Container */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Top Header */}
-          <header className="h-16 px-4 md:px-6 bg-mv-surface/90 backdrop-blur-md border-b border-mv-border sticky top-0 z-20 flex items-center justify-between">
+          {/* Top Header -- solid background, no blur (a translucent/blurred
+              header over scrolling content read as visually noisy). */}
+          <header className="h-16 px-4 md:px-6 bg-mv-surface border-b border-mv-border sticky top-0 z-20 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3 min-w-0">
               <SidebarTrigger />
               <div className="hidden sm:block min-w-0">
@@ -49,8 +50,9 @@ function AppShellInner({ children }: AppShellProps) {
 
           {/* Page Content -- full width of whatever the sidebar leaves
               available, so collapsing it actually gives pages more room
-              instead of just growing empty margins. */}
-          <main className="p-4 md:p-6 lg:p-8 w-full">
+              instead of just growing empty margins. Scrolls on its own so
+              the sidebar footer never gets pushed off-screen by a tall page. */}
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 w-full">
             {children}
           </main>
         </div>

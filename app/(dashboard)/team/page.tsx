@@ -9,6 +9,7 @@ import { Search, Plus, ExternalLink, Users, Shield, Mail, MoreHorizontal, Gauge 
 import { createClient } from '@/lib/supabase/client';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useToast } from '@/components/providers/ToastProvider';
+import { PageFadeIn } from '@/components/ui/page-transition';
 
 interface TeamMember {
   id: string;
@@ -80,7 +81,7 @@ export default function TeamPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <PageFadeIn className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
@@ -200,6 +201,6 @@ export default function TeamPage() {
           </div>
         )}
       </Card>
-    </div>
+    </PageFadeIn>
   );
 }

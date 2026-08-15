@@ -9,6 +9,7 @@ import { StatCard } from '@/components/ui/stat-card';
 import { Users, Plus, TrendingUp, DollarSign, ExternalLink } from 'lucide-react';
 import { fetchClients } from '@/lib/services/supabase-data';
 import { Client } from '@/lib/types';
+import { PageFadeIn } from '@/components/ui/page-transition';
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -32,7 +33,7 @@ export default function ClientsPage() {
   const totalMrr = clients.reduce((acc, c) => acc + c.mrr, 0);
 
   return (
-    <div className="space-y-8">
+    <PageFadeIn className="space-y-8">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -155,6 +156,6 @@ export default function ClientsPage() {
           </div>
         )}
       </Card>
-    </div>
+    </PageFadeIn>
   );
 }

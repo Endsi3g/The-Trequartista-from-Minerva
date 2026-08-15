@@ -6,6 +6,7 @@ import { Plus, Calendar, User, FolderKanban, Trash2 } from 'lucide-react';
 import { fetchTasks, updateTaskStatus, deleteTask } from '@/lib/services/supabase-data';
 import { createClient } from '@/lib/supabase/client';
 import { Task } from '@/lib/types';
+import { PageFadeIn } from '@/components/ui/page-transition';
 
 const STATUS_COLUMNS: { key: Task['status']; label: string }[] = [
   { key: 'todo', label: 'À faire' },
@@ -49,7 +50,7 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <PageFadeIn className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
@@ -185,6 +186,6 @@ export default function TasksPage() {
           })}
         </div>
       )}
-    </div>
+    </PageFadeIn>
   );
 }

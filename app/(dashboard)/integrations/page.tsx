@@ -9,6 +9,7 @@ import { Search, Zap, ArrowRight, Send, ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { fetchClients } from '@/lib/services/supabase-data';
+import { PageFadeIn } from '@/components/ui/page-transition';
 
 // Real SVG brand logos from https://github.com/GLINCKER/thesvg via jsDelivr
 // -- no local asset management, and it degrades gracefully (Zap fallback)
@@ -203,7 +204,7 @@ export default function IntegrationsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <PageFadeIn className="space-y-8">
       <div>
         <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
           Intégrations
@@ -396,6 +397,6 @@ export default function IntegrationsPage() {
           GLINCKER/thesvg
         </a>
       </p>
-    </div>
+    </PageFadeIn>
   );
 }

@@ -21,7 +21,7 @@ const KANBAN_STAGES: ContentPost['status'][] = ['Idéation', 'Rédigé', 'Enregi
 const PLATFORM_COLORS: Record<string, string> = {
   Instagram: '#1E4B33',
   TikTok: '#dfff5f',
-  'YouTube Shorts': '#E8A33D',
+  'YouTube Shorts': '#6ba585',
   LinkedIn: '#153524',
 };
 

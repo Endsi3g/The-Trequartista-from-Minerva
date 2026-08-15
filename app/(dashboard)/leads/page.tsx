@@ -7,6 +7,8 @@ import { KanbanBoard } from '@/components/crm/KanbanBoard';
 import { LeadDetailDrawer } from '@/components/crm/LeadDetailDrawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SkeletonCards } from '@/components/ui/skeleton-rows';
+import { PageFadeIn } from '@/components/ui/page-transition';
 import {
   Search,
   Kanban,
@@ -119,7 +121,7 @@ function LeadsCrmContent() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+    <PageFadeIn className="space-y-8 max-w-7xl mx-auto pb-12">
       {/* ── Top Header ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -245,7 +247,9 @@ function LeadsCrmContent() {
       </div>
 
       {/* ── Main View (Kanban vs Table) ── */}
-      {viewMode === 'kanban' ? (
+      {isLoading ? (
+        <SkeletonCards count={6} />
+      ) : viewMode === 'kanban' ? (
         <KanbanBoard
           leads={filteredLeads}
           onSelectLead={(lead) => setSelectedLead(lead)}
@@ -296,7 +300,7 @@ function LeadsCrmContent() {
         onLeadUpdated={loadData}
       />
 
-    </div>
+    </PageFadeIn>
   );
 }
 

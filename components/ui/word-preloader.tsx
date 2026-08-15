@@ -22,7 +22,7 @@ export function WordPreloader() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center gap-6 bg-mv-cream">
+    <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center gap-6 bg-white">
       <motion.div
         animate={{ scale: [1, 1.06, 1] }}
         transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}

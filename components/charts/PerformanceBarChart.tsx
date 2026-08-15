@@ -36,7 +36,7 @@ export function PerformanceBarChart({
             item.score >= 85
               ? 'var(--mv-green)'
               : item.score >= 65
-              ? '#E8A33D'
+              ? '#6ba585'
               : 'var(--mv-red)';
 
           return (
