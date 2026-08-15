@@ -181,7 +181,14 @@ export default function BillingPage() {
                 {clients.map((c) => (
                   <tr key={c.id} className="hover:bg-mv-surface/60 transition-colors">
                     <td className="py-3.5 px-4 font-bold text-mv-ink flex items-center gap-3">
-                      <img src={c.logo_url} alt={c.name} className="w-8 h-8 rounded-lg object-cover border border-mv-border" />
+                      <img
+                        src={c.logo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(c.name)}&backgroundColor=1c9a6f&fontColor=ffffff`}
+                        alt={c.name}
+                        className="w-8 h-8 rounded-lg object-cover border border-mv-border shrink-0"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(c.name)}&backgroundColor=1c9a6f&fontColor=ffffff`;
+                        }}
+                      />
                       <span>{c.name}</span>
                     </td>
                     <td className="py-3.5 px-4">

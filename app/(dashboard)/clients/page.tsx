@@ -227,6 +227,9 @@ export default function ClientsPage() {
                           src={client.logo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(client.name)}&backgroundColor=1c9a6f&fontColor=ffffff`}
                           alt={client.name}
                           className="w-9 h-9 rounded-lg object-cover border border-mv-border shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(client.name)}&backgroundColor=1c9a6f&fontColor=ffffff`;
+                          }}
                         />
                         <div>
                           <Link href={`/clients/${client.id}`} className="font-bold text-mv-ink text-sm hover:text-mv-green transition-colors">

@@ -133,6 +133,9 @@ export default function RoiTrackerPage() {
               src={client.logo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(client.name)}&backgroundColor=1c9a6f&fontColor=ffffff`}
               alt={client.name}
               className="w-14 h-14 rounded-xl object-cover border border-mv-border shadow-mv-sm"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(client.name)}&backgroundColor=1c9a6f&fontColor=ffffff`;
+              }}
             />
             <div>
               <div className="flex items-center gap-2">
