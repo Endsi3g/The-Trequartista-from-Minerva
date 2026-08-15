@@ -22,15 +22,21 @@ export function LogoMark({ size = 32, className }: LogoMarkProps) {
 interface LogoProps {
   size?: number;
   collapsed?: boolean;
+  variant?: 'default' | 'light';
 }
 
-export function Logo({ size = 28, collapsed = false }: LogoProps) {
+export function Logo({ size = 28, collapsed = false, variant = 'default' }: LogoProps) {
   return (
     <div className="flex items-center gap-2 min-w-0">
       <LogoMark size={size} className="shrink-0" />
       {!collapsed && (
-        <span className="truncate font-extrabold text-[13.5px] tracking-tight text-mv-ink font-display">
-          MINERVA <span className="text-mv-green">TREQUARTISTA</span>
+        <span
+          className={`truncate font-extrabold text-[13.5px] tracking-tight font-display ${
+            variant === 'light' ? 'text-white' : 'text-mv-ink'
+          }`}
+        >
+          MINERVA{' '}
+          <span className={variant === 'light' ? 'text-mv-cream' : 'text-mv-green'}>TREQUARTISTA</span>
         </span>
       )}
     </div>

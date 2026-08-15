@@ -41,7 +41,9 @@ export function HalftoneImage({
       ctx.scale(dpr, dpr);
 
       // Draw the source image to an offscreen canvas at low resolution to
-      // sample average luminance per dot cell.
+      // sample average luminance per dot cell. Uses object-fit: cover math
+      // so portrait/landscape source photos aren't stretched to the panel's
+      // aspect ratio.
       const cols = Math.ceil(width / dotSpacing);
       const rows = Math.ceil(height / dotSpacing);
       const sample = document.createElement('canvas');
@@ -49,7 +51,17 @@ export function HalftoneImage({
       sample.height = rows;
       const sctx = sample.getContext('2d');
       if (!sctx) return;
-      sctx.drawImage(img, 0, 0, cols, rows);
+      const targetRatio = cols / rows;
+      const sourceRatio = img.naturalWidth / img.naturalHeight;
+      let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+      if (sourceRatio > targetRatio) {
+        sw = img.naturalHeight * targetRatio;
+        sx = (img.naturalWidth - sw) / 2;
+      } else {
+        sh = img.naturalWidth / targetRatio;
+        sy = (img.naturalHeight - sh) / 2;
+      }
+      sctx.drawImage(img, sx, sy, sw, sh, 0, 0, cols, rows);
       const data = sctx.getImageData(0, 0, cols, rows).data;
 
       ctx.fillStyle = backgroundColor;
@@ -64,7 +76,10 @@ export function HalftoneImage({
           const b = data[i + 2];
           const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
           const darkness = 1 - luminance;
-          const radius = (dotSpacing / 2) * Math.min(1, darkness * 1.15);
+          // Cap below 1 so even near-black source pixels keep a sliver of
+          // gap between dots -- full saturation reads as a flat ink blob
+          // instead of a dot-matrix texture.
+          const radius = (dotSpacing / 2) * Math.min(0.86, darkness);
           if (radius < 0.4) continue;
           ctx.beginPath();
           ctx.arc(x * dotSpacing + dotSpacing / 2, y * dotSpacing + dotSpacing / 2, radius, 0, Math.PI * 2);

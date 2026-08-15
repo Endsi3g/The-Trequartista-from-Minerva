@@ -1,35 +1,61 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { SignupForm } from '@/components/signup-form';
 import { Logo } from '@/components/shell/Logo';
+import { HalftoneImage } from '@/components/ui/halftone-image';
 
 export default function SignupPage() {
   return (
-    <div className="min-h-screen bg-mv-cream flex flex-col justify-between relative overflow-hidden text-mv-ink">
-      {/* Top Header Bar */}
-      <header className="h-16 px-6 sm:px-12 flex items-center justify-between z-20 relative bg-mv-surface/60 backdrop-blur-sm border-b border-mv-border/40">
-        <Link href="/" className="flex items-center gap-2">
-          <Logo />
-        </Link>
-        <div className="text-xs text-mv-ink-soft">
-          Déjà un compte ?{' '}
-          <Link href="/login" className="font-extrabold text-mv-ink underline hover:text-mv-green ml-1">
-            Se connecter
+    <div className="min-h-screen flex text-mv-ink bg-mv-cream">
+      {/* Left: halftone portrait panel (desktop only) */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-mv-green-darker overflow-hidden">
+        <HalftoneImage
+          src="/images/login-portrait.jpg"
+          dotColor="#fafaf9"
+          backgroundColor="#0f261a"
+          dotSpacing={6}
+          className="absolute inset-0"
+        />
+        {/* Scrims -- guarantee text legibility regardless of the dot texture underneath */}
+        <div
+          className="absolute inset-x-0 top-0 pointer-events-none"
+          style={{ height: '11rem', background: 'linear-gradient(to bottom, #0f261a 0%, #0f261a 35%, transparent 100%)' }}
+        />
+        <div
+          className="absolute inset-x-0 bottom-0 pointer-events-none"
+          style={{ height: '24rem', background: 'linear-gradient(to top, #0f261a 0%, #0f261a 45%, transparent 100%)' }}
+        />
+        <div className="relative z-10 flex flex-col justify-between p-10 xl:p-14 w-full h-full">
+          <Link href="/" className="drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
+            <Logo variant="light" size={30} />
           </Link>
+          <div className="max-w-sm drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]">
+            <p className="text-white text-2xl xl:text-3xl font-extrabold font-display tracking-tight leading-tight">
+              Rejoignez l&apos;espace de travail de l&apos;équipe.
+            </p>
+            <p className="text-sm mt-3" style={{ color: 'rgba(250, 250, 249, 0.85)' }}>
+              Créez votre compte pour accéder aux clients, projets et outils internes de Minerva.
+            </p>
+          </div>
         </div>
-      </header>
-
-      {/* Main Centered Signup Card */}
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 z-20 relative my-6">
-        <SignupForm />
-      </main>
-
-      {/* Background Leaf Corner Illustrations */}
-      <div className="fixed bottom-0 left-0 z-10 pointer-events-none select-none">
-        <Image src="/leaf-bottom-left.svg" alt="Decoration" width={220} height={260} className="w-44 sm:w-56" />
       </div>
-      <div className="fixed bottom-0 right-0 z-10 pointer-events-none select-none">
-        <Image src="/leaf-bottom-right.svg" alt="Decoration" width={220} height={260} className="w-44 sm:w-56" />
+
+      {/* Right: form panel */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="h-16 px-6 sm:px-12 flex items-center justify-between shrink-0">
+          <Link href="/" className="lg:hidden flex items-center gap-2">
+            <Logo size={26} />
+          </Link>
+          <div className="lg:ml-auto text-xs text-mv-ink-soft">
+            Déjà un compte ?{' '}
+            <Link href="/login" className="font-extrabold text-mv-ink underline hover:text-mv-green ml-1">
+              Se connecter
+            </Link>
+          </div>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center p-4 sm:p-6">
+          <SignupForm />
+        </main>
       </div>
     </div>
   );
