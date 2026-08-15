@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { fetchAcquisitionFunnelStats, fetchIntakeLeads, type AcquisitionFunnelStats } from '@/lib/services/supabase-data';
 import type { IntakeLead } from '@/lib/types';
+import { MinervaVoiceAgent } from '@/components/voice/MinervaVoiceAgent';
 
 const STATUS_BADGE: Record<IntakeLead['status'], { variant: 'neutral' | 'amber' | 'green'; label: string }> = {
   step1_abandoned: { variant: 'amber', label: 'Étape 1 seulement' },
@@ -103,6 +104,8 @@ export default function AcquisitionDashboardPage() {
           icon={<TrendingUp className="w-5 h-5" />}
         />
       </div>
+
+      <MinervaVoiceAgent />
 
       <Card header={<h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">Leads Captés (Étape 1 & 2)</h3>}>
         {loading ? (

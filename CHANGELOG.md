@@ -340,5 +340,6 @@ Rebrand complet aligné sur le produit jumeau Minerva Reach (`minerva-os-lite-de
 
 **Nouveau**
 - Animation d'entrée (fondu + léger décalage, via Motion) sur les 8 pages principales.
+- Agent vocal Minerva (ElevenLabs Conversational AI) intégré dans `/acquisition` : appel de test en direct dans le navigateur (WebRTC, jeton de session émis côté serveur, clé API jamais exposée au client), vérifié fonctionnel de bout en bout contre l'API réelle. Webhook post-appel (`/api/webhooks/elevenlabs-post-call`) prêt à créer automatiquement un vrai lead qualifié dès qu'un appel se termine, une fois configuré côté ElevenLabs.
 
-*À faire : appliquer `npm run deploy:supabase`, corriger `COMPOSIO_API_KEY`. Intégration de l'agent vocal ElevenLabs (clé et agent "Alex" déjà vérifiés fonctionnels) en cours.*
+*À faire : appliquer `npm run deploy:supabase`, corriger `COMPOSIO_API_KEY`, configurer le webhook post-appel dans le dashboard ElevenLabs (Agent → Webhooks) avec l'URL publique + `ELEVENLABS_WEBHOOK_SECRET` généré là-bas.*
