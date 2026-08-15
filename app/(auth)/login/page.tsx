@@ -44,13 +44,13 @@ export default function LoginPage() {
 
       {/* Right: form panel */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 px-6 sm:px-12 flex items-center justify-between shrink-0">
-          <Link href="/" className="lg:hidden flex items-center gap-2">
-            <Logo size={26} />
+        <header className="h-16 px-4 sm:px-12 flex items-center justify-between gap-3 shrink-0">
+          <Link href="/" className="lg:hidden flex items-center gap-2 min-w-0 shrink-0">
+            <Logo size={26} collapsed />
           </Link>
-          <div className="lg:ml-auto text-xs text-mv-ink-soft">
-            Pas encore de compte ?{' '}
-            <Link href="/signup" className="font-extrabold text-mv-ink underline hover:text-mv-green ml-1">
+          <div className="lg:ml-auto text-xs text-mv-ink-soft text-right shrink-0">
+            <span className="hidden sm:inline">Pas encore de compte ? </span>
+            <Link href="/signup" className="font-extrabold text-mv-ink underline hover:text-mv-green">
               Créer un compte
             </Link>
           </div>
