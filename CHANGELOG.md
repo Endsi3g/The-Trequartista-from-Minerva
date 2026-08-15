@@ -309,12 +309,19 @@ Rebrand complet aligné sur le produit jumeau Minerva Reach (`minerva-os-lite-de
 **Sidebar reconstruite** sur le modèle de Minerva Reach : items épinglés, catégories repliables (masquées pour les non-admins), section « Aujourd'hui » (clients/projets récents réels), widget « Démarrage » branché sur la vraie progression d'onboarding, menu de compte dans l'en-tête ET dans le coin supérieur droit de la barre du haut.
 
 **Intégrations — vraies connexions OAuth via Composio**
-- `/integrations` : grille de 17 apps réellement utilisées par l'agence (Gmail, Notion, GitHub, Stripe, Supabase, etc.), avec vrais logos (GLINCKER/thesvg), connexion/déconnexion OAuth réelle via `@composio/client` (admin seulement), indicateur vert pulsant pour les connexions actives, filtres par catégorie, « Voir plus » pour n'afficher que 5 apps par défaut.
+- `/integrations` : grille (pas une liste) de 17 apps réellement utilisées par l'agence (Gmail, Notion, GitHub, Stripe, Supabase, etc.), avec vrais logos (GLINCKER/thesvg), connexion/déconnexion OAuth réelle via `@composio/client` (admin seulement), indicateur vert pulsant pour les connexions actives, filtres par catégorie sous forme de chips horizontales, « Voir plus » pour n'afficher que 6 apps par défaut, squelettes shimmer pendant le chargement.
 - Le testeur de webhook ROI (bouton existant, jamais fonctionnel) envoyait les mauvais noms de champs et aucune autorisation — corrigé avec une vraie route de test serveur (admin seulement).
 - Import de SOPs Notion vers l'Académie (admin, déclenché manuellement) : sélectionne des pages Notion, importe leur contenu réel en fiches SOP.
 
 **Paramètres refaits** : Profil (édition + aperçu en direct, nouveaux champs bio/localisation/réseaux), Notifications (bascules groupées, vraiment persistées), Membres (recherche, changement de rôle en direct), Onboarding (5 étapes au lieu de 3, la vue de démarrage choisie est maintenant vraiment mémorisée pour les connexions futures).
 
 **Nouveau** : page `/help` (FAQ réelle sur les fonctionnalités de l'app), bandeau automatique annonçant la dernière entrée Nouveautés (lien vers `/changelog`, ne réapparaît pas une fois fermé sauf nouvelle entrée), page Nouveautés redessinée avec version + liste « ce qui est inclus » + navigation latérale, effet de fondu au défilement sur les longues listes (FAQ, nouveautés), écran de chargement personnalisé au démarrage de l'app.
+
+**Corrections suite aux tests en direct**
+- L'onboarding vivait par erreur dans le même gabarit que le reste de l'app (sidebar/topbar visibles pendant la configuration du compte) — déplacé vers son propre flux plein écran, avant l'accès à l'espace de travail.
+- Accent décoratif unifié en vert partout (le badge « Nouveau » d'Équipe était ambre).
+- Les compteurs « 1 » à côté de Clients/Leads/Projets dans la sidebar n'apportaient aucune information utile — retirés.
+- Espacement corrigé entre l'icône et « Minerva » dans le fil d'Ariane (trop collés).
+- Menu de compte ajouté dans le coin supérieur droit de la barre du haut (en plus de celui du pied de sidebar).
 
 *Nouvelles migrations en attente : `20260815000001` (profils étendus + nouveautés structurées + préférences de notifications), `20260815000002` (suivi d'import Notion), `20260815000003` (vue par défaut du profil). Clé `COMPOSIO_API_KEY` fournie invalide (format ne correspondant pas à une clé projet) — à revérifier dans le dashboard Composio avant que les connexions OAuth ne fonctionnent réellement.*

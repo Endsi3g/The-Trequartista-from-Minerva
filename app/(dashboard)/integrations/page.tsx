@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Zap, ArrowRight, Loader2, Send, ExternalLink } from 'lucide-react';
+import { Search, Zap, ArrowRight, Send, ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { fetchClients } from '@/lib/services/supabase-data';
@@ -81,10 +81,10 @@ export default function IntegrationsPage() {
   const [connectingSlug, setConnectingSlug] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('Toutes');
-  const [visibleCount, setVisibleCount] = useState(5);
+  const [visibleCount, setVisibleCount] = useState(6);
 
   useEffect(() => {
-    setVisibleCount(5);
+    setVisibleCount(6);
   }, [query, activeCategory]);
 
   const loadStatuses = async () => {
@@ -267,11 +267,11 @@ export default function IntegrationsPage() {
 
         {/* App grid */}
         {loading ? (
-          <Card>
-            <div className="flex items-center justify-center py-8 text-mv-ink-faint text-sm gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" /> Chargement des connexions…
-            </div>
-          </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-mv-surface border border-mv-border rounded-xl p-6 shimmer-bg animate-mv-shimmer h-[120px]" />
+            ))}
+          </div>
         ) : filteredApps.length === 0 ? (
           <Card>
             <p className="text-center py-8 text-mv-ink-faint text-sm">Aucune intégration trouvée.</p>
