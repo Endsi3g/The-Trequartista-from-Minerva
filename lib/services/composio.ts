@@ -34,7 +34,7 @@ let client: Composio | null = null;
 export function getComposioClient(): Composio {
   const apiKey = process.env.COMPOSIO_API_KEY;
   if (!apiKey) {
-    throw new Error('Composio non configuré (COMPOSIO_API_KEY manquant dans .env.local)');
+    throw new Error('Composio non configuré : la variable d’environnement COMPOSIO_API_KEY est manquante ou invalide.');
   }
   if (!client) {
     client = new Composio({ apiKey });
