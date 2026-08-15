@@ -168,7 +168,7 @@ export default function TeamPage() {
         header={
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
             <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">Répertoire d&apos;équipe</h3>
-            <div className="flex items-center gap-1 bg-mv-cream-soft border border-mv-border rounded-xl p-1">
+            <div className="flex items-center gap-1 bg-mv-cream-soft border border-mv-border rounded-xl p-1 overflow-x-auto">
               {ROLE_TABS.map((tab) => (
                 <button
                   key={tab.key}
@@ -235,7 +235,7 @@ export default function TeamPage() {
           </div>
         ) : (
           <div className="overflow-x-auto -mx-6">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[560px] text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-mv-border text-mv-ink-soft uppercase text-[10px] font-extrabold tracking-wider">
                   <th className="py-3 pl-6 pr-2 w-8">

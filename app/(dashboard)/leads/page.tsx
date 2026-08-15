@@ -309,7 +309,7 @@ function LeadsCrmContent() {
             </div>
           )}
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[760px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-mv-surface border-b border-mv-border text-mv-ink-soft uppercase text-[10px] font-extrabold tracking-wider">
                   <th className="py-3.5 pl-4 pr-2 w-8">

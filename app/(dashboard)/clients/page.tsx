@@ -191,7 +191,7 @@ export default function ClientsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[760px] text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-mv-border text-mv-ink-soft uppercase text-[10px] tracking-wider">
                   <th className="pb-3 pr-2 w-8">

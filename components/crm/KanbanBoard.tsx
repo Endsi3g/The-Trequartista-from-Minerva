@@ -12,13 +12,39 @@ interface KanbanColumn {
   probabilityPct: number;
   badgeBg: string;
   badgeText: string;
+  badgeStyle?: React.CSSProperties;
 }
 
+// Stage badges track pipeline progress using intensity of the single green
+// accent (not distinct hues -- see CLAUDE.md "single accent, zero
+// exceptions") so early/mid stages are visually distinguishable from each
+// other and from the final "Gagné" stage, without reintroducing blue/purple.
 const KANBAN_COLUMNS: KanbanColumn[] = [
   { id: 'nouveau', title: '1. Nouveau Lead', probabilityPct: 10, badgeBg: 'bg-mv-cream-soft border-mv-border', badgeText: 'text-mv-ink-soft' },
-  { id: 'qualification', title: '2. Qualification', probabilityPct: 30, badgeBg: 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30', badgeText: 'text-blue-700 dark:text-blue-400' },
-  { id: 'proposition', title: '3. Proposition Envoyée', probabilityPct: 60, badgeBg: 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30', badgeText: 'text-purple-700 dark:text-purple-400' },
-  { id: 'negociation', title: '4. Négociation', probabilityPct: 80, badgeBg: 'bg-mv-amber-bg border-mv-amber/30', badgeText: 'text-mv-amber' },
+  {
+    id: 'qualification',
+    title: '2. Qualification',
+    probabilityPct: 30,
+    badgeBg: '',
+    badgeText: '',
+    badgeStyle: { backgroundColor: 'rgba(30, 75, 51, 0.08)', borderColor: 'rgba(30, 75, 51, 0.25)', color: '#4a7d63' },
+  },
+  {
+    id: 'proposition',
+    title: '3. Proposition Envoyée',
+    probabilityPct: 60,
+    badgeBg: '',
+    badgeText: '',
+    badgeStyle: { backgroundColor: 'rgba(30, 75, 51, 0.14)', borderColor: 'rgba(30, 75, 51, 0.3)', color: '#356b4f' },
+  },
+  {
+    id: 'negociation',
+    title: '4. Négociation',
+    probabilityPct: 80,
+    badgeBg: '',
+    badgeText: '',
+    badgeStyle: { backgroundColor: 'rgba(30, 75, 51, 0.22)', borderColor: 'rgba(30, 75, 51, 0.4)', color: '#1E4B33' },
+  },
   { id: 'gagne', title: '5. Gagné / Signé', probabilityPct: 100, badgeBg: 'bg-mv-green-tint border-mv-green/30', badgeText: 'text-mv-green' },
   { id: 'perdu', title: '6. Perdu', probabilityPct: 0, badgeBg: 'bg-mv-red-bg border-mv-red/30', badgeText: 'text-mv-red' },
 ];
@@ -104,7 +130,10 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
             {/* Column Header */}
             <div className="mb-3 space-y-1">
               <div className="flex items-center justify-between">
-                <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${col.badgeBg} ${col.badgeText}`}>
+                <span
+                  className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${col.badgeBg} ${col.badgeText}`}
+                  style={col.badgeStyle}
+                >
                   {col.title}
                 </span>
                 <span className="text-xs font-extrabold text-mv-ink-soft bg-mv-surface border border-mv-border px-2 py-0.5 rounded-full">
