@@ -19,10 +19,12 @@ import {
   TrendingUp,
   Target,
   CheckCircle2,
+  X,
 } from 'lucide-react';
 import { fetchClients, fetchLeads } from '@/lib/services/supabase-data';
 import type { Client, Lead } from '@/lib/types';
 import { useSupabaseRealtime } from '@/components/providers/SupabaseRealtimeProvider';
+import { StatusDot } from '@/components/ui/status-dot';
 
 function LeadsCrmContent() {
   const searchParams = useSearchParams();
@@ -35,6 +37,7 @@ function LeadsCrmContent() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { isConnected, lastUpdateTimestamp } = useSupabaseRealtime();
 
@@ -95,9 +98,33 @@ function LeadsCrmContent() {
   const wonLeadsCount = filteredLeads.filter((l) => l.status === 'Gagné' || l.stage === 'gagne').length;
   const winRatePct = filteredLeads.length > 0 ? Math.round((wonLeadsCount / filteredLeads.length) * 100) : 0;
 
-  const handleExportCsv = () => {
+  const allVisibleSelected = filteredLeads.length > 0 && filteredLeads.every((l) => selectedIds.has(l.id));
+
+  const toggleAllSelected = () => {
+    setSelectedIds((prev) => {
+      if (allVisibleSelected) {
+        const next = new Set(prev);
+        filteredLeads.forEach((l) => next.delete(l.id));
+        return next;
+      }
+      const next = new Set(prev);
+      filteredLeads.forEach((l) => next.add(l.id));
+      return next;
+    });
+  };
+
+  const toggleOneSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleExportCsv = (subset?: Lead[]) => {
     const headers = ['ID', 'Société', 'Contact', 'Email', 'Téléphone', 'Service', 'Étape', 'MRR ($)', 'Setup ($)', 'Date'];
-    const rows = filteredLeads.map((l) => [
+    const rows = (subset || filteredLeads).map((l) => [
       l.id,
       `"${l.company_name || l.client_name}"`,
       `"${l.contact_name}"`,
@@ -148,7 +175,7 @@ function LeadsCrmContent() {
             <span>Nouveau Lead</span>
           </Link>
 
-          <Button variant="outline" size="sm" onClick={handleExportCsv} className="flex items-center gap-1.5">
+          <Button variant="outline" size="sm" onClick={() => handleExportCsv()} className="flex items-center gap-1.5">
             <Download className="w-4 h-4 text-mv-green" />
             Exporter CSV
           </Button>
@@ -257,10 +284,42 @@ function LeadsCrmContent() {
         />
       ) : (
         <div className="bg-mv-surface border border-mv-border rounded-2xl overflow-hidden shadow-mv-sm">
+          {selectedIds.size > 0 && (
+            <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-mv-green-tint border-b border-mv-green/20">
+              <span className="text-xs font-bold text-mv-green">
+                {selectedIds.size} lead{selectedIds.size > 1 ? 's' : ''} sélectionné{selectedIds.size > 1 ? 's' : ''}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExportCsv(filteredLeads.filter((l) => selectedIds.has(l.id)))}
+                  className="flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" /> Exporter la sélection
+                </Button>
+                <button
+                  onClick={() => setSelectedIds(new Set())}
+                  className="p-1.5 rounded-lg text-mv-ink-faint hover:bg-mv-surface hover:text-mv-ink transition-colors cursor-pointer"
+                  title="Désélectionner"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-mv-surface border-b border-mv-border text-mv-ink-soft uppercase text-[10px] font-extrabold tracking-wider">
+                  <th className="py-3.5 pl-4 pr-2 w-8">
+                    <input
+                      type="checkbox"
+                      checked={allVisibleSelected}
+                      onChange={toggleAllSelected}
+                      className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-mv-green/30 cursor-pointer"
+                    />
+                  </th>
                   <th className="py-3.5 px-4">Société / Contact</th>
                   <th className="py-3.5 px-4">Service</th>
                   <th className="py-3.5 px-4">Étape</th>
@@ -270,23 +329,46 @@ function LeadsCrmContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-mv-border">
-                {filteredLeads.map((lead) => (
-                  <tr
-                    key={lead.id}
-                    onClick={() => setSelectedLead(lead)}
-                    className="hover:bg-mv-surface/60 transition-colors cursor-pointer"
-                  >
-                    <td className="py-3.5 px-4">
-                      <p className="font-bold text-mv-ink">{lead.company_name || lead.client_name || lead.contact_name}</p>
-                      <p className="text-[11px] text-mv-ink-soft">{lead.contact_email}</p>
-                    </td>
-                    <td className="py-3.5 px-4 font-semibold text-mv-green">{lead.service_requested}</td>
-                    <td className="py-3.5 px-4 font-bold capitalize text-mv-ink">{lead.stage || lead.status}</td>
-                    <td className="py-3.5 px-4 font-extrabold text-mv-ink">{(lead.mrr_value || 0).toLocaleString('fr-CA')} $</td>
-                    <td className="py-3.5 px-4 font-semibold text-mv-ink-soft">{(lead.one_time_value || 0).toLocaleString('fr-CA')} $</td>
-                    <td className="py-3.5 px-4 text-mv-ink-faint">{new Date(lead.created_at).toLocaleDateString('fr-CA')}</td>
-                  </tr>
-                ))}
+                {filteredLeads.map((lead) => {
+                  const won = lead.status === 'Gagné' || lead.stage === 'gagne';
+                  return (
+                    <tr
+                      key={lead.id}
+                      className={`transition-colors ${selectedIds.has(lead.id) ? 'bg-mv-green-tint/40' : 'hover:bg-mv-surface/60'}`}
+                    >
+                      <td className="py-3.5 pl-4 pr-2" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(lead.id)}
+                          onChange={() => toggleOneSelected(lead.id)}
+                          className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-mv-green/30 cursor-pointer"
+                        />
+                      </td>
+                      <td className="py-3.5 px-4 cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                        <p className="font-bold text-mv-ink">{lead.company_name || lead.client_name || lead.contact_name}</p>
+                        <p className="text-[11px] text-mv-ink-soft">{lead.contact_email}</p>
+                      </td>
+                      <td className="py-3.5 px-4 font-semibold text-mv-green cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                        {lead.service_requested}
+                      </td>
+                      <td className="py-3.5 px-4 cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                        <span className="inline-flex items-center gap-1.5 font-bold capitalize text-mv-ink">
+                          <StatusDot active={won} />
+                          {lead.stage || lead.status}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 font-extrabold text-mv-ink cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                        {(lead.mrr_value || 0).toLocaleString('fr-CA')} $
+                      </td>
+                      <td className="py-3.5 px-4 font-semibold text-mv-ink-soft cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                        {(lead.one_time_value || 0).toLocaleString('fr-CA')} $
+                      </td>
+                      <td className="py-3.5 px-4 text-mv-ink-faint cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                        {new Date(lead.created_at).toLocaleDateString('fr-CA')}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

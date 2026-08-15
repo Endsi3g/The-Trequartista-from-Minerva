@@ -9,6 +9,7 @@ import { Users, Plus, TrendingUp, DollarSign, ExternalLink, Download, X } from '
 import { fetchClients } from '@/lib/services/supabase-data';
 import { Client } from '@/lib/types';
 import { PageFadeIn } from '@/components/ui/page-transition';
+import { StatusDot } from '@/components/ui/status-dot';
 
 const STATUS_TABS: { key: Client['status'] | 'all'; label: string }[] = [
   { key: 'all', label: 'Tous' },
@@ -17,14 +18,6 @@ const STATUS_TABS: { key: Client['status'] | 'all'; label: string }[] = [
   { key: 'Paused', label: 'En pause' },
   { key: 'Archived', label: 'Archivés' },
 ];
-
-function StatusDot({ active }: { active: boolean }) {
-  return (
-    <span
-      className={`w-2 h-2 rounded-full shrink-0 ${active ? 'bg-mv-green' : 'bg-mv-ink-faint/50 border border-mv-ink-faint'}`}
-    />
-  );
-}
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
