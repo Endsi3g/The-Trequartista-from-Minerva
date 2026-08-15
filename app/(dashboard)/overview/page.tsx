@@ -175,12 +175,14 @@ export default function OverviewPage() {
           href="/clients"
           className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green/40 hover:shadow-mv-md transition-all group"
         >
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-mv-ink-soft uppercase tracking-wider">Clients actifs</span>
-            <Users className="w-4 h-4 text-mv-green" />
+            <div className="w-8 h-8 rounded-lg bg-mv-green-tint text-mv-green flex items-center justify-center shrink-0">
+              <Users className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl font-extrabold text-mv-ink font-display">{loading ? '…' : activeClients.length}</div>
-          <div className="text-xs text-mv-ink-faint mt-1">{loading ? '' : `${moneyFmt(totalMrr)} MRR total`}</div>
+          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">{loading ? '…' : activeClients.length}</div>
+          <div className="text-xs text-mv-ink-faint mt-1 font-mono tabular-nums">{loading ? '' : `${moneyFmt(totalMrr)} MRR total`}</div>
           {!loading && <MiniDistribution segments={clientStatusSegments} />}
         </Link>
 
@@ -188,12 +190,14 @@ export default function OverviewPage() {
           href="/leads"
           className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green/40 hover:shadow-mv-md transition-all group"
         >
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-mv-ink-soft uppercase tracking-wider">Leads actifs</span>
-            <Target className="w-4 h-4 text-mv-green" />
+            <div className="w-8 h-8 rounded-lg bg-mv-green-tint text-mv-green flex items-center justify-center shrink-0">
+              <Target className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl font-extrabold text-mv-ink font-display">{loading ? '…' : activeLeads.length}</div>
-          <div className="text-xs text-mv-ink-faint mt-1">{loading ? '' : `${moneyFmt(pipelineValue)} en pipeline`}</div>
+          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">{loading ? '…' : activeLeads.length}</div>
+          <div className="text-xs text-mv-ink-faint mt-1 font-mono tabular-nums">{loading ? '' : `${moneyFmt(pipelineValue)} en pipeline`}</div>
           {!loading && <MiniDistribution segments={leadStatusSegments} />}
         </Link>
 
@@ -201,11 +205,17 @@ export default function OverviewPage() {
           href="/projects"
           className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-red/40 hover:shadow-mv-md transition-all group"
         >
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-mv-ink-soft uppercase tracking-wider">Projets en retard</span>
-            <AlertTriangle className={`w-4 h-4 ${lateProjects.length > 0 ? 'text-mv-red' : 'text-mv-ink-faint'}`} />
+            <div
+              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                lateProjects.length > 0 ? 'bg-mv-red-bg text-mv-red' : 'bg-mv-cream-soft text-mv-ink-faint'
+              }`}
+            >
+              <AlertTriangle className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl font-extrabold text-mv-ink font-display">{loading ? '…' : lateProjects.length}</div>
+          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">{loading ? '…' : lateProjects.length}</div>
           <div className="text-xs text-mv-ink-faint mt-1">
             {loading ? '' : lateProjects.length === 0 ? 'Tout est à jour' : 'à surveiller'}
           </div>
@@ -325,19 +335,19 @@ export default function OverviewPage() {
           ) : (
             <div className="flex-1 min-h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topClientsByMrr} layout="vertical" margin={{ left: 8, right: 24 }}>
+                <BarChart data={topClientsByMrr} layout="vertical" barSize={26} barCategoryGap="30%" margin={{ left: 8, right: 24 }}>
                   <XAxis type="number" hide />
                   <YAxis
                     type="category"
                     dataKey="name"
                     width={110}
-                    tick={{ fontSize: 11, fill: '#717472' }}
+                    tick={{ fontSize: 11, fill: '#717472', fontFamily: 'var(--font-mono)' }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <Tooltip
                     formatter={(value) => [moneyFmt(Number(value)), 'MRR']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #DDD9CA' }}
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #DDD9CA', fontFamily: 'var(--font-mono)' }}
                   />
                   <Bar dataKey="mrr" radius={[0, 6, 6, 0]}>
                     {topClientsByMrr.map((_, i) => (
