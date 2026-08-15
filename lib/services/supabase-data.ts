@@ -723,16 +723,22 @@ export async function fetchClientPaymentLinks(): Promise<ClientPaymentLink[]> {
 // assignee embed must disambiguate which relationship to follow --
 // PostgREST otherwise rejects the whole query as ambiguous.
 const TASK_SELECT =
-  '*, project:projects(name), client:clients(name), lead:leads(company_name, contact_name), assignee:profiles!tasks_assignee_id_fkey(full_name)';
+  '*, project:projects(name), client:clients(name), lead:leads(company_name, contact_name), assignee:profiles!tasks_assignee_id_fkey(full_name, avatar_url), subitems:task_subitems(id, done), comments:task_comments(id)';
 
 function mapTaskRow(row: Record<string, unknown>): Task {
   const lead = row.lead as { company_name?: string; contact_name?: string } | null;
+  const subitems = (row.subitems as Array<{ id: string; done: boolean }> | null) ?? [];
+  const comments = (row.comments as Array<{ id: string }> | null) ?? [];
   return {
     ...row,
     project_name: (row.project as { name?: string } | null)?.name,
     client_name: (row.client as { name?: string } | null)?.name,
     lead_name: lead ? lead.company_name || lead.contact_name : undefined,
     assignee_name: (row.assignee as { full_name?: string } | null)?.full_name,
+    assignee_avatar_url: (row.assignee as { avatar_url?: string | null } | null)?.avatar_url,
+    subitems_total: subitems.length,
+    subitems_done: subitems.filter((s) => s.done).length,
+    comments_count: comments.length,
   } as Task;
 }
 

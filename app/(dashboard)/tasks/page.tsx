@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, Calendar, User, FolderKanban, Trash2 } from 'lucide-react';
+import { Plus, Calendar, FolderKanban, Trash2, MessageSquare, ListChecks, MoreHorizontal } from 'lucide-react';
 import { fetchTasks, updateTaskStatus, deleteTask } from '@/lib/services/supabase-data';
 import { createClient } from '@/lib/supabase/client';
 import { Task } from '@/lib/types';
@@ -106,10 +106,21 @@ export default function TasksPage() {
                 className="flex flex-col w-[300px] min-w-[300px] shrink-0 bg-mv-surface/60 border border-mv-border rounded-2xl p-3"
               >
                 <div className="flex items-center justify-between mb-3 px-1">
-                  <span className="text-xs font-extrabold text-mv-ink uppercase tracking-wider">{col.label}</span>
-                  <span className="text-xs font-extrabold text-mv-ink-soft bg-mv-surface border border-mv-border px-2 py-0.5 rounded-full">
-                    {colTasks.length}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-extrabold text-mv-ink">{col.label}</span>
+                    <span className="text-[11px] font-bold text-white bg-mv-green px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none">
+                      {colTasks.length}
+                    </span>
+                  </div>
+                  {col.key === 'todo' && (
+                    <Link
+                      href="/tasks/new"
+                      className="w-6 h-6 flex items-center justify-center rounded-md text-mv-ink-faint hover:bg-mv-cream-soft hover:text-mv-ink transition-colors"
+                      title="Nouvelle tâche"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
                 </div>
 
                 <div className="flex-1 space-y-2.5 min-h-[80px]">
@@ -118,56 +129,88 @@ export default function TasksPage() {
                       Aucune tâche
                     </div>
                   ) : (
-                    colTasks.map((task) => (
+                    colTasks.map((task) => {
+                      const hasSubitems = (task.subitems_total ?? 0) > 0;
+                      return (
                       <div
                         key={task.id}
                         className="bg-mv-surface border border-mv-border rounded-xl p-3.5 shadow-mv-sm space-y-2.5 group"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <Link href={`/tasks/${task.id}`} className="text-xs font-bold text-mv-ink hover:text-mv-green transition-colors">
-                            {task.title}
-                          </Link>
-                          <button
-                            onClick={() => handleDelete(task)}
-                            className="opacity-0 group-hover:opacity-100 text-mv-ink-faint hover:text-mv-red transition-all cursor-pointer shrink-0"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                        <div className="flex items-center justify-between gap-2">
+                          {task.due_date && (
+                            <div className="flex items-center gap-1.5 text-[10px] text-mv-ink-faint font-mono">
+                              <Calendar className="w-3 h-3 shrink-0" />
+                              <span>{new Date(task.due_date).toLocaleDateString('fr-CA', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                            </div>
+                          )}
+                          <div className="relative ml-auto">
+                            <button
+                              onClick={() => handleDelete(task)}
+                              className="opacity-0 group-hover:opacity-100 text-mv-ink-faint hover:text-mv-red transition-all cursor-pointer shrink-0 p-0.5"
+                              title="Supprimer"
+                            >
+                              <MoreHorizontal className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
+
+                        <Link href={`/tasks/${task.id}`} className="block text-[13px] font-bold text-mv-ink hover:text-mv-green transition-colors">
+                          {task.title}
+                        </Link>
 
                         {task.description && (
                           <p className="text-[11px] text-mv-ink-soft line-clamp-2">{task.description}</p>
                         )}
 
-                        <div className="space-y-1 text-[11px] text-mv-ink-faint">
-                          {task.assignee_name && (
-                            <div className="flex items-center gap-1.5">
-                              <User className="w-3 h-3 shrink-0" />
-                              <span className="truncate">{task.assignee_name}</span>
+                        {(task.project_name || task.client_name || task.lead_name) && (
+                          <div className="flex items-center gap-1.5 text-[11px] text-mv-ink-faint">
+                            <FolderKanban className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{task.project_name || task.client_name || task.lead_name}</span>
+                          </div>
+                        )}
+
+                        {hasSubitems && (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[10px] text-mv-ink-faint font-mono">
+                              <span className="flex items-center gap-1"><ListChecks className="w-3 h-3" /> Sous-tâches</span>
+                              <span>{String(task.subitems_done).padStart(2, '0')}/{String(task.subitems_total).padStart(2, '0')}</span>
                             </div>
-                          )}
-                          {(task.project_name || task.client_name || task.lead_name) && (
-                            <div className="flex items-center gap-1.5">
-                              <FolderKanban className="w-3 h-3 shrink-0" />
-                              <span className="truncate">{task.project_name || task.client_name || task.lead_name}</span>
+                            <div className="w-full h-1 rounded-full bg-mv-cream-soft overflow-hidden">
+                              <div
+                                className="h-full bg-mv-green rounded-full transition-all"
+                                style={{ width: `${((task.subitems_done ?? 0) / (task.subitems_total ?? 1)) * 100}%` }}
+                              />
                             </div>
-                          )}
-                          {task.due_date && (
-                            <div className="flex items-center gap-1.5">
-                              <Calendar className="w-3 h-3 shrink-0" />
-                              <span>{new Date(task.due_date).toLocaleDateString('fr-CA')}</span>
-                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-1">
+                          <div className="flex items-center gap-3 text-[11px] text-mv-ink-faint">
+                            {(task.comments_count ?? 0) > 0 && (
+                              <span className="flex items-center gap-1">
+                                <MessageSquare className="w-3.5 h-3.5" /> {task.comments_count}
+                              </span>
+                            )}
+                          </div>
+                          {task.assignee_name ? (
+                            <img
+                              src={task.assignee_avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(task.assignee_name)}&backgroundColor=1E4B33&fontColor=ffffff`}
+                              alt={task.assignee_name}
+                              title={task.assignee_name}
+                              className="w-6 h-6 rounded-full object-cover border border-mv-border shrink-0"
+                            />
+                          ) : (
+                            <span className="w-6 h-6 rounded-full border border-dashed border-mv-border shrink-0" />
                           )}
                         </div>
 
-                        <div className="flex items-center gap-1 pt-1">
+                        <div className="flex items-center gap-1 pt-1 border-t border-mv-border-soft mt-1">
                           {STATUS_COLUMNS.map((s) => (
                             <button
                               key={s.key}
                               onClick={() => handleStatusChange(task, s.key)}
                               disabled={s.key === task.status}
-                              className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer disabled:cursor-default ${
+                              className={`flex-1 mt-2 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer disabled:cursor-default ${
                                 s.key === task.status
                                   ? 'bg-mv-green text-white'
                                   : 'bg-mv-cream-soft text-mv-ink-soft hover:text-mv-ink'
@@ -178,7 +221,8 @@ export default function TasksPage() {
                           ))}
                         </div>
                       </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>

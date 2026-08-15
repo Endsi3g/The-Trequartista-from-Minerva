@@ -58,11 +58,15 @@ export interface Task {
   lead_name?: string;
   assignee_id: string | null;
   assignee_name?: string;
+  assignee_avatar_url?: string | null;
   created_by: string | null;
   status: 'todo' | 'in_progress' | 'done';
   due_date: string | null;
   created_at: string;
   updated_at: string;
+  subitems_done?: number;
+  subitems_total?: number;
+  comments_count?: number;
 }
 
 export interface TaskSubitem {
