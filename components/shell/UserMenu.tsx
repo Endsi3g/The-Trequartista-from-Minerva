@@ -19,9 +19,12 @@ interface UserMenuProps {
   collapsed?: boolean;
   onNavigate?: () => void;
   align?: 'start' | 'end';
+  /** 'row' (default) is a plain hover row for the topbar; 'card' is a
+   * bordered profile card for the sidebar header (v2 Kanban reference). */
+  variant?: 'row' | 'card';
 }
 
-export function UserMenu({ collapsed = false, onNavigate, align = 'start' }: UserMenuProps) {
+export function UserMenu({ collapsed = false, onNavigate, align = 'start', variant = 'row' }: UserMenuProps) {
   const { fullName, email, avatarUrl, role } = useCurrentUser();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const router = useRouter();
@@ -65,7 +68,13 @@ export function UserMenu({ collapsed = false, onNavigate, align = 'start' }: Use
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-mv-cream-soft cursor-pointer">
+        <button
+          className={
+            variant === 'card'
+              ? 'flex w-full items-center gap-2.5 rounded-xl border border-mv-border bg-mv-surface px-2.5 py-2 text-left transition-colors hover:border-mv-ink-faint cursor-pointer'
+              : 'flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-mv-cream-soft cursor-pointer'
+          }
+        >
           {avatar}
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[13px] font-semibold text-mv-ink">

@@ -1,29 +1,22 @@
 import type { Metadata } from 'next';
-import { JetBrains_Mono, Playfair_Display, Plus_Jakarta_Sans } from 'next/font/google';
+import { JetBrains_Mono, Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { SupabaseRealtimeProvider } from '@/components/providers/SupabaseRealtimeProvider';
 import { ToastProvider } from '@/components/providers/ToastProvider';
 import { CurrentUserProvider } from '@/components/providers/CurrentUserProvider';
 
-// Display face (Playfair Display) and body face (Plus Jakarta Sans), loaded
-// via next/font/google and exposed as CSS variables consumed by
-// tailwind.config.js (theme.fontFamily.display / .sans). See CLAUDE.md
+// v2 (2026-08-15): single sans-serif face (Inter) for both display and
+// body -- no more serif/sans pairing. Matches the neutral, geometric-sans
+// + monospace-for-data look of the v2 reference set (see CLAUDE.md
 // Typographie for the pairing history -- check git log before assuming
-// this is still current.
+// this is still current).
 
-const playfairDisplay = Playfair_Display({
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-playfair',
+  variable: '--font-inter',
   display: 'swap',
-  weight: ['400', '600', '700', '800'],
-});
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  variable: '--font-jakarta',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700', '800'],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -68,7 +61,7 @@ export default function RootLayout({
     <html
       lang="fr"
       suppressHydrationWarning
-      className={`${playfairDisplay.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
+      className={`${inter.variable} ${jetbrainsMono.variable}`}
     >
       <head>
         <meta name="theme-color" content="#1E4B33" />

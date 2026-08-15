@@ -32,7 +32,6 @@ import {
 
 import { cn } from '@/lib/utils';
 import { useSidebarState } from '@/components/shell/SidebarState';
-import { WorkspaceSwitcher } from '@/components/shell/WorkspaceSwitcher';
 import { UserMenu } from '@/components/shell/UserMenu';
 import { useNavCounts } from '@/hooks/use-nav-counts';
 import { useRecentItems } from '@/hooks/use-recent-items';
@@ -88,6 +87,15 @@ function NavLink({ item, active, onNavigate }: { item: NavItem; active: boolean;
   );
 }
 
+function NavSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-0.5">
+      <div className="px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-faint">{label}</div>
+      <div className="space-y-0.5">{children}</div>
+    </div>
+  );
+}
+
 function CollapsibleGroup({
   label,
   defaultOpen,
@@ -135,30 +143,28 @@ export function AppSidebar() {
   const { role } = useCurrentUser();
   const isAdmin = role === 'admin';
 
-  const pinnedItems: NavItem[] = [
+  // "Menu principal" -- the everyday, always-visible actions.
+  const mainMenuItems: NavItem[] = [
     { key: 'overview', label: 'Accueil', href: '/overview', icon: LayoutDashboard },
+    { key: 'tasks', label: 'Tâches', href: '/tasks', icon: CheckSquare, count: counts.myTasks ?? undefined },
+  ];
+
+  // "Données" -- everything that's a real record/collection.
+  const dataItems: NavItem[] = [
     { key: 'clients', label: 'Clients', href: '/clients', icon: Users },
     { key: 'leads', label: 'Leads', href: '/leads', icon: Target },
     { key: 'projects', label: 'Projets', href: '/projects', icon: FolderKanban },
     { key: 'team', label: 'Équipe', href: '/team', icon: UsersRound, isNew: true },
-  ];
-
-  const contentItems: NavItem[] = [
     { key: 'reels', label: 'Réels', href: '/content-planner', icon: Clapperboard },
     { key: 'academy', label: 'Académie', href: '/academy', icon: GraduationCap },
+    ...(isAdmin
+      ? [
+          { key: 'workload', label: 'Charge de travail', href: '/team/workload', icon: Gauge } as NavItem,
+          { key: 'acquisition', label: 'Acquisition', href: '/acquisition', icon: Sparkles } as NavItem,
+          { key: 'audits', label: 'Audits', href: '/audits', icon: ClipboardCheck } as NavItem,
+        ]
+      : []),
   ];
-
-  const opsItems: NavItem[] = [
-    { key: 'tasks', label: 'Tâches', href: '/tasks', icon: CheckSquare, count: counts.myTasks ?? undefined },
-    ...(isAdmin ? [{ key: 'workload', label: 'Charge de travail', href: '/team/workload', icon: Gauge } as NavItem] : []),
-  ];
-
-  const growthItems: NavItem[] = isAdmin
-    ? [
-        { key: 'acquisition', label: 'Acquisition', href: '/acquisition', icon: Sparkles },
-        { key: 'audits', label: 'Audits', href: '/audits', icon: ClipboardCheck },
-      ]
-    : [];
 
   const settingsItems: NavItem[] = [
     { key: 'profil', label: 'Profil', href: '/profil', icon: User },
@@ -179,67 +185,49 @@ export function AppSidebar() {
 
   const body = (
     <div className="flex h-full w-[232px] min-w-[232px] flex-col bg-mv-cream-soft">
-      {/* Header — workspace switcher */}
-      <div className="flex h-16 items-center border-b border-mv-border px-3">
-        <WorkspaceSwitcher />
+      {/* Header — personal profile card (avatar + name + email), opens the
+          account menu via UserMenu's dropdown content. */}
+      <div className="border-b border-mv-border px-2 py-2.5">
+        <UserMenu onNavigate={closeOnNavigate} variant="card" />
       </div>
 
       {/* Nav */}
       <div className="flex-1 space-y-4 overflow-y-auto px-2.5 py-3">
-        <div className="space-y-0.5">
-          {pinnedItems.map((item) => (
+        <NavSection label="Menu principal">
+          {mainMenuItems.map((item) => (
             <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
           ))}
-        </div>
+        </NavSection>
 
-        <CollapsibleGroup label="Contenu & Créatif" defaultOpen>
-          {contentItems.map((item) => (
+        <NavSection label="Données">
+          {dataItems.map((item) => (
             <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
           ))}
-        </CollapsibleGroup>
-
-        <CollapsibleGroup label="Pilotage & Opérations" defaultOpen>
-          {opsItems.map((item) => (
-            <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
-          ))}
-        </CollapsibleGroup>
-
-        {growthItems.length > 0 && (
-          <CollapsibleGroup label="Croissance & Acquisition" defaultOpen>
-            {growthItems.map((item) => (
-              <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
-            ))}
-          </CollapsibleGroup>
-        )}
+        </NavSection>
 
         {/* Aujourd'hui — clients/projets créés le plus récemment (données réelles) */}
         {recentItems.length > 0 && (
-          <div className="space-y-0.5">
-            <div className="px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-faint">
-              Aujourd&apos;hui
-            </div>
-            <div className="space-y-0.5">
-              {recentItems.map((item) => (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  onClick={closeOnNavigate}
-                  className="flex items-center gap-2.5 rounded-md px-2.5 py-1 text-xs text-mv-ink-soft hover:bg-mv-cream hover:text-mv-ink transition-colors truncate"
-                >
-                  {item.id.startsWith('client-') ? (
-                    <Users size={13} className="shrink-0 opacity-60" />
-                  ) : (
-                    <FileText size={13} className="shrink-0 opacity-60" />
-                  )}
-                  <span className="truncate">{item.name}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
+          <NavSection label="Aujourd'hui">
+            {recentItems.map((item) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                onClick={closeOnNavigate}
+                className="flex items-center gap-2.5 rounded-md px-2.5 py-1 text-xs text-mv-ink-soft hover:bg-mv-cream hover:text-mv-ink transition-colors truncate"
+              >
+                {item.id.startsWith('client-') ? (
+                  <Users size={13} className="shrink-0 opacity-60" />
+                ) : (
+                  <FileText size={13} className="shrink-0 opacity-60" />
+                )}
+                <span className="truncate">{item.name}</span>
+              </Link>
+            ))}
+          </NavSection>
         )}
       </div>
 
-      {/* Footer — Démarrage (real onboarding progress), settings accordion + account menu */}
+      {/* Footer — Démarrage (real onboarding progress) + compact settings group */}
       <div className="border-t border-mv-border p-2 space-y-1">
         {!onboardingLoading && onboardingTotal > 0 && !onboardingComplete && (
           <div className="relative">
@@ -301,12 +289,11 @@ export function AppSidebar() {
             </button>
           </div>
         )}
-        <CollapsibleGroup label="Paramètres & Plus" defaultOpen={false}>
+        <CollapsibleGroup label="Paramètres" defaultOpen={false}>
           {settingsItems.map((item) => (
             <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
           ))}
         </CollapsibleGroup>
-        <UserMenu onNavigate={closeOnNavigate} />
       </div>
     </div>
   );

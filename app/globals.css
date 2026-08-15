@@ -21,13 +21,12 @@
     --mv-warm-dark: #c6c3b7;
     --mv-warm-tint: #f8f7f2;
 
-    /* mv-cream stays the warm ivory tone for standalone full-bleed moments
-       (login, onboarding) -- the working app chrome below is Minerva
-       Reach's literal neutral white/grey app shell (their root div is a
-       plain bg-white with a #f4f4f3 sidebar and #e5e5e0 borders, not the
-       cream tokens), so mv-cream-soft/mv-surface/mv-border are pinned to
-       those exact literals rather than derived from the cream family. */
-    --mv-cream: #F0EDE0;
+    /* v2 direction (2026-08-15): the app moved off the warm Forêt & Crème
+       ivory entirely -- every full-bleed surface, not just the working app
+       chrome, is now neutral white/grey, with green as the sole surviving
+       accent (buttons, active states, links). Don't reintroduce a warm/
+       cream tint here without re-checking that decision first. */
+    --mv-cream: #fafaf9;
     --mv-cream-soft: #f4f4f3;
     --mv-surface: #ffffff;
 
@@ -134,7 +133,7 @@
   body {
     background-color: var(--mv-surface);
     color: var(--mv-ink);
-    font-family: var(--font-jakarta), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     font-feature-settings: "ss01" 1, "cv05" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
