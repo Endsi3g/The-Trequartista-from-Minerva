@@ -25,8 +25,8 @@ export function BarChart({
   title,
   subtitle,
   height = 200,
-  color = '#167f5b',
-  secondaryColor = '#ab7d1f',
+  color = '#1E4B33',
+  secondaryColor = '#E8A33D',
   valuePrefix = '',
   valueSuffix = '',
 }: BarChartProps) {
@@ -110,7 +110,7 @@ export function BarChart({
                   width={barWidth}
                   height={barH}
                   rx="4"
-                  fill={isHovered ? '#0e5a40' : color}
+                  fill={isHovered ? '#153524' : color}
                   className="transition-all duration-200"
                 />
 
@@ -133,7 +133,7 @@ export function BarChart({
                       width="90"
                       height="22"
                       rx="4"
-                      fill="#1a1e16"
+                      fill="#1a1f1c"
                     />
                     <text
                       x={centerX}

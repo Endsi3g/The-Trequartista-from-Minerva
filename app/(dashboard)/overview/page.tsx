@@ -24,7 +24,7 @@ import { fetchProjects, fetchClients, fetchLeads } from '@/lib/services/supabase
 import type { Project, Client, Lead } from '@/lib/types';
 import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
 
-const GREEN_SHADES = ['#167f5b', '#1c9a6f', '#4da37e', '#8fc7a9', '#c7e1d0'];
+const GREEN_SHADES = ['#1E4B33', '#3d7a5a', '#6ba585', '#a8c9b8', '#c0cdc6'];
 
 function moneyFmt(n: number) {
   return `${Math.round(n).toLocaleString('fr-CA')} $`;
@@ -130,23 +130,23 @@ export default function OverviewPage() {
   });
 
   const clientStatusSegments: Segment[] = [
-    { label: 'Actifs', value: clients.filter((c) => c.status === 'Active').length, color: '#167f5b' },
-    { label: 'Onboarding', value: clients.filter((c) => c.status === 'Onboarding').length, color: '#ab7d1f' },
-    { label: 'En pause', value: clients.filter((c) => c.status === 'Paused').length, color: '#b3b8a9' },
-    { label: 'Archivés', value: clients.filter((c) => c.status === 'Archived').length, color: '#e6e0d0' },
+    { label: 'Actifs', value: clients.filter((c) => c.status === 'Active').length, color: '#1E4B33' },
+    { label: 'Onboarding', value: clients.filter((c) => c.status === 'Onboarding').length, color: '#E8A33D' },
+    { label: 'En pause', value: clients.filter((c) => c.status === 'Paused').length, color: '#cdcecd' },
+    { label: 'Archivés', value: clients.filter((c) => c.status === 'Archived').length, color: '#DDD9CA' },
   ];
 
   const leadStatusSegments: Segment[] = [
-    { label: 'Nouveau', value: leads.filter((l) => l.status === 'Nouveau').length, color: '#b3b8a9' },
-    { label: 'Contacté', value: leads.filter((l) => l.status === 'Contacté').length, color: '#ab7d1f' },
+    { label: 'Nouveau', value: leads.filter((l) => l.status === 'Nouveau').length, color: '#cdcecd' },
+    { label: 'Contacté', value: leads.filter((l) => l.status === 'Contacté').length, color: '#E8A33D' },
     { label: 'RDV Fixé', value: leads.filter((l) => l.status === 'RDV Fixé').length, color: '#4da37e' },
-    { label: 'Gagné', value: leads.filter((l) => l.status === 'Gagné').length, color: '#167f5b' },
+    { label: 'Gagné', value: leads.filter((l) => l.status === 'Gagné').length, color: '#1E4B33' },
   ];
 
   const projectHealthSegments: Segment[] = [
-    { label: 'Prêt', value: projects.filter((p) => p.health === 'Ready').length, color: '#167f5b' },
-    { label: 'En cours', value: projects.filter((p) => p.health === 'On Track').length, color: '#ab7d1f' },
-    { label: 'À revoir', value: projects.filter((p) => p.health === 'Needs Review').length, color: '#b5473a' },
+    { label: 'Prêt', value: projects.filter((p) => p.health === 'Ready').length, color: '#1E4B33' },
+    { label: 'En cours', value: projects.filter((p) => p.health === 'On Track').length, color: '#E8A33D' },
+    { label: 'À revoir', value: projects.filter((p) => p.health === 'Needs Review').length, color: '#cf2d56' },
   ];
 
   const topClientsByMrr = [...activeClients]
@@ -330,13 +330,13 @@ export default function OverviewPage() {
                     type="category"
                     dataKey="name"
                     width={110}
-                    tick={{ fontSize: 11, fill: '#565f52' }}
+                    tick={{ fontSize: 11, fill: '#717472' }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <Tooltip
                     formatter={(value) => [moneyFmt(Number(value)), 'MRR']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e6e0d0' }}
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #DDD9CA' }}
                   />
                   <Bar dataKey="mrr" radius={[0, 6, 6, 0]}>
                     {topClientsByMrr.map((_, i) => (

@@ -1,9 +1,12 @@
 'use client';
 
 import React from 'react';
-import { ChevronDown, Check, Plus } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ChevronDown, Check, Plus, User, LogOut } from 'lucide-react';
 import { LogoMark } from './Logo';
 import { useCurrentUser } from '@/hooks/use-current-user';
+import { createClient } from '@/lib/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,11 +27,18 @@ interface WorkspaceSwitcherProps {
 
 export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps) {
   const { role } = useCurrentUser();
+  const router = useRouter();
   // The workspace shown here IS the current user's role — once chantier
   // équipe lands, each role (admin, prospecteur, etc.) becomes its own
   // workspace with its own nav. For now there's just the one, named after
   // whatever role the signed-in profile actually has.
   const workspaceName = ROLE_LABELS[role] || role || 'Espace de travail';
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
 
   if (collapsed) {
     return <LogoMark size={26} />;
@@ -51,9 +61,20 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
           <Check size={14} className="text-mv-green" />
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/profil" className="flex items-center gap-2.5">
+            <User size={14} />
+            <span>Mon profil</span>
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem disabled className="flex items-center gap-2.5 text-mv-ink-faint">
           <Plus size={14} />
           <span>Nouvel espace (bientôt)</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2.5 text-mv-red">
+          <LogOut size={14} />
+          <span>Déconnexion</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

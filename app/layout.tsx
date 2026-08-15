@@ -1,25 +1,26 @@
 import type { Metadata } from 'next';
-import { JetBrains_Mono, Sora, Inter } from 'next/font/google';
+import { JetBrains_Mono, Playfair_Display, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { SupabaseRealtimeProvider } from '@/components/providers/SupabaseRealtimeProvider';
 import { ToastProvider } from '@/components/providers/ToastProvider';
 
-// Display face (Sora) and body face (Inter), loaded via next/font/google
-// and exposed as CSS variables consumed by tailwind.config.js
-// (theme.fontFamily.display / .sans). See CLAUDE.md Typographie for the
-// pairing history -- check git log before assuming this is still current.
+// Display face (Playfair Display) and body face (Plus Jakarta Sans), loaded
+// via next/font/google and exposed as CSS variables consumed by
+// tailwind.config.js (theme.fontFamily.display / .sans). See CLAUDE.md
+// Typographie for the pairing history -- check git log before assuming
+// this is still current.
 
-const sora = Sora({
+const playfairDisplay = Playfair_Display({
   subsets: ['latin'],
-  variable: '--font-sora',
+  variable: '--font-playfair',
   display: 'swap',
   weight: ['400', '600', '700', '800'],
 });
 
-const inter = Inter({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-jakarta',
   display: 'swap',
   weight: ['400', '500', '600', '700'],
 });
@@ -66,10 +67,10 @@ export default function RootLayout({
     <html
       lang="fr"
       suppressHydrationWarning
-      className={`${sora.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${playfairDisplay.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
     >
       <head>
-        <meta name="theme-color" content="#167f5b" />
+        <meta name="theme-color" content="#1E4B33" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         {/* Anti-flash: read theme from localStorage before first paint */}

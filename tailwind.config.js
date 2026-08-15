@@ -67,14 +67,14 @@ module.exports = {
   		},
   		fontFamily: {
   			display: [
-  				'var(--font-sora)',
-  				'Sora',
-  				'-apple-system',
-  				'sans-serif'
+  				'var(--font-playfair)',
+  				'Playfair Display',
+  				'Georgia',
+  				'serif'
   			],
   			sans: [
-  				'var(--font-inter)',
-  				'Inter',
+  				'var(--font-jakarta)',
+  				'Plus Jakarta Sans',
   				'-apple-system',
   				'sans-serif'
   			],

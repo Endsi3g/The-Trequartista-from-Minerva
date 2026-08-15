@@ -39,6 +39,8 @@ export interface ChangelogEntry {
   title: string;
   body: string;
   image_url: string | null;
+  version: string | null;
+  included_items: string[];
   created_by: string | null;
   author_name?: string;
   created_at: string;

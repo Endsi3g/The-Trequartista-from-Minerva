@@ -43,7 +43,7 @@ export function AppBreadcrumb() {
     <nav className="flex items-center gap-1.5 text-xs text-mv-ink-soft">
       <Link
         href="/overview"
-        className="flex items-center gap-1 hover:text-mv-green transition-colors shrink-0"
+        className="flex items-center gap-2 hover:text-mv-green transition-colors shrink-0"
       >
         <Home className="w-3.5 h-3.5" />
         <span>Minerva</span>

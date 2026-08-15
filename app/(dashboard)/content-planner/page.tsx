@@ -19,10 +19,10 @@ import { useToast } from '@/components/providers/ToastProvider';
 
 const KANBAN_STAGES: ContentPost['status'][] = ['Idéation', 'Rédigé', 'Enregistré', 'Publié'];
 const PLATFORM_COLORS: Record<string, string> = {
-  Instagram: '#167f5b',
+  Instagram: '#1E4B33',
   TikTok: '#dfff5f',
-  'YouTube Shorts': '#ab7d1f',
-  LinkedIn: '#0e5a40',
+  'YouTube Shorts': '#E8A33D',
+  LinkedIn: '#153524',
 };
 
 function ContentCard({ post, onDragStart }: { post: ContentPost; onDragStart?: (e: React.DragEvent, postId: string) => void }) {

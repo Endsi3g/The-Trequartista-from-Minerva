@@ -900,6 +900,8 @@ export async function addChangelogEntry(entry: {
   title: string;
   body: string;
   image_url?: string | null;
+  version?: string | null;
+  included_items?: string[];
   created_by: string;
 }): Promise<ChangelogEntry | null> {
   const { data, error } = await getSupabase().from('changelog_entries').insert([entry]).select().single();

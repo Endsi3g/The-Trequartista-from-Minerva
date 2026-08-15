@@ -7,12 +7,12 @@ import type { AuditWithFindings } from '@/lib/types';
 // a real prospect, so reliability wins over an exact Sora/Inter brand
 // match. Revisit if real font files get bundled into the repo.
 const styles = StyleSheet.create({
-  page: { padding: 40, fontFamily: 'Helvetica', fontSize: 10, color: '#1a1e16' },
-  header: { marginBottom: 24, borderBottom: '2 solid #167f5b', paddingBottom: 12 },
-  brand: { fontSize: 18, fontFamily: 'Helvetica-Bold', color: '#167f5b' },
+  page: { padding: 40, fontFamily: 'Helvetica', fontSize: 10, color: '#1a1f1c' },
+  header: { marginBottom: 24, borderBottom: '2 solid #1E4B33', paddingBottom: 12 },
+  brand: { fontSize: 18, fontFamily: 'Helvetica-Bold', color: '#1E4B33' },
   tagline: { fontSize: 9, color: '#6b6f63', marginTop: 2 },
   h1: { fontSize: 16, fontFamily: 'Helvetica-Bold', marginTop: 20, marginBottom: 4 },
-  h2: { fontSize: 12, fontFamily: 'Helvetica-Bold', marginTop: 16, marginBottom: 8, color: '#167f5b' },
+  h2: { fontSize: 12, fontFamily: 'Helvetica-Bold', marginTop: 16, marginBottom: 8, color: '#1E4B33' },
   para: { fontSize: 10, lineHeight: 1.5, marginBottom: 6 },
   quote: { fontSize: 9, fontStyle: 'italic', color: '#6b6f63', marginBottom: 4, paddingLeft: 8, borderLeft: '2 solid #dfff5f' },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottom: '0.5 solid #e5e3da' },
@@ -20,13 +20,13 @@ const styles = StyleSheet.create({
   rowValue: { fontSize: 9, fontFamily: 'Helvetica-Bold' },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 10, marginTop: 4 },
   totalLabel: { fontSize: 11, fontFamily: 'Helvetica-Bold' },
-  totalValue: { fontSize: 14, fontFamily: 'Helvetica-Bold', color: '#167f5b' },
+  totalValue: { fontSize: 14, fontFamily: 'Helvetica-Bold', color: '#1E4B33' },
   initiative: { marginBottom: 8, padding: 8, backgroundColor: '#f7f6f0' },
   initiativeTitle: { fontSize: 10, fontFamily: 'Helvetica-Bold' },
   badges: { flexDirection: 'row', gap: 6, marginTop: 4 },
-  badge: { fontSize: 8, backgroundColor: '#dfff5f', color: '#1a1e16', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  badge: { fontSize: 8, backgroundColor: '#dfff5f', color: '#1a1f1c', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   footer: { position: 'absolute', bottom: 30, left: 40, right: 40, fontSize: 8, color: '#a8ab9f', textAlign: 'center', borderTop: '0.5 solid #e5e3da', paddingTop: 8 },
-  cta: { marginTop: 24, padding: 14, backgroundColor: '#167f5b', color: '#ffffff', textAlign: 'center' },
+  cta: { marginTop: 24, padding: 14, backgroundColor: '#1E4B33', color: '#ffffff', textAlign: 'center' },
   ctaText: { fontSize: 11, fontFamily: 'Helvetica-Bold', color: '#ffffff' },
 });
 

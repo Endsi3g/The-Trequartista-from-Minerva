@@ -13,8 +13,10 @@ import {
   BookOpen,
   Database,
   FileText,
+  Download,
 } from 'lucide-react';
 import type { NotionPage } from '@/lib/types';
+import { useCurrentUser } from '@/hooks/use-current-user';
 
 type ConnectionState = 'idle' | 'testing' | 'success' | 'error';
 
@@ -53,6 +55,10 @@ export default function NotionIntegrationPage() {
   const [selectedPages, setSelectedPages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const { role } = useCurrentUser();
+  const isAdmin = role === 'admin';
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: string[]; failed: string[] } | null>(null);
 
   // Load existing config from Supabase
   useEffect(() => {
@@ -129,6 +135,33 @@ export default function NotionIntegrationPage() {
       console.error(err);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!result?.valid || selectedPages.length === 0) return;
+    setIsImporting(true);
+    setImportResult(null);
+    try {
+      const selected = result.pages.filter((p) => selectedPages.includes(p.id));
+      const res = await fetch('/api/integrations/notion/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: token.trim(),
+          pages: selected.map((p) => ({ id: p.id, title: p.title })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setImportResult({ imported: [], failed: [data.error || 'Erreur inconnue'] });
+      } else {
+        setImportResult(data);
+      }
+    } catch {
+      setImportResult({ imported: [], failed: ['Erreur réseau.'] });
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -293,6 +326,34 @@ export default function NotionIntegrationPage() {
               : `Enregistrer ${selectedPages.length} page${selectedPages.length > 1 ? 's' : ''}`
             }
           </button>
+
+          {isAdmin && (
+            <button
+              onClick={handleImport}
+              disabled={selectedPages.length === 0 || isImporting}
+              className="w-full py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink text-sm font-bold hover:bg-mv-green-tint hover:border-mv-green/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+            >
+              {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {isImporting
+                ? 'Import en cours…'
+                : `Importer ${selectedPages.length} page${selectedPages.length > 1 ? 's' : ''} dans l'Académie`}
+            </button>
+          )}
+
+          {importResult && (
+            <div className="space-y-2 text-xs">
+              {importResult.imported.length > 0 && (
+                <div className="p-3 rounded-xl bg-mv-green-tint border border-mv-green/30 text-mv-green">
+                  <strong>{importResult.imported.length}</strong> SOP{importResult.imported.length > 1 ? 's' : ''} importée{importResult.imported.length > 1 ? 's' : ''} : {importResult.imported.join(', ')}
+                </div>
+              )}
+              {importResult.failed.length > 0 && (
+                <div className="p-3 rounded-xl bg-mv-red-bg border border-mv-red/30 text-mv-red">
+                  Échec pour : {importResult.failed.join(', ')}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

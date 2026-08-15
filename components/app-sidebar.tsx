@@ -9,11 +9,24 @@ import {
   LayoutDashboard,
   Target,
   Users,
+  UsersRound,
   FolderKanban,
   Clapperboard,
   GraduationCap,
   ChevronDown,
+  ChevronUp,
   CheckSquare,
+  CheckCircle2,
+  Circle,
+  Gauge,
+  Sparkles,
+  ClipboardCheck,
+  FileText,
+  User,
+  Bell,
+  HelpCircle,
+  Megaphone,
+  CreditCard,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -22,10 +35,13 @@ import { useSidebarState } from '@/components/shell/SidebarState';
 import { WorkspaceSwitcher } from '@/components/shell/WorkspaceSwitcher';
 import { UserMenu } from '@/components/shell/UserMenu';
 import { useNavCounts } from '@/hooks/use-nav-counts';
+import { useRecentItems } from '@/hooks/use-recent-items';
+import { useCurrentUser } from '@/hooks/use-current-user';
+import { useOnboardingChecklist } from '@/hooks/use-onboarding-checklist';
 
 // Sized to fit the nav labels themselves (short French words + icon + a
 // badge) with a little breathing room -- not an arbitrary wide default.
-const SIDEBAR_WIDTH = 212;
+const SIDEBAR_WIDTH = 232;
 
 // Set isNew: true on an item to flag it as a freshly-launched section —
 // shows a small "Nouveau" pill until you remove the flag (no auto-expiry,
@@ -52,7 +68,7 @@ function NavLink({ item, active, onNavigate }: { item: NavItem; active: boolean;
         <span
           className={cn(
             'shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide leading-none',
-            active ? 'bg-white/20 text-white' : 'bg-mv-amber-bg text-mv-amber'
+            active ? 'bg-white/20 text-white' : 'bg-mv-green-tint text-mv-green'
           )}
         >
           Nouveau
@@ -115,13 +131,16 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { collapsed, isMobile, mobileOpen, setMobileOpen, closeOnNavigate } = useSidebarState();
   const counts = useNavCounts();
+  const recentItems = useRecentItems(4);
+  const { role } = useCurrentUser();
+  const isAdmin = role === 'admin';
 
-  const coreItems: NavItem[] = [
-    { key: 'overview', label: 'Aperçu', href: '/overview', icon: LayoutDashboard },
-    { key: 'leads', label: 'Leads', href: '/leads', icon: Target, count: counts.leads ?? undefined },
-    { key: 'clients', label: 'Clients', href: '/clients', icon: Users, count: counts.clients ?? undefined },
-    { key: 'projects', label: 'Projets', href: '/projects', icon: FolderKanban, count: counts.projects ?? undefined },
-    { key: 'tasks', label: 'Tâches', href: '/tasks', icon: CheckSquare, count: counts.myTasks ?? undefined, isNew: true },
+  const pinnedItems: NavItem[] = [
+    { key: 'overview', label: 'Accueil', href: '/overview', icon: LayoutDashboard },
+    { key: 'clients', label: 'Clients', href: '/clients', icon: Users },
+    { key: 'leads', label: 'Leads', href: '/leads', icon: Target },
+    { key: 'projects', label: 'Projets', href: '/projects', icon: FolderKanban },
+    { key: 'team', label: 'Équipe', href: '/team', icon: UsersRound, isNew: true },
   ];
 
   const contentItems: NavItem[] = [
@@ -129,34 +148,164 @@ export function AppSidebar() {
     { key: 'academy', label: 'Académie', href: '/academy', icon: GraduationCap },
   ];
 
+  const opsItems: NavItem[] = [
+    { key: 'tasks', label: 'Tâches', href: '/tasks', icon: CheckSquare, count: counts.myTasks ?? undefined },
+    ...(isAdmin ? [{ key: 'workload', label: 'Charge de travail', href: '/team/workload', icon: Gauge } as NavItem] : []),
+  ];
+
+  const growthItems: NavItem[] = isAdmin
+    ? [
+        { key: 'acquisition', label: 'Acquisition', href: '/acquisition', icon: Sparkles },
+        { key: 'audits', label: 'Audits', href: '/audits', icon: ClipboardCheck },
+      ]
+    : [];
+
+  const settingsItems: NavItem[] = [
+    { key: 'profil', label: 'Profil', href: '/profil', icon: User },
+    { key: 'members', label: 'Membres', href: '/team', icon: Users },
+    { key: 'notifications', label: 'Notifications', href: '/settings/notifications', icon: Bell },
+    { key: 'help', label: 'Aide', href: '/help', icon: HelpCircle },
+    { key: 'changelog', label: 'Nouveautés', href: '/changelog', icon: Megaphone },
+    ...(isAdmin ? [{ key: 'billing', label: 'Facturation', href: '/settings/billing', icon: CreditCard } as NavItem] : []),
+  ];
+
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
+  const { steps: onboardingSteps, doneCount, total: onboardingTotal, loading: onboardingLoading } =
+    useOnboardingChecklist();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const onboardingPct = onboardingTotal > 0 ? Math.round((doneCount / onboardingTotal) * 100) : 0;
+  const onboardingComplete = onboardingTotal > 0 && doneCount === onboardingTotal;
+
   const body = (
-    <div className="flex h-full w-[212px] min-w-[212px] flex-col bg-mv-cream-soft">
+    <div className="flex h-full w-[232px] min-w-[232px] flex-col bg-mv-cream-soft">
       {/* Header — workspace switcher */}
       <div className="flex h-16 items-center border-b border-mv-border px-3">
         <WorkspaceSwitcher />
       </div>
 
-      {/* Nav — few enough items right now that everything just stays
-          expanded and nothing needs to scroll. Revisit (re-add
-          overflow-y-auto, default groups to collapsed) once the nav grows. */}
-      <div className="flex-1 space-y-4 px-2.5 py-3">
+      {/* Nav */}
+      <div className="flex-1 space-y-4 overflow-y-auto px-2.5 py-3">
         <div className="space-y-0.5">
-          {coreItems.map((item) => (
+          {pinnedItems.map((item) => (
             <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
           ))}
         </div>
 
-        <CollapsibleGroup label="Contenu" defaultOpen>
+        <CollapsibleGroup label="Contenu & Créatif" defaultOpen>
           {contentItems.map((item) => (
             <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
           ))}
         </CollapsibleGroup>
+
+        <CollapsibleGroup label="Pilotage & Opérations" defaultOpen>
+          {opsItems.map((item) => (
+            <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
+          ))}
+        </CollapsibleGroup>
+
+        {growthItems.length > 0 && (
+          <CollapsibleGroup label="Croissance & Acquisition" defaultOpen>
+            {growthItems.map((item) => (
+              <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
+            ))}
+          </CollapsibleGroup>
+        )}
+
+        {/* Aujourd'hui — clients/projets créés le plus récemment (données réelles) */}
+        {recentItems.length > 0 && (
+          <div className="space-y-0.5">
+            <div className="px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-faint">
+              Aujourd&apos;hui
+            </div>
+            <div className="space-y-0.5">
+              {recentItems.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  onClick={closeOnNavigate}
+                  className="flex items-center gap-2.5 rounded-md px-2.5 py-1 text-xs text-mv-ink-soft hover:bg-mv-cream hover:text-mv-ink transition-colors truncate"
+                >
+                  {item.id.startsWith('client-') ? (
+                    <Users size={13} className="shrink-0 opacity-60" />
+                  ) : (
+                    <FileText size={13} className="shrink-0 opacity-60" />
+                  )}
+                  <span className="truncate">{item.name}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Footer — user menu */}
-      <div className="border-t border-mv-border p-2">
+      {/* Footer — Démarrage (real onboarding progress), settings accordion + account menu */}
+      <div className="border-t border-mv-border p-2 space-y-1">
+        {!onboardingLoading && onboardingTotal > 0 && !onboardingComplete && (
+          <div className="relative">
+            <AnimatePresence>
+              {showOnboarding && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute bottom-full left-0 right-0 mb-2 p-3 bg-mv-surface border border-mv-border rounded-lg shadow-mv-md space-y-2.5 z-50"
+                >
+                  <div className="flex items-center justify-between border-b border-mv-border pb-1.5">
+                    <span className="text-xs font-bold text-mv-ink">Bien démarrer</span>
+                    <span className="text-[10px] font-semibold text-mv-green bg-mv-green-tint px-1.5 py-0.5 rounded">
+                      {onboardingPct}% fait
+                    </span>
+                  </div>
+                  <ul className="space-y-1.5 max-h-[180px] overflow-y-auto">
+                    {onboardingSteps.map((step) => (
+                      <li key={step.key}>
+                        <Link
+                          href={step.href}
+                          onClick={closeOnNavigate}
+                          className="flex items-start gap-2 text-xs text-mv-ink-soft hover:text-mv-ink"
+                        >
+                          {step.done ? (
+                            <CheckCircle2 size={14} className="text-mv-green shrink-0 mt-0.5" />
+                          ) : (
+                            <Circle size={14} className="text-mv-ink-faint shrink-0 mt-0.5" />
+                          )}
+                          <span className={cn('truncate', step.done && 'line-through text-mv-ink-faint')}>
+                            {step.label}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <button
+              type="button"
+              onClick={() => setShowOnboarding((v) => !v)}
+              className="w-full text-left p-2.5 bg-mv-surface border border-mv-border hover:border-mv-ink-faint rounded-md flex flex-col gap-1.5 cursor-pointer transition-colors"
+            >
+              <div className="flex items-center justify-between text-xs font-bold text-mv-ink">
+                <span>Démarrage</span>
+                <motion.span animate={{ rotate: showOnboarding ? 180 : 0 }} transition={{ duration: 0.15 }}>
+                  <ChevronUp size={12} className="text-mv-ink-faint" />
+                </motion.span>
+              </div>
+              <div className="text-[10px] text-mv-ink-soft">
+                {onboardingPct}% fait <span className="text-mv-green">• En cours</span>
+              </div>
+              <div className="w-full bg-mv-cream-soft h-1 rounded-full overflow-hidden">
+                <div className="bg-mv-green h-full rounded-full transition-all duration-500" style={{ width: `${onboardingPct}%` }} />
+              </div>
+            </button>
+          </div>
+        )}
+        <CollapsibleGroup label="Paramètres & Plus" defaultOpen={false}>
+          {settingsItems.map((item) => (
+            <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
+          ))}
+        </CollapsibleGroup>
         <UserMenu onNavigate={closeOnNavigate} />
       </div>
     </div>

@@ -15,7 +15,8 @@ export function LoginForm() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('next') || '/overview';
+  const explicitRedirect = searchParams.get('next');
+  const redirectTo = explicitRedirect || '/overview';
   const supabase = createClient();
 
   const handleGoogleSso = async () => {
@@ -46,13 +47,22 @@ export function LoginForm() {
     const normalizedEmail = email.trim().toLowerCase();
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+      const { data: authData, error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
       if (error) {
         setErrorMsg(error.message);
         setLoading(false);
         return;
       }
-      window.location.href = redirectTo;
+
+      // Honor the member's chosen default landing view (set during
+      // onboarding) unless the URL explicitly asked for somewhere else
+      // (e.g. a deep link that expired the session).
+      let target = redirectTo;
+      if (!explicitRedirect && authData.user) {
+        const { data: profile } = await supabase.from('profiles').select('default_view').eq('id', authData.user.id).maybeSingle();
+        if (profile?.default_view) target = profile.default_view;
+      }
+      window.location.href = target;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur de connexion. Veuillez réessayer.';
       setErrorMsg(msg);

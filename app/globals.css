@@ -3,44 +3,47 @@
 @tailwind utilities;
 
 @layer base {
-  /* ── Light Mode (default) — Couleurs EXACTES Minerva-Flow ── */
+  /* ── Light Mode (default) — Couleurs EXACTES Minerva OS Lite / Minerva Reach
+     (Forêt & Crème) — mv-green/mv-cream/mv-warm/mv-ink/mv-border repris 1:1
+     depuis lib/themes.ts du repo Endsi3g/minerva-os-lite-desktop ; les
+     nuances dérivées (dark/darker/light/tint/soft) conservent les ratios
+     de la palette d'origine, recalculés sur cette nouvelle base. ── */
   :root {
     color-scheme: light;
 
-    /* Brand — pixel-perfect from Minerva-Flow globals.css */
-    --mv-green: #167f5b;
-    --mv-green-dark: #0e5a40;
-    --mv-green-darker: #0a4531;
-    --mv-green-light: #dcece3;
-    --mv-green-tint: #eef5f0;
+    --mv-green: #1E4B33;
+    --mv-green-dark: #153524;
+    --mv-green-darker: #0f261a;
+    --mv-green-light: #dce3df;
+    --mv-green-tint: #edf0ee;
 
-    --mv-warm: #f0efe8;
-    --mv-warm-dark: #c8c5b8;
-    --mv-warm-tint: #f8f7f3;
+    --mv-warm: #EAE7D9;
+    --mv-warm-dark: #c6c3b7;
+    --mv-warm-tint: #f8f7f2;
 
-    --mv-cream: #f7f4ec;
-    --mv-cream-soft: #fbf9f3;
-    --mv-surface: #fdfcf8;
+    --mv-cream: #F0EDE0;
+    --mv-cream-soft: #f7f5ee;
+    --mv-surface: #FAFAF5;
 
-    --mv-ink: #1a1e16;
-    --mv-ink-soft: #565f52;
-    --mv-ink-faint: #8d9488;
-    --mv-ink-mute: #b3b8a9;
+    --mv-ink: #1a1f1c;
+    --mv-ink-soft: #717472;
+    --mv-ink-faint: #a8aaa9;
+    --mv-ink-mute: #cdcecd;
 
-    --mv-border: #e6e0d0;
-    --mv-border-soft: #eee9db;
+    --mv-border: #DDD9CA;
+    --mv-border-soft: #dfdbcc;
 
-    --mv-red: #b5473a;
-    --mv-red-bg: #f8ece8;
-    --mv-amber: #ab7d1f;
-    --mv-amber-bg: #f6efd9;
+    --mv-red: #cf2d56;
+    --mv-red-bg: #faeaee;
+    --mv-amber: #E8A33D;
+    --mv-amber-bg: #fcf2e4;
 
-    /* Revenue-intensity heatmap scale */
-    --mv-heat-1: #ede7d6;
-    --mv-heat-2: #c7e1d0;
-    --mv-heat-3: #8fc7a9;
-    --mv-heat-4: #4da37e;
-    --mv-heat-5: #167f5b;
+    /* Revenue-intensity heatmap scale — mirrors Minerva OS Lite's chart-1..5 */
+    --mv-heat-1: #edf0ee;
+    --mv-heat-2: #a8c9b8;
+    --mv-heat-3: #6ba585;
+    --mv-heat-4: #3d7a5a;
+    --mv-heat-5: #1E4B33;
 
     /* Shadows */
     --shadow-mv-sm: 0 1px 2px rgba(26, 30, 22, 0.05);
@@ -70,29 +73,29 @@
   .dark {
     color-scheme: dark;
 
-    --mv-green: #1c9a6f;
-    --mv-green-dark: #126b4d;
-    --mv-green-darker: #0a4531;
-    --mv-green-light: #1e3328;
-    --mv-green-tint: #17261e;
+    --mv-green: #4a9e6e;
+    --mv-green-dark: #3a7b56;
+    --mv-green-darker: #2c5f42;
+    --mv-green-light: #1a3727;
+    --mv-green-tint: #0f2016;
 
-    --mv-warm: #f0efe8;
-    --mv-warm-dark: #c8c5b8;
-    --mv-warm-tint: #2a2c28;
+    --mv-warm: #1e2a22;
+    --mv-warm-dark: #17201a;
+    --mv-warm-tint: #2c3830;
 
-    --mv-cream: #14170f;
-    --mv-cream-soft: #1a1e16;
-    --mv-surface: #1e231a;
+    --mv-cream: #111810;
+    --mv-cream-soft: #192218;
+    --mv-surface: #1a2318;
 
-    --mv-ink: #f3f2ea;
-    --mv-ink-soft: #a0a89a;
-    --mv-ink-faint: #6e7668;
-    --mv-ink-mute: #454d40;
+    --mv-ink: #EAE7D9;
+    --mv-ink-soft: #9a988f;
+    --mv-ink-faint: #67665f;
+    --mv-ink-mute: #464541;
 
-    --mv-border: #282e22;
-    --mv-border-soft: #20251c;
+    --mv-border: #2a3a2e;
+    --mv-border-soft: #243228;
 
-    --mv-red: #e55342;
+    --mv-red: #e0395c;
     --mv-red-bg: #2d1917;
     --mv-amber: #d99b26;
     --mv-amber-bg: #2b2210;
@@ -100,8 +103,8 @@
     --mv-heat-1: #21291c;
     --mv-heat-2: #164030;
     --mv-heat-3: #186347;
-    --mv-heat-4: #19865f;
-    --mv-heat-5: #1c9a6f;
+    --mv-heat-4: #3d7a5a;
+    --mv-heat-5: #4a9e6e;
 
     --shadow-mv-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
     --shadow-mv-md: 0 2px 4px rgba(0, 0, 0, 0.25), 0 8px 20px rgba(0, 0, 0, 0.35);
@@ -119,7 +122,7 @@
   body {
     background-color: var(--mv-surface);
     color: var(--mv-ink);
-    font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: var(--font-jakarta), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     font-feature-settings: "ss01" 1, "cv05" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -129,7 +132,7 @@
 
   ::selection {
     background-color: var(--mv-green);
-    color: #f0efe8;
+    color: var(--mv-cream);
   }
 
   * {

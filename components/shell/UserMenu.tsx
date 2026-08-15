@@ -18,9 +18,10 @@ import {
 interface UserMenuProps {
   collapsed?: boolean;
   onNavigate?: () => void;
+  align?: 'start' | 'end';
 }
 
-export function UserMenu({ collapsed = false, onNavigate }: UserMenuProps) {
+export function UserMenu({ collapsed = false, onNavigate, align = 'start' }: UserMenuProps) {
   const { fullName, email, avatarUrl, role } = useCurrentUser();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const router = useRouter();
@@ -46,7 +47,7 @@ export function UserMenu({ collapsed = false, onNavigate }: UserMenuProps) {
         <DropdownMenuTrigger asChild>
           <button className="flex items-center justify-center w-full py-1 cursor-pointer">{avatar}</button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" side="right" className="w-60">
+        <DropdownMenuContent align={align} side="right" className="w-60">
           <MenuBody
             fullName={fullName}
             email={email}

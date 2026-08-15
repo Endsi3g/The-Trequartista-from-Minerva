@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, ShieldAlert, Plus, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { ImageUploadField } from '@/components/media/ImageUploadField';
 import { addChangelogEntry } from '@/lib/services/supabase-data';
@@ -15,7 +15,9 @@ export default function NewChangelogEntryPage() {
   const { role, loading: userLoading } = useCurrentUser();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [version, setVersion] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [includedItems, setIncludedItems] = useState<string[]>(['']);
   const [saving, setSaving] = useState(false);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -34,6 +36,8 @@ export default function NewChangelogEntryPage() {
       title: title.trim(),
       body: body.trim(),
       image_url: imageUrl || null,
+      version: version.trim() || null,
+      included_items: includedItems.map((i) => i.trim()).filter(Boolean),
       created_by: user.id,
     });
 
@@ -74,6 +78,17 @@ export default function NewChangelogEntryPage() {
           </div>
 
           <div className="space-y-1">
+            <label className="block text-xs font-bold text-mv-ink">Version (optionnel)</label>
+            <input
+              type="text"
+              value={version}
+              onChange={(e) => setVersion(e.target.value)}
+              placeholder="2.0"
+              className="w-full px-3.5 py-2.5 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:border-mv-green"
+            />
+          </div>
+
+          <div className="space-y-1">
             <label className="block text-xs font-bold text-mv-ink">Description</label>
             <textarea
               required
@@ -82,6 +97,37 @@ export default function NewChangelogEntryPage() {
               rows={5}
               className="w-full px-3.5 py-2.5 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:border-mv-green resize-none"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-mv-ink">Ce qui est inclus (optionnel)</label>
+            {includedItems.map((item, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={item}
+                  onChange={(e) => setIncludedItems((prev) => prev.map((v, idx) => (idx === i ? e.target.value : v)))}
+                  placeholder="Nouvelle fonctionnalité ou correction…"
+                  className="flex-1 px-3.5 py-2 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:border-mv-green"
+                />
+                {includedItems.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setIncludedItems((prev) => prev.filter((_, idx) => idx !== i))}
+                    className="p-2 rounded-lg text-mv-ink-faint hover:bg-mv-red-bg hover:text-mv-red transition-colors cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setIncludedItems((prev) => [...prev, ''])}
+              className="text-xs font-bold text-mv-green hover:underline flex items-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" /> Ajouter un élément
+            </button>
           </div>
 
           <div className="space-y-1">

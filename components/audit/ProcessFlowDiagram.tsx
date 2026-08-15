@@ -30,7 +30,7 @@ export function ProcessFlowDiagram({ steps, height = 480 }: ProcessFlowDiagramPr
       id: 'after-label',
       position: { x: COL_WIDTH + 120, y: -60 },
       data: { label: 'APRÈS MINERVA OS' },
-      style: { background: 'transparent', border: 'none', fontWeight: 800, fontSize: 12, color: '#167f5b', width: COL_WIDTH },
+      style: { background: 'transparent', border: 'none', fontWeight: 800, fontSize: 12, color: '#1E4B33', width: COL_WIDTH },
       draggable: false,
       selectable: false,
     });
@@ -64,12 +64,12 @@ export function ProcessFlowDiagram({ steps, height = 480 }: ProcessFlowDiagramPr
           style: {
             width: COL_WIDTH,
             background: '#e6f5ee',
-            border: '1.5px solid #167f5b',
+            border: '1.5px solid #1E4B33',
             borderRadius: 10,
             padding: 10,
             fontSize: 11,
             fontWeight: 600,
-            color: '#167f5b',
+            color: '#1E4B33',
           },
         });
         e.push({
@@ -77,7 +77,7 @@ export function ProcessFlowDiagram({ steps, height = 480 }: ProcessFlowDiagramPr
           source: `before-${step.id}`,
           target: `after-${step.id}`,
           animated: true,
-          style: { stroke: '#167f5b', strokeWidth: 2 },
+          style: { stroke: '#1E4B33', strokeWidth: 2 },
         });
       }
     });

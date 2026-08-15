@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { SearchDialog } from './SearchDialog';
 import { NewMenu } from './NewMenu';
 import { ThemeToggle } from './ThemeToggle';
+import { UserMenu } from './UserMenu';
 import { enablePushNotifications } from '@/lib/push-client';
 
 type Alert = {
@@ -160,6 +161,10 @@ export function TopbarActions() {
             )}
           </div>
         )}
+      </div>
+
+      <div className="pl-1 border-l border-mv-border ml-1">
+        <UserMenu collapsed align="end" />
       </div>
 
       <SearchDialog isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />

@@ -295,3 +295,26 @@ Nouveau système de bout en bout, en dehors des 8 chantiers d'origine : capture 
 Toutes les clés API (Twilio, Anthropic, Brevo, Calendly, QStash, Composio) restent à configurer — chaque intégration répond honnêtement « non configuré » plutôt que de simuler un succès. Voir `.env.example` pour la liste complète.
 
 *Nouvelles migrations en attente : `20260813000007` (leads entrants), `20260813000008` (audits, propositions, données de référence). Nouveau bucket Storage `proposals` à créer manuellement dans le dashboard Supabase (comme `client-assets`/`team-documents`/`academy-media`).*
+
+---
+
+## 2026-08-15 — Refonte marque Minerva Reach, OAuth Composio réel, 8 nouveaux blocs Paramètres
+
+Rebrand complet aligné sur le produit jumeau Minerva Reach (`minerva-os-lite-desktop`), et huit nouvelles interfaces de paramètres/onboarding reconstruites depuis des maquettes shadcnblocks avec de vraies données à chaque fois.
+
+**Marque : palette Forêt & Crème + Playfair Display / Plus Jakarta Sans**
+- Toute la palette `--mv-*` (clair et sombre) recalculée sur les couleurs exactes de Minerva Reach — y compris les graphiques (`components/charts/*`), le PDF de proposition et le diagramme d'audit, qui codaient leurs couleurs en dur.
+- Polices Sora/Inter remplacées par Playfair Display (titres) / Plus Jakarta Sans (corps) partout.
+
+**Sidebar reconstruite** sur le modèle de Minerva Reach : items épinglés, catégories repliables (masquées pour les non-admins), section « Aujourd'hui » (clients/projets récents réels), widget « Démarrage » branché sur la vraie progression d'onboarding, menu de compte dans l'en-tête ET dans le coin supérieur droit de la barre du haut.
+
+**Intégrations — vraies connexions OAuth via Composio**
+- `/integrations` : grille de 17 apps réellement utilisées par l'agence (Gmail, Notion, GitHub, Stripe, Supabase, etc.), avec vrais logos (GLINCKER/thesvg), connexion/déconnexion OAuth réelle via `@composio/client` (admin seulement), indicateur vert pulsant pour les connexions actives, filtres par catégorie, « Voir plus » pour n'afficher que 5 apps par défaut.
+- Le testeur de webhook ROI (bouton existant, jamais fonctionnel) envoyait les mauvais noms de champs et aucune autorisation — corrigé avec une vraie route de test serveur (admin seulement).
+- Import de SOPs Notion vers l'Académie (admin, déclenché manuellement) : sélectionne des pages Notion, importe leur contenu réel en fiches SOP.
+
+**Paramètres refaits** : Profil (édition + aperçu en direct, nouveaux champs bio/localisation/réseaux), Notifications (bascules groupées, vraiment persistées), Membres (recherche, changement de rôle en direct), Onboarding (5 étapes au lieu de 3, la vue de démarrage choisie est maintenant vraiment mémorisée pour les connexions futures).
+
+**Nouveau** : page `/help` (FAQ réelle sur les fonctionnalités de l'app), bandeau automatique annonçant la dernière entrée Nouveautés (lien vers `/changelog`, ne réapparaît pas une fois fermé sauf nouvelle entrée), page Nouveautés redessinée avec version + liste « ce qui est inclus » + navigation latérale, effet de fondu au défilement sur les longues listes (FAQ, nouveautés), écran de chargement personnalisé au démarrage de l'app.
+
+*Nouvelles migrations en attente : `20260815000001` (profils étendus + nouveautés structurées + préférences de notifications), `20260815000002` (suivi d'import Notion), `20260815000003` (vue par défaut du profil). Clé `COMPOSIO_API_KEY` fournie invalide (format ne correspondant pas à une clé projet) — à revérifier dans le dashboard Composio avant que les connexions OAuth ne fonctionnent réellement.*

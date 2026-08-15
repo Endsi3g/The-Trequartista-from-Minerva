@@ -5,6 +5,7 @@ import { PanelLeft } from 'lucide-react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { TopbarActions } from './TopbarActions';
 import { AppBreadcrumb } from './AppBreadcrumb';
+import { ChangelogBanner } from './ChangelogBanner';
 import { ShortcutsModal } from '@/components/ui/shortcuts-modal';
 import { SidebarStateProvider, useSidebarState } from './SidebarState';
 
@@ -28,32 +29,35 @@ function SidebarTrigger() {
 
 function AppShellInner({ children }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-mv-surface text-mv-ink flex w-full relative font-sans">
-      <AppSidebar />
+    <div className="min-h-screen bg-mv-surface text-mv-ink flex flex-col w-full relative font-sans">
+      <ChangelogBanner />
+      <div className="flex flex-1 w-full min-h-0">
+        <AppSidebar />
 
-      {/* Main Content Container */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header */}
-        <header className="h-16 px-4 md:px-6 bg-mv-surface/90 backdrop-blur-md border-b border-mv-border sticky top-0 z-20 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <SidebarTrigger />
-            <div className="hidden sm:block min-w-0">
-              <AppBreadcrumb />
+        {/* Main Content Container */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Top Header */}
+          <header className="h-16 px-4 md:px-6 bg-mv-surface/90 backdrop-blur-md border-b border-mv-border sticky top-0 z-20 flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <SidebarTrigger />
+              <div className="hidden sm:block min-w-0">
+                <AppBreadcrumb />
+              </div>
             </div>
-          </div>
-          <TopbarActions />
-        </header>
+            <TopbarActions />
+          </header>
 
-        {/* Page Content -- full width of whatever the sidebar leaves
-            available, so collapsing it actually gives pages more room
-            instead of just growing empty margins. */}
-        <main className="p-4 md:p-6 lg:p-8 w-full">
-          {children}
-        </main>
+          {/* Page Content -- full width of whatever the sidebar leaves
+              available, so collapsing it actually gives pages more room
+              instead of just growing empty margins. */}
+          <main className="p-4 md:p-6 lg:p-8 w-full">
+            {children}
+          </main>
+        </div>
+
+        {/* Global Keyboard Shortcuts Modal Helper */}
+        <ShortcutsModal />
       </div>
-
-      {/* Global Keyboard Shortcuts Modal Helper */}
-      <ShortcutsModal />
     </div>
   );
 }

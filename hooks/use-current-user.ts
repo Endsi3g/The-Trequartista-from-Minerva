@@ -43,7 +43,7 @@ export function useCurrentUser(): CurrentUser {
         email: user.email || '',
         avatarUrl:
           profile?.avatar_url ||
-          `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName || user.email || 'MV')}&backgroundColor=167f5b&fontColor=ffffff`,
+          `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName || user.email || 'MV')}&backgroundColor=1E4B33&fontColor=ffffff`,
         role: profile?.role || 'member',
         loading: false,
       });

@@ -25,7 +25,7 @@ export function GaugeChart({
     percentage >= 90
       ? 'var(--mv-green)'
       : percentage >= 70
-      ? '#ab7d1f'
+      ? '#E8A33D'
       : 'var(--mv-red)';
 
   return (

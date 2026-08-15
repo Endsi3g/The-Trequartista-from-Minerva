@@ -233,14 +233,14 @@ export default function RoiTrackerPage() {
                   data={
                     metrics.total_invested > metrics.google_ads_spent
                       ? [
-                          { label: 'Google Ads', value: metrics.google_ads_spent, color: '#167f5b' },
+                          { label: 'Google Ads', value: metrics.google_ads_spent, color: '#1E4B33' },
                           {
                             label: 'Autres canaux',
                             value: metrics.total_invested - metrics.google_ads_spent,
                             color: '#dfff5f',
                           },
                         ]
-                      : [{ label: 'Google Ads', value: metrics.google_ads_spent, color: '#167f5b' }]
+                      : [{ label: 'Google Ads', value: metrics.google_ads_spent, color: '#1E4B33' }]
                   }
                 />
               )}

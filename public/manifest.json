@@ -4,8 +4,8 @@
   "description": "Plateforme opérationnelle de Minerva pour le suivi client, la qualité et la gestion d’équipe.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fffefa",
-  "theme_color": "#167f5b",
+  "background_color": "#F0EDE0",
+  "theme_color": "#1E4B33",
   "orientation": "portrait",
   "icons": [
     {
