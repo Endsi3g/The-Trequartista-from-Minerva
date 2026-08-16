@@ -3,13 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Calendar, MessageCircle, LogOut } from 'lucide-react';
+import { LayoutDashboard, Calendar, MessageCircle, LogOut, BarChart3 } from 'lucide-react';
 import { LogoMark } from '@/components/shell/Logo';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 
 const NAV = [
   { key: 'overview', label: 'Tableau de bord', href: '/portal', icon: LayoutDashboard },
+  { key: 'performance', label: 'Performance détaillée', href: '/portal/performance', icon: BarChart3 },
   { key: 'calendar', label: 'Calendrier éditorial', href: '/portal/calendar', icon: Calendar },
   { key: 'questions', label: 'Messagerie & Questions', href: '/portal/questions', icon: MessageCircle },
 ];
