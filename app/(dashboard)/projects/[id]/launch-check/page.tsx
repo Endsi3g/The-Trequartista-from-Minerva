@@ -65,7 +65,12 @@ export default function LaunchCheckPage() {
     });
 
     setItems(updated);
-    await saveLaunchChecklist(projectId, updated);
+    const saved = await saveLaunchChecklist(projectId, updated);
+    if (!saved) {
+      setItems(items);
+      toastError('Erreur de sauvegarde', "Impossible d'enregistrer ce changement sur la checklist.");
+      return;
+    }
 
     // Call Supabase Edge Function to validate payload
     setIsValidating(true);
@@ -94,9 +99,16 @@ export default function LaunchCheckPage() {
 
   const resetAll = async () => {
     if (!projectId) return;
+    if (!confirm('Voulez-vous vraiment réinitialiser les 20 points de la checklist ?')) return;
+    const previousItems = items;
     const resetItems = items.map((i) => ({ ...i, checked: false }));
     setItems(resetItems);
-    await saveLaunchChecklist(projectId, resetItems);
+    const saved = await saveLaunchChecklist(projectId, resetItems);
+    if (!saved) {
+      setItems(previousItems);
+      toastError('Erreur', "Impossible de réinitialiser la checklist.");
+      return;
+    }
     await logAuditEvent(
       'Réinitialisation complète de la checklist 20-points',
       'project_launch_checks',

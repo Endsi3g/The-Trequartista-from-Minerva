@@ -59,8 +59,13 @@ export default function ReelDetailPage() {
 
   const handleStatusChange = async (status: ContentPost['status']) => {
     if (!post) return;
+    const previousStatus = post.status;
     setPost({ ...post, status });
-    await updateContentPost(post.id, { status });
+    const ok = await updateContentPost(post.id, { status });
+    if (!ok) {
+      setPost((prev) => (prev ? { ...prev, status: previousStatus } : prev));
+      toastError('Erreur', "Impossible de mettre à jour le statut.");
+    }
   };
 
   const handleSave = async () => {

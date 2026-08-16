@@ -55,6 +55,7 @@ export default function NotionIntegrationPage() {
   const [selectedPages, setSelectedPages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { role } = useCurrentUser();
   const isAdmin = role === 'admin';
   const [isImporting, setIsImporting] = useState(false);
@@ -109,18 +110,19 @@ export default function NotionIntegrationPage() {
   const handleSave = async () => {
     if (!result?.valid || selectedPages.length === 0) return;
     setIsSaving(true);
+    setSaveError(null);
     try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      if (!user) throw new Error('Non authentifié.');
 
       // integration_token_hash is NOT NULL — store a hash, never the raw
       // token, and never send the raw token itself in this payload.
       const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token.trim()));
       const tokenHash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
 
-      await supabase.from('notion_config').upsert({
+      const { error } = await supabase.from('notion_config').upsert({
         user_id: user.id,
         integration_token_hash: tokenHash,
         workspace_name: result.workspaceName ?? 'Notion',
@@ -129,10 +131,13 @@ export default function NotionIntegrationPage() {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
 
+      if (error) throw error;
+
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err) {
       console.error(err);
+      setSaveError(err instanceof Error ? err.message : "Impossible d'enregistrer la configuration Notion.");
     } finally {
       setIsSaving(false);
     }
@@ -326,6 +331,12 @@ export default function NotionIntegrationPage() {
               : `Enregistrer ${selectedPages.length} page${selectedPages.length > 1 ? 's' : ''}`
             }
           </button>
+
+          {saveError && (
+            <div className="p-3 rounded-xl bg-mv-red-bg border border-mv-red/30 text-mv-red text-xs">
+              {saveError}
+            </div>
+          )}
 
           {isAdmin && (
             <button

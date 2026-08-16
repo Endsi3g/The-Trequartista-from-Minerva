@@ -377,6 +377,7 @@ function LeadsCrmContent() {
 
       {/* ── Slide-Out Lead Detail Drawer ── */}
       <LeadDetailDrawer
+        key={selectedLead?.id}
         lead={selectedLead}
         onClose={() => setSelectedLead(null)}
         onLeadUpdated={loadData}

@@ -16,6 +16,7 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
   const { toastError } = useToast();
   const [newNoteText, setNewNoteText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [stage, setStage] = useState<LeadStage>(lead?.stage || 'nouveau');
   const [mrrValue, setMrrValue] = useState<number>(lead?.mrr_value || 0);
   const [oneTimeValue, setOneTimeValue] = useState<number>(lead?.one_time_value || 0);
@@ -75,7 +76,15 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
 
   const handleDeleteLead = async () => {
     if (!confirm('Voulez-vous vraiment supprimer ce prospect ?')) return;
-    await deleteLead(lead.id);
+    setIsDeleting(true);
+    const success = await deleteLead(lead.id);
+    setIsDeleting(false);
+
+    if (!success) {
+      toastError('Erreur de suppression', "Impossible de supprimer ce prospect.");
+      return;
+    }
+
     onLeadUpdated();
     onClose();
   };
@@ -218,10 +227,11 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
           <button
             type="button"
             onClick={handleDeleteLead}
-            className="px-3 py-2 bg-mv-red-bg hover:bg-mv-red/20 text-mv-red font-bold text-xs rounded-xl flex items-center gap-1.5 border border-mv-red/30 transition-colors cursor-pointer"
+            disabled={isDeleting}
+            className="px-3 py-2 bg-mv-red-bg hover:bg-mv-red/20 text-mv-red font-bold text-xs rounded-xl flex items-center gap-1.5 border border-mv-red/30 transition-colors cursor-pointer disabled:opacity-50"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span>Supprimer</span>
+            <span>{isDeleting ? 'Suppression…' : 'Supprimer'}</span>
           </button>
 
           <button
