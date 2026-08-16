@@ -1,42 +1,53 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { Check, ArrowRight, ArrowLeft, User, Briefcase, Sparkles, Upload, Bell, LayoutDashboard } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Check, ArrowRight, ChevronLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { BonsaiPlantLoader } from '@/components/ui/bonsai-plant-loader';
-import { LogoMark } from '@/components/shell/Logo';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/providers/ToastProvider';
+import { motion, AnimatePresence } from 'motion/react';
 
-const TOTAL_STEPS = 5;
+const STEPS = [
+  { id: 1, label: 'Votre profil' },
+  { id: 2, label: 'Votre rôle' },
+  { id: 3, label: 'Votre équipe' },
+  { id: 4, label: 'Préférences' },
+  { id: 5, label: 'Terminer' },
+];
+
+const DEPARTMENTS = ['Tech & IA', 'Marketing', 'Ventes', 'Design', 'Opérations', 'Gestion'];
 
 export default function OnboardingPage() {
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [step, setStep] = useState(1);
   const [userId, setUserId] = useState('');
   const [userEmail, setUserEmail] = useState('');
+  const [userRole, setUserRole] = useState('member');
 
-  // Step 1 -- Profil
+  // Step 1: Profil
   const [fullName, setFullName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [sendUpdates, setSendUpdates] = useState(true);
 
-  // Step 2 -- Rôle
-  const [role, setRole] = useState('');
-  const [department, setDepartment] = useState('Direction & Management');
+  // Step 2: Rôle
+  const [roleTitle, setRoleTitle] = useState('');
+  const [department, setDepartment] = useState('Tech & IA');
 
-  // Step 3 -- Préférences
+  // Step 3: Équipe
+  const [teamSize, setTeamSize] = useState('');
+  const [inviteEmails, setInviteEmails] = useState('');
+
+  // Step 4: Préférences
   const [defaultView, setDefaultView] = useState('/overview');
-
-  // Step 4 -- Notifications
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [taskRemindersEnabled, setTaskRemindersEnabled] = useState(true);
-  const [changelogAnnouncementsEnabled, setChangelogAnnouncementsEnabled] = useState(true);
+  const [timezone, setTimezone] = useState('America/Toronto');
+  const [language, setLanguage] = useState('fr');
 
   const [loading, setLoading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
-  const { toastError } = useToast();
+  const { toastError, toastSuccess } = useToast();
 
   useEffect(() => {
     (async () => {
@@ -44,12 +55,22 @@ export default function OnboardingPage() {
       if (user) {
         setUserId(user.id);
         setUserEmail(user.email || '');
-        if (user.user_metadata?.full_name) {
-          setFullName(user.user_metadata.full_name);
-        } else {
-          setFullName(user.email?.split('@')[0] || '');
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, full_name, bio, avatar_url, client_id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (profile?.role === 'client') {
+          window.location.href = '/portal';
+          return;
         }
-        setAvatarUrl(`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email || 'MV')}&backgroundColor=1E4B33&fontColor=ffffff`);
+        if (profile?.role) setUserRole(profile.role);
+        if (profile?.full_name) setFullName(profile.full_name);
+        else if (user.user_metadata?.full_name) setFullName(user.user_metadata.full_name);
+        if (profile?.bio) setBio(profile.bio);
+        if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
       }
     })();
   }, []);
@@ -60,304 +81,452 @@ export default function OnboardingPage() {
     setUploadingAvatar(true);
     try {
       const filePath = `avatars/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('team-documents').upload(filePath, file, { upsert: true });
-      if (uploadError) {
-        toastError("Erreur d'upload", uploadError.message);
-        return;
-      }
+      const { error } = await supabase.storage.from('team-documents').upload(filePath, file, { upsert: true });
+      if (error) { toastError("Erreur d'upload", error.message); return; }
       const { data } = supabase.storage.from('team-documents').getPublicUrl(filePath);
       setAvatarUrl(data.publicUrl);
+      toastSuccess('Photo téléchargée !');
     } finally {
       setUploadingAvatar(false);
     }
   };
 
+  const handleNext = () => {
+    if (step < 5) setStep(step + 1);
+  };
+
   const handleFinish = async () => {
     setLoading(true);
     try {
-      await supabase.from('profiles').upsert(
-        {
-          id: userId,
-          full_name: fullName,
-          email: userEmail,
-          avatar_url: avatarUrl,
-          bio: bio || null,
-          role,
-          department,
-          default_view: defaultView,
-          approved: true,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'id' }
-      );
+      const finalRole = userRole || 'member';
+      await supabase.from('profiles').upsert({
+        id: userId,
+        full_name: fullName,
+        email: userEmail,
+        avatar_url: avatarUrl || null,
+        bio: bio || null,
+        role: finalRole,
+        department,
+        default_view: defaultView,
+        approved: true,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
 
-      await supabase.from('notification_preferences').upsert(
-        {
-          user_id: userId,
-          push_enabled: pushEnabled,
-          task_reminders_enabled: taskRemindersEnabled,
-          changelog_announcements_enabled: changelogAnnouncementsEnabled,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_id' }
-      );
+      await supabase.from('notification_preferences').upsert({
+        user_id: userId,
+        push_enabled: true,
+        task_reminders_enabled: true,
+        changelog_announcements_enabled: sendUpdates,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
 
       setStep(5);
+      toastSuccess('Profil créé !', 'Bienvenue dans Minerva.');
       setTimeout(() => {
-        window.location.href = defaultView;
+        window.location.href = finalRole === 'client' ? '/portal' : defaultView;
       }, 1400);
-    } catch {
-      window.location.href = '/overview';
     } finally {
       setLoading(false);
     }
   };
 
-  const StepShell = ({ children }: { children: React.ReactNode }) => (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px]">
-      <div className="p-6 sm:p-8 space-y-6">
-        <div>
-          <p className="text-xs font-bold text-mv-ink-faint">{step}/{TOTAL_STEPS}</p>
-        </div>
-        {children}
-      </div>
-
-      {/* Live preview -- real sidebar look with the data entered so far */}
-      <div className="hidden lg:block bg-mv-cream-soft border-l border-mv-border p-4">
-        <div className="rounded-xl border border-mv-border bg-mv-surface overflow-hidden h-full">
-          <div className="flex items-center gap-2 px-3 py-2.5 border-b border-mv-border">
-            <LogoMark size={20} />
-            <span className="text-xs font-bold text-mv-ink truncate">{department || 'Espace de travail'}</span>
-          </div>
-          <div className="p-3 flex items-center gap-2.5">
-            <img src={avatarUrl} alt={fullName} className="w-8 h-8 rounded-full object-cover border border-mv-border" />
-            <div className="min-w-0">
-              <div className="text-xs font-bold text-mv-ink truncate">{fullName || 'Ton nom'}</div>
-              <div className="text-[10px] text-mv-ink-faint truncate">{role || 'Ton rôle'}</div>
-            </div>
-          </div>
-          <div className="px-3 space-y-1.5 mt-2">
-            {['Accueil', 'Clients', 'Leads', 'Projets'].map((label) => (
-              <div key={label} className="h-6 rounded-md bg-mv-cream-soft" />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const progress = ((step - 1) / (STEPS.length - 1)) * 100;
 
   return (
-    <div className="min-h-screen bg-mv-cream flex flex-col justify-between relative overflow-hidden text-mv-ink">
-      <header className="h-16 px-6 sm:px-12 flex items-center justify-between z-20 relative bg-mv-surface/60 backdrop-blur-sm border-b border-mv-border/40">
-        <LogoMark />
-        <div className="flex items-center gap-2 text-xs font-bold text-mv-ink-soft">
-          <span>Étape {step} sur {TOTAL_STEPS}</span>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-4 sm:p-8 font-sans text-neutral-900">
+      {loading && <BonsaiPlantLoader title="Configuration…" subtitle="Création de votre espace de travail" />}
 
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 z-20 relative my-6">
-        <div className="bg-mv-surface border border-mv-border rounded-[16px] shadow-mv-md max-w-[820px] w-full relative overflow-hidden">
-          {loading && <BonsaiPlantLoader title="Un instant !" subtitle="Configuration de votre espace…" />}
+      <div className="bg-white border border-neutral-200/90 rounded-[28px] shadow-sm max-w-[1080px] w-full p-6 sm:p-12 grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-10 items-stretch">
 
-          {/* Stepper */}
-          <div className="flex items-center gap-2 px-6 sm:px-8 pt-6">
-            {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((s) => (
-              <div key={s} className={`h-1.5 flex-1 rounded-full ${step >= s ? 'bg-mv-green' : 'bg-mv-border'}`} />
-            ))}
-          </div>
-
-          {step === 1 && (
-            <StepShell>
-              <h1 className="text-2xl font-extrabold text-mv-ink font-display tracking-tight">Configure ton profil</h1>
-              <p className="text-xs text-mv-ink-soft -mt-4">Ton profil interne pour l&apos;équipe Minerva ({userEmail}).</p>
-
-              <div className="flex items-center gap-4">
-                <img src={avatarUrl} alt={fullName} className="w-16 h-16 rounded-full object-cover border-2 border-mv-green" />
-                <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-mv-cream-soft hover:bg-mv-green-tint border border-mv-border text-mv-green font-bold text-xs cursor-pointer transition-all">
-                  <Upload className="w-3.5 h-3.5" /> {uploadingAvatar ? 'Envoi…' : 'Téléverser une photo'}
-                  <input type="file" onChange={handleAvatarUpload} className="hidden" accept="image/*" disabled={uploadingAvatar} />
-                </label>
+        {/* ── Left: Form Area ── */}
+        <div className="flex flex-col justify-between min-h-[540px]">
+          <div className="space-y-6">
+            {/* Step indicator */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-neutral-400 font-mono">{step}/{STEPS.length}</span>
+                <span className="text-xs font-semibold text-[#1E4B33]">{STEPS[step - 1].label}</span>
               </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-mv-ink">Nom complet</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Marie Tremblay"
-                    className="w-full px-3.5 py-2.5 pl-10 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green"
-                  />
-                  <User className="w-4 h-4 text-mv-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2" />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-mv-ink">Bio</label>
-                <textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  rows={2}
-                  placeholder="Quelques mots sur toi…"
-                  className="w-full px-3.5 py-2.5 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green resize-none"
+              <div className="w-full h-1 bg-neutral-100 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-[#1E4B33] rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.4, ease: 'easeInOut' }}
                 />
               </div>
+            </div>
 
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                disabled={!fullName.trim()}
-                className="w-full py-3 px-4 bg-mv-green hover:bg-mv-green-dark text-white font-bold text-sm rounded-xl shadow-mv-sm transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-2"
-              >
-                <span>Continuer</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </StepShell>
-          )}
-
-          {step === 2 && (
-            <StepShell>
-              <h1 className="text-2xl font-extrabold text-mv-ink font-display tracking-tight">Ton rôle</h1>
-              <p className="text-xs text-mv-ink-soft -mt-4">Comment ton équipe te reconnaît-elle ?</p>
-
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-mv-ink">Fonction / Intitulé de poste</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    placeholder="Gestionnaire de comptes"
-                    className="w-full px-3.5 py-2.5 pl-10 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green"
-                  />
-                  <Briefcase className="w-4 h-4 text-mv-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2" />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-mv-ink">Département / Pôle d&apos;expertise</label>
-                <select
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green appearance-none"
+            <AnimatePresence mode="wait">
+              {/* ── STEP 1: Profil ── */}
+              {step === 1 && (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-5"
                 >
-                  <option value="Direction & Management">Direction & Management</option>
-                  <option value="Design & UX Studio">Design & UX Studio</option>
-                  <option value="Achat Média & Growth">Achat Média & Growth</option>
-                  <option value="Développement & Tech">Développement & Tech</option>
-                  <option value="Gestion de Comptes & ROI">Gestion de Comptes & ROI</option>
-                </select>
-              </div>
+                  <h1 className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight">
+                    Set up your profile
+                  </h1>
 
-              <div className="flex items-center gap-3 pt-2">
-                <button type="button" onClick={() => setStep(1)} className="w-1/3 py-3 px-4 bg-mv-cream-soft border border-mv-border text-mv-ink font-bold text-sm rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5">
-                  <ArrowLeft className="w-3.5 h-3.5" /> Retour
+                  {/* Avatar upload */}
+                  <div className="flex items-center gap-5">
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      className="relative w-20 h-20 rounded-full border-2 border-dashed border-neutral-300 bg-neutral-50 flex items-center justify-center overflow-hidden hover:border-[#1E4B33] transition-colors group shrink-0"
+                    >
+                      {avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <Plus className="w-6 h-6 text-neutral-400 group-hover:text-[#1E4B33] transition-colors stroke-[1.5]" />
+                      )}
+                    </button>
+                    <div className="space-y-1.5">
+                      <p className="text-sm font-bold text-neutral-900">Profile picture</p>
+                      <button
+                        type="button"
+                        onClick={() => fileRef.current?.click()}
+                        disabled={uploadingAvatar}
+                        className="inline-flex items-center px-4 py-1.5 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 text-xs font-bold text-neutral-800 transition-all cursor-pointer"
+                      >
+                        {uploadingAvatar ? 'Téléchargement…' : 'Upload image'}
+                      </button>
+                      <p className="text-[11px] text-neutral-400">*.png, *.jpeg files up to 10MB</p>
+                    </div>
+                    <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-neutral-900">Full name</label>
+                      <input
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Jane Smith"
+                        className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-[#1E4B33] transition-colors"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-neutral-900">Bio</label>
+                      <textarea
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        rows={2}
+                        placeholder="A few words about yourself..."
+                        className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-[#1E4B33] resize-none transition-colors"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-neutral-900">Work email</label>
+                      <input
+                        type="email"
+                        value={userEmail}
+                        readOnly
+                        className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm text-neutral-500 bg-neutral-50/50 cursor-default"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <div>
+                        <p className="text-xs font-bold text-neutral-900">Send me product updates</p>
+                        <p className="text-[11px] text-neutral-400">Stay informed about new features and improvements.</p>
+                      </div>
+                      <Switch checked={sendUpdates} onCheckedChange={setSendUpdates} />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── STEP 2: Rôle ── */}
+              {step === 2 && (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-5"
+                >
+                  <h1 className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight">
+                    Your role
+                  </h1>
+                  <p className="text-sm text-neutral-500">Aidez-nous à personnaliser votre expérience selon votre fonction.</p>
+
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-neutral-900">Intitulé de poste</label>
+                      <input
+                        type="text"
+                        value={roleTitle}
+                        onChange={(e) => setRoleTitle(e.target.value)}
+                        placeholder="Ex: Directeur croissance, Responsable IA…"
+                        className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-[#1E4B33] transition-colors"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-neutral-900">Département</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {DEPARTMENTS.map((d) => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => setDepartment(d)}
+                            className={`px-3 py-2.5 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer ${
+                              department === d
+                                ? 'border-[#1E4B33] bg-[#1E4B33] text-white'
+                                : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
+                            }`}
+                          >
+                            {d}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── STEP 3: Équipe ── */}
+              {step === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-5"
+                >
+                  <h1 className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight">
+                    Your team
+                  </h1>
+                  <p className="text-sm text-neutral-500">Invitez vos collègues à rejoindre Minerva. Vous pourrez le faire plus tard aussi.</p>
+
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-neutral-900">Taille de l&apos;équipe</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {['1-5', '6-20', '21-50', '51-200', '200+', 'Solo'].map((size) => (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() => setTeamSize(size)}
+                            className={`px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                              teamSize === size
+                                ? 'border-[#1E4B33] bg-[#1E4B33] text-white'
+                                : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
+                            }`}
+                          >
+                            {size}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-neutral-900">Inviter des collègues</label>
+                      <textarea
+                        value={inviteEmails}
+                        onChange={(e) => setInviteEmails(e.target.value)}
+                        rows={3}
+                        placeholder="jean@entreprise.com, marie@entreprise.com…"
+                        className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-[#1E4B33] resize-none transition-colors"
+                      />
+                      <p className="text-[11px] text-neutral-400">Séparez les adresses par des virgules.</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── STEP 4: Préférences ── */}
+              {step === 4 && (
+                <motion.div
+                  key="step4"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-5"
+                >
+                  <h1 className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight">
+                    Preferences
+                  </h1>
+                  <p className="text-sm text-neutral-500">Configurez votre vue par défaut et vos réglages régionaux.</p>
+
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-neutral-900">Page d&apos;accueil par défaut</label>
+                      <div className="grid grid-cols-1 gap-2">
+                        {[
+                          { href: '/overview', label: 'Vue d\'ensemble — Tableau de bord IA', icon: '📊' },
+                          { href: '/tasks', label: 'Tâches — Gestion de projets', icon: '✅' },
+                          { href: '/clients', label: 'Clients — Gestion des comptes', icon: '👥' },
+                        ].map((v) => (
+                          <button
+                            key={v.href}
+                            type="button"
+                            onClick={() => setDefaultView(v.href)}
+                            className={`flex items-center gap-3 px-3.5 py-3 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer ${
+                              defaultView === v.href
+                                ? 'border-[#1E4B33] bg-[#1E4B33]/5 text-[#1E4B33]'
+                                : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
+                            }`}
+                          >
+                            <span className="text-base">{v.icon}</span>
+                            {v.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-neutral-900">Fuseau horaire</label>
+                        <select
+                          value={timezone}
+                          onChange={(e) => setTimezone(e.target.value)}
+                          className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-xs focus:outline-none focus:border-[#1E4B33] bg-white cursor-pointer"
+                        >
+                          <option value="America/Toronto">America/Toronto (EST)</option>
+                          <option value="America/Montreal">America/Montréal</option>
+                          <option value="America/Vancouver">America/Vancouver (PST)</option>
+                          <option value="Europe/Paris">Europe/Paris (CET)</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-neutral-900">Langue</label>
+                        <select
+                          value={language}
+                          onChange={(e) => setLanguage(e.target.value)}
+                          className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-xs focus:outline-none focus:border-[#1E4B33] bg-white cursor-pointer"
+                        >
+                          <option value="fr">Français</option>
+                          <option value="en">English</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── STEP 5: Terminé ── */}
+              {step === 5 && (
+                <motion.div
+                  key="step5"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex flex-col items-center text-center space-y-6 py-8"
+                >
+                  <div className="w-16 h-16 rounded-full bg-[#1E4B33] flex items-center justify-center shadow-lg">
+                    <Check className="w-8 h-8 text-white" strokeWidth={2.5} />
+                  </div>
+                  <div className="space-y-2">
+                    <h1 className="text-3xl font-extrabold text-neutral-950 tracking-tight">
+                      Vous êtes prêt·e !
+                    </h1>
+                    <p className="text-sm text-neutral-500 max-w-xs mx-auto">
+                      Votre espace Minerva est configuré. Redirection vers votre tableau de bord…
+                    </p>
+                  </div>
+                  <div className="w-40 h-1 bg-neutral-100 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-[#1E4B33] rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: '100%' }}
+                      transition={{ duration: 1.2 }}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Navigation Buttons */}
+          {step < 5 && (
+            <div className="flex items-center gap-3 pt-4">
+              {step > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setStep(step - 1)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-all cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Retour
                 </button>
-                <button type="button" onClick={() => setStep(3)} className="flex-1 py-3 px-4 bg-mv-green hover:bg-mv-green-dark text-white font-bold text-sm rounded-xl shadow-mv-sm transition-all cursor-pointer flex items-center justify-center gap-2">
+              )}
+
+              {step < 4 ? (
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#1E4B33] hover:bg-[#153524] text-white font-bold text-sm rounded-xl transition-all cursor-pointer"
+                >
                   <span>Continuer</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
-              </div>
-            </StepShell>
-          )}
-
-          {step === 3 && (
-            <StepShell>
-              <h1 className="text-2xl font-extrabold text-mv-ink font-display tracking-tight">Préférences de travail</h1>
-              <p className="text-xs text-mv-ink-soft -mt-4">Personnalise ton affichage par défaut.</p>
-
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-mv-ink">Vue initiale au démarrage</label>
-                <div className="relative">
-                  <select
-                    value={defaultView}
-                    onChange={(e) => setDefaultView(e.target.value)}
-                    className="w-full px-3.5 py-2.5 pl-10 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green appearance-none"
-                  >
-                    <option value="/overview">Vue d&apos;ensemble (tableau de bord)</option>
-                    <option value="/leads">CRM Leads & Pipeline</option>
-                    <option value="/projects">Projets & Livraison</option>
-                    <option value="/content-planner">Planificateur Reels</option>
-                    <option value="/tasks">Mes tâches</option>
-                  </select>
-                  <LayoutDashboard className="w-4 h-4 text-mv-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2" />
-                </div>
-                <p className="text-[11px] text-mv-ink-faint">Cette vue s&apos;ouvrira automatiquement à chaque connexion.</p>
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <button type="button" onClick={() => setStep(2)} className="w-1/3 py-3 px-4 bg-mv-cream-soft border border-mv-border text-mv-ink font-bold text-sm rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5">
-                  <ArrowLeft className="w-3.5 h-3.5" /> Retour
-                </button>
-                <button type="button" onClick={() => setStep(4)} className="flex-1 py-3 px-4 bg-mv-green hover:bg-mv-green-dark text-white font-bold text-sm rounded-xl shadow-mv-sm transition-all cursor-pointer flex items-center justify-center gap-2">
-                  <span>Continuer</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </StepShell>
-          )}
-
-          {step === 4 && (
-            <StepShell>
-              <h1 className="text-2xl font-extrabold text-mv-ink font-display tracking-tight">Notifications</h1>
-              <p className="text-xs text-mv-ink-soft -mt-4">Choisis comment tu veux être averti.</p>
-
-              <div className="rounded-xl border border-mv-border divide-y divide-mv-border overflow-hidden">
-                <div className="flex items-center justify-between gap-4 p-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <Bell className="w-4 h-4 text-mv-green shrink-0" />
-                    <span className="text-sm font-semibold text-mv-ink">Notifications push</span>
-                  </div>
-                  <Switch checked={pushEnabled} onChange={setPushEnabled} label="Notifications push" />
-                </div>
-                <div className="flex items-center justify-between gap-4 p-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <Bell className="w-4 h-4 text-mv-green shrink-0" />
-                    <span className="text-sm font-semibold text-mv-ink">Rappels de tâches en retard</span>
-                  </div>
-                  <Switch checked={taskRemindersEnabled} onChange={setTaskRemindersEnabled} label="Rappels de tâches" />
-                </div>
-                <div className="flex items-center justify-between gap-4 p-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <Sparkles className="w-4 h-4 text-mv-green shrink-0" />
-                    <span className="text-sm font-semibold text-mv-ink">Nouveautés (changelog)</span>
-                  </div>
-                  <Switch checked={changelogAnnouncementsEnabled} onChange={setChangelogAnnouncementsEnabled} label="Nouveautés" />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <button type="button" onClick={() => setStep(3)} className="w-1/3 py-3 px-4 bg-mv-cream-soft border border-mv-border text-mv-ink font-bold text-sm rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5">
-                  <ArrowLeft className="w-3.5 h-3.5" /> Retour
-                </button>
-                <button type="button" onClick={handleFinish} disabled={loading} className="flex-1 py-3 px-4 bg-mv-green hover:bg-mv-green-dark text-white font-bold text-sm rounded-xl shadow-mv-sm transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50">
-                  <span>Lancer mon espace</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleFinish}
+                  disabled={loading}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#1E4B33] hover:bg-[#153524] text-white font-bold text-sm rounded-xl transition-all cursor-pointer disabled:opacity-60"
+                >
+                  <span>{loading ? 'Sauvegarde…' : 'Terminer la configuration'}</span>
                   <Check className="w-4 h-4" />
                 </button>
-              </div>
-            </StepShell>
-          )}
-
-          {step === 5 && (
-            <div className="text-center py-16 px-8 space-y-4 animate-mv-scale-in">
-              <div className="w-16 h-16 rounded-full bg-mv-green-tint text-mv-green flex items-center justify-center mx-auto mb-2">
-                <Check className="w-8 h-8 stroke-[3]" />
-              </div>
-              <h1 className="text-2xl font-extrabold text-mv-ink font-display">Configuration réussie !</h1>
-              <p className="text-xs text-mv-ink-soft max-w-sm mx-auto">
-                Bienvenue {fullName}. Redirection automatique vers votre tableau de bord…
-              </p>
+              )}
             </div>
           )}
         </div>
-      </main>
 
-      <div className="fixed bottom-0 left-0 z-10 pointer-events-none select-none">
-        <Image src="/leaf-bottom-left.svg" alt="Decoration" width={220} height={260} className="w-44 sm:w-56" />
-      </div>
-      <div className="fixed bottom-0 right-0 z-10 pointer-events-none select-none">
-        <Image src="/leaf-bottom-right.svg" alt="Decoration" width={220} height={260} className="w-44 sm:w-56" />
+        {/* ── Right: Workspace Preview Mockup ── */}
+        <div className="hidden lg:flex flex-col border border-neutral-200/80 rounded-2xl bg-neutral-50/50 overflow-hidden shadow-sm">
+          <div className="grid grid-cols-[180px_1fr] flex-1 h-full min-h-[460px]">
+            {/* Mini Sidebar */}
+            <div className="border-r border-neutral-200/70 p-4 space-y-3 bg-neutral-50/80">
+              <div className="flex items-center justify-between gap-2 pb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 rounded-md bg-[#1E4B33] flex items-center justify-center shrink-0" />
+                  <span className="text-xs font-bold text-neutral-900 truncate">Workspace</span>
+                </div>
+                <span className="text-neutral-400 text-xs">‹</span>
+              </div>
+              <div className="space-y-1.5 pt-1">
+                {[true, false, false, false, false, false, false, false, false].map((active, i) => (
+                  <div key={i} className={`h-7 rounded-lg border ${active ? 'bg-[#1E4B33]/10 border-[#1E4B33]/20' : 'bg-neutral-100/60 border-neutral-200/50'}`} />
+                ))}
+              </div>
+            </div>
+
+            {/* Mini Content */}
+            <div className="p-4 flex flex-col justify-between space-y-3 bg-white">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-7 rounded-lg bg-neutral-50 border border-neutral-200" />
+                  <div className="w-7 h-7 rounded-lg bg-neutral-50 border border-neutral-200" />
+                  <div className="w-7 h-7 rounded-lg bg-neutral-50 border border-neutral-200" />
+                </div>
+                <div className="border border-neutral-200 rounded-xl overflow-hidden divide-y divide-neutral-200">
+                  {Array.from({ length: 7 }).map((_, i) => (
+                    <div key={i} className={`grid grid-cols-4 divide-x divide-neutral-200 h-8 ${i === 0 ? 'bg-neutral-50' : ''}`}>
+                      {Array.from({ length: 4 }).map((_, j) => (
+                        <div key={j} className={`${i === 0 ? 'bg-neutral-100/50' : 'bg-white'}`} />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className={`w-6 h-6 rounded-md border ${i === 0 ? 'bg-[#1E4B33] border-[#1E4B33]' : 'bg-neutral-50 border-neutral-200'}`} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );

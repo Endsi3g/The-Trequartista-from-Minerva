@@ -4,6 +4,57 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-15 — Version 2.1.0 : Voice Agent Pixel-Perfect, Onboarding 5 étapes & ElevenLabs Réel
+
+**Voice Agent Dashboard (`/voice-agent`) — Pixel-Perfect**
+- Refonte complète de la page selon la maquette de référence `AI Voice Agent Dashboard UI/UX Design` : header `Dashboard`, 4 StatCards monochromes (Calls Answered 270, Minutes 562, Cost Saved $120, Resolved 127), graphe `Call Volume` avec ligne Inbound sombre et ligne Outbound grise, Reference Line `Jan 16`, liste `Recent Calls` identique à la maquette.
+- Volet Copilote ⚡ Operator **supprimé** de la vue d'ensemble et de la page Voice Agent — conformément à la directive explicite.
+- Deux onglets : **Dashboard** (monitoring) + **Configuration** (voix ElevenLabs, prompt système, simulateur live).
+- Appels récents **cliquables** → modal de transcription complète avec timeline horodatée, bulles agent/prospect et statut.
+
+**ElevenLabs — Intégration Réelle (non simulée)**
+- Remplacement de l'ancienne simulation par `@elevenlabs/react` (package officiel `ConversationProvider` + `useConversation`).
+- Token de conversation signé côté serveur via `/api/elevenlabs/token` — la clé API brute n'est jamais exposée au navigateur.
+- 6 vraies voix ElevenLabs sélectionnables : Rachel, Domi, Bella, Antoni, Arnold, Adam.
+- Waveform live réactif à l'état speaking/listening, bouton mute/unmute microphone en temps réel.
+
+**Onboarding — 5 Vraies Étapes avec Thème Vert**
+- Reconstruction complète en 5 étapes réelles : Profil (photo, nom, bio), Rôle (intitulé + département), Équipe (taille + invitations), Préférences (page d'accueil, fuseau, langue), Terminé (animation + redirection).
+- Barre de progression animée verte `#1E4B33`, boutons et accents verts sur l'ensemble du formulaire.
+- Protection du rôle client : redirection automatique vers `/portal` si `role === 'client'`.
+
+**Sidebar Workspace Switcher**
+- Cercle/badge noir (LogoMark) remplacé par un avatar carré vert `M` (Minerva, `#1E4B33`).
+- Label `Espace de travail` plus lisible.
+
+**Font Pairing**
+- Confirmation : Inter (déjà installé et configuré globalement) — style identique à Linear et Notion. Aucune dépendance supplémentaire.
+
+**Vue d'ensemble (`/overview`)**
+- Suppression du volet Copilote ⚡ Operator.
+- Appels récents cliquables → modal de transcription complète.
+- Icônes différenciées : vert pour inbound, neutre pour outbound.
+
+---
+
+## 2026-08-15 — Version 2.0.0 : Nouvelle Interface AI Voice Agent, Refonte du Portail Client & Onboarding Pixel-Perfect
+
+**AI Voice Agent Dashboard (`/overview` & `/voice-agent`)**
+- Refonte complète de la vue d'ensemble selon la maquette AI Voice Agent (4 StatCards d'appels et de conversion, double courbe Inbound/Outbound, histogramme d'appels, journal d'appels récents).
+- Intégration du volet Copilote IA `⚡ Operator` interactif à droite.
+- Création de la console dédiée `/voice-agent` avec configuration des voix ElevenLabs, prompt système et simulateur d'appel vocal en direct.
+
+**Portail Client & Gestion des Rôles (`/portal` & `/portal/join`)**
+- Séparation stricte des rôles : les clients invités rejoignent désormais exclusivement le rôle `client` et sont isolés sur leur portail personnalisé.
+- Refonte intégrale du Dashboard Client (`/portal`) avec 4 StatCards de performance (leads, appels IA, valeur générée, conversion), flux d'acquisition et volet Copilote Client.
+- Nouvelle page d'invitation client sécurisée (`/portal/join`).
+
+**Onboarding & Workspace Switcher**
+- Refonte pixel-perfect de l'onboarding (`/onboarding`) conforme à la maquette de référence (étape 1/5, upload d'avatar avec placeholder +, toggle de notifications, mockup complet d'espace de travail).
+- Sélecteur minimaliste d'espace de travail (`Minerva Workspace ▾`) en tête de barre latérale et replacement du profil utilisateur en pied de barre.
+
+---
+
 ## 2026-08-12 — Chantier 1 : marque, sidebar, bandeau du haut
 
 **Corrigé**
