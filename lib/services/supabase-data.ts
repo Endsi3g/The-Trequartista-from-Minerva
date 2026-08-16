@@ -394,9 +394,10 @@ export async function addLead(lead: Omit<Lead, 'id' | 'created_at'>): Promise<Le
   return data as Lead;
 }
 
-export async function updateLeadStatus(leadId: string, status: Lead['status'], stage?: string): Promise<boolean> {
+export async function updateLeadStatus(leadId: string, status: Lead['status'], stage?: string, probabilityPct?: number): Promise<boolean> {
   const payload: Record<string, unknown> = { status };
   if (stage) payload.stage = stage;
+  if (probabilityPct !== undefined) payload.probability_pct = probabilityPct;
   const { error } = await getSupabase().from('leads').update(payload).eq('id', leadId);
   if (error) {
     console.error('[Supabase] Error updating lead status:', error);

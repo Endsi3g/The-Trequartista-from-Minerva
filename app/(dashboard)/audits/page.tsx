@@ -11,11 +11,27 @@ import { useCurrentUser } from '@/hooks/use-current-user';
 import { fetchAudits } from '@/lib/services/supabase-data';
 import type { Audit } from '@/lib/types';
 
-const STATUS_BADGE: Record<Audit['status'], { variant: 'neutral' | 'amber' | 'green' | 'lime'; label: string }> = {
+// Six pipeline stages track progress via intensity of the single green
+// accent (mv-amber is aliased to mv-green -- see CLAUDE.md -- so the old
+// 'amber' variant made transcript_ready/extracting render identically to
+// reviewed/proposal_sent, hiding real progress differences).
+const STATUS_BADGE: Record<Audit['status'], { variant: 'neutral' | 'green'; style?: React.CSSProperties; label: string }> = {
   awaiting_transcript: { variant: 'neutral', label: 'En attente de transcription' },
-  transcript_ready: { variant: 'amber', label: 'Transcription prête' },
-  extracting: { variant: 'amber', label: 'Extraction en cours' },
-  extracted: { variant: 'lime', label: 'Extrait' },
+  transcript_ready: {
+    variant: 'neutral',
+    style: { backgroundColor: 'rgba(30, 75, 51, 0.08)', borderColor: 'rgba(30, 75, 51, 0.25)', color: '#4a7d63' },
+    label: 'Transcription prête',
+  },
+  extracting: {
+    variant: 'neutral',
+    style: { backgroundColor: 'rgba(30, 75, 51, 0.14)', borderColor: 'rgba(30, 75, 51, 0.3)', color: '#356b4f' },
+    label: 'Extraction en cours',
+  },
+  extracted: {
+    variant: 'neutral',
+    style: { backgroundColor: 'rgba(30, 75, 51, 0.22)', borderColor: 'rgba(30, 75, 51, 0.4)', color: '#1E4B33' },
+    label: 'Extrait',
+  },
   reviewed: { variant: 'green', label: 'Révisé' },
   proposal_sent: { variant: 'green', label: 'Proposition envoyée' },
 };
@@ -83,7 +99,9 @@ export default function AuditsPage() {
                     {new Date(audit.created_at).toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </div>
                 </div>
-                <Badge variant={STATUS_BADGE[audit.status].variant}>{STATUS_BADGE[audit.status].label}</Badge>
+                <Badge variant={STATUS_BADGE[audit.status].variant} style={STATUS_BADGE[audit.status].style}>
+                  {STATUS_BADGE[audit.status].label}
+                </Badge>
               </Link>
             ))}
           </div>

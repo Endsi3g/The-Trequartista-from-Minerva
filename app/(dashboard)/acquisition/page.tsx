@@ -12,9 +12,15 @@ import { fetchAcquisitionFunnelStats, fetchIntakeLeads, type AcquisitionFunnelSt
 import type { IntakeLead } from '@/lib/types';
 import { MinervaVoiceAgent } from '@/components/voice/MinervaVoiceAgent';
 
-const STATUS_BADGE: Record<IntakeLead['status'], { variant: 'neutral' | 'amber' | 'green'; label: string }> = {
-  step1_abandoned: { variant: 'amber', label: 'Étape 1 seulement' },
-  qualified: { variant: 'green', label: 'Qualifié' },
+// mv-amber is aliased to mv-green (see CLAUDE.md), so the old 'amber'
+// variant made an incomplete "step1_abandoned" lead render identically to
+// a genuinely qualified one -- misleadingly reassuring on a funnel
+// dashboard. 'lime' now renders as a distinct neutral-warm chip (see
+// components/ui/badge.tsx), giving qualified its own step between
+// neutral (not progressed) and green (converted).
+const STATUS_BADGE: Record<IntakeLead['status'], { variant: 'neutral' | 'lime' | 'green'; label: string }> = {
+  step1_abandoned: { variant: 'neutral', label: 'Étape 1 seulement' },
+  qualified: { variant: 'lime', label: 'Qualifié' },
   converted: { variant: 'green', label: 'Converti' },
   discarded: { variant: 'neutral', label: 'Écarté' },
 };

@@ -97,6 +97,9 @@ function LeadsCrmContent() {
 
   const wonLeadsCount = filteredLeads.filter((l) => l.status === 'Gagné' || l.stage === 'gagne').length;
   const winRatePct = filteredLeads.length > 0 ? Math.round((wonLeadsCount / filteredLeads.length) * 100) : 0;
+  const activeLeadsCount = filteredLeads.filter(
+    (l) => l.status !== 'Gagné' && l.status !== 'Perdu' && l.stage !== 'gagne' && l.stage !== 'perdu'
+  ).length;
 
   const allVisibleSelected = filteredLeads.length > 0 && filteredLeads.every((l) => selectedIds.has(l.id));
 
@@ -246,7 +249,7 @@ function LeadsCrmContent() {
         <div className="bg-mv-surface border border-mv-border rounded-2xl p-5 shadow-mv-sm flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold text-mv-ink-soft uppercase tracking-wider">Leads Actifs</p>
-            <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">{filteredLeads.length}</p>
+            <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">{activeLeadsCount}</p>
             <span className="text-[10px] font-semibold text-mv-ink-soft">En cours d&apos;échange</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/30 flex items-center justify-center">

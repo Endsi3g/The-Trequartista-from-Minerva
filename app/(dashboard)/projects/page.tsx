@@ -105,7 +105,7 @@ export default function ProjectsPage() {
                       <Badge variant="neutral">{proj.current_stage}</Badge>
                     </td>
                     <td className="py-4 px-2">
-                      <Badge variant={proj.health === 'Ready' ? 'green' : 'lime'}>
+                      <Badge variant={proj.health === 'Needs Review' ? 'red' : proj.health === 'Ready' ? 'green' : 'lime'}>
                         ● {proj.health}
                       </Badge>
                     </td>

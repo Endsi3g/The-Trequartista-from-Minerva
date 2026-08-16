@@ -49,8 +49,8 @@ export default function AuditLogsPage() {
             <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
               Journal d'Audit & Traçabilité Ops
             </h1>
-            <Badge variant={isConnected ? 'green' : 'amber'}>
-              {isConnected ? 'Realtime Connected' : 'En direct'}
+            <Badge variant={isConnected ? 'green' : 'neutral'}>
+              {isConnected ? 'En direct' : 'Hors ligne'}
             </Badge>
           </div>
           <p className="text-sm text-mv-ink-soft mt-1">
@@ -121,7 +121,7 @@ export default function AuditLogsPage() {
                   <div
                     className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
                       isAlert
-                        ? 'bg-mv-amber-bg border-mv-amber/40 text-mv-amber'
+                        ? 'bg-mv-red-bg border-mv-red/40 text-mv-red'
                         : isSystem
                         ? 'bg-mv-warm-tint border-mv-warm/40 text-mv-warm'
                         : 'bg-mv-green-tint border-mv-green/40 text-mv-green'
@@ -140,7 +140,7 @@ export default function AuditLogsPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-extrabold text-mv-ink">{log.actor_name}</span>
                       <span className="text-[10px] text-mv-ink-faint">({log.table_name})</span>
-                      <Badge variant={isAlert ? 'amber' : isSystem ? 'lime' : 'green'}>
+                      <Badge variant={isAlert ? 'red' : isSystem ? 'lime' : 'green'}>
                         {isAlert ? 'alert' : isSystem ? 'system' : 'action'}
                       </Badge>
                     </div>

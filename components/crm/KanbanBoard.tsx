@@ -96,7 +96,12 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
     if (newStage === 'gagne') statusText = 'Gagné';
     if (newStage === 'perdu') statusText = 'Perdu';
 
-    const success = await updateLeadStatus(leadId, statusText, newStage);
+    // Keep probability_pct in sync with the column's own weighting -- it
+    // used to only get updated via the lead detail drawer, so a card
+    // dragged straight to "Gagné" kept its old (e.g. 10%) probability and
+    // silently undercounted the weighted forecast total.
+    const targetColumn = KANBAN_COLUMNS.find((c) => c.id === newStage);
+    const success = await updateLeadStatus(leadId, statusText, newStage, targetColumn?.probabilityPct);
     setDraggedLeadId(null);
 
     if (!success) {
@@ -158,14 +163,9 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
                   onClick={() => onSelectLead(lead)}
                   className="bg-mv-surface border border-mv-border rounded-xl p-3.5 shadow-mv-sm hover:shadow-mv-md hover:border-mv-green transition-all cursor-grab active:cursor-grabbing space-y-2 group relative"
                 >
-                  <div className="flex items-start justify-between">
-                    <h4 className="text-xs font-bold text-mv-ink group-hover:text-mv-green transition-colors line-clamp-1">
-                      {lead.company_name || lead.client_name || lead.contact_name}
-                    </h4>
-                    <span className="text-[10px] font-bold text-mv-ink-faint bg-mv-surface px-1.5 py-0.5 rounded">
-                      {lead.score_grade || 'A'}
-                    </span>
-                  </div>
+                  <h4 className="text-xs font-bold text-mv-ink group-hover:text-mv-green transition-colors line-clamp-1">
+                    {lead.company_name || lead.client_name || lead.contact_name}
+                  </h4>
 
                   <p className="text-[11px] text-mv-ink-soft flex items-center gap-1">
                     <Mail className="w-3 h-3 text-mv-green shrink-0" />
