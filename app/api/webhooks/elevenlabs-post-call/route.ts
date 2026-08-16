@@ -30,8 +30,12 @@ export async function POST(req: Request) {
     type?: string;
     data?: {
       conversation_id?: string;
+      status?: string;
+      metadata?: { call_duration_secs?: number };
+      transcript?: unknown;
       analysis?: {
         data_collection_results?: Record<string, { value?: unknown } | unknown>;
+        transcript_summary?: string;
       };
     };
   };
@@ -39,6 +43,22 @@ export async function POST(req: Request) {
     payload = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: 'JSON invalide.' }, { status: 400 });
+  }
+
+  // Log every call that reaches this webhook, regardless of whether it
+  // yielded a qualified prospect -- this is the /voice-agent dashboard's
+  // only real data source (Recent Calls, Call Volume). Field names beyond
+  // conversation_id are best-effort against ElevenLabs' documented shape;
+  // worth re-verifying once a real call has actually fired this webhook.
+  const { error: callLogError } = await supabase.from('voice_calls').insert({
+    elevenlabs_conversation_id: payload.data?.conversation_id ?? null,
+    duration_seconds: payload.data?.metadata?.call_duration_secs ?? null,
+    status: payload.data?.status === 'failed' ? 'failed' : 'completed',
+    transcript: payload.data?.transcript ?? null,
+    outcome: payload.data?.analysis?.transcript_summary ?? null,
+  });
+  if (callLogError) {
+    console.error('[elevenlabs-post-call] voice_calls insert error:', callLogError);
   }
 
   const results = payload.data?.analysis?.data_collection_results;

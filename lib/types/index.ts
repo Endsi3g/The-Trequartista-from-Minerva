@@ -482,4 +482,26 @@ export interface Proposal {
   created_at: string;
 }
 
+// ── Voice Agent (ElevenLabs real call log) ──────────────────────────────────
+
+export interface VoiceCallTranscriptLine {
+  sender?: string;
+  source?: string;
+  message?: string;
+  text?: string;
+}
+
+export interface VoiceCall {
+  id: string;
+  elevenlabs_conversation_id: string | null;
+  direction: 'inbound' | 'outbound';
+  caller_name: string | null;
+  caller_phone: string | null;
+  duration_seconds: number | null;
+  status: 'completed' | 'abandoned' | 'failed';
+  transcript: VoiceCallTranscriptLine[] | null;
+  outcome: string | null;
+  intake_lead_id: string | null;
+  created_at: string;
+}
 
