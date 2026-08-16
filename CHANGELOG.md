@@ -4,6 +4,28 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-15 — Bug hunt : intégrité des données, échecs silencieux, portail client
+
+**Portail client (`/portal`) — le plus grave**
+- Le "Copilote Client" (chat) était entièrement simulé : aucun appel réseau, juste un délai artificiel affichant "Votre demande a été transmise à votre chef de projet Minerva" — rien n'était réellement transmis. Remplacé par une vraie messagerie branchée sur le canal `client_messages` déjà utilisé par `/portal/questions`.
+- Retrait de toutes les données fictives montrées à de vrais clients : graphique de flux entièrement inventé, valeurs de repli codées en dur (142 appels, 18 400 $, 4.2x, 32 %), et une carte affichant le mauvais champ (`total_generated` au lieu de `pipeline_value`).
+- `portal/page.tsx` et `portal/layout.tsx` migrés des classes Tailwind brutes (`neutral-*`/`emerald-*`) vers les tokens `--mv-*` du reste de l'app.
+
+**Échecs silencieux corrigés** (l'utilisateur croyait qu'une action avait réussi alors que rien n'avait été sauvegardé)
+- Suppression d'un lead, coche/réinitialisation de la checklist de lancement, changement de statut d'un reel, sauvegarde de la configuration Notion : les quatre ignoraient le résultat de l'appel Supabase. Corrigés avec retour en arrière visuel + message d'erreur.
+- Ajout d'une confirmation avant de réinitialiser la checklist de lancement (20 points effacés d'un clic auparavant).
+- Le tiroir de détail d'un lead gardait les données de l'ancien lead en changeant de sélection sans le fermer — corrigé.
+
+**Autres corrections**
+- Photo de logo client cassée (URL Unsplash morte) sans repli — affecte maintenant un avatar de secours partout où un logo client s'affiche.
+- Texte illisible (crème sur crème) sur le badge "lime" utilisé à 8 endroits (tags SOP, statut d'audit, etc.).
+- Message d'erreur Composio mentionnant littéralement ".env.local" même en environnement déployé.
+- En-tête mobile de connexion/inscription : logo et lien "Créer un compte" se chevauchaient à 390px de large.
+- Tableaux Clients/Leads/Équipe : se compressaient au lieu de défiler horizontalement sur mobile.
+- Couleurs bleu/violet codées en dur dans le Kanban des leads (contraire à la règle d'accent unique) — remplacées par une intensité de vert.
+
+---
+
 ## 2026-08-15 — Version 2.1.0 : Voice Agent Pixel-Perfect, Onboarding 5 étapes & ElevenLabs Réel
 
 **Voice Agent Dashboard (`/voice-agent`) — Pixel-Perfect**
