@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { verifyElevenLabsWebhookSignature } from '@/lib/services/elevenlabs';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseSecret = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseSecret);
+// Lazily instantiated -- see leads/step-1/route.ts for why.
+function getSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 export const runtime = 'nodejs';
 
@@ -17,6 +18,7 @@ export const runtime = 'nodejs';
 // a real payload the first time a call actually completes, since this has
 // not been exercised against a live webhook yet.
 export async function POST(req: Request) {
+  const supabase = getSupabase();
   const rawBody = await req.text();
   const signature = req.headers.get('elevenlabs-signature');
 

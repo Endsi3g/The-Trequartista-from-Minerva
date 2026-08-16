@@ -3,14 +3,17 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+// Lazily instantiated -- see audit-view/[token]/route.ts for why.
+function getSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 const ReactSchema = z.object({
   initiativeId: z.string().uuid(),
   reaction: z.enum(['interested', 'not_priority']),
 });
 
-async function resolveAudit(token: string) {
+async function resolveAudit(supabase: ReturnType<typeof getSupabase>, token: string) {
   const { data } = await supabase.from('audits').select('id, view_token_expires_at').eq('view_token', token).maybeSingle();
   if (!data) return null;
   if (data.view_token_expires_at && new Date(data.view_token_expires_at) < new Date()) return null;
@@ -18,6 +21,7 @@ async function resolveAudit(token: string) {
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ token: string }> }) {
+  const supabase = getSupabase();
   const { token } = await params;
   const ip = getClientIp(req);
   const { limited } = checkRateLimit(ip, `audit-react-${token}`, 30, 60_000);
@@ -25,7 +29,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
     return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429 });
   }
 
-  const audit = await resolveAudit(token);
+  const audit = await resolveAudit(supabase, token);
   if (!audit) {
     return NextResponse.json({ error: 'Lien invalide ou expiré.' }, { status: 404 });
   }

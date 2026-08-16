@@ -2,10 +2,13 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { timingSafeEqual } from 'node:crypto';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseSecret = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseSecret);
+// Lazily instantiated -- a module-scope createClient() call with a `!`
+// assertion throws during `next build`'s page-data collection when the
+// service-role key isn't present in the build environment (e.g. CI), even
+// though it's only ever needed at request time.
+function getSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 // No hardcoded fallback: if the secret isn't configured, every request is
 // rejected instead of silently trusting a value that has been public in
@@ -25,6 +28,7 @@ function isValidWebhookSecret(authHeader: string | null): boolean {
 }
 
 export async function POST(req: Request) {
+  const supabase = getSupabase();
   try {
     const authHeader = req.headers.get('authorization');
 

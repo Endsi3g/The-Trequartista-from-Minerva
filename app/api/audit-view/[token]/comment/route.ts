@@ -3,7 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+// Lazily instantiated -- see audit-view/[token]/route.ts for why.
+function getSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 const CommentSchema = z.object({
   targetType: z.enum(['process_step', 'cost_item', 'initiative', 'general']),
@@ -13,6 +16,7 @@ const CommentSchema = z.object({
 });
 
 export async function POST(req: Request, { params }: { params: Promise<{ token: string }> }) {
+  const supabase = getSupabase();
   const { token } = await params;
   const ip = getClientIp(req);
   const { limited } = checkRateLimit(ip, `audit-comment-${token}`, 10, 60_000);

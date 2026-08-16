@@ -3,6 +3,8 @@ import { SignupForm } from '@/components/signup-form';
 import { Logo } from '@/components/shell/Logo';
 import { HalftoneImage } from '@/components/ui/halftone-image';
 
+export const dynamic = 'force-dynamic';
+
 export default function SignupPage() {
   return (
     <div className="min-h-screen flex text-mv-ink bg-mv-cream">

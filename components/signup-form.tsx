@@ -15,12 +15,11 @@ export function SignupForm() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const supabase = createClient();
-
   const handleGoogleSso = async () => {
     setLoading(true);
     setErrorMsg(null);
     try {
+      const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -44,6 +43,7 @@ export function SignupForm() {
     const normalizedEmail = email.trim().toLowerCase();
 
     try {
+      const supabase = createClient();
       const { error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,

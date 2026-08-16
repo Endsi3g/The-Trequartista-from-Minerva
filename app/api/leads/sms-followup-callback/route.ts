@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendSms } from '@/lib/services/twilio';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+// Lazily instantiated -- see leads/step-1/route.ts for why.
+function getSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 // Draft copy -- proposed by Claude per the user's "rédige, j'ajusterai"
 // answer; edit freely before relying on it in production.
@@ -16,6 +19,7 @@ function followUpMessage(firstName: string): string {
 // app/api/cron/task-reminders/route.ts -- swap for @upstash/qstash's
 // Receiver.verify() once the endpoint is live behind a real public URL.
 export async function POST(req: Request) {
+  const supabase = getSupabase();
   const secret = process.env.CRON_SECRET;
   const provided = req.headers.get('x-cron-secret');
   if (!secret || provided !== secret) {

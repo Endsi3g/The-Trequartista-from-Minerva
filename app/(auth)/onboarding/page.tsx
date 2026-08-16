@@ -46,11 +46,15 @@ export default function OnboardingPage() {
 
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const supabase = createClient();
   const { toastError, toastSuccess } = useToast();
 
   useEffect(() => {
     (async () => {
+      // Created inside the effect, not at component top-level -- this page
+      // has no `dynamic` export, so a top-level createClient() call also
+      // runs during SSR/build prerendering and throws when the public
+      // Supabase env vars aren't present in that environment (e.g. CI).
+      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
@@ -80,6 +84,7 @@ export default function OnboardingPage() {
     if (!file || !userId) return;
     setUploadingAvatar(true);
     try {
+      const supabase = createClient();
       const filePath = `avatars/${Date.now()}-${file.name}`;
       const { error } = await supabase.storage.from('team-documents').upload(filePath, file, { upsert: true });
       if (error) { toastError("Erreur d'upload", error.message); return; }
@@ -98,6 +103,7 @@ export default function OnboardingPage() {
   const handleFinish = async () => {
     setLoading(true);
     try {
+      const supabase = createClient();
       const finalRole = userRole || 'member';
       await supabase.from('profiles').upsert({
         id: userId,

@@ -4,7 +4,10 @@ import { z } from 'zod';
 import { corsHeaders, handleCorsPreflight } from '@/lib/cors';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+// Lazily instantiated -- see leads/step-1/route.ts for why.
+function getSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 // leadId is the robust path (Framer carries the id returned by step-1
 // forward into step-2). If the form can't do that, phone is a fallback
@@ -30,6 +33,7 @@ export async function OPTIONS(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const supabase = getSupabase();
   const origin = req.headers.get('origin');
   const headers = corsHeaders(origin);
 

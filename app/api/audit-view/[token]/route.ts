@@ -1,13 +1,20 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+// Lazily instantiated -- a module-scope createClient() call with a `!`
+// assertion throws during `next build`'s page-data collection when
+// SUPABASE_SERVICE_ROLE_KEY isn't present in the build environment (e.g.
+// CI), even though it's only ever needed at request time.
+function getSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 // Public, token-gated read for the client-facing audit deliverable. No
 // account required, and audits/audit_* tables carry no anon RLS policy at
 // all -- this service-role route is the only way in, and it validates the
 // token + expiry itself before returning anything.
 export async function GET(_req: Request, { params }: { params: Promise<{ token: string }> }) {
+  const supabase = getSupabase();
   const { token } = await params;
 
   const { data: audit, error } = await supabase

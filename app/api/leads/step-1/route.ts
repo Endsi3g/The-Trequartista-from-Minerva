@@ -5,7 +5,13 @@ import { corsHeaders, handleCorsPreflight } from '@/lib/cors';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { scheduleDelayedCallback } from '@/lib/services/qstash';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+// Lazily instantiated -- a module-scope createClient() call with a `!`
+// assertion throws during `next build`'s page-data collection when the
+// service-role key isn't present in the build environment (e.g. CI), even
+// though it's only ever needed at request time.
+function getSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 const Step1Schema = z.object({
   firstName: z.string().trim().min(1).max(120),
@@ -24,6 +30,7 @@ export async function OPTIONS(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const supabase = getSupabase();
   const origin = req.headers.get('origin');
   const headers = corsHeaders(origin);
 
