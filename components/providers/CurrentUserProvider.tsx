@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { createClient } from '@/lib/supabase/client';
 
 export interface CurrentUserState {
+  id: string;
   fullName: string;
   email: string;
   avatarUrl: string;
@@ -22,6 +23,7 @@ const CurrentUserContext = createContext<CurrentUserState | null>(null);
 // the current user's profile should call refresh() afterwards.
 export function CurrentUserProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<Omit<CurrentUserState, 'refresh'>>({
+    id: '',
     fullName: '',
     email: '',
     avatarUrl: '',
@@ -45,6 +47,7 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
       .maybeSingle();
     const fullName = profile?.full_name || user.user_metadata?.full_name || '';
     setState({
+      id: user.id,
       fullName,
       email: user.email || '',
       avatarUrl:

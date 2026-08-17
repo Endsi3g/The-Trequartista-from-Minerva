@@ -19,6 +19,8 @@
   },
   "iconLibrary": "lucide",
   "registries": {
-    "@skiper-ui": "https://skiper-ui.com/registry/{name}.json"
+    "@skiper-ui": "https://skiper-ui.com/registry/{name}.json",
+    "@cult-ui": "https://cult-ui.com/r/{name}.json",
+    "@supabase": "https://supabase.com/ui/r/{name}.json"
   }
 }

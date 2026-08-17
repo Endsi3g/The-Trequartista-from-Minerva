@@ -1,12 +1,23 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useTeamPresence } from '@/components/providers/PresenceProvider';
+import { usePathname } from 'next/navigation';
+import { useRealtimePresenceRoom } from '@/hooks/use-realtime-presence-room';
+import { useCurrentUser } from '@/hooks/use-current-user';
+import { getPageLabel } from '@/lib/presence';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { Users, X } from 'lucide-react';
 
 export function TeamPresence() {
-  const members = useTeamPresence();
+  const pathname = usePathname();
+  const { role } = useCurrentUser();
+  const isTeam = role === 'admin' || role === 'member';
+  const { otherUsers } = useRealtimePresenceRoom(
+    'minerva-team-presence',
+    { path: pathname, pageLabel: getPageLabel(pathname) },
+    isTeam
+  );
+  const members = Object.values(otherUsers);
   const [isOpen, setIsOpen] = useState(false);
 
   if (members.length === 0) return null;
@@ -23,8 +34,8 @@ export function TeamPresence() {
       >
         <div className="flex items-center -space-x-2">
           {visible.map((m) => (
-            <span key={m.userId} className="relative">
-              <UserAvatar name={m.fullName} src={m.avatarUrl} size="xs" className="ring-2 ring-mv-surface" />
+            <span key={m.id} className="relative">
+              <UserAvatar name={m.name} src={m.image} size="xs" className="ring-2 ring-mv-surface" />
               <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-mv-green ring-2 ring-mv-surface" />
             </span>
           ))}
@@ -47,14 +58,14 @@ export function TeamPresence() {
             </div>
             <div className="space-y-1 max-h-72 overflow-y-auto">
               {members.map((m) => (
-                <div key={m.userId} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-mv-cream-soft transition-colors">
+                <div key={m.id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-mv-cream-soft transition-colors">
                   <span className="relative shrink-0">
-                    <UserAvatar name={m.fullName} src={m.avatarUrl} size="sm" />
+                    <UserAvatar name={m.name} src={m.image} size="sm" />
                     <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-mv-green ring-2 ring-mv-surface" />
                   </span>
                   <div className="min-w-0">
-                    <div className="text-xs font-bold text-mv-ink truncate">{m.fullName}</div>
-                    <div className="text-[11px] text-mv-ink-soft truncate">{m.pageLabel || 'En ligne'}</div>
+                    <div className="text-xs font-bold text-mv-ink truncate">{m.name}</div>
+                    <div className="text-[11px] text-mv-ink-soft truncate">{(m.pageLabel as string) || 'En ligne'}</div>
                   </div>
                 </div>
               ))}

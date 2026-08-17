@@ -5,7 +5,6 @@ import { SupabaseRealtimeProvider } from '@/components/providers/SupabaseRealtim
 import { ToastProvider } from '@/components/providers/ToastProvider';
 import { ConfirmProvider } from '@/components/providers/ConfirmProvider';
 import { CurrentUserProvider } from '@/components/providers/CurrentUserProvider';
-import { PresenceProvider } from '@/components/providers/PresenceProvider';
 import { AppPermissionsProvider } from '@/components/providers/AppPermissionsProvider';
 
 // v3 (2026-08-16): matched against Reach/Flow -- Playfair Display for
@@ -121,9 +120,7 @@ export default function RootLayout({
             <CurrentUserProvider>
               <AppPermissionsProvider>
                 <SupabaseRealtimeProvider>
-                  <PresenceProvider>
-                    {children}
-                  </PresenceProvider>
+                  {children}
                 </SupabaseRealtimeProvider>
               </AppPermissionsProvider>
             </CurrentUserProvider>
