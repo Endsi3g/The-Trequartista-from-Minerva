@@ -7,6 +7,12 @@ import { createClient } from '@/lib/supabase/client'
 interface UseRealtimeChatProps {
   roomName: string
   username: string
+  // Stable identity for "is this my own message" checks -- two people can
+  // share a display name, so matching on name alone (the registry
+  // default) isn't reliable once there's more than one real conversation
+  // partner. Optional so the component still works exactly as upstream if
+  // omitted.
+  userId?: string
 }
 
 export interface ChatMessage {
@@ -14,13 +20,14 @@ export interface ChatMessage {
   content: string
   user: {
     name: string
+    id?: string
   }
   createdAt: string
 }
 
 const EVENT_MESSAGE_TYPE = 'message'
 
-export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
+export function useRealtimeChat({ roomName, username, userId }: UseRealtimeChatProps) {
   const supabase = createClient()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [channel, setChannel] = useState<ReturnType<typeof supabase.channel> | null>(null)
@@ -57,6 +64,7 @@ export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
         content,
         user: {
           name: username,
+          id: userId,
         },
         createdAt: new Date().toISOString(),
       }
@@ -70,7 +78,7 @@ export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
         payload: message,
       })
     },
-    [channel, isConnected, username]
+    [channel, isConnected, username, userId]
   )
 
   return { messages, sendMessage, isConnected }

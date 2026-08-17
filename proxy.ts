@@ -157,6 +157,7 @@ export const config = {
     '/produits/:path*',
     '/voice-agent/:path*',
     '/documents/:path*',
+    '/chat/:path*',
     '/profil/:path*',
     '/settings/:path*',
     '/integrations/:path*',

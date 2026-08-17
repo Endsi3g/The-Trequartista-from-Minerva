@@ -164,6 +164,17 @@ export interface Project {
   assignees: string[];
 }
 
+export interface TeamChatMessage {
+  id: string;
+  channel_type: 'project' | 'client';
+  channel_id: string;
+  sender_id: string | null;
+  sender_name?: string;
+  sender_avatar?: string;
+  body: string;
+  created_at: string;
+}
+
 export interface TeamDocument {
   id: string;
   title: string;

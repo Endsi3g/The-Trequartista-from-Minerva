@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem, TeamDocument } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -693,16 +693,18 @@ export async function sendClientMessage(
   senderId: string,
   senderRole: 'client' | 'team',
   body: string
-): Promise<boolean> {
-  const { error } = await getSupabase()
+): Promise<ClientMessage | null> {
+  const { data, error } = await getSupabase()
     .from('client_messages')
-    .insert([{ client_id: clientId, sender_id: senderId, sender_role: senderRole, body }]);
+    .insert([{ client_id: clientId, sender_id: senderId, sender_role: senderRole, body }])
+    .select()
+    .single();
 
   if (error) {
     console.error('[Supabase] Error sending client message:', error);
-    return false;
+    return null;
   }
-  return true;
+  return data as ClientMessage;
 }
 
 export async function updateClientFocus(clientId: string, currentFocus: string): Promise<boolean> {
@@ -1447,4 +1449,59 @@ export async function deleteDocument(id: string): Promise<boolean> {
   // happen with uuid, but defensively) doesn't resurrect old content.
   await getSupabase().from('yjs_documents').delete().eq('room', id);
   return true;
+}
+
+// ----------------------------------------------------
+// 18. CHAT D'ÉQUIPE — canaux par projet/client
+// ----------------------------------------------------
+export async function fetchTeamChatMessages(
+  channelType: 'project' | 'client',
+  channelId: string
+): Promise<TeamChatMessage[]> {
+  return withTimeout(
+    (async () => {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from('team_chat_messages')
+        .select('*')
+        .eq('channel_type', channelType)
+        .eq('channel_id', channelId)
+        .order('created_at', { ascending: true });
+      if (error || !data) return [];
+
+      const senderIds = Array.from(new Set(data.map((m) => m.sender_id).filter(Boolean)));
+      const { data: senders } = senderIds.length
+        ? await supabase.from('profiles').select('id, full_name, avatar_url').in('id', senderIds)
+        : { data: [] as { id: string; full_name: string | null; avatar_url: string | null }[] };
+      const senderMap = new Map((senders || []).map((s) => [s.id, s]));
+
+      return data.map((row) => {
+        const sender = senderMap.get(row.sender_id);
+        return {
+          ...row,
+          sender_name: sender?.full_name || 'Membre',
+          sender_avatar: sender?.avatar_url || '',
+        };
+      }) as TeamChatMessage[];
+    })(),
+    []
+  );
+}
+
+export async function sendTeamChatMessage(
+  channelType: 'project' | 'client',
+  channelId: string,
+  senderId: string,
+  body: string
+): Promise<TeamChatMessage | null> {
+  const { data, error } = await getSupabase()
+    .from('team_chat_messages')
+    .insert([{ channel_type: channelType, channel_id: channelId, sender_id: senderId, body }])
+    .select()
+    .single();
+  if (error) {
+    console.error('[Supabase] Error sending team chat message:', error);
+    return null;
+  }
+  return data as TeamChatMessage;
 }

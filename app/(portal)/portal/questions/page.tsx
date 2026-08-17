@@ -5,16 +5,15 @@ import { Send } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { createClient } from '@/lib/supabase/client';
-import { fetchClientMessages, sendClientMessage } from '@/lib/services/supabase-data';
-import type { ClientMessage } from '@/lib/types';
+import { useCurrentUser } from '@/hooks/use-current-user';
+import { useClientChatThread } from '@/hooks/use-client-chat-thread';
 import { cn } from '@/lib/utils';
 
 export default function PortalQuestionsPage() {
   const [clientId, setClientId] = useState('');
-  const [userId, setUserId] = useState('');
-  const [messages, setMessages] = useState<ClientMessage[]>([]);
+  const { id: userId, fullName } = useCurrentUser();
   const [draft, setDraft] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [resolvingClient, setResolvingClient] = useState(true);
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -22,16 +21,15 @@ export default function PortalQuestionsPage() {
     (async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setUserId(user.id);
+      if (!user) { setResolvingClient(false); return; }
       const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).maybeSingle();
-      if (profile?.client_id) {
-        setClientId(profile.client_id);
-        setMessages(await fetchClientMessages(profile.client_id));
-      }
-      setLoading(false);
+      if (profile?.client_id) setClientId(profile.client_id);
+      setResolvingClient(false);
     })();
   }, []);
+
+  const { messages, loading: loadingMessages, send } = useClientChatThread(clientId, userId, fullName || 'Vous', 'client');
+  const loading = resolvingClient || loadingMessages;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -39,14 +37,11 @@ export default function PortalQuestionsPage() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!draft.trim() || !clientId || !userId) return;
+    if (!draft.trim()) return;
     setSending(true);
-    const ok = await sendClientMessage(clientId, userId, 'client', draft.trim());
+    const ok = await send(draft);
     setSending(false);
-    if (ok) {
-      setMessages(await fetchClientMessages(clientId));
-      setDraft('');
-    }
+    if (ok) setDraft('');
   };
 
   return (

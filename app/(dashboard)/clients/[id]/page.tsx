@@ -36,12 +36,13 @@ import {
   fetchClientPaymentLinks,
   fetchTasks,
   fetchContentPosts,
-  fetchClientMessages,
   updateClient,
 } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useAppPermissions } from '@/components/providers/AppPermissionsProvider';
-import { Client, Lead, Project, ClientPaymentLink, Task, ContentPost, ClientMessage } from '@/lib/types';
+import { useCurrentUser } from '@/hooks/use-current-user';
+import { useClientChatThread } from '@/hooks/use-client-chat-thread';
+import { Client, Lead, Project, ClientPaymentLink, Task, ContentPost } from '@/lib/types';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 
@@ -79,11 +80,14 @@ export default function ClientDetailPage() {
   const [paymentLinks, setPaymentLinks] = useState<ClientPaymentLink[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [contentPosts, setContentPosts] = useState<ContentPost[]>([]);
-  const [messages, setMessages] = useState<ClientMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const { toastSuccess, toastError } = useToast();
   const { can } = useAppPermissions();
+  const { id: currentUserId, fullName: currentUserName } = useCurrentUser();
+  const { messages, send: sendReply } = useClientChatThread(clientId, currentUserId, currentUserName || 'Équipe Minerva', 'team');
+  const [replyDraft, setReplyDraft] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
 
   const [editingContact, setEditingContact] = useState(false);
   const [savingContact, setSavingContact] = useState(false);
@@ -139,13 +143,12 @@ export default function ClientDetailPage() {
       setContactEmail(targetClient.contact_email || '');
       setLogoUrl(targetClient.logo_url || '');
 
-      const [leadsData, projectsData, paymentLinksData, tasksData, postsData, messagesData] = await Promise.all([
+      const [leadsData, projectsData, paymentLinksData, tasksData, postsData] = await Promise.all([
         fetchLeads(targetClient.id),
         fetchProjects(),
         fetchClientPaymentLinks(),
         fetchTasks(),
         fetchContentPosts(),
-        fetchClientMessages(targetClient.id),
       ]);
 
       setLeads(leadsData);
@@ -153,7 +156,6 @@ export default function ClientDetailPage() {
       setPaymentLinks(paymentLinksData.filter((l) => l.client_id === targetClient.id));
       setTasks(tasksData.filter((t) => t.client_id === targetClient.id));
       setContentPosts(postsData.filter((p) => p.client_id === targetClient.id));
-      setMessages(messagesData);
       setLoading(false);
     }
     loadData();
@@ -659,7 +661,7 @@ export default function ClientDetailPage() {
         {messages.length === 0 ? (
           <EmptyState icon={MessageSquare} title="Aucun message" description="Aucun échange n'a encore eu lieu via le portail client." />
         ) : (
-          <div className="space-y-2 max-h-72 overflow-y-auto">
+          <div className="space-y-2 max-h-72 overflow-y-auto mb-3">
             {messages.map((msg) => (
               <div key={msg.id} className="p-3 rounded-lg bg-mv-cream-soft border border-mv-border text-xs">
                 <div className="flex items-center justify-between mb-1">
@@ -676,6 +678,32 @@ export default function ClientDetailPage() {
             ))}
           </div>
         )}
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!replyDraft.trim()) return;
+            setSendingReply(true);
+            const ok = await sendReply(replyDraft);
+            setSendingReply(false);
+            if (ok) setReplyDraft('');
+          }}
+          className="flex items-center gap-2 pt-2 border-t border-mv-border"
+        >
+          <input
+            type="text"
+            value={replyDraft}
+            onChange={(e) => setReplyDraft(e.target.value)}
+            placeholder="Répondre au client…"
+            className="flex-1 bg-mv-cream-soft border border-mv-border rounded-xl px-3.5 py-2 text-xs text-mv-ink focus:outline-none focus:border-mv-green"
+          />
+          <button
+            type="submit"
+            disabled={sendingReply || !replyDraft.trim()}
+            className="px-3 py-2 rounded-xl bg-mv-green hover:bg-mv-green-dark text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+          >
+            {sendingReply ? '…' : 'Envoyer'}
+          </button>
+        </form>
       </Card>
     </div>
   );

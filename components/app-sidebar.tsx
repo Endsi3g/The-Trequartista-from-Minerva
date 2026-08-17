@@ -31,6 +31,7 @@ import {
   Building2,
   Plus,
   Rocket,
+  MessageSquare,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -163,6 +164,7 @@ export function AppSidebar() {
     { key: 'voice-agent', label: 'Agent Vocal IA', href: '/voice-agent', icon: PhoneCall, isNew: true },
     { key: 'tasks', label: 'Tâches', href: '/tasks', icon: CheckSquare, count: counts.myTasks ?? undefined },
     { key: 'documents', label: 'Documents', href: '/documents', icon: FileText, isNew: true },
+    { key: 'chat', label: 'Chat d\'équipe', href: '/chat', icon: MessageSquare, isNew: true },
   ];
 
   // "CRM" -- the sales pipeline
