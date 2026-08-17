@@ -4,6 +4,43 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-17 (suite 5) — Sidebar reproduite d'après Minerva Flow
+
+Structure et comportement de la barre latérale reproduits d'après `components/shell/AppSidebar.tsx` de Minerva Flow (github.com/Endsi3g/Minerva-Flow, produit sœur) — le contenu reste 100 % propre à Trequartista, seul le patron visuel/structurel est repris :
+
+- **Favoris** : nouvelle section dynamique, en mémoire pour la session (comme chez Flow, aucune persistance `localStorage`) — une étoile apparaît au survol de n'importe quel lien de nav pour l'épingler.
+- **Sections repliables avec indentation à filet gauche** (`border-l` + retrait) au lieu du simple retrait plat précédent — CRM, Livraison, Équipe, Croissance.
+- **En-tête compacté** : sélecteur d'espace de travail resserré (plus de carte à bordure) + bouton de recherche dédié juste à côté, ouvrant le même panneau de recherche que la barre supérieure.
+- **Accent vert** (`bg-mv-green`) sur le lien actif, remplaçant le noir plein (`bg-neutral-900`) — et migration de toute la sidebar des classes `neutral-*` génériques vers les tokens `mv-*` du reste de l'app, qu'elle n'utilisait pas encore.
+
+---
+
+## 2026-08-17 (suite 4) — Chat privé + pièces jointes, Contenu Minerva, refonte Vue d'ensemble, pipeline Opus Clip → Google Drive
+
+Quatre chantiers livrés dans la même passe, du bug réel trouvé en creusant un problème visuel jusqu'à une nouvelle intégration externe complète.
+
+**Bug réel trouvé et corrigé : l'input du chat collait en haut de la fenêtre**
+En cherchant pourquoi la zone de saisie du chat flottait près du haut du panneau au lieu de rester collée en bas, la cause s'est révélée être dans le composant `Card` partagé par toute l'app : son wrapper interne (`<div className="p-6">`) était toujours `display: block`, quel que soit le `className` passé en prop — ce qui cassait la chaîne flex de toute page essayant un layout plein écran avec `p-0`. Nouvelle prop `contentClassName` pour permettre l'override. Corrigé sur `/chat` **et** `/portal/questions` (messagerie du portail client), qui avait exactement le même bug caché.
+
+**Chat d'équipe étendu**
+- Conversations privées 1-à-1 avec n'importe quel collègue (nouvelle table `team_chat_dm_channels`, RLS restreinte aux deux participants — contrairement aux canaux projet/client, un DM n'est pas visible par tout admin/membre).
+- Pièces jointes réelles : images, GIF, notes vocales enregistrées directement au micro du navigateur (`MediaRecorder`), persistées dans un nouveau bucket `team-chat-media`. Le header `Permissions-Policy` bloquait `microphone=()` pour tout le monde — corrigé en `microphone=(self)`, sinon l'enregistrement aurait été cassé en production dès le déploiement.
+
+**Nouvel onglet « Contenu Minerva » dans le planificateur de contenu**
+Séparé du contenu client (`content_posts`) — le contenu propre à l'agence :
+- Calendrier partagé pour les vidéos Minerva à poster, avec rappel push quotidien à **toute l'équipe** (nouveau cron `/api/cron/minerva-content-reminders`) plutôt qu'à un seul assigné.
+- Banque d'inspirations (liens externes + note) et de vidéos actuelles (fichiers), catégories administrables depuis le formulaire d'ajout.
+
+**Vue d'ensemble : premier passage vers un style dense inspiré de Linear/Superhuman**
+Refonte volontairement isolée à cette seule page (aucun token partagé touché) : sans-serif, accent vert unique, bordures fines, bande de métriques unifiée, tableaux denses pour Projets/MRR, pipeline en intensité graduée, raccourcis clavier « G puis C/L/P/V ». La passe suivante (voir « suite 3 » ci-dessus) a rééquilibré la mise en page et réintroduit une salutation par-dessus ces fondations.
+
+**Pipeline Opus Clip → Google Drive**
+En déposant une vidéo dans « Contenu Minerva », une case à cocher optionnelle envoie le fichier à [Opus Clip](https://opus.pro) pour montage automatique en clips courts. Une fois le traitement terminé (webhook signé, vérifié par HMAC), les clips résultants sont réenvoyés automatiquement dans le Google Drive de l'équipe via la connexion Composio déjà existante (`/integrations`) — aucune authentification Google séparée à configurer. Statut et liens Drive consultables dans un nouvel onglet « Montages Opus Clip ». Nouvelle table `opus_clip_jobs` ; certains détails de schéma de l'API Opus Clip (noms exacts des champs de réponse) sont du best-effort documenté dans le code, à confirmer contre un vrai projet une fois la clé API configurée en production.
+
+**Académie** : pastilles de filtre par catégorie compressées (padding, police, espacement réduits) — c'était le seul endroit de l'app avec ce problème de filtres surdimensionnés.
+
+---
+
 ## 2026-08-17 (suite 3) — Optimisation visuelle & expérience utilisateur (Vue d'ensemble et en-têtes)
 
 Mise en application complète des corrections et améliorations de l'interface Vue d'ensemble (Overview) et du shell global :
