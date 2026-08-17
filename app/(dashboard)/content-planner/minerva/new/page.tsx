@@ -12,6 +12,7 @@ import {
   Check,
   Loader2,
   Plus,
+  Wand2,
 } from 'lucide-react';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useToast } from '@/components/providers/ToastProvider';
@@ -49,6 +50,7 @@ export default function NewMinervaContentPage() {
   const [scheduledDate, setScheduledDate] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
   const [members, setMembers] = useState<TeamMemberSummary[]>([]);
+  const [sendToOpusClip, setSendToOpusClip] = useState(false);
 
   const [saving, setSaving] = useState(false);
 
@@ -105,12 +107,30 @@ export default function NewMinervaContentPage() {
       created_by: userId,
     });
 
-    setSaving(false);
-    if (created) {
-      router.push('/content-planner');
-    } else {
+    if (!created) {
+      setSaving(false);
       toastError('Erreur', 'Impossible d’ajouter cet élément. Réessayez.');
+      return;
     }
+
+    if (kind === 'own_video' && sendToOpusClip && fileUrl) {
+      try {
+        const res = await fetch('/api/opus-clip/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ videoUrl: fileUrl, title: title.trim(), contentItemId: created.id }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          toastError('Opus Clip', body?.error || "La vidéo est ajoutée, mais l'envoi vers Opus Clip a échoué.");
+        }
+      } catch {
+        toastError('Opus Clip', "La vidéo est ajoutée, mais l'envoi vers Opus Clip a échoué (erreur réseau).");
+      }
+    }
+
+    setSaving(false);
+    router.push('/content-planner');
   };
 
   return (
@@ -275,6 +295,26 @@ export default function NewMinervaContentPage() {
                 />
               </label>
             </div>
+
+            {fileUrl && (
+              <label className="flex items-start gap-2.5 p-3 rounded-xl bg-mv-cream-soft/60 border border-mv-border cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={sendToOpusClip}
+                  onChange={(e) => setSendToOpusClip(e.target.checked)}
+                  className="mt-0.5 accent-mv-green cursor-pointer"
+                />
+                <span className="text-xs">
+                  <span className="font-bold text-mv-ink flex items-center gap-1.5">
+                    <Wand2 className="w-3.5 h-3.5 text-mv-green" /> Envoyer à Opus Clip pour montage automatique
+                  </span>
+                  <span className="text-mv-ink-faint block mt-0.5">
+                    Opus Clip génère des clips courts à partir de cette vidéo ; une fois prêts, ils sont déposés automatiquement dans le Google Drive de l&apos;équipe. Le résultat apparaît ensuite dans l&apos;onglet « Montages Opus Clip ».
+                  </span>
+                </span>
+              </label>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-mv-ink mb-1.5">Date de publication prévue (optionnel)</label>

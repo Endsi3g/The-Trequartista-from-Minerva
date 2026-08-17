@@ -17,8 +17,12 @@ import {
   Check,
   Trash2,
   Clock,
+  Wand2,
+  FolderOpen,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
-import { ContentPost, MinervaContentItem, MinervaContentCategory } from '@/lib/types';
+import { ContentPost, MinervaContentItem, MinervaContentCategory, OpusClipJob } from '@/lib/types';
 import { DonutChart } from '@/components/charts/DonutChart';
 import {
   fetchContentPosts,
@@ -27,6 +31,7 @@ import {
   fetchMinervaContentCategories,
   updateMinervaContentItem,
   deleteMinervaContentItem,
+  fetchOpusClipJobs,
 } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
@@ -91,7 +96,9 @@ export default function ContentPlannerPage() {
   const [minervaItems, setMinervaItems] = useState<MinervaContentItem[]>([]);
   const [minervaCategories, setMinervaCategories] = useState<MinervaContentCategory[]>([]);
   const [loadingMinerva, setLoadingMinerva] = useState(true);
-  const [minervaSubView, setMinervaSubView] = useState<'calendar' | 'banque'>('calendar');
+  const [minervaSubView, setMinervaSubView] = useState<'calendar' | 'banque' | 'opus'>('calendar');
+  const [opusJobs, setOpusJobs] = useState<OpusClipJob[]>([]);
+  const [loadingOpusJobs, setLoadingOpusJobs] = useState(true);
   const [minervaKindFilter, setMinervaKindFilter] = useState<'all' | 'inspiration' | 'own_video'>('all');
   const [minervaCategoryFilter, setMinervaCategoryFilter] = useState<string | null>(null);
   const [minervaCalendarMonth, setMinervaCalendarMonth] = useState(() => {
@@ -109,6 +116,10 @@ export default function ContentPlannerPage() {
       setMinervaItems(items);
       setMinervaCategories(categories);
       setLoadingMinerva(false);
+    })();
+    (async () => {
+      setOpusJobs(await fetchOpusClipJobs());
+      setLoadingOpusJobs(false);
     })();
   }, []);
 
@@ -327,10 +338,83 @@ export default function ContentPlannerPage() {
               >
                 <Sparkles className="w-3.5 h-3.5 shrink-0" /> Banque d'inspirations
               </button>
+              <button
+                onClick={() => setMinervaSubView('opus')}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
+                  minervaSubView === 'opus' ? 'bg-mv-green text-white shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
+                }`}
+              >
+                <Wand2 className="w-3.5 h-3.5 shrink-0" /> Montages Opus Clip
+              </button>
             </div>
           </div>
 
-          {loadingMinerva ? (
+          {minervaSubView === 'opus' ? (
+            loadingOpusJobs ? (
+              <div className="text-center py-16 text-sm text-mv-ink-soft">Chargement…</div>
+            ) : opusJobs.length === 0 ? (
+              <Card className="text-center py-16">
+                <Wand2 className="w-8 h-8 text-mv-ink-faint mx-auto mb-3" />
+                <p className="text-sm text-mv-ink-soft">
+                  Aucun montage Opus Clip pour le moment. Coche « Envoyer à Opus Clip » en ajoutant une vidéo Minerva pour en lancer un.
+                </p>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {opusJobs.map((job) => (
+                  <Card key={job.id} className="p-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="min-w-0">
+                        <div className="font-bold text-sm text-mv-ink truncate">{job.title}</div>
+                        <div className="text-[11px] text-mv-ink-faint">
+                          {new Date(job.created_at).toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                      <span
+                        className={cn(
+                          'shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold',
+                          job.status === 'done' && 'bg-mv-green-tint text-mv-green',
+                          job.status === 'failed' && 'bg-mv-red-bg text-mv-red',
+                          (job.status === 'pending' || job.status === 'processing') && 'bg-mv-cream-soft text-mv-ink-soft'
+                        )}
+                      >
+                        {job.status === 'done' && <Check className="w-3.5 h-3.5" />}
+                        {job.status === 'failed' && <AlertCircle className="w-3.5 h-3.5" />}
+                        {(job.status === 'pending' || job.status === 'processing') && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        {job.status === 'done' ? 'Terminé' : job.status === 'failed' ? 'Échec' : job.status === 'processing' ? 'En traitement' : 'En attente'}
+                      </span>
+                    </div>
+
+                    {job.status === 'failed' && job.error_message && (
+                      <p className="text-xs text-mv-red mt-2">{job.error_message}</p>
+                    )}
+
+                    {job.clips.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-mv-border grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {job.clips.map((clip) => (
+                          <div key={clip.id} className="flex items-center justify-between gap-2 text-xs bg-mv-cream-soft/60 rounded-lg px-3 py-2">
+                            <span className="truncate font-medium text-mv-ink">{clip.title}</span>
+                            {clip.drive_view_url ? (
+                              <a
+                                href={clip.drive_view_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="shrink-0 flex items-center gap-1 text-mv-green font-bold hover:underline"
+                              >
+                                <FolderOpen className="w-3.5 h-3.5" /> Drive
+                              </a>
+                            ) : (
+                              <span className="shrink-0 text-mv-ink-faint">Drive : échec</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            )
+          ) : loadingMinerva ? (
             <div className="text-center py-16 text-sm text-mv-ink-soft">Chargement…</div>
           ) : minervaSubView === 'calendar' ? (
             <Card className="p-6">

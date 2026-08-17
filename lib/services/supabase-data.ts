@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -1713,4 +1713,39 @@ export async function uploadMinervaContentFile(file: File): Promise<string | nul
   }
   const { data } = supabase.storage.from('team-documents').getPublicUrl(path);
   return data.publicUrl;
+}
+
+// ----------------------------------------------------
+// 20. OPUS CLIP — montage automatique + envoi vers Google Drive
+// ----------------------------------------------------
+export async function fetchOpusClipJobs(): Promise<OpusClipJob[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('opus_clip_jobs')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error || !data) return [];
+      return data as OpusClipJob[];
+    })(),
+    []
+  );
+}
+
+export async function createOpusClipJob(payload: {
+  source_content_item_id?: string | null;
+  source_video_url: string;
+  title: string;
+  created_by: string;
+}): Promise<OpusClipJob | null> {
+  const { data, error } = await getSupabase()
+    .from('opus_clip_jobs')
+    .insert([{ ...payload, status: 'pending' }])
+    .select('*')
+    .single();
+  if (error) {
+    console.error('[Supabase] Error creating Opus Clip job:', error);
+    return null;
+  }
+  return data as OpusClipJob;
 }

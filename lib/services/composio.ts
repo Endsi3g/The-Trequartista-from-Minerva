@@ -127,6 +127,53 @@ export async function initiateConnection(
   }
 }
 
+// Uploads a file (by public URL) into the team's connected Google Drive
+// via the GOOGLEDRIVE_UPLOAD_FILE tool -- used by the Opus Clip pipeline
+// to hand off finished clips once they're rendered. Requires Google
+// Drive to actually be connected on /integrations first; degrades to an
+// honest error otherwise, same as every other Composio call here.
+// file_to_upload accepting a plain public URL (not just a local path) is
+// documented for this tool, but hasn't been exercised against a real
+// Composio + Drive connection in this codebase yet -- worth confirming
+// the first time a real clip actually lands in Drive.
+export async function uploadFileToGoogleDrive(
+  fileUrl: string,
+  fileName: string,
+  folderId?: string
+): Promise<{ fileId: string; webViewLink: string | null } | { error: string }> {
+  let composio: Composio;
+  try {
+    composio = getComposioClient();
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Composio non configuré' };
+  }
+
+  try {
+    const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
+      user_id: COMPOSIO_ENTITY_ID,
+      arguments: {
+        file_to_upload: fileUrl,
+        name: fileName,
+        ...(folderId ? { parent_id: folderId } : {}),
+      },
+    });
+    if (!result.successful) {
+      return { error: `Composio a refusé l'envoi vers Google Drive : ${result.error || 'erreur inconnue'}` };
+    }
+    const data = result.data as Record<string, unknown> | undefined;
+    const nestedFile = data?.file as Record<string, unknown> | undefined;
+    const fileId = (data?.id ?? data?.fileId ?? nestedFile?.id) as string | undefined;
+    const webViewLink = (data?.webViewLink ?? nestedFile?.webViewLink ?? null) as string | null;
+    if (!fileId) {
+      return { error: 'Composio : réponse Google Drive inattendue (aucun identifiant de fichier retourné).' };
+    }
+    return { fileId, webViewLink };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erreur inconnue';
+    return { error: `Composio a refusé l'envoi vers Google Drive : ${message}` };
+  }
+}
+
 export async function disconnectConnection(connectedAccountId: string): Promise<{ success: boolean; error?: string }> {
   let composio: Composio;
   try {

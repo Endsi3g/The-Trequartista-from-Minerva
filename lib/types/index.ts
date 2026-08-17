@@ -305,6 +305,28 @@ export interface MinervaContentItem {
   created_at: string;
 }
 
+export interface OpusClipResultItem {
+  id: string;
+  title: string;
+  video_url: string;
+  drive_file_id?: string | null;
+  drive_view_url?: string | null;
+}
+
+export interface OpusClipJob {
+  id: string;
+  source_content_item_id: string | null;
+  source_video_url: string;
+  title: string;
+  opus_project_id: string | null;
+  status: 'pending' | 'processing' | 'done' | 'failed';
+  error_message: string | null;
+  clips: OpusClipResultItem[];
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TeamOKR {
   id: string;
   title: string;
