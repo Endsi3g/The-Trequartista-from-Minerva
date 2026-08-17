@@ -29,7 +29,7 @@ function SidebarTrigger() {
 
 function AppShellInner({ children }: AppShellProps) {
   return (
-    <div className="h-screen bg-mv-surface text-mv-ink flex flex-col w-full relative font-sans overflow-hidden">
+    <div className="h-screen bg-mv-cream-soft text-mv-ink flex flex-col w-full relative font-sans overflow-hidden">
       <ChangelogBanner />
       <div className="flex flex-1 w-full min-h-0">
         <AppSidebar />

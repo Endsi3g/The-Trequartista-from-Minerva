@@ -71,27 +71,23 @@ module.exports = {
   		},
   		fontFamily: {
   			display: [
-  				'var(--font-playfair)',
-  				'Playfair Display',
-  				'ui-serif',
-  				'Georgia',
-  				'serif'
+  				'var(--font-inter)',
+  				'Inter',
+  				'-apple-system',
+  				'BlinkMacSystemFont',
+  				'sans-serif'
   			],
   			sans: [
   				'var(--font-inter)',
   				'Inter',
   				'-apple-system',
+  				'BlinkMacSystemFont',
   				'sans-serif'
   			],
-  			/* Numbers now render in Inter, not JetBrains Mono -- font-mono
-  			   points at the same variable as font-sans on purpose so every
-  			   existing font-mono usage across the app switches to Inter
-  			   without touching each call site. */
   			mono: [
-  				'var(--font-inter)',
-  				'Inter',
-  				'-apple-system',
-  				'sans-serif'
+  				'var(--font-mono)',
+  				'JetBrains Mono',
+  				'monospace'
   			]
   		},
   		animation: {

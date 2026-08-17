@@ -4,6 +4,37 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-17 (suite 6) — Refonte de densité Linear / Superhuman, Monochrome & Vert signature, Sparkline MRR & Command Bar
+
+Refonte structurelle complète de l'interface d'après les standards de densité, de précision et de craft de **Linear** et **Superhuman** :
+
+- **Typographie & Hiérarchie sans-serif technique** :
+  - Remplacement de la police Serif (`Playfair Display`) par une police sans-serif technique (`Inter`) globale sur toute l'application.
+  - Chiffres tabulaires (`tabular-nums`) appliqués sur tous les montants, compteurs et pourcentages pour un alignement vertical strict.
+  - Micro-labels standardisés (`11px font-medium uppercase tracking-wider text-zinc-500`).
+- **Arrière-plan unifié & Palette Monochrome / Vert Signature** :
+  - Fond de toile unifié sur toute l'application à la teinte neutre propre de la sidebar (`#F4F4F5`), avec surfaces de cartes en blanc pur (`#FFFFFF`) et bordures fines 1px hairlines (`#E4E4E7`).
+  - Palette monochrome rehaussée de l'émeraude signature (`#059669` / `#ECFDF5`), avec pastilles d'alertes subtiles en rouge uniquement pour les retards critiques.
+- **Ruban de Métriques Supérieur (Top KPI Ribbon)** :
+  - Fusion des cartes flottantes en une bande horizontale unifiée de 64px de hauteur (`h-16`) découpée en 4 colonnes par des séparateurs verticaux 1px.
+  - Grandes valeurs en 20px semi-bold tabulaires, micro-icônes 14px, survol subtil avec raccourcis clavier (`G C`, `G L`, `G P`, `G V`).
+- **Table des Projets en Cours (DataTable compact)** :
+  - Rangées denses de 36px de hauteur (`h-9`), indicateurs d'état à points de 6px (vert émeraude / rouge alerte), colonnes Nom, Client, Service, échéance dynamique (`J-X`) et mini-barre d'avancement 4px avec pourcentage.
+- **Répartition des Revenus (MRR Breakdown) & Mini Sparkline** :
+  - Rangées de 36px avec barres de contribution horizontales fines (6px) et montants exacts tabulaires.
+  - Intégration d'un mini-Sparkline SVG dynamique (80x24px) en haut à droite traçant la tendance du MRR sur 6 mois avec gradient émeraude.
+- **Pipeline des Leads (Funnel Compact)** :
+  - Tableau de flux compact de 32px par étape avec micro-jauges proportionnelles (4px) et redirection au clic vers la vue Leads filtrée (`/leads?stage=...`).
+  - Ligne de pied de section indiquant la valeur totale estimée du pipeline en dollars tabulaires.
+- **Nettoyage Sidebar & Relocalisation Onboarding** :
+  - Éléments de navigation compactés à 28px de hauteur avec rayon d'arrondi de 4px.
+  - Remplacement des gros rectangles "NOUVEAU" par un point vert discret de 4px.
+  - Retrait du grand widget de la page principale pour le loger exclusivement dans le footer de la sidebar sous forme d'une fine jauge de progression (`X/4 étapes`) avec menu contextuel fluide.
+- **Command Bar Centrale (⌘K)** :
+  - Déclencheur de recherche compact de style Linear au centre de l'en-tête avec badge `⌘K` et raccourci clavier global.
+
+---
+
 ## 2026-08-17 (suite 5) — Sidebar reproduite d'après Minerva Flow
 
 Structure et comportement de la barre latérale reproduits d'après `components/shell/AppSidebar.tsx` de Minerva Flow (github.com/Endsi3g/Minerva-Flow, produit sœur) — le contenu reste 100 % propre à Trequartista, seul le patron visuel/structurel est repris :

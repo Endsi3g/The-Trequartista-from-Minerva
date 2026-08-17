@@ -83,29 +83,28 @@ function NavLink({
         href={item.href}
         onClick={onNavigate}
         className={cn(
-          'flex flex-1 min-w-0 items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-all duration-150',
+          'flex flex-1 min-w-0 h-7 items-center gap-2 rounded-[4px] px-2 text-[12.5px] font-medium transition-all duration-150',
           active
-            ? 'bg-mv-green text-mv-cream-soft font-semibold shadow-mv-sm'
-            : 'text-mv-ink-soft hover:bg-mv-ink/[0.06] hover:text-mv-ink'
+            ? 'bg-mv-green text-white font-semibold shadow-xs'
+            : 'text-mv-ink-soft hover:bg-black/[0.05] hover:text-mv-ink'
         )}
       >
-        <Icon size={16} strokeWidth={active ? 2.2 : 1.6} className={cn('shrink-0', active ? 'text-mv-cream-soft' : 'opacity-70')} />
+        <Icon size={14} strokeWidth={active ? 2.2 : 1.6} className={cn('shrink-0', active ? 'text-white' : 'opacity-70')} />
         <span className="truncate flex-1">{item.label}</span>
         {item.isNew && (
           <span
             className={cn(
-              'shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide leading-none',
-              active ? 'bg-white/20 text-white' : 'bg-mv-green-tint text-mv-green'
+              'shrink-0 w-1.5 h-1.5 rounded-full',
+              active ? 'bg-white' : 'bg-mv-green'
             )}
-          >
-            Nouveau
-          </span>
+            title="Nouveau"
+          />
         )}
         {typeof item.count === 'number' && item.count > 0 && (
           <span
             className={cn(
-              'shrink-0 min-w-[18px] text-center rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none',
-              active ? 'bg-white/20 text-white' : 'bg-mv-border/80 text-mv-ink-soft'
+              'shrink-0 min-w-[16px] text-center rounded px-1 py-0.2 text-[9.5px] font-bold leading-none',
+              active ? 'bg-white/25 text-white' : 'bg-black/[0.06] text-mv-ink-soft'
             )}
           >
             {item.count}
@@ -118,12 +117,12 @@ function NavLink({
           onClick={onToggleFavorite}
           title={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
           className={cn(
-            'absolute right-1.5 p-1 text-mv-ink-faint transition-opacity hover:text-mv-amber focus:outline-none cursor-pointer',
+            'absolute right-1 p-0.5 text-mv-ink-faint transition-opacity hover:text-mv-amber focus:outline-none cursor-pointer',
             isFavorite ? 'opacity-100 text-mv-amber' : 'opacity-0 group-hover:opacity-100',
-            active && !isFavorite && 'text-mv-cream-soft/70 hover:text-mv-amber'
+            active && !isFavorite && 'text-white/70 hover:text-mv-amber'
           )}
         >
-          <Star size={12} fill={isFavorite ? 'currentColor' : 'none'} />
+          <Star size={11} fill={isFavorite ? 'currentColor' : 'none'} />
         </button>
       )}
     </div>
@@ -139,15 +138,8 @@ function NavSection({
 }: {
   label: string;
   children: React.ReactNode;
-  // Skips the collapse toggle/chevron/localStorage entirely -- used for
-  // the "Principal" group of daily-use items, which should never be
-  // hidden by an accidental collapse.
   alwaysOpen?: boolean;
   defaultOpen?: boolean;
-  // Favoris is session-only by design (mirrors Flow's own comment: "in-
-  // memory, session only -- no localStorage") so it doesn't fight the
-  // user's actual favorite picks across visits with a stale open/closed
-  // flag from before they had any.
   persist?: boolean;
 }) {
   const storageKey = `mv-sidebar-section-${label}`;
@@ -159,7 +151,6 @@ function NavSection({
       const stored = localStorage.getItem(storageKey);
       if (stored !== null) setOpen(stored !== 'closed');
     } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggle = () => {
@@ -178,7 +169,7 @@ function NavSection({
   if (alwaysOpen) {
     return (
       <div className="space-y-0.5">
-        <div className="px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-faint">
+        <div className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-mv-ink-faint">
           {label}
         </div>
         <div className="space-y-0.5">{children}</div>
@@ -187,14 +178,14 @@ function NavSection({
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       <button
         onClick={toggle}
-        className="w-full flex items-center justify-between px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-faint hover:text-mv-ink transition-colors cursor-pointer"
+        className="w-full flex items-center justify-between px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-mv-ink-faint hover:text-mv-ink transition-colors cursor-pointer"
       >
         <span>{label}</span>
         <motion.span animate={{ rotate: open ? 0 : -90 }} transition={{ duration: 0.2 }} className="shrink-0">
-          <ChevronDown size={12} className="opacity-60" />
+          <ChevronDown size={11} className="opacity-60" />
         </motion.span>
       </button>
       <AnimatePresence initial={false}>
@@ -204,7 +195,7 @@ function NavSection({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={SPRING}
-            className="overflow-hidden space-y-0.5 pl-2 border-l border-mv-border/60 ml-2.5"
+            className="overflow-hidden space-y-0.5 pl-1.5 border-l border-mv-border ml-2"
           >
             {children}
           </motion.div>
@@ -445,27 +436,21 @@ export function AppSidebar() {
 
             <button
               type="button"
-              onClick={(e) => {
-                if (pathname === '/overview') {
-                  e.preventDefault();
-                  const el = document.getElementById('onboarding-widget');
-                  if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    el.classList.add('ring-2', 'ring-mv-green', 'border-mv-green');
-                    setTimeout(() => {
-                      el.classList.remove('ring-2', 'ring-mv-green', 'border-mv-green');
-                    }, 2000);
-                  } else {
-                    setShowOnboarding(!showOnboarding);
-                  }
-                } else {
-                  setShowOnboarding(!showOnboarding);
-                }
-              }}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-mv-cream-soft hover:bg-mv-border/40 text-xs font-semibold text-mv-ink-soft transition-colors cursor-pointer"
+              onClick={() => setShowOnboarding(!showOnboarding)}
+              className="w-full text-left px-2 py-1.5 rounded-[4px] bg-black/[0.03] hover:bg-black/[0.06] transition-colors cursor-pointer space-y-1.5"
             >
-              <span>Bien démarrer</span>
-              <span className="text-[10px] text-mv-green font-bold">{onboardingPct}%</span>
+              <div className="flex items-center justify-between text-[11px] font-medium text-mv-ink">
+                <span>Bien démarrer</span>
+                <span className="text-[10.5px] text-mv-green font-semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {doneCount}/{onboardingTotal} étapes ({onboardingPct}%)
+                </span>
+              </div>
+              <div className="h-1 w-full bg-black/[0.06] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-mv-green rounded-full transition-all duration-300"
+                  style={{ width: `${onboardingPct}%` }}
+                />
+              </div>
             </button>
           </div>
         )}

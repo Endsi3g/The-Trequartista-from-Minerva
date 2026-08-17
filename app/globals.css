@@ -24,20 +24,19 @@
     --mv-warm-dark: #c6c3b7;
     --mv-warm-tint: #f8f7f2;
 
-    /* Warm cream canvas -- Reach's own globals.css ("v9 Forêt & Crème") and
-       Flow's --mv-cream both land here. --mv-surface (cards) stays a
-       near-white warm tone, distinct from the cream page background. */
-    --mv-cream: #F0EDE0;
-    --mv-cream-soft: #f4f4f3;
-    --mv-surface: #FAFAF5;
+    /* Clean neutral canvas -- Unified with sidebar background (#F4F4F5),
+       pure white card surfaces (#FFFFFF) and crisp hairline borders (#E4E4E7). */
+    --mv-cream: #F4F4F5;
+    --mv-cream-soft: #F4F4F5;
+    --mv-surface: #FFFFFF;
 
-    --mv-ink: #26251e;
-    --mv-ink-soft: #7a7a76;
-    --mv-ink-faint: #a8aaa9;
-    --mv-ink-mute: #cdcecd;
+    --mv-ink: #18181B;
+    --mv-ink-soft: #71717A;
+    --mv-ink-faint: #A1A1AA;
+    --mv-ink-mute: #D4D4D8;
 
-    --mv-border: #e5e5e0;
-    --mv-border-soft: #ececea;
+    --mv-border: #E4E4E7;
+    --mv-border-soft: #ECECED;
 
     --mv-red: #ef4444;
     --mv-red-bg: #fef2f2;
