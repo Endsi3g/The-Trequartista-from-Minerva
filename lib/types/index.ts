@@ -164,6 +164,14 @@ export interface Project {
   assignees: string[];
 }
 
+export interface TeamDocument {
+  id: string;
+  title: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface MinervaRoadmapItem {
   id: string;
   title: string;

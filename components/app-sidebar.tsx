@@ -162,6 +162,7 @@ export function AppSidebar() {
     { key: 'overview', label: 'Accueil', href: '/overview', icon: LayoutDashboard },
     { key: 'voice-agent', label: 'Agent Vocal IA', href: '/voice-agent', icon: PhoneCall, isNew: true },
     { key: 'tasks', label: 'Tâches', href: '/tasks', icon: CheckSquare, count: counts.myTasks ?? undefined },
+    { key: 'documents', label: 'Documents', href: '/documents', icon: FileText, isNew: true },
   ];
 
   // "CRM" -- the sales pipeline

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem, TeamDocument } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -1384,5 +1384,67 @@ export async function deleteMinervaRoadmapItem(id: string): Promise<boolean> {
     console.error('[Supabase] Error deleting roadmap item:', error);
     return false;
   }
+  return true;
+}
+
+// ----------------------------------------------------
+// 17. DOCUMENTS — équipe, édition collaborative temps réel
+// ----------------------------------------------------
+export async function fetchDocuments(): Promise<TeamDocument[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('documents')
+        .select('*')
+        .order('updated_at', { ascending: false });
+      if (error || !data) return [];
+      return data as TeamDocument[];
+    })(),
+    []
+  );
+}
+
+export async function fetchDocument(id: string): Promise<TeamDocument | null> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase().from('documents').select('*').eq('id', id).maybeSingle();
+      if (error || !data) return null;
+      return data as TeamDocument;
+    })(),
+    null
+  );
+}
+
+export async function addDocument(title: string, createdBy: string): Promise<TeamDocument | null> {
+  const { data, error } = await getSupabase()
+    .from('documents')
+    .insert([{ title, created_by: createdBy }])
+    .select()
+    .single();
+  if (error) {
+    console.error('[Supabase] Error creating document:', error);
+    return null;
+  }
+  return data as TeamDocument;
+}
+
+export async function renameDocument(id: string, title: string): Promise<boolean> {
+  const { error } = await getSupabase().from('documents').update({ title }).eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error renaming document:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteDocument(id: string): Promise<boolean> {
+  const { error: docError } = await getSupabase().from('documents').delete().eq('id', id);
+  if (docError) {
+    console.error('[Supabase] Error deleting document:', docError);
+    return false;
+  }
+  // Best-effort: also drop the persisted Yjs state so a reused id (won't
+  // happen with uuid, but defensively) doesn't resurrect old content.
+  await getSupabase().from('yjs_documents').delete().eq('room', id);
   return true;
 }
