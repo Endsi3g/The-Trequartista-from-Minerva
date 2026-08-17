@@ -23,7 +23,9 @@ import { fetchClients, fetchClientPaymentLinks } from '@/lib/services/supabase-d
 import { Client, ClientPaymentLink } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { Tooltip } from '@/components/ui/tooltip';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { useCurrentUser } from '@/hooks/use-current-user';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 
 
 interface PendingMember {
@@ -35,6 +37,7 @@ interface PendingMember {
 
 export default function BillingPage() {
   const { role: currentUserRole, loading: userLoading } = useCurrentUser();
+  const confirmDialog = useConfirm();
   const [clients, setClients] = useState<Client[]>([]);
   const [paymentLinks, setPaymentLinks] = useState<ClientPaymentLink[]>([]);
   const [loading, setLoading] = useState(true);
@@ -181,13 +184,11 @@ export default function BillingPage() {
                 {clients.map((c) => (
                   <tr key={c.id} className="hover:bg-mv-surface/60 transition-colors">
                     <td className="py-3.5 px-4 font-bold text-mv-ink flex items-center gap-3">
-                      <img
-                        src={c.logo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(c.name)}&backgroundColor=1c9a6f&fontColor=ffffff`}
-                        alt={c.name}
-                        className="w-8 h-8 rounded-lg object-cover border border-mv-border shrink-0"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(c.name)}&backgroundColor=1c9a6f&fontColor=ffffff`;
-                        }}
+                      <UserAvatar
+                        src={c.logo_url}
+                        name={c.name}
+                        size="sm"
+                        shape="rounded"
                       />
                       <span>{c.name}</span>
                     </td>
@@ -347,7 +348,13 @@ export default function BillingPage() {
                     <button
                       disabled={approvingId === member.id}
                       onClick={async () => {
-                        if (!confirm(`Rejeter le compte de ${member.full_name || member.email} ?`)) return;
+                        const ok = await confirmDialog({
+                          title: 'Rejeter ce compte ?',
+                          message: `Le compte de ${member.full_name || member.email} sera supprimé définitivement.`,
+                          confirmLabel: 'Rejeter',
+                          variant: 'danger',
+                        });
+                        if (!ok) return;
                         setApprovingId(member.id);
                         try {
                           const supabase = createClient();

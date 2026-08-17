@@ -4,6 +4,91 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-17 (suite) — Audit complet post-déploiement : middleware, permissions, notifications, trigger CRM
+
+Migrations `20260816000000`/`20260817000000`/`20260817000001` confirmées déployées et vérifiées en direct ; les 10 items de roadmap réels importés dans `minerva_roadmap_items`. Audit statique + navigateur (Chrome, session admin réelle établie sans mot de passe via un lien magique généré par l'API service-role) de l'app en entier, à la recherche de tout ce qui manque pour une app 100 % fonctionnelle.
+
+**Trouvé et corrigé**
+- `/produits` et `/voice-agent` étaient accessibles sans connexion — absents du matcher du middleware (`proxy.ts`), contrairement à toutes les autres pages du dashboard. Ajoutés.
+- 4 des 7 interrupteurs de `/settings/notifications` ("Nouveaux leads attribués", "Conseils et guides", "Alertes de sécurité", "Mises à jour de facturation") n'avaient aucune colonne en base — ils affichaient un faux toast "Préférence enregistrée" sans rien sauvegarder. Remplacés par un état honnête : badge "Bientôt" désactivé pour les deux premiers, "toujours activé, non désactivable" pour les deux derniers.
+- `/settings/notifications` et `/help` étaient des pages orphelines — aucun lien nulle part dans l'app malgré la structure documentée dans CLAUDE.md. Ajoutées au menu Paramètres (`UserMenu`).
+- La permission `edit_client_financials` n'était appliquée que côté interface — la policy RLS `clients_write_team` restait `USING(true)` pour tous les utilisateurs authentifiés, y compris les comptes client-portail. Corrigé (migration `20260817000002`, déployée) : `clients_update_scoped`/`clients_delete_scoped` appliquent maintenant `member_can('edit_client_financials')`, exactement comme la page Permissions le promet déjà.
+- `convert_lead_to_client_on_won()` réécrit avec les vrais noms de colonnes du schéma actuel (migration `20260817000003`, déployée) — marquer un lead "Gagné" créait jusqu'ici une erreur Postgres et annulait le changement de statut.
+- Aucun compte admin n'existait en base (6 profils, tous `member` sauf un `client` de test) — les 5 sections admin-only étaient mortes pour tout le monde, y compris le compte fondateur. Le compte de Kael (theuprisingstudio@gmail.com) a été promu admin.
+- Le bouton "Continuer avec Google" plantait avec une erreur Supabase brute non stylée — le fournisseur OAuth Google n'est pas activé côté Supabase alors que le bouton est affiché comme fonctionnel.
+
+**Design** : la photo halftone du panneau gauche de `/login` et `/signup` remplacée par un dégradé organique animé (`components/ui/animated-mesh-background.tsx`), qui dérive lentement en CSS pur, respecte `prefers-reduced-motion`.
+
+**Non corrigé, à traiter** : le bouton Google SSO cassé (fournisseur à activer dans le dashboard Supabase, hors de portée sans accès au projet).
+
+---
+
+## 2026-08-17 (suite 2) — Nettoyage données de test, notifications complètes
+
+**Données de test retirées de la production** : le client "ROI Fix Test 1786580352780", son projet "QA Test Project 1786609702327" (+ ses `client_roi_metrics`/`client_payment_links`/`client_messages`/`project_launch_checks`), et le lead "Push Test Inc" — identifiés précisément par requête (`/test/i` sur les 4 tables clients/leads/projets/tâches), aucune donnée réelle touchée. Portefeuille clients réel confirmé intact après coup (Toitures Beauchemin, 44 leads Reach, 1 projet).
+
+**"Nouveaux leads" et "Conseils et guides" complétés pour de vrai** (migration `20260817000004`, déployée) :
+- Nouvelles colonnes `new_leads_enabled`/`tips_tutorials_enabled` sur `notification_preferences`.
+- `/api/push/send` accepte maintenant un `preferenceKey` optionnel : exclut de la diffusion tout utilisateur ayant explicitement désactivé cette préférence. La création de lead (`/leads/new`) l'utilise déjà (`preferenceKey: 'new_leads_enabled'`) — c'était jusqu'ici une diffusion à toute l'équipe sans tenir compte d'aucune préférence.
+- Constat en creusant le sujet : aucune des 3 préférences déjà "réelles" (Commentaires, Mentions, Nouveautés produit) n'était en fait branchée à un envoi réel non plus — seuls "Nouveau lead" et "Tâche en retard" envoient de vrais push, et ni l'un ni l'autre ne consultait `notification_preferences` avant aujourd'hui. Le rappel de tâches en retard (`/api/cron/task-reminders`) n'a pas encore été raccordé à `task_reminders_enabled` — à faire dans une prochaine passe si on veut que la préférence ait un effet réel partout, pas seulement pour les leads.
+- "Conseils et guides" reste sans producteur de contenu (aucun système de tips/tutoriels n'existe dans l'app) — la préférence est maintenant réelle et persistée, mais rien ne l'utilise encore pour envoyer quoi que ce soit, comme "Nouveautés produit" avant elle.
+
+---
+
+## 2026-08-16 — Fondations design v3, présence d'équipe, coordonnées client, tournée de bugs
+
+**Fondations visuelles (v3)**
+- Fond crème chaud (`--mv-cream: #F0EDE0`) sur toute l'app, remplaçant le blanc/gris neutre de la v2 — matché directement contre Reach/Flow (les deux produits sœurs).
+- Nouvelle police d'affichage **Playfair Display** (chargée via `next/font/google`, variable `--font-playfair`) pour tous les titres — Inter reste la police de corps/UI.
+- Système de statut réellement multicolore : vert/ambre/violet/bleu/rouge (`--mv-purple`, `--mv-blue` ajoutés), `Badge` étendu avec les variantes `blue`/`purple`.
+- Mode sombre **retiré complètement** (plus de toggle, plus de bloc `.dark` dans `globals.css`, `ThemeProvider`/`ThemeToggle` supprimés).
+- Rayons de bordure et ombres alignés sur les valeurs exactes de Reach.
+
+**7 pages de création refaites** (Leads, Tâches, Projets, Audits, Académie, Réels, Invitation équipe) sur le gabarit établi avec `clients/new` : formulaire en cartes sectionnées à deux colonnes + aperçu en direct, remplaçant les anciens formulaires plats à une colonne sans profondeur visuelle.
+
+**Présence d'équipe en temps réel** — nouveau, via Supabase Realtime Presence
+- Pile d'avatars dans la topbar (dashboard) + panneau listant chaque membre actif et la page exacte qu'il consulte.
+- Badge discret côté portail client ("N membres Minerva en ligne") — volontairement **sans** le chemin de page exact, pour ne jamais exposer aux clients quelle page interne (ou quel autre client) un membre de l'équipe consulte.
+
+**Coordonnées & réseaux sociaux pour les clients** — nouveau
+- Téléphone, site web, fiche Google Business, Instagram, Facebook, LinkedIn : ajoutables à la création et modifiables depuis la fiche client (`/clients/[id]`, nouvelle carte "Coordonnées & réseaux").
+- Première fonction `updateClient()` du projet — la fiche client n'avait jusqu'ici aucun moyen d'être modifiée après sa création.
+
+**Fenêtre de confirmation stylée** — `ConfirmDialog` (nouveau, via `useConfirm()`) remplace tous les `window.confirm()` du navigateur (suppression de tâche/lead, révocation d'invitation, rejet de compte, réinitialisation de checklist).
+
+**Bugs trouvés et corrigés pendant une tournée Playwright complète (compte client de test entièrement peuplé : client, métriques ROI, projet, tâches, reel, messages)**
+- La création de reels échouait silencieusement : le formulaire envoyait `script_notes`, une colonne qui n'existe plus dans `content_posts` depuis une migration antérieure (le vrai champ est `caption`). Le reel n'apparaissait jamais dans le calendrier éditorial, sans aucun message d'erreur.
+- La messagerie du portail client (`/portal/questions` et le mini-widget de `/portal`) n'indiquait jamais qui avait écrit un message — aucune identité d'expéditeur, bulle isolée sans repère visuel. Ajout du nom (et avatar côté page dédiée) au-dessus de chaque groupe de messages consécutifs.
+- La cloche de notifications interroge la table `alerts` sur **chaque page** depuis un moment — cette table n'a jamais été créée (son producteur, `alert-engine.ts`, avait été supprimé comme code mort lors d'une session précédente sans que ce consommateur soit remarqué). Migration ajoutée ; en attendant son déploiement, la cloche échoue silencieusement (comportement inchangé, mais maintenant compris).
+- Carte "Revenu récurrent (MRR)" de l'aperçu : hauteur du graphique élastique (`flex-1`) forçant un vide énorme au-dessus/en dessous des barres quand peu de clients existent — hauteur fixée.
+- URL de logo Unsplash morte sur un ancien client de test — nettoyée (repli initiales déjà en place ailleurs).
+
+**Suite du même jour — audit des fonctionnalités manquantes, exécuté**
+
+- **Édition complète de la fiche client** : nom, secteur, statut, MRR, logo et contact — plus seulement les coordonnées/réseaux. Bouton "Modifier la fiche" sur `/clients/[id]`.
+- **Appel manuel loggable** sur un lead : bascule Note/Appel dans le tiroir de détail, avec durée et résultat (Répondu, Pas de réponse, Rappeler, Numéro incorrect), formaté proprement dans l'historique de notes.
+- **Producteur d'alertes réel** : la cloche calcule maintenant des alertes en direct (projets en retard, liens de paiement expirés) à partir des données déjà chargées, sans dépendre de la table `alerts` en attente de migration — la cloche affiche du vrai contenu dès aujourd'hui.
+- **Jalons de projet** (nouveau) : table `project_milestones`, jalons avec titre/échéance/assigné/statut sur `/projects/[id]/roadmap`, remplaçant l'état vide permanent de cette page.
+- **Approbation de contenu par le client** (nouveau) : chaque reel du calendrier portail mène à une fiche dédiée (`/portal/calendar/[id]`) avec Approuver / Demander une modification + commentaire, visible côté équipe sur la carte Kanban de `/content-planner`.
+- **Trois retouches UI/UX signalées directement** : sidebar réorganisée en 5 groupes sémantiques (Principal, CRM, Livraison, Équipe, Croissance — remplace le fourre-tout "Données") ; badge `lime` recoloré (l'ancien ton `--mv-warm-tint` était quasi invisible sur les cartes blanches) ; poids de police plafonné à 700 dans `app/layout.tsx` (Inter + Playfair Display) — l'app entière paraissait trop grasse, un seul changement de config corrige tous les `font-extrabold`/`font-black` d'un coup.
+
+**Migration en attente** (`20260816000000_pending_consolidated.sql`, mise à jour) : ajoute `clients.contact_phone`/`website_url`/`google_business_url`/`instagram_url`/`facebook_url`/`linkedin_url`, la table `alerts`, la table `project_milestones`, et `content_posts.client_approval`/`client_feedback`. Comme toujours, `npm run deploy:supabase` reste à lancer par un humain — cet environnement n'a pas d'accès direct au projet Supabase live.
+
+**Suite du même jour — audit "regard neuf" du système Acquisition/Croissance + permissions**
+
+- **Vert pré-v3 codé en dur dans 22 fichiers** (`#1E4B33`, jamais migré vers `#059669`) — graphiques, sidebar, avatars par défaut, PDF de proposition, bannière changelog, `manifest.json` PWA. Corrigé partout.
+- **Système Acquisition/Audits IA testé de bout en bout** : entièrement honnête (aucune clé API réelle configurée → l'extraction IA échoue proprement avec un message clair), mais donc jamais utilisé en conditions réelles depuis sa construction. Statuts d'audit/proposition traduits en français (affichaient l'enum brut).
+- **Système de permissions configurable** (nouveau) : page `/settings/permissions` (admin-only) avec 3 bascules réelles — suppression d'un lead, modification du MRR/statut d'un client, publication d'une SOP Académie. Appliqué à la fois côté interface et côté base de données (RLS via `public.member_can()`), pas seulement un bouton caché. Les admins gardent toujours l'accès complet ; les rôles restent à 3 (admin/membre/client), sans nouveau rôle intermédiaire.
+- **Sidebar** : chaque groupe (Principal/CRM/Livraison/Équipe/Croissance/Aujourd'hui) est maintenant repliable individuellement, état mémorisé par section dans le navigateur.
+
+**Migration `20260816000000_pending_consolidated.sql` confirmée déployée** (2026-08-17) — toutes les tables/colonnes vérifiées live.
+
+**Audit de sécurité du système de permissions** — une vraie faille trouvée et corrigée : la policy RLS `content_posts_client_approve` limitait correctement la *ligne* qu'un client peut modifier, mais pas les *colonnes* — un appel REST direct (hors interface) aurait pu modifier le titre, le statut ou la vidéo d'un reel, pas seulement l'approbation. Ajout d'un trigger (`20260817000000_content_posts_client_column_guard.sql`, nouvelle migration séparée puisque le CLI Supabase suit les migrations par nom de fichier, pas par contenu) qui bloque toute modification hors `client_approval`/`client_feedback` de la part d'un compte client.
+
+**22 SOPs importées depuis Notion via Composio MCP** — page « SOPs & Training — Agence » découpée en entrées individuelles consultables (Onboarding, Rôles & Rémunération, Outils & Systèmes, Ventes & Prospection, Gestion de compte, Support & QA — 6 nouvelles catégories ajoutées à l'Académie, contenu réel extrait et nettoyé, aucune donnée inventée).
+
+---
+
 ## 2026-08-15 — Bug hunt : intégrité des données, échecs silencieux, portail client
 
 **Portail client (`/portal`) — le plus grave**

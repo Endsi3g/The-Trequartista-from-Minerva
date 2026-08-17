@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
   webpush.setVapidDetails('mailto:equipe@minervaflow.com', vapidPublicKey, vapidPrivateKey);
 
-  let body: { title?: string; body?: string; url?: string; userIds?: string[] };
+  let body: { title?: string; body?: string; url?: string; userIds?: string[]; preferenceKey?: string };
   try {
     body = await req.json();
   } catch {
@@ -40,9 +40,26 @@ export async function POST(req: Request) {
   }
 
   const supabase = createServiceClient(supabaseUrl, supabaseSecret);
+
+  // preferenceKey opts a broadcast into notification_preferences: any user
+  // with that column explicitly set to false is excluded. A user with no
+  // preferences row keeps the column's DB default (opt-out lists stay
+  // short, matching how the settings page seeds new rows on first toggle).
+  let excludedUserIds: string[] = [];
+  if (body.preferenceKey) {
+    const { data: optedOut } = await supabase
+      .from('notification_preferences')
+      .select('user_id')
+      .eq(body.preferenceKey, false);
+    excludedUserIds = (optedOut || []).map((r) => r.user_id);
+  }
+
   let query = supabase.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth_key');
   if (body.userIds?.length) {
     query = query.in('user_id', body.userIds);
+  }
+  if (excludedUserIds.length) {
+    query = query.not('user_id', 'in', `(${excludedUserIds.join(',')})`);
   }
   const { data: subs, error } = await query;
 
