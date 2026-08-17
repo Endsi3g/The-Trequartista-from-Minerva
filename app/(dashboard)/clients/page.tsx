@@ -5,11 +5,19 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/ui/stat-card';
+import { Badge } from '@/components/ui/badge';
 import { Users, Plus, TrendingUp, DollarSign, ExternalLink, Download, X } from 'lucide-react';
 import { fetchClients } from '@/lib/services/supabase-data';
 import { Client } from '@/lib/types';
 import { PageFadeIn } from '@/components/ui/page-transition';
-import { StatusDot } from '@/components/ui/status-dot';
+import { UserAvatar } from '@/components/ui/user-avatar';
+
+const STATUS_VARIANT: Record<Client['status'], 'green' | 'blue' | 'amber' | 'neutral'> = {
+  Active: 'green',
+  Onboarding: 'blue',
+  Paused: 'amber',
+  Archived: 'neutral',
+};
 
 const STATUS_TABS: { key: Client['status'] | 'all'; label: string }[] = [
   { key: 'all', label: 'Tous' },
@@ -223,13 +231,11 @@ export default function ClientsPage() {
                     </td>
                     <td className="py-4 pr-4">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={client.logo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(client.name)}&backgroundColor=1c9a6f&fontColor=ffffff`}
-                          alt={client.name}
-                          className="w-9 h-9 rounded-lg object-cover border border-mv-border shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(client.name)}&backgroundColor=1c9a6f&fontColor=ffffff`;
-                          }}
+                        <UserAvatar
+                          src={client.logo_url}
+                          name={client.name}
+                          size="md"
+                          shape="rounded"
                         />
                         <div>
                           <Link href={`/clients/${client.id}`} className="font-bold text-mv-ink text-sm hover:text-mv-green transition-colors">
@@ -246,12 +252,11 @@ export default function ClientsPage() {
                       <span className="font-mono font-bold text-mv-green text-sm">{client.mrr.toLocaleString('fr-CA')} $</span>
                     </td>
                     <td className="py-4 px-2">
-                      <div className="flex flex-col gap-1">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-mv-ink">
-                          <StatusDot active={client.status === 'Active'} />
-                          {client.status}
+                      <div className="flex flex-col items-start gap-1">
+                        <Badge variant={STATUS_VARIANT[client.status] || 'neutral'}>{client.status}</Badge>
+                        <span className={`text-[10px] font-semibold pl-0.5 ${client.health_status === 'At Risk' ? 'text-mv-red' : 'text-mv-ink-soft'}`}>
+                          {client.health_status}
                         </span>
-                        <span className="text-[10px] text-mv-ink-soft pl-3.5">{client.health_status}</span>
                       </div>
                     </td>
                     <td className="py-4 px-2">

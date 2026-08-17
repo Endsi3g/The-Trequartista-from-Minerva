@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -53,9 +53,35 @@ export async function fetchClients(): Promise<Client[]> {
 }
 
 export async function addClient(client: Omit<Client, 'id' | 'created_at'>): Promise<Client | null> {
-  const { data, error } = await getSupabase().from('clients').insert([client]).select().single();
+  // See updateClient below -- strip empty optional social/contact fields so
+  // creation still works pre-migration when nobody has filled them in.
+  const payload = Object.fromEntries(
+    Object.entries(client).filter(([, v]) => v !== undefined && v !== '')
+  );
+  const { data, error } = await getSupabase().from('clients').insert([payload]).select().single();
   if (error) {
     console.error('[Supabase] Error adding client:', error);
+    return null;
+  }
+  return data as Client;
+}
+
+// contact_phone/website_url/google_business_url/instagram_url/facebook_url/
+// linkedin_url live behind a pending migration (20260816000000). Until it's
+// deployed those columns don't exist yet, so only send the keys that are
+// actually non-empty -- this keeps client creation/edits working exactly as
+// before for anyone not touching the new fields, instead of a single blank
+// social-link input breaking the whole save.
+export async function updateClient(
+  id: string,
+  updates: Partial<Omit<Client, 'id' | 'created_at'>>
+): Promise<Client | null> {
+  const payload = Object.fromEntries(
+    Object.entries(updates).filter(([, v]) => v !== undefined && v !== '')
+  );
+  const { data, error } = await getSupabase().from('clients').update(payload).eq('id', id).select().single();
+  if (error) {
+    console.error('[Supabase] Error updating client:', error);
     return null;
   }
   return data as Client;
@@ -142,6 +168,73 @@ export async function updateProjectStage(projectId: string, currentStage: Projec
   const { error } = await getSupabase().from('projects').update({ current_stage: currentStage }).eq('id', projectId);
   if (error) {
     console.error('[Supabase] Error updating project stage:', error);
+    return false;
+  }
+  return true;
+}
+
+// ----------------------------------------------------
+// 3b. PROJECT MILESTONES DIRECT SUPABASE API
+// ----------------------------------------------------
+export async function fetchProjectMilestones(projectId: string): Promise<ProjectMilestone[]> {
+  return withTimeout(
+    (async () => {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from('project_milestones')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('position', { ascending: true });
+
+      if (error || !data) return [];
+
+      const assigneeIds = Array.from(new Set(data.map((m) => m.assignee_id).filter(Boolean)));
+      const { data: assignees } = assigneeIds.length
+        ? await supabase.from('profiles').select('id, full_name, avatar_url').in('id', assigneeIds)
+        : { data: [] as { id: string; full_name: string | null; avatar_url: string | null }[] };
+      const assigneeMap = new Map((assignees || []).map((a) => [a.id, a]));
+
+      return data.map((row) => {
+        const assignee = row.assignee_id ? assigneeMap.get(row.assignee_id) : undefined;
+        return {
+          ...row,
+          assignee_name: assignee?.full_name || undefined,
+          assignee_avatar: assignee?.avatar_url || undefined,
+        };
+      }) as ProjectMilestone[];
+    })(),
+    []
+  );
+}
+
+export async function addProjectMilestone(milestone: {
+  project_id: string;
+  title: string;
+  due_date?: string | null;
+  assignee_id?: string | null;
+  position: number;
+}): Promise<ProjectMilestone | null> {
+  const { data, error } = await getSupabase().from('project_milestones').insert([milestone]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding project milestone:', error);
+    return null;
+  }
+  return data as ProjectMilestone;
+}
+
+export async function toggleProjectMilestone(id: string, status: 'pending' | 'done'): Promise<boolean> {
+  const { error } = await getSupabase().from('project_milestones').update({ status }).eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error updating project milestone:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteProjectMilestone(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('project_milestones').delete().eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error deleting project milestone:', error);
     return false;
   }
   return true;
@@ -551,14 +644,34 @@ export async function redeemClientInvite(token: string, userId: string): Promise
 export async function fetchClientMessages(clientId: string): Promise<ClientMessage[]> {
   return withTimeout(
     (async () => {
-      const { data, error } = await getSupabase()
+      const supabase = getSupabase();
+      const { data, error } = await supabase
         .from('client_messages')
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: true });
 
       if (error || !data) return [];
-      return data as ClientMessage[];
+
+      // client_messages.sender_id isn't a declared FK to profiles (client
+      // portal users and internal team members are both rows in profiles,
+      // but PostgREST can't auto-embed without a real constraint), so the
+      // sender's name/avatar is resolved with a second query instead of a
+      // nested select.
+      const senderIds = Array.from(new Set(data.map((m) => m.sender_id).filter(Boolean)));
+      const { data: senders } = senderIds.length
+        ? await supabase.from('profiles').select('id, full_name, avatar_url').in('id', senderIds)
+        : { data: [] as { id: string; full_name: string | null; avatar_url: string | null }[] };
+      const senderMap = new Map((senders || []).map((s) => [s.id, s]));
+
+      return data.map((row) => {
+        const sender = senderMap.get(row.sender_id);
+        return {
+          ...row,
+          sender_name: sender?.full_name || (row.sender_role === 'client' ? 'Client' : 'Équipe Minerva'),
+          sender_avatar: sender?.avatar_url || '',
+        };
+      }) as ClientMessage[];
     })(),
     []
   );
@@ -1183,4 +1296,82 @@ export async function fetchAcquisitionFunnelStats(): Promise<AcquisitionFunnelSt
     proposalsSent,
     closeRatePct: intakeLeads.length > 0 ? Math.round((proposalsSent / intakeLeads.length) * 100) : 0,
   };
+}
+
+// ----------------------------------------------------
+// 15. CONFIGURABLE MEMBER PERMISSIONS ("Paramètres > Permissions")
+// ----------------------------------------------------
+export async function fetchAppPermissions(): Promise<Record<string, boolean>> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase().from('app_permissions').select('permission_key, member_allowed');
+      if (error || !data) return {};
+      return Object.fromEntries(data.map((row) => [row.permission_key, row.member_allowed]));
+    })(),
+    {}
+  );
+}
+
+export async function setAppPermission(key: string, allowed: boolean, updatedBy: string): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('app_permissions')
+    .upsert({ permission_key: key, member_allowed: allowed, updated_by: updatedBy, updated_at: new Date().toISOString() });
+  if (error) {
+    console.error('[Supabase] Error updating app permission:', error);
+    return false;
+  }
+  return true;
+}
+
+// ----------------------------------------------------
+// 16. PRODUITS MINERVA — ROADMAP INTERNE (admin-only)
+// ----------------------------------------------------
+export async function fetchMinervaRoadmap(): Promise<MinervaRoadmapItem[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('minerva_roadmap_items')
+        .select('*')
+        .order('start_date', { ascending: true });
+      if (error || !data) return [];
+      return data as MinervaRoadmapItem[];
+    })(),
+    []
+  );
+}
+
+export async function addMinervaRoadmapItem(item: {
+  title: string;
+  product: string;
+  item_type: MinervaRoadmapItem['item_type'];
+  status: MinervaRoadmapItem['status'];
+  impact: MinervaRoadmapItem['impact'];
+  start_date?: string | null;
+  end_date?: string | null;
+  owner_name?: string | null;
+}): Promise<MinervaRoadmapItem | null> {
+  const { data, error } = await getSupabase().from('minerva_roadmap_items').insert([item]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding roadmap item:', error);
+    return null;
+  }
+  return data as MinervaRoadmapItem;
+}
+
+export async function updateMinervaRoadmapStatus(id: string, status: MinervaRoadmapItem['status']): Promise<boolean> {
+  const { error } = await getSupabase().from('minerva_roadmap_items').update({ status }).eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error updating roadmap item status:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteMinervaRoadmapItem(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('minerva_roadmap_items').delete().eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error deleting roadmap item:', error);
+    return false;
+  }
+  return true;
 }

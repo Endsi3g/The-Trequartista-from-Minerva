@@ -25,7 +25,7 @@ import type { Client, Lead, Project, VoiceCall } from '@/lib/types';
 import { DotBarShape } from '@/components/charts/DotBarShape';
 import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
 
-const GREEN_SHADES = ['#1E4B33', '#3d7a5a', '#6ba585', '#a8c9b8', '#c0cdc6'];
+const GREEN_SHADES = ['#059669', '#3d7a5a', '#6ba585', '#a8c9b8', '#c0cdc6'];
 
 function moneyFmt(n: number) {
   return `${Math.round(n).toLocaleString('fr-CA')} $`;
@@ -251,7 +251,7 @@ export default function OverviewPage() {
           </Link>
         </div>
 
-        <div className="lg:col-span-2 bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm flex flex-col">
+        <div className="lg:col-span-2 self-start bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm flex flex-col">
           <h2 className="text-lg font-bold text-mv-ink font-display mb-1">Revenu récurrent (MRR)</h2>
           <p className="text-xs text-mv-ink-faint mb-6">Top clients par MRR mensuel, en dollars canadiens.</p>
 
@@ -260,7 +260,7 @@ export default function OverviewPage() {
           ) : topClientsByMrr.length === 0 ? (
             <p className="text-xs text-mv-ink-faint py-8 text-center">Aucun client actif pour le moment.</p>
           ) : (
-            <div className="flex-1 min-h-56">
+            <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topClientsByMrr} layout="vertical" barSize={26} barCategoryGap="30%" margin={{ left: 8, right: 24 }}>
                   <XAxis type="number" hide />

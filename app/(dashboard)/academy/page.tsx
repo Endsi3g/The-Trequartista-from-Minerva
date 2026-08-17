@@ -10,8 +10,10 @@ import { GraduationCap, BookOpen, Clock, ArrowRight, Search, Film } from 'lucide
 import { fetchAcademySops } from '@/lib/services/supabase-data';
 import { AcademySOP } from '@/lib/types';
 import { PageFadeIn } from '@/components/ui/page-transition';
+import { useAppPermissions } from '@/components/providers/AppPermissionsProvider';
 
 export default function AcademyPage() {
+  const { can } = useAppPermissions();
   const [sops, setSops] = useState<AcademySOP[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,11 +48,13 @@ export default function AcademyPage() {
           </p>
         </div>
 
-        <Link href="/academy/new">
-          <Button variant="primary" icon={<BookOpen className="w-4 h-4" />}>
-            + Créer une SOP
-          </Button>
-        </Link>
+        {can('publish_academy_sop') && (
+          <Link href="/academy/new">
+            <Button variant="primary" icon={<BookOpen className="w-4 h-4" />}>
+              + Créer une SOP
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Filter & Search Bar */}
@@ -74,6 +78,12 @@ export default function AcademyPage() {
               className="w-full sm:w-auto bg-mv-cream-soft border border-mv-border rounded-xl px-3 py-2 text-xs font-medium text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
             >
               <option value="all">Toutes les catégories</option>
+              <option value="Onboarding">Onboarding</option>
+              <option value="Rôles & Rémunération">Rôles & Rémunération</option>
+              <option value="Outils & Systèmes">Outils & Systèmes</option>
+              <option value="Ventes & Prospection">Ventes & Prospection</option>
+              <option value="Gestion de compte">Gestion de compte</option>
+              <option value="Support & QA">Support & QA</option>
               <option value="Design Framer">Design Framer</option>
               <option value="Workflows IA">Workflows IA</option>
               <option value="Campagnes Ads">Campagnes Ads</option>

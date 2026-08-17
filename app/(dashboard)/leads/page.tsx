@@ -24,7 +24,15 @@ import {
 import { fetchClients, fetchLeads } from '@/lib/services/supabase-data';
 import type { Client, Lead } from '@/lib/types';
 import { useSupabaseRealtime } from '@/components/providers/SupabaseRealtimeProvider';
-import { StatusDot } from '@/components/ui/status-dot';
+
+const STAGE_VARIANT: Record<string, 'blue' | 'purple' | 'amber' | 'neutral' | 'green' | 'red'> = {
+  nouveau: 'blue',
+  qualification: 'purple',
+  proposition: 'amber',
+  negociation: 'neutral',
+  gagne: 'green',
+  perdu: 'red',
+};
 
 function LeadsCrmContent() {
   const searchParams = useSearchParams();
@@ -252,7 +260,7 @@ function LeadsCrmContent() {
             <p className="text-2xl font-extrabold text-mv-ink font-display mt-0.5">{activeLeadsCount}</p>
             <span className="text-[10px] font-semibold text-mv-ink-soft">En cours d&apos;échange</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/30 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-mv-purple-bg text-mv-purple border border-mv-purple/30 flex items-center justify-center">
             <Target className="w-5 h-5" />
           </div>
         </div>
@@ -333,11 +341,10 @@ function LeadsCrmContent() {
               </thead>
               <tbody className="divide-y divide-mv-border">
                 {filteredLeads.map((lead) => {
-                  const won = lead.status === 'Gagné' || lead.stage === 'gagne';
                   return (
                     <tr
                       key={lead.id}
-                      className={`transition-colors ${selectedIds.has(lead.id) ? 'bg-mv-green-tint/40' : 'hover:bg-mv-surface/60'}`}
+                      className={`transition-colors ${selectedIds.has(lead.id) ? 'bg-mv-green-tint/40' : 'hover:bg-mv-cream-soft'}`}
                     >
                       <td className="py-3.5 pl-4 pr-2" onClick={(e) => e.stopPropagation()}>
                         <input
@@ -355,10 +362,9 @@ function LeadsCrmContent() {
                         {lead.service_requested}
                       </td>
                       <td className="py-3.5 px-4 cursor-pointer" onClick={() => setSelectedLead(lead)}>
-                        <span className="inline-flex items-center gap-1.5 font-bold capitalize text-mv-ink">
-                          <StatusDot active={won} />
+                        <Badge variant={STAGE_VARIANT[lead.stage || ''] || 'neutral'} className="capitalize">
                           {lead.stage || lead.status}
-                        </span>
+                        </Badge>
                       </td>
                       <td className="py-3.5 px-4 font-extrabold text-mv-ink cursor-pointer" onClick={() => setSelectedLead(lead)}>
                         {(lead.mrr_value || 0).toLocaleString('fr-CA')} $

@@ -28,6 +28,22 @@ import {
 import { useToast } from '@/components/providers/ToastProvider';
 import type { AuditWithFindings, Proposal } from '@/lib/types';
 
+const AUDIT_STATUS_LABEL: Record<AuditWithFindings['status'], string> = {
+  awaiting_transcript: 'En attente de transcription',
+  transcript_ready: 'Transcription prête',
+  extracting: 'Extraction en cours',
+  extracted: 'Extrait',
+  reviewed: 'Révisé',
+  proposal_sent: 'Proposition envoyée',
+};
+
+const PROPOSAL_STATUS_LABEL: Record<Proposal['status'], string> = {
+  draft: 'Brouillon',
+  generated: 'Générée',
+  sent: 'Envoyée',
+  failed: 'Échouée',
+};
+
 export default function AuditDetailPage() {
   const params = useParams();
   const auditId = Array.isArray(params?.id) ? params.id[0] : params?.id;
@@ -147,7 +163,7 @@ export default function AuditDetailPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-extrabold text-mv-ink font-display">{audit.prospect_name}</h1>
-          <Badge variant="lime" className="mt-1">{audit.status}</Badge>
+          <Badge variant="lime" className="mt-1">{AUDIT_STATUS_LABEL[audit.status]}</Badge>
         </div>
         <div className="flex items-center gap-2">
           {audit.view_token ? (
@@ -336,7 +352,7 @@ export default function AuditDetailPage() {
                 {proposals.map((p) => (
                   <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-mv-cream-soft border border-mv-border">
                     <span className="text-mv-ink-soft">{new Date(p.created_at).toLocaleString('fr-CA')}</span>
-                    <Badge variant={p.status === 'sent' ? 'green' : p.status === 'failed' ? 'red' : 'neutral'}>{p.status}</Badge>
+                    <Badge variant={p.status === 'sent' ? 'green' : p.status === 'failed' ? 'red' : 'neutral'}>{PROPOSAL_STATUS_LABEL[p.status]}</Badge>
                   </div>
                 ))}
               </div>

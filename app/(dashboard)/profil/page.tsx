@@ -20,10 +20,12 @@ import {
   Github,
   MapPin,
   Building,
+  Camera,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useCurrentUser } from '@/hooks/use-current-user';
+import { UserAvatar } from '@/components/ui/user-avatar';
 
 export default function ProfilePage() {
   const { refresh: refreshCurrentUser } = useCurrentUser();
@@ -62,7 +64,7 @@ export default function ProfilePage() {
             setFullName(profile.full_name || user.user_metadata?.full_name || '');
             setRole(profile.role || 'member');
             setDepartment(profile.department || '');
-            setAvatarUrl(profile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(profile.full_name || user.email || 'MV')}&backgroundColor=1E4B33&fontColor=ffffff`);
+            setAvatarUrl(profile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(profile.full_name || user.email || 'MV')}&backgroundColor=059669&fontColor=ffffff`);
             setUsername(profile.username || '');
             setBio(profile.bio || '');
             setLocation(profile.location || '');
@@ -72,7 +74,7 @@ export default function ProfilePage() {
             setGithub(profile.github || '');
           } else {
             setFullName(user.user_metadata?.full_name || '');
-            setAvatarUrl(`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email || 'MV')}&backgroundColor=1E4B33&fontColor=ffffff`);
+            setAvatarUrl(`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email || 'MV')}&backgroundColor=059669&fontColor=ffffff`);
           }
         }
       } catch {}
@@ -264,30 +266,37 @@ export default function ProfilePage() {
 
       {/* Tab 1: Informations & Rôle — édition + aperçu en direct */}
       {activeTab === 'info' && (
-        <form onSubmit={handleSaveProfile} className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
+        <form onSubmit={handleSaveProfile} className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start">
           <div className="space-y-6">
             <Card
               header={
                 <div>
-                  <h3 className="font-extrabold text-sm text-mv-ink">Informations de base</h3>
-                  <p className="text-[11px] text-mv-ink-soft mt-0.5">Votre profil public interne</p>
+                  <h3 className="font-extrabold text-sm text-mv-ink font-display">Informations de base</h3>
+                  <p className="text-[11px] text-mv-ink-soft mt-0.5">Vos informations de profil public</p>
                 </div>
               }
             >
               <div className="space-y-5 text-xs">
                 <div className="flex items-center gap-4">
-                  <img
-                    src={avatarUrl}
-                    alt={fullName}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-mv-green shadow-mv-sm shrink-0"
-                  />
-                  <div className="space-y-1.5">
-                    <div className="font-bold text-mv-ink">Photo de profil</div>
-                    <div className="text-[11px] text-mv-ink-soft">JPG, PNG ou GIF. Max 2 Mo.</div>
-                    <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-mv-cream-soft hover:bg-mv-green-tint border border-mv-border text-mv-green font-bold cursor-pointer transition-all">
-                      <Upload className="w-3.5 h-3.5" /> Changer la photo
+                  <div className="relative group">
+                    <UserAvatar
+                      src={avatarUrl}
+                      name={fullName}
+                      email={email}
+                      size="xl"
+                      className="border-2 border-mv-border shadow-mv-sm"
+                    />
+                    <label
+                      title="Changer la photo"
+                      className="absolute bottom-0 right-0 p-1.5 rounded-full bg-mv-ink text-white shadow-mv-md hover:bg-mv-green transition-colors cursor-pointer"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
                       <input type="file" onChange={handleAvatarUpload} className="hidden" accept="image/*" />
                     </label>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="font-bold text-mv-ink text-sm">Photo de profil</div>
+                    <div className="text-[11px] text-mv-ink-soft">JPG, PNG ou GIF. Max 2 Mo.</div>
                   </div>
                 </div>
 
@@ -298,7 +307,8 @@ export default function ProfilePage() {
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="w-full p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink font-semibold focus:outline-none focus:border-mv-green"
+                      placeholder="Jordan Chen"
+                      className="w-full p-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink font-semibold focus:outline-none focus:border-mv-green"
                     />
                   </div>
                   <div>
@@ -308,19 +318,20 @@ export default function ProfilePage() {
                       value={username}
                       onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
                       placeholder="jordanchen"
-                      className="w-full p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink font-semibold focus:outline-none focus:border-mv-green"
+                      className="w-full p-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink font-semibold focus:outline-none focus:border-mv-green"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-bold text-mv-ink mb-1.5">Fonction / Intitulé de poste</label>
+                    <label className="block font-bold text-mv-ink mb-1.5">Rôle / Intitulé de poste</label>
                     <input
                       type="text"
                       value={role}
                       onChange={(e) => setRole(e.target.value)}
-                      className="w-full p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink font-semibold focus:outline-none focus:border-mv-green"
+                      placeholder="Senior Software Engineer"
+                      className="w-full p-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink font-semibold focus:outline-none focus:border-mv-green"
                     />
                   </div>
                   <div>
@@ -331,7 +342,8 @@ export default function ProfilePage() {
                       type="text"
                       value={department}
                       onChange={(e) => setDepartment(e.target.value)}
-                      className="w-full p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink font-semibold focus:outline-none focus:border-mv-green"
+                      placeholder="Tech & IA"
+                      className="w-full p-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink font-semibold focus:outline-none focus:border-mv-green"
                     />
                   </div>
                 </div>
@@ -343,8 +355,8 @@ export default function ProfilePage() {
                     onChange={(e) => setBio(e.target.value)}
                     rows={3}
                     maxLength={280}
-                    placeholder="Quelques mots sur toi…"
-                    className="w-full p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green resize-none"
+                    placeholder="Full-stack developer building tools for the modern web. Open source enthusiast and occasional writer about software architecture."
+                    className="w-full p-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green resize-none text-xs"
                   />
                 </div>
 
@@ -356,20 +368,8 @@ export default function ProfilePage() {
                     type="text"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Montréal, QC"
-                    className="w-full p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink font-semibold focus:outline-none focus:border-mv-green"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-mv-ink mb-1.5 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-mv-green" /> Courriel professionnel
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink font-mono font-semibold focus:outline-none focus:border-mv-green"
+                    placeholder="Seattle, WA"
+                    className="w-full p-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink font-semibold focus:outline-none focus:border-mv-green"
                   />
                 </div>
               </div>
@@ -378,8 +378,8 @@ export default function ProfilePage() {
             <Card
               header={
                 <div>
-                  <h3 className="font-extrabold text-sm text-mv-ink">Liens</h3>
-                  <p className="text-[11px] text-mv-ink-soft mt-0.5">Ton site et tes réseaux</p>
+                  <h3 className="font-extrabold text-sm text-mv-ink font-display">Liens</h3>
+                  <p className="text-[11px] text-mv-ink-soft mt-0.5">Votre site web et vos réseaux sociaux</p>
                 </div>
               }
             >
@@ -392,8 +392,8 @@ export default function ProfilePage() {
                     type="url"
                     value={website}
                     onChange={(e) => setWebsite(e.target.value)}
-                    placeholder="https://…"
-                    className="w-full p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
+                    placeholder="https://jordanchen.dev"
+                    className="w-full p-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -405,7 +405,8 @@ export default function ProfilePage() {
                       type="text"
                       value={twitter}
                       onChange={(e) => setTwitter(e.target.value)}
-                      className="w-full p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
+                      placeholder="jordanchen"
+                      className="w-full p-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
                     />
                   </div>
                   <div>
@@ -416,7 +417,8 @@ export default function ProfilePage() {
                       type="text"
                       value={linkedin}
                       onChange={(e) => setLinkedin(e.target.value)}
-                      className="w-full p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
+                      placeholder="jordanchen"
+                      className="w-full p-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
                     />
                   </div>
                   <div>
@@ -427,73 +429,78 @@ export default function ProfilePage() {
                       type="text"
                       value={github}
                       onChange={(e) => setGithub(e.target.value)}
-                      className="w-full p-3 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
+                      placeholder="jordanchen"
+                      className="w-full p-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
                     />
                   </div>
                 </div>
               </div>
             </Card>
 
-            <div className="flex justify-end">
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 rounded-xl border border-mv-border text-xs font-semibold text-mv-ink-soft hover:text-mv-ink hover:bg-mv-cream-soft transition-colors cursor-pointer"
+              >
+                Annuler
+              </button>
               <Button type="submit" variant="primary" disabled={saving} icon={<Save className="w-4 h-4" />}>
-                {saving ? 'Enregistrement...' : 'Enregistrer le profil'}
+                {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
               </Button>
             </div>
           </div>
 
-          {/* Live Preview */}
+          {/* Live Preview Card */}
           <div className="sticky top-20 space-y-2">
             <div className="rounded-2xl border border-mv-border bg-mv-surface overflow-hidden shadow-mv-sm">
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-mv-border bg-mv-cream-soft">
-                <span className="text-[11px] font-bold text-mv-ink uppercase tracking-wider">Aperçu en direct</span>
-                <span className="text-[10px] text-mv-ink-faint">Vue publique</span>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-mv-border bg-mv-cream-soft/60">
+                <span className="text-[12px] font-bold text-mv-ink">Aperçu en direct</span>
+                <span className="text-[10px] font-bold text-mv-ink-soft bg-mv-surface border border-mv-border px-2 py-0.5 rounded-full">
+                  Vue publique
+                </span>
               </div>
               <div className="p-6 text-center space-y-3">
-                <img
+                <UserAvatar
                   src={avatarUrl}
-                  alt={fullName}
-                  className="w-20 h-20 rounded-full object-cover mx-auto border-2 border-mv-border"
+                  name={fullName}
+                  email={email}
+                  size="2xl"
+                  className="mx-auto shadow-mv-md"
                 />
                 <div>
-                  <div className="font-extrabold text-mv-ink text-base font-display">{fullName || 'Ton nom'}</div>
-                  {username && <div className="text-mv-ink-faint text-xs">@{username}</div>}
-                  {role && <div className="text-mv-ink text-xs font-semibold mt-0.5">{role}</div>}
-                  {location && (
-                    <div className="flex items-center justify-center gap-1 text-mv-ink-soft text-[11px] mt-1">
-                      <MapPin className="w-3 h-3" /> {location}
-                    </div>
-                  )}
-                </div>
-                {bio && (
-                  <p className="text-[11px] text-mv-ink-soft border-t border-mv-border pt-3">{bio}</p>
-                )}
-                {(website || twitter || linkedin || github) && (
-                  <div className="flex items-center justify-center gap-3 border-t border-mv-border pt-3">
-                    {website && (
-                      <a href={website} target="_blank" rel="noreferrer" className="text-mv-ink-soft hover:text-mv-green">
-                        <Globe className="w-4 h-4" />
-                      </a>
-                    )}
-                    {twitter && (
-                      <a href={`https://twitter.com/${twitter}`} target="_blank" rel="noreferrer" className="text-mv-ink-soft hover:text-mv-green">
-                        <Twitter className="w-4 h-4" />
-                      </a>
-                    )}
-                    {linkedin && (
-                      <a href={`https://linkedin.com/in/${linkedin}`} target="_blank" rel="noreferrer" className="text-mv-ink-soft hover:text-mv-green">
-                        <Linkedin className="w-4 h-4" />
-                      </a>
-                    )}
-                    {github && (
-                      <a href={`https://github.com/${github}`} target="_blank" rel="noreferrer" className="text-mv-ink-soft hover:text-mv-green">
-                        <Github className="w-4 h-4" />
-                      </a>
-                    )}
+                  <div className="font-extrabold text-mv-ink text-base font-display">{fullName || 'Jordan Chen'}</div>
+                  <div className="text-mv-ink-faint text-xs mt-0.5">@{username || 'jordanchen'}</div>
+                  <div className="text-mv-ink text-xs font-semibold mt-1">{role || 'Senior Software Engineer'}</div>
+                  <div className="flex items-center justify-center gap-1 text-mv-ink-soft text-[11px] mt-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-mv-ink-faint" />
+                    <span>{location || 'Seattle, WA'}</span>
                   </div>
-                )}
+                </div>
+
+                <p className="text-[11px] text-mv-ink-soft leading-relaxed border-t border-mv-border/60 pt-3">
+                  {bio || 'Full-stack developer building tools for the modern web. Open source enthusiast and occasional writer about software architecture.'}
+                </p>
+
+                <div className="flex items-center justify-center gap-3.5 border-t border-mv-border/60 pt-3 text-mv-ink-soft">
+                  <a href={website || '#'} target="_blank" rel="noreferrer" className="hover:text-mv-green transition-colors">
+                    <Globe className="w-4 h-4" />
+                  </a>
+                  <a href={twitter ? `https://twitter.com/${twitter}` : '#'} target="_blank" rel="noreferrer" className="hover:text-mv-green transition-colors">
+                    <Twitter className="w-4 h-4" />
+                  </a>
+                  <a href={linkedin ? `https://linkedin.com/in/${linkedin}` : '#'} target="_blank" rel="noreferrer" className="hover:text-mv-green transition-colors">
+                    <Linkedin className="w-4 h-4" />
+                  </a>
+                  <a href={github ? `https://github.com/${github}` : '#'} target="_blank" rel="noreferrer" className="hover:text-mv-green transition-colors">
+                    <Github className="w-4 h-4" />
+                  </a>
+                </div>
               </div>
             </div>
-            <p className="text-center text-[10px] text-mv-ink-faint">Aperçu de ton profil tel qu&apos;il apparaît aux autres</p>
+            <p className="text-center text-[11px] text-mv-ink-faint">
+              Voici comment votre profil apparaît aux autres
+            </p>
           </div>
         </form>
       )}

@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Mail, Phone, Building, DollarSign, Calendar, MessageSquare, Trash2, Save, ArrowRight } from 'lucide-react';
+import { X, Mail, Phone, Building, DollarSign, Calendar, MessageSquare, Trash2, Save, ArrowRight, PhoneCall, StickyNote } from 'lucide-react';
 import type { Lead, LeadNote, LeadStage } from '@/lib/types';
 import { updateLead, deleteLead } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
+import { useAppPermissions } from '@/components/providers/AppPermissionsProvider';
 
 interface LeadDetailDrawerProps {
   lead: Lead | null;
@@ -14,6 +16,8 @@ interface LeadDetailDrawerProps {
 
 export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDrawerProps) {
   const { toastError } = useToast();
+  const confirmDialog = useConfirm();
+  const { can } = useAppPermissions();
   const [newNoteText, setNewNoteText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -21,6 +25,9 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
   const [mrrValue, setMrrValue] = useState<number>(lead?.mrr_value || 0);
   const [oneTimeValue, setOneTimeValue] = useState<number>(lead?.one_time_value || 0);
   const [notes, setNotes] = useState<LeadNote[]>(lead?.notes || []);
+  const [entryType, setEntryType] = useState<'note' | 'call'>('note');
+  const [callDuration, setCallDuration] = useState<number>(5);
+  const [callOutcome, setCallOutcome] = useState('Répondu');
 
   if (!lead) return null;
 
@@ -61,12 +68,17 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
 
   const handleAddNote = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newNoteText.trim()) return;
+    if (entryType === 'note' && !newNoteText.trim()) return;
+
+    const text =
+      entryType === 'call'
+        ? `📞 Appel (${callDuration} min) — ${callOutcome}${newNoteText.trim() ? ` : ${newNoteText.trim()}` : ''}`
+        : newNoteText.trim();
 
     const newNote: LeadNote = {
       id: `note-${Date.now()}`,
       author: 'Équipe Minerva',
-      text: newNoteText.trim(),
+      text,
       created_at: new Date().toISOString(),
     };
 
@@ -75,7 +87,13 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
   };
 
   const handleDeleteLead = async () => {
-    if (!confirm('Voulez-vous vraiment supprimer ce prospect ?')) return;
+    const ok = await confirmDialog({
+      title: 'Supprimer ce prospect ?',
+      message: 'Cette action est définitive et supprimera toutes les notes associées.',
+      confirmLabel: 'Supprimer',
+      variant: 'danger',
+    });
+    if (!ok) return;
     setIsDeleting(true);
     const success = await deleteLead(lead.id);
     setIsDeleting(false);
@@ -188,20 +206,70 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
               <span>Notes & Suivi des Échanges</span>
             </h3>
 
-            <form onSubmit={handleAddNote} className="flex gap-2">
-              <input
-                type="text"
-                value={newNoteText}
-                onChange={(e) => setNewNoteText(e.target.value)}
-                placeholder="Ajouter une note de suivi..."
-                className="flex-1 px-3 py-2 bg-mv-surface border border-mv-border rounded-xl text-xs text-mv-ink placeholder-mv-ink-mute focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green"
-              />
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-mv-cream-soft border border-mv-border w-fit">
               <button
-                type="submit"
-                className="px-3 py-2 bg-mv-green hover:bg-mv-green/90 text-white font-bold text-xs rounded-xl transition-all"
+                type="button"
+                onClick={() => setEntryType('note')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  entryType === 'note' ? 'bg-mv-surface text-mv-ink shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
+                }`}
               >
-                Ajouter
+                <StickyNote className="w-3.5 h-3.5" /> Note
               </button>
+              <button
+                type="button"
+                onClick={() => setEntryType('call')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  entryType === 'call' ? 'bg-mv-surface text-mv-ink shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
+                }`}
+              >
+                <PhoneCall className="w-3.5 h-3.5" /> Appel
+              </button>
+            </div>
+
+            <form onSubmit={handleAddNote} className="space-y-2">
+              {entryType === 'call' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-mv-ink-soft mb-1">Durée (min)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={callDuration}
+                      onChange={(e) => setCallDuration(Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-mv-surface border border-mv-border rounded-xl text-xs text-mv-ink focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-mv-ink-soft mb-1">Résultat</label>
+                    <select
+                      value={callOutcome}
+                      onChange={(e) => setCallOutcome(e.target.value)}
+                      className="w-full px-3 py-2 bg-mv-surface border border-mv-border rounded-xl text-xs text-mv-ink focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green cursor-pointer"
+                    >
+                      <option>Répondu</option>
+                      <option>Pas de réponse</option>
+                      <option>Rappeler plus tard</option>
+                      <option>Numéro incorrect</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newNoteText}
+                  onChange={(e) => setNewNoteText(e.target.value)}
+                  placeholder={entryType === 'call' ? 'Détails de l\'appel (optionnel)…' : 'Ajouter une note de suivi...'}
+                  className="flex-1 px-3 py-2 bg-mv-surface border border-mv-border rounded-xl text-xs text-mv-ink placeholder-mv-ink-mute focus:ring-2 focus:ring-mv-green/30 focus:border-mv-green"
+                />
+                <button
+                  type="submit"
+                  className="px-3 py-2 bg-mv-green hover:bg-mv-green/90 text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  Ajouter
+                </button>
+              </div>
             </form>
 
             <div className="space-y-2 max-h-48 overflow-y-auto pt-2">
@@ -224,15 +292,25 @@ export function LeadDetailDrawer({ lead, onClose, onLeadUpdated }: LeadDetailDra
 
         {/* Footer Controls */}
         <div className="p-4 border-t border-mv-border flex items-center justify-between bg-mv-cream-soft">
-          <button
-            type="button"
-            onClick={handleDeleteLead}
-            disabled={isDeleting}
-            className="px-3 py-2 bg-mv-red-bg hover:bg-mv-red/20 text-mv-red font-bold text-xs rounded-xl flex items-center gap-1.5 border border-mv-red/30 transition-colors cursor-pointer disabled:opacity-50"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>{isDeleting ? 'Suppression…' : 'Supprimer'}</span>
-          </button>
+          {can('delete_lead') ? (
+            <button
+              type="button"
+              onClick={handleDeleteLead}
+              disabled={isDeleting}
+              className="px-3 py-2 bg-mv-red-bg hover:bg-mv-red/20 text-mv-red font-bold text-xs rounded-xl flex items-center gap-1.5 border border-mv-red/30 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>{isDeleting ? 'Suppression…' : 'Supprimer'}</span>
+            </button>
+          ) : (
+            <span
+              title="Réservé aux administrateurs (ou aux membres autorisés dans Paramètres > Permissions)"
+              className="px-3 py-2 bg-mv-cream-soft text-mv-ink-faint font-bold text-xs rounded-xl flex items-center gap-1.5 border border-mv-border cursor-not-allowed"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Supprimer</span>
+            </span>
+          )}
 
           <button
             type="button"

@@ -18,6 +18,7 @@ import { fetchTeamMemberPerformance, updateNext1on1Date } from '@/lib/services/s
 import type { TeamMemberPerformance } from '@/lib/types';
 import { PerformanceBarChart } from '@/components/charts/PerformanceBarChart';
 import { useToast } from '@/components/providers/ToastProvider';
+import { UserAvatar } from '@/components/ui/user-avatar';
 
 
 export default function PerformancePage() {
@@ -59,10 +60,12 @@ export default function PerformancePage() {
       {/* Header Profile Banner */}
       <div className="bg-mv-surface border border-mv-border rounded-xl p-6 shadow-mv-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-          <img
+          <UserAvatar
             src={member.avatar_url}
-            alt={member.full_name}
-            className="w-16 h-16 rounded-full object-cover border-2 border-mv-green shadow-mv-md"
+            name={member.full_name}
+            size="xl"
+            shape="circle"
+            className="border-2 border-mv-green shadow-mv-md"
           />
           <div>
             <div className="flex items-center gap-2">

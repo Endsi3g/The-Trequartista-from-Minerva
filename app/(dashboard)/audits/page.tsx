@@ -19,17 +19,17 @@ const STATUS_BADGE: Record<Audit['status'], { variant: 'neutral' | 'green'; styl
   awaiting_transcript: { variant: 'neutral', label: 'En attente de transcription' },
   transcript_ready: {
     variant: 'neutral',
-    style: { backgroundColor: 'rgba(30, 75, 51, 0.08)', borderColor: 'rgba(30, 75, 51, 0.25)', color: '#4a7d63' },
+    style: { backgroundColor: 'rgba(5, 150, 105, 0.08)', borderColor: 'rgba(5, 150, 105, 0.25)', color: '#047857' },
     label: 'Transcription prête',
   },
   extracting: {
     variant: 'neutral',
-    style: { backgroundColor: 'rgba(30, 75, 51, 0.14)', borderColor: 'rgba(30, 75, 51, 0.3)', color: '#356b4f' },
+    style: { backgroundColor: 'rgba(5, 150, 105, 0.14)', borderColor: 'rgba(5, 150, 105, 0.3)', color: '#047857' },
     label: 'Extraction en cours',
   },
   extracted: {
     variant: 'neutral',
-    style: { backgroundColor: 'rgba(30, 75, 51, 0.22)', borderColor: 'rgba(30, 75, 51, 0.4)', color: '#1E4B33' },
+    style: { backgroundColor: 'rgba(5, 150, 105, 0.22)', borderColor: 'rgba(5, 150, 105, 0.4)', color: '#065f46' },
     label: 'Extrait',
   },
   reviewed: { variant: 'green', label: 'Révisé' },

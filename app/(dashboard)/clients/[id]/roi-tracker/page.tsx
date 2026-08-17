@@ -28,6 +28,7 @@ import {
 import { fetchClients, fetchClientRoiMetrics, fetchContentPosts, logAuditEvent } from '@/lib/services/supabase-data';
 import { invokeRoiAggregator } from '@/lib/services/edge-functions';
 import { Client, ClientRoiMetrics, ContentPost } from '@/lib/types';
+import { UserAvatar } from '@/components/ui/user-avatar';
 
 export default function RoiTrackerPage() {
   const params = useParams();
@@ -127,19 +128,18 @@ export default function RoiTrackerPage() {
     <>
       <div className="space-y-8">
         {/* Header Banner */}
-        <div className="bg-mv-surface border border-mv-border rounded-xl p-6 shadow-mv-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <img
-              src={client.logo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(client.name)}&backgroundColor=1c9a6f&fontColor=ffffff`}
-              alt={client.name}
-              className="w-14 h-14 rounded-xl object-cover border border-mv-border shadow-mv-sm"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(client.name)}&backgroundColor=1c9a6f&fontColor=ffffff`;
-              }}
+        <div className="bg-mv-surface border border-mv-border rounded-xl p-5 sm:p-6 shadow-mv-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <UserAvatar
+              src={client.logo_url}
+              name={client.name}
+              size="xl"
+              shape="rounded"
+              className="shrink-0 shadow-mv-sm"
             />
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl lg:text-2xl font-extrabold text-mv-ink font-display">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl lg:text-2xl font-extrabold text-mv-ink font-display truncate">
                   {client.name}
                 </h1>
                 <Badge variant="green">● Suivi en direct</Badge>
@@ -151,9 +151,9 @@ export default function RoiTrackerPage() {
           </div>
 
           {/* Time Range Selector & Print Button */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
             <InviteClientButton clientId={client.id} />
-            <div className="flex items-center bg-mv-cream-soft border border-mv-border rounded-lg p-1 text-xs font-semibold">
+            <div className="flex items-center bg-mv-cream-soft border border-mv-border rounded-lg p-1 text-xs font-semibold overflow-x-auto">
               {(['7d', '30d', '90d', 'ytd'] as const).map((range) => (
                 <button
                   key={range}
@@ -236,14 +236,14 @@ export default function RoiTrackerPage() {
                   data={
                     metrics.total_invested > metrics.google_ads_spent
                       ? [
-                          { label: 'Google Ads', value: metrics.google_ads_spent, color: '#1E4B33' },
+                          { label: 'Google Ads', value: metrics.google_ads_spent, color: '#059669' },
                           {
                             label: 'Autres canaux',
                             value: metrics.total_invested - metrics.google_ads_spent,
                             color: '#dfff5f',
                           },
                         ]
-                      : [{ label: 'Google Ads', value: metrics.google_ads_spent, color: '#1E4B33' }]
+                      : [{ label: 'Google Ads', value: metrics.google_ads_spent, color: '#059669' }]
                   }
                 />
               )}

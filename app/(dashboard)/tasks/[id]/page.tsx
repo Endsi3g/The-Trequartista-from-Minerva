@@ -18,6 +18,7 @@ import {
 } from '@/lib/services/supabase-data';
 import { createClient } from '@/lib/supabase/client';
 import { Task, TaskComment, TaskSubitem } from '@/lib/types';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 
 const STATUS_COLUMNS: { key: Task['status']; label: string }[] = [
   { key: 'todo', label: 'À faire' },
@@ -29,6 +30,7 @@ export default function TaskDetailPage() {
   const params = useParams();
   const router = useRouter();
   const taskId = Array.isArray(params?.id) ? params.id[0] : params?.id || '';
+  const confirmDialog = useConfirm();
 
   const [task, setTask] = useState<Task | null>(null);
   const [comments, setComments] = useState<TaskComment[]>([]);
@@ -89,7 +91,14 @@ export default function TaskDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!task || !confirm(`Supprimer la tâche « ${task.title} » ?`)) return;
+    if (!task) return;
+    const ok = await confirmDialog({
+      title: 'Supprimer cette tâche ?',
+      message: `« ${task.title} » sera supprimée définitivement.`,
+      confirmLabel: 'Supprimer',
+      variant: 'danger',
+    });
+    if (!ok) return;
     await deleteTask(task.id);
     router.push('/tasks');
   };

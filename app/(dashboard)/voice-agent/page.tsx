@@ -237,7 +237,7 @@ function DashboardTab() {
                 />
                 <YAxis tick={{ fontSize: 10, fill: '#8a8d8b', fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="count" stroke="#1E4B33" strokeWidth={2} fill="#1E4B33" fillOpacity={0.12} />
+                <Area type="monotone" dataKey="count" stroke="#059669" strokeWidth={2} fill="#059669" fillOpacity={0.12} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

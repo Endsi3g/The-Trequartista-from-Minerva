@@ -19,10 +19,10 @@ import { useToast } from '@/components/providers/ToastProvider';
 
 const KANBAN_STAGES: ContentPost['status'][] = ['Idéation', 'Rédigé', 'Enregistré', 'Publié'];
 const PLATFORM_COLORS: Record<string, string> = {
-  Instagram: '#1E4B33',
+  Instagram: '#059669',
   TikTok: '#dfff5f',
   'YouTube Shorts': '#6ba585',
-  LinkedIn: '#153524',
+  LinkedIn: '#047857',
 };
 
 function ContentCard({ post, onDragStart }: { post: ContentPost; onDragStart?: (e: React.DragEvent, postId: string) => void }) {
@@ -42,6 +42,12 @@ function ContentCard({ post, onDragStart }: { post: ContentPost; onDragStart?: (
       <div className="font-bold text-xs text-mv-ink leading-snug group-hover:text-mv-green transition-colors">
         {post.title}
       </div>
+      {post.client_approval === 'approved' && (
+        <div className="text-[10px] font-bold text-mv-green flex items-center gap-1">● Approuvé par le client</div>
+      )}
+      {post.client_approval === 'changes_requested' && (
+        <div className="text-[10px] font-bold text-mv-amber flex items-center gap-1">● Modification demandée</div>
+      )}
       <div className="pt-2 border-t border-mv-border/60 flex items-center justify-between text-[11px]">
         <span className="text-mv-ink-soft flex items-center gap-1">
           <Film className="w-3.5 h-3.5 text-mv-warm" /> {post.platform || post.format}
@@ -271,29 +277,29 @@ export default function ContentPlannerPage() {
                   usable, near-square shape instead of squeezing into tall
                   skinny slivers at 7 columns wide. */}
               <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
-                <div className="min-w-[560px]">
-                  <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-mv-ink-soft mb-2">
+                <div className="min-w-[480px] max-w-[720px]">
+                  <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-bold text-mv-ink-soft mb-1.5">
                     {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((d) => (
                       <div key={d}>{d}</div>
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-7 gap-2">
+                  <div className="grid grid-cols-7 gap-1.5">
                     {calendarDays.map((day, i) =>
                       day.date === null ? (
-                        <div key={i} className="min-h-[110px]" />
+                        <div key={i} className="min-h-[64px]" />
                       ) : (
                         <div
                           key={i}
-                          className="min-h-[110px] max-h-[160px] p-2 bg-mv-cream-soft border border-mv-border rounded-xl flex flex-col gap-1.5 overflow-hidden"
+                          className="min-h-[64px] max-h-[92px] p-1.5 bg-mv-cream-soft border border-mv-border rounded-lg flex flex-col gap-1 overflow-hidden"
                         >
-                          <span className="font-bold text-[11px] text-mv-ink-faint text-right shrink-0">{day.date.getDate()}</span>
-                          <div className="space-y-1 overflow-y-auto flex-1">
+                          <span className="font-bold text-[10px] text-mv-ink-faint text-right shrink-0">{day.date.getDate()}</span>
+                          <div className="space-y-0.5 overflow-y-auto flex-1">
                             {day.posts.map((p) => (
                               <Link
                                 key={p.id}
                                 href={`/content-planner/${p.id}`}
-                                className="block p-1 rounded bg-mv-green/10 border border-mv-green/30 text-[10px] font-bold text-mv-green truncate hover:bg-mv-green hover:text-white transition-all"
+                                className="block px-1 py-0.5 rounded bg-mv-green/10 border border-mv-green/30 text-[9px] font-bold text-mv-green truncate hover:bg-mv-green hover:text-white transition-all"
                               >
                                 {p.title}
                               </Link>

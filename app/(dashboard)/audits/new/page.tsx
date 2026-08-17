@@ -3,13 +3,18 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { UserAvatar } from '@/components/ui/user-avatar';
+import { ArrowLeft, Building2, FileText } from 'lucide-react';
 import { createAudit, updateAudit, fetchClients } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
 import { createClient } from '@/lib/supabase/client';
 import type { Client } from '@/lib/types';
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <h2 className="text-[11px] font-extrabold text-mv-ink-soft uppercase tracking-widest mb-3">{children}</h2>;
+}
 
 export default function NewAuditPage() {
   const router = useRouter();
@@ -62,63 +67,103 @@ export default function NewAuditPage() {
     router.push(`/audits/${audit.id}`);
   };
 
+  const client = clients.find((c) => c.id === clientId);
+  const wordCount = transcript.trim() ? transcript.trim().split(/\s+/).length : 0;
+
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       <Link href="/audits" className="text-xs font-semibold text-mv-green hover:underline flex items-center gap-1.5 w-fit">
         <ArrowLeft className="w-3.5 h-3.5" /> Retour aux audits
       </Link>
 
-      <h1 className="text-2xl font-extrabold text-mv-ink tracking-tight font-display">Nouvel Audit</h1>
+      <div>
+        <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">Nouvel Audit</h1>
+        <p className="text-sm text-mv-ink-soft mt-1">Démarre un audit IA à partir d&apos;un appel de diagnostic.</p>
+      </div>
 
-      <Card>
-        <form onSubmit={handleCreate} className="space-y-4 text-xs">
-          <div>
-            <label className="font-bold text-mv-ink">Nom du prospect / de l'entreprise</label>
-            <input
-              type="text"
-              required
-              placeholder="Ex: Toitures Beauchemin"
-              value={prospectName}
-              onChange={(e) => setProspectName(e.target.value)}
-              className="w-full mt-1 bg-mv-cream-soft border border-mv-border rounded-xl px-3 py-2 text-mv-ink focus:outline-none focus:border-mv-green"
-            />
+      <form onSubmit={handleCreate} className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
+        <div className="space-y-6">
+          <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm space-y-4">
+            <SectionLabel>Prospect</SectionLabel>
+            <div>
+              <label className="block text-xs font-bold text-mv-ink mb-1.5">Nom du prospect / de l&apos;entreprise</label>
+              <div className="relative">
+                <Building2 className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Toitures Beauchemin"
+                  value={prospectName}
+                  onChange={(e) => setProspectName(e.target.value)}
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-mv-ink mb-1.5">Client existant (optionnel)</label>
+              <select
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors cursor-pointer"
+              >
+                <option value="">Aucun — prospect pas encore client</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label className="font-bold text-mv-ink">Client existant (optionnel)</label>
-            <select
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              className="w-full mt-1 bg-mv-cream-soft border border-mv-border rounded-xl px-3 py-2 text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
-            >
-              <option value="">Aucun -- prospect pas encore client</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="font-bold text-mv-ink">Transcription de l'appel (optionnel -- peut être collée plus tard)</label>
+          <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <SectionLabel>Transcription de l&apos;appel</SectionLabel>
+              {wordCount > 0 && <span className="text-[11px] text-mv-ink-faint font-mono">{wordCount} mots</span>}
+            </div>
+            <p className="text-[11px] text-mv-ink-soft -mt-2">Optionnel — peut être collée plus tard depuis la fiche de l&apos;audit.</p>
             <textarea
-              rows={10}
+              rows={12}
               placeholder="Collez la transcription complète de l'appel de diagnostic ici…"
               value={transcript}
               onChange={(e) => setTranscript(e.target.value)}
-              className="w-full mt-1 bg-mv-cream-soft border border-mv-border rounded-xl p-3 text-mv-ink font-mono text-[11px] focus:outline-none focus:border-mv-green"
+              className="w-full rounded-xl bg-mv-cream-soft border border-mv-border p-3.5 text-mv-ink font-mono text-[11px] leading-relaxed focus:outline-none focus:border-mv-green transition-colors resize-y"
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-mv-border">
-            <Link href="/audits">
-              <Button variant="outline" size="sm" type="button">Annuler</Button>
+          <div className="flex gap-3">
+            <Link href="/audits" className="flex-1">
+              <Button type="button" variant="secondary" className="w-full">Annuler</Button>
             </Link>
-            <Button variant="primary" size="sm" type="submit" disabled={saving}>
+            <Button type="submit" variant="primary" className="flex-1" disabled={saving}>
               {saving ? 'Création…' : "Créer l'audit"}
             </Button>
           </div>
-        </form>
-      </Card>
+        </div>
+
+        {/* Right: live preview */}
+        <div className="lg:sticky lg:top-6 bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm space-y-4">
+          <SectionLabel>Aperçu</SectionLabel>
+          <div className="bg-mv-cream-soft border border-mv-border rounded-xl p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <UserAvatar name={prospectName || 'Prospect'} src={client?.logo_url} size="lg" shape="rounded" />
+              <div className="min-w-0">
+                <div className="font-bold text-sm text-mv-ink truncate">{prospectName || 'Nom du prospect'}</div>
+                <div className="text-[11px] text-mv-ink-soft truncate">{client?.name || 'Prospect externe'}</div>
+              </div>
+            </div>
+            <div className="pt-3 border-t border-mv-border flex items-center justify-between">
+              <span className="text-[11px] text-mv-ink-soft">Transcription</span>
+              <span className="text-xs font-semibold text-mv-ink">{wordCount > 0 ? `${wordCount} mots` : 'Aucune'}</span>
+            </div>
+            <Badge variant={transcript.trim() ? 'green' : 'neutral'}>
+              {transcript.trim() ? 'Transcription prête' : 'En attente de transcription'}
+            </Badge>
+          </div>
+          <div className="flex items-start gap-2 text-[11px] text-mv-ink-faint leading-relaxed">
+            <FileText className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            L&apos;audit IA extraira les points de friction, coûts cachés et compatibilité d&apos;outils dès qu&apos;une transcription sera disponible.
+          </div>
+        </div>
+      </form>
     </div>
   );
 }

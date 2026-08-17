@@ -21,6 +21,12 @@ export interface Client {
   health_status: 'Ready' | 'On Track' | 'At Risk';
   contact_name: string;
   contact_email: string;
+  contact_phone?: string | null;
+  website_url?: string | null;
+  google_business_url?: string | null;
+  instagram_url?: string | null;
+  facebook_url?: string | null;
+  linkedin_url?: string | null;
   created_at: string;
   current_focus?: string | null;
 }
@@ -104,6 +110,8 @@ export interface ClientMessage {
   client_id: string;
   sender_id: string;
   sender_role: 'client' | 'team';
+  sender_name?: string;
+  sender_avatar?: string;
   body: string;
   created_at: string;
 }
@@ -156,6 +164,33 @@ export interface Project {
   assignees: string[];
 }
 
+export interface MinervaRoadmapItem {
+  id: string;
+  title: string;
+  product: string;
+  item_type: 'Milestone' | 'Launch' | 'Experiment';
+  status: 'Planned' | 'In Progress' | 'Done';
+  impact: 'Low' | 'Medium' | 'High';
+  start_date?: string | null;
+  end_date?: string | null;
+  owner_name?: string | null;
+  created_at: string;
+}
+
+export interface ProjectMilestone {
+  id: string;
+  project_id: string;
+  title: string;
+  description?: string | null;
+  due_date?: string | null;
+  status: 'pending' | 'done';
+  assignee_id?: string | null;
+  assignee_name?: string;
+  assignee_avatar?: string;
+  position: number;
+  created_at: string;
+}
+
 export interface ProjectRoadmapStep {
   id: string;
   project_id: string;
@@ -198,8 +233,9 @@ export interface ContentPost {
   video_url?: string;
   caption?: string;
   hashtags?: string[];
-  script_notes?: string;
   internal_notes?: string;
+  client_approval?: 'pending' | 'approved' | 'changes_requested';
+  client_feedback?: string | null;
   native_url?: string;
   metrics_views?: number;
   metrics_likes?: number;
@@ -236,7 +272,17 @@ export interface TeamMemberPerformance {
 export interface AcademySOP {
   id: string;
   title: string;
-  category: 'Design Framer' | 'Workflows IA' | 'Campagnes Ads' | 'Loi 25 & Compliance';
+  category:
+    | 'Design Framer'
+    | 'Workflows IA'
+    | 'Campagnes Ads'
+    | 'Loi 25 & Compliance'
+    | 'Onboarding'
+    | 'Rôles & Rémunération'
+    | 'Outils & Systèmes'
+    | 'Ventes & Prospection'
+    | 'Gestion de compte'
+    | 'Support & QA';
   read_time_min: number;
   author: string;
   video_url?: string;

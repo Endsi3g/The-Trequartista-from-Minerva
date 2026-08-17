@@ -27,7 +27,7 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
     probabilityPct: 30,
     badgeBg: '',
     badgeText: '',
-    badgeStyle: { backgroundColor: 'rgba(30, 75, 51, 0.08)', borderColor: 'rgba(30, 75, 51, 0.25)', color: '#4a7d63' },
+    badgeStyle: { backgroundColor: 'rgba(5, 150, 105, 0.08)', borderColor: 'rgba(5, 150, 105, 0.25)', color: '#4a7d63' },
   },
   {
     id: 'proposition',
@@ -35,7 +35,7 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
     probabilityPct: 60,
     badgeBg: '',
     badgeText: '',
-    badgeStyle: { backgroundColor: 'rgba(30, 75, 51, 0.14)', borderColor: 'rgba(30, 75, 51, 0.3)', color: '#356b4f' },
+    badgeStyle: { backgroundColor: 'rgba(5, 150, 105, 0.14)', borderColor: 'rgba(5, 150, 105, 0.3)', color: '#356b4f' },
   },
   {
     id: 'negociation',
@@ -43,7 +43,7 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
     probabilityPct: 80,
     badgeBg: '',
     badgeText: '',
-    badgeStyle: { backgroundColor: 'rgba(30, 75, 51, 0.22)', borderColor: 'rgba(30, 75, 51, 0.4)', color: '#1E4B33' },
+    badgeStyle: { backgroundColor: 'rgba(5, 150, 105, 0.22)', borderColor: 'rgba(5, 150, 105, 0.4)', color: '#059669' },
   },
   { id: 'gagne', title: '5. Gagné / Signé', probabilityPct: 100, badgeBg: 'bg-mv-green-tint border-mv-green/30', badgeText: 'text-mv-green' },
   { id: 'perdu', title: '6. Perdu', probabilityPct: 0, badgeBg: 'bg-mv-red-bg border-mv-red/30', badgeText: 'text-mv-red' },

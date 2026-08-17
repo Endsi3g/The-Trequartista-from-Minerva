@@ -13,12 +13,14 @@ import { LaunchCheckItem, Project } from '@/lib/types';
 import confetti from 'canvas-confetti';
 import { GaugeChart } from '@/components/charts/GaugeChart';
 import { useToast } from '@/components/providers/ToastProvider';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 
 
 export default function LaunchCheckPage() {
   const params = useParams();
   const projectId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const { toastSuccess, toastError } = useToast();
+  const confirmDialog = useConfirm();
 
   const [project, setProject] = useState<Project | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -99,7 +101,13 @@ export default function LaunchCheckPage() {
 
   const resetAll = async () => {
     if (!projectId) return;
-    if (!confirm('Voulez-vous vraiment réinitialiser les 20 points de la checklist ?')) return;
+    const ok = await confirmDialog({
+      title: 'Réinitialiser la checklist ?',
+      message: 'Les 20 points seront décochés. Cette action ne peut pas être annulée.',
+      confirmLabel: 'Réinitialiser',
+      variant: 'danger',
+    });
+    if (!ok) return;
     const previousItems = items;
     const resetItems = items.map((i) => ({ ...i, checked: false }));
     setItems(resetItems);

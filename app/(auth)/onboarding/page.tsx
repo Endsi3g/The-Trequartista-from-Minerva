@@ -151,11 +151,11 @@ export default function OnboardingPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-neutral-400 font-mono">{step}/{STEPS.length}</span>
-                <span className="text-xs font-semibold text-[#1E4B33]">{STEPS[step - 1].label}</span>
+                <span className="text-xs font-semibold text-[#059669]">{STEPS[step - 1].label}</span>
               </div>
               <div className="w-full h-1 bg-neutral-100 rounded-full overflow-hidden">
                 <motion.div
-                  className="h-full bg-[#1E4B33] rounded-full"
+                  className="h-full bg-[#059669] rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.4, ease: 'easeInOut' }}
@@ -183,13 +183,13 @@ export default function OnboardingPage() {
                     <button
                       type="button"
                       onClick={() => fileRef.current?.click()}
-                      className="relative w-20 h-20 rounded-full border-2 border-dashed border-neutral-300 bg-neutral-50 flex items-center justify-center overflow-hidden hover:border-[#1E4B33] transition-colors group shrink-0"
+                      className="relative w-20 h-20 rounded-full border-2 border-dashed border-neutral-300 bg-neutral-50 flex items-center justify-center overflow-hidden hover:border-[#059669] transition-colors group shrink-0"
                     >
                       {avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                       ) : (
-                        <Plus className="w-6 h-6 text-neutral-400 group-hover:text-[#1E4B33] transition-colors stroke-[1.5]" />
+                        <Plus className="w-6 h-6 text-neutral-400 group-hover:text-[#059669] transition-colors stroke-[1.5]" />
                       )}
                     </button>
                     <div className="space-y-1.5">
@@ -215,7 +215,7 @@ export default function OnboardingPage() {
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="Jane Smith"
-                        className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-[#1E4B33] transition-colors"
+                        className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-[#059669] transition-colors"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -225,7 +225,7 @@ export default function OnboardingPage() {
                         onChange={(e) => setBio(e.target.value)}
                         rows={2}
                         placeholder="A few words about yourself..."
-                        className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-[#1E4B33] resize-none transition-colors"
+                        className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-[#059669] resize-none transition-colors"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -271,7 +271,7 @@ export default function OnboardingPage() {
                         value={roleTitle}
                         onChange={(e) => setRoleTitle(e.target.value)}
                         placeholder="Ex: Directeur croissance, Responsable IA…"
-                        className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-[#1E4B33] transition-colors"
+                        className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-[#059669] transition-colors"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -284,7 +284,7 @@ export default function OnboardingPage() {
                             onClick={() => setDepartment(d)}
                             className={`px-3 py-2.5 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer ${
                               department === d
-                                ? 'border-[#1E4B33] bg-[#1E4B33] text-white'
+                                ? 'border-[#059669] bg-[#059669] text-white'
                                 : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
                             }`}
                           >
@@ -323,7 +323,7 @@ export default function OnboardingPage() {
                             onClick={() => setTeamSize(size)}
                             className={`px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                               teamSize === size
-                                ? 'border-[#1E4B33] bg-[#1E4B33] text-white'
+                                ? 'border-[#059669] bg-[#059669] text-white'
                                 : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
                             }`}
                           >
@@ -339,7 +339,7 @@ export default function OnboardingPage() {
                         onChange={(e) => setInviteEmails(e.target.value)}
                         rows={3}
                         placeholder="jean@entreprise.com, marie@entreprise.com…"
-                        className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-[#1E4B33] resize-none transition-colors"
+                        className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:border-[#059669] resize-none transition-colors"
                       />
                       <p className="text-[11px] text-neutral-400">Séparez les adresses par des virgules.</p>
                     </div>
@@ -377,7 +377,7 @@ export default function OnboardingPage() {
                             onClick={() => setDefaultView(v.href)}
                             className={`flex items-center gap-3 px-3.5 py-3 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer ${
                               defaultView === v.href
-                                ? 'border-[#1E4B33] bg-[#1E4B33]/5 text-[#1E4B33]'
+                                ? 'border-[#059669] bg-[#059669]/5 text-[#059669]'
                                 : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
                             }`}
                           >
@@ -393,7 +393,7 @@ export default function OnboardingPage() {
                         <select
                           value={timezone}
                           onChange={(e) => setTimezone(e.target.value)}
-                          className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-xs focus:outline-none focus:border-[#1E4B33] bg-white cursor-pointer"
+                          className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-xs focus:outline-none focus:border-[#059669] bg-white cursor-pointer"
                         >
                           <option value="America/Toronto">America/Toronto (EST)</option>
                           <option value="America/Montreal">America/Montréal</option>
@@ -406,7 +406,7 @@ export default function OnboardingPage() {
                         <select
                           value={language}
                           onChange={(e) => setLanguage(e.target.value)}
-                          className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-xs focus:outline-none focus:border-[#1E4B33] bg-white cursor-pointer"
+                          className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-xs focus:outline-none focus:border-[#059669] bg-white cursor-pointer"
                         >
                           <option value="fr">Français</option>
                           <option value="en">English</option>
@@ -426,7 +426,7 @@ export default function OnboardingPage() {
                   transition={{ duration: 0.3 }}
                   className="flex flex-col items-center text-center space-y-6 py-8"
                 >
-                  <div className="w-16 h-16 rounded-full bg-[#1E4B33] flex items-center justify-center shadow-lg">
+                  <div className="w-16 h-16 rounded-full bg-[#059669] flex items-center justify-center shadow-lg">
                     <Check className="w-8 h-8 text-white" strokeWidth={2.5} />
                   </div>
                   <div className="space-y-2">
@@ -439,7 +439,7 @@ export default function OnboardingPage() {
                   </div>
                   <div className="w-40 h-1 bg-neutral-100 rounded-full overflow-hidden">
                     <motion.div
-                      className="h-full bg-[#1E4B33] rounded-full"
+                      className="h-full bg-[#059669] rounded-full"
                       initial={{ width: 0 }}
                       animate={{ width: '100%' }}
                       transition={{ duration: 1.2 }}
@@ -467,7 +467,7 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#1E4B33] hover:bg-[#153524] text-white font-bold text-sm rounded-xl transition-all cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#059669] hover:bg-[#047857] text-white font-bold text-sm rounded-xl transition-all cursor-pointer"
                 >
                   <span>Continuer</span>
                   <ArrowRight className="w-4 h-4" />
@@ -477,7 +477,7 @@ export default function OnboardingPage() {
                   type="button"
                   onClick={handleFinish}
                   disabled={loading}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#1E4B33] hover:bg-[#153524] text-white font-bold text-sm rounded-xl transition-all cursor-pointer disabled:opacity-60"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#059669] hover:bg-[#047857] text-white font-bold text-sm rounded-xl transition-all cursor-pointer disabled:opacity-60"
                 >
                   <span>{loading ? 'Sauvegarde…' : 'Terminer la configuration'}</span>
                   <Check className="w-4 h-4" />
@@ -494,14 +494,14 @@ export default function OnboardingPage() {
             <div className="border-r border-neutral-200/70 p-4 space-y-3 bg-neutral-50/80">
               <div className="flex items-center justify-between gap-2 pb-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-6 h-6 rounded-md bg-[#1E4B33] flex items-center justify-center shrink-0" />
+                  <div className="w-6 h-6 rounded-md bg-[#059669] flex items-center justify-center shrink-0" />
                   <span className="text-xs font-bold text-neutral-900 truncate">Workspace</span>
                 </div>
                 <span className="text-neutral-400 text-xs">‹</span>
               </div>
               <div className="space-y-1.5 pt-1">
                 {[true, false, false, false, false, false, false, false, false].map((active, i) => (
-                  <div key={i} className={`h-7 rounded-lg border ${active ? 'bg-[#1E4B33]/10 border-[#1E4B33]/20' : 'bg-neutral-100/60 border-neutral-200/50'}`} />
+                  <div key={i} className={`h-7 rounded-lg border ${active ? 'bg-[#059669]/10 border-[#059669]/20' : 'bg-neutral-100/60 border-neutral-200/50'}`} />
                 ))}
               </div>
             </div>
@@ -526,7 +526,7 @@ export default function OnboardingPage() {
               </div>
               <div className="flex items-center gap-1.5">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className={`w-6 h-6 rounded-md border ${i === 0 ? 'bg-[#1E4B33] border-[#1E4B33]' : 'bg-neutral-50 border-neutral-200'}`} />
+                  <div key={i} className={`w-6 h-6 rounded-md border ${i === 0 ? 'bg-[#059669] border-[#059669]' : 'bg-neutral-50 border-neutral-200'}`} />
                 ))}
               </div>
             </div>
