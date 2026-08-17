@@ -35,6 +35,12 @@ export default function AcademyPage() {
     return matchesSearch && matchesCategory;
   });
 
+  const categoryCounts = sops.reduce<Record<string, number>>((acc, sop) => {
+    acc[sop.category] = (acc[sop.category] || 0) + 1;
+    return acc;
+  }, {});
+  const categories = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]);
+
   return (
     <PageFadeIn className="space-y-8">
       {/* Top Header */}
@@ -58,42 +64,51 @@ export default function AcademyPage() {
       </div>
 
       {/* Filter & Search Bar */}
-      <Card className="p-4">
+      <Card className="p-4 space-y-3.5">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-mv-ink-soft" />
-              <input
-                type="text"
-                placeholder="Rechercher une SOP, un sujet..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-mv-cream-soft border border-mv-border rounded-xl pl-9 pr-4 py-2 text-xs text-mv-ink focus:outline-none focus:border-mv-green"
-              />
-            </div>
-
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full sm:w-auto bg-mv-cream-soft border border-mv-border rounded-xl px-3 py-2 text-xs font-medium text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
-            >
-              <option value="all">Toutes les catégories</option>
-              <option value="Onboarding">Onboarding</option>
-              <option value="Rôles & Rémunération">Rôles & Rémunération</option>
-              <option value="Outils & Systèmes">Outils & Systèmes</option>
-              <option value="Ventes & Prospection">Ventes & Prospection</option>
-              <option value="Gestion de compte">Gestion de compte</option>
-              <option value="Support & QA">Support & QA</option>
-              <option value="Design Framer">Design Framer</option>
-              <option value="Workflows IA">Workflows IA</option>
-              <option value="Campagnes Ads">Campagnes Ads</option>
-              <option value="Loi 25 & Compliance">Loi 25 & Compliance</option>
-            </select>
+          <div className="relative w-full sm:w-80">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-mv-ink-soft" />
+            <input
+              type="text"
+              placeholder="Rechercher une SOP, un sujet..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-mv-cream-soft border border-mv-border rounded-xl pl-9 pr-4 py-2 text-xs text-mv-ink focus:outline-none focus:border-mv-green"
+            />
           </div>
 
-          <span className="text-xs text-mv-ink-soft font-mono">
+          <span className="text-xs text-mv-ink-soft font-mono shrink-0">
             Total SOPs : <strong className="text-mv-green">{filteredSops.length}</strong>
           </span>
+        </div>
+
+        {/* Category pills -- visual, scannable navigation instead of a plain select */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 -mx-1 px-1">
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
+              selectedCategory === 'all'
+                ? 'bg-mv-green text-white border-mv-green shadow-mv-sm'
+                : 'bg-mv-cream-soft text-mv-ink-soft border-mv-border hover:border-mv-green/40 hover:text-mv-ink'
+            }`}
+          >
+            Toutes
+            <span className={selectedCategory === 'all' ? 'text-mv-cream/80' : 'text-mv-ink-faint'}>{sops.length}</span>
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+                selectedCategory === cat
+                  ? 'bg-mv-green text-white border-mv-green shadow-mv-sm'
+                  : 'bg-mv-cream-soft text-mv-ink-soft border-mv-border hover:border-mv-green/40 hover:text-mv-ink'
+              }`}
+            >
+              {cat}
+              <span className={selectedCategory === cat ? 'text-mv-cream/80' : 'text-mv-ink-faint'}>{categoryCounts[cat]}</span>
+            </button>
+          ))}
         </div>
       </Card>
 
@@ -115,7 +130,7 @@ export default function AcademyPage() {
             <Card key={sop.id} className="flex flex-col justify-between hover:border-mv-green transition-all shadow-mv-sm">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Badge variant="lime">{sop.category}</Badge>
+                  <Badge variant="blue">{sop.category}</Badge>
                   <span className="text-[11px] font-mono text-mv-ink-soft flex items-center gap-1 font-semibold">
                     <Clock className="w-3.5 h-3.5 text-mv-green" /> {sop.read_time_min} min
                   </span>

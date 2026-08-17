@@ -209,8 +209,8 @@ export function AppSidebar() {
           <DropdownMenuTrigger asChild>
             <button className="flex w-full items-center justify-between gap-2.5 rounded-xl border border-neutral-200/90 bg-white p-2 text-left hover:border-neutral-300 transition-colors cursor-pointer">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-[#059669] text-white flex items-center justify-center shrink-0 text-[10px] font-extrabold">
-                  M
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
+                  <LogoMark size={24} />
                 </div>
                 <div className="min-w-0">
                   <span className="block truncate text-xs font-extrabold text-neutral-900">

@@ -97,7 +97,7 @@ export default function AuditLogsPage() {
         header={
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-mv-warm" />
+              <Clock className="w-4 h-4 text-mv-green" />
               <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
                 Flux d'Événements Récents ({filteredLogs.length})
               </h3>
@@ -123,7 +123,7 @@ export default function AuditLogsPage() {
                       isAlert
                         ? 'bg-mv-red-bg border-mv-red/40 text-mv-red'
                         : isSystem
-                        ? 'bg-mv-warm-tint border-mv-warm/40 text-mv-warm'
+                        ? 'bg-mv-blue-bg border-mv-blue/40 text-mv-blue'
                         : 'bg-mv-green-tint border-mv-green/40 text-mv-green'
                     }`}
                   >
@@ -140,7 +140,7 @@ export default function AuditLogsPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-extrabold text-mv-ink">{log.actor_name}</span>
                       <span className="text-[10px] text-mv-ink-faint">({log.table_name})</span>
-                      <Badge variant={isAlert ? 'red' : isSystem ? 'lime' : 'green'}>
+                      <Badge variant={isAlert ? 'red' : isSystem ? 'blue' : 'green'}>
                         {isAlert ? 'alert' : isSystem ? 'system' : 'action'}
                       </Badge>
                     </div>

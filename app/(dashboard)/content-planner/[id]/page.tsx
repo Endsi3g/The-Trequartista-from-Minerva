@@ -126,7 +126,7 @@ export default function ReelDetailPage() {
             ) : (
               <Badge variant="green">{post.client_name}</Badge>
             )}
-            {post.platform && <Badge variant="lime">{post.platform}</Badge>}
+            {post.platform && <Badge variant="blue">{post.platform}</Badge>}
           </div>
           <h1 className="text-xl lg:text-2xl font-extrabold text-mv-ink font-display mt-2">{post.title}</h1>
         </div>

@@ -294,7 +294,7 @@ export default function RoiTrackerPage() {
               <Card
                 header={
                   <div className="flex items-center gap-2">
-                    <Target className="w-4 h-4 text-mv-warm" />
+                    <Target className="w-4 h-4 text-mv-green" />
                     <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
                       Suivi des Campagnes Google Ads
                     </h3>
@@ -311,7 +311,7 @@ export default function RoiTrackerPage() {
 
                   <div className="flex items-center justify-between p-3 rounded-lg bg-mv-cream-soft border border-mv-border">
                     <span className="text-mv-ink-soft">Leads Qualifiés Ads :</span>
-                    <span className="font-extrabold text-mv-warm text-sm">
+                    <span className="font-extrabold text-mv-green text-sm">
                       {metrics.google_ads_leads} Clics convertis
                     </span>
                   </div>
@@ -365,7 +365,7 @@ export default function RoiTrackerPage() {
                       Vues : <strong className="text-mv-green">{(post.metrics_views || 0).toLocaleString('fr-CA')}</strong>
                     </span>
                     <span className="text-mv-ink-soft">
-                      J'aime : <strong className="text-mv-warm">{(post.metrics_likes || 0).toLocaleString('fr-CA')}</strong>
+                      J'aime : <strong className="text-mv-amber">{(post.metrics_likes || 0).toLocaleString('fr-CA')}</strong>
                     </span>
                   </div>
                 </div>

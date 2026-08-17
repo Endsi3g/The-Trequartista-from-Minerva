@@ -163,7 +163,7 @@ export default function AuditDetailPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-extrabold text-mv-ink font-display">{audit.prospect_name}</h1>
-          <Badge variant="lime" className="mt-1">{AUDIT_STATUS_LABEL[audit.status]}</Badge>
+          <Badge variant="blue" className="mt-1">{AUDIT_STATUS_LABEL[audit.status]}</Badge>
         </div>
         <div className="flex items-center gap-2">
           {audit.view_token ? (
@@ -313,7 +313,7 @@ export default function AuditDetailPage() {
                   {init.description && <p className="text-mv-ink-soft mt-0.5 truncate">{init.description}</p>}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Badge variant="lime">Impact {init.impact_score}</Badge>
+                  <Badge variant="amber">Impact {init.impact_score}</Badge>
                   <Badge variant="neutral">Effort {init.effort_score}</Badge>
                   <button onClick={async () => { await deleteAuditInitiative(init.id); load(); }} className="p-1 text-mv-ink-faint hover:text-mv-red transition-colors cursor-pointer">
                     <Trash2 className="w-3.5 h-3.5" />

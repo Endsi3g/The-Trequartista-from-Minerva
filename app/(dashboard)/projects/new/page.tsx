@@ -64,7 +64,7 @@ export default function NewProjectPage() {
   };
 
   const client = clients.find((c) => c.id === clientId);
-  const healthVariant = health === 'Needs Review' ? 'red' : health === 'Ready' ? 'green' : 'lime';
+  const healthVariant = health === 'Needs Review' ? 'red' : health === 'Ready' ? 'green' : 'blue';
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">

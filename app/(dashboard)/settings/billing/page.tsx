@@ -197,7 +197,7 @@ export default function BillingPage() {
                         {c.status}
                       </Badge>
                     </td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-mv-warm">
+                    <td className="py-3.5 px-4 font-mono font-bold text-mv-green">
                       {c.mrr.toLocaleString('fr-CA')} $ / mois
                     </td>
                     <td className="py-3.5 px-4 text-right">

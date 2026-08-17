@@ -140,7 +140,7 @@ export default function PerformancePage() {
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all cursor-pointer ${
                 isActive
-                  ? 'border-mv-warm text-mv-warm bg-mv-surface/60'
+                  ? 'border-mv-green text-mv-green bg-mv-surface/60'
                   : 'border-transparent text-mv-ink-soft hover:text-mv-ink'
               }`}
             >

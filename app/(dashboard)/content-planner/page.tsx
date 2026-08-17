@@ -50,7 +50,7 @@ function ContentCard({ post, onDragStart }: { post: ContentPost; onDragStart?: (
       )}
       <div className="pt-2 border-t border-mv-border/60 flex items-center justify-between text-[11px]">
         <span className="text-mv-ink-soft flex items-center gap-1">
-          <Film className="w-3.5 h-3.5 text-mv-warm" /> {post.platform || post.format}
+          <Film className="w-3.5 h-3.5" /> {post.platform || post.format}
         </span>
         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-mv-cream-soft text-mv-ink-soft">
           {post.status}

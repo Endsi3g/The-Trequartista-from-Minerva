@@ -45,8 +45,8 @@ import { Client, Lead, Project, ClientPaymentLink, Task, ContentPost, ClientMess
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 
-const HEALTH_BADGE: Record<Client['health_status'], 'lime' | 'amber' | 'green'> = {
-  Ready: 'lime',
+const HEALTH_BADGE: Record<Client['health_status'], 'blue' | 'amber' | 'green'> = {
+  Ready: 'blue',
   'On Track': 'green',
   'At Risk': 'amber',
 };
@@ -512,7 +512,7 @@ export default function ClientDetailPage() {
                   <div className="font-bold text-mv-ink">{p.name}</div>
                   <div className="text-mv-ink-soft mt-0.5">{p.current_stage}</div>
                 </div>
-                <Badge variant={p.health === 'Ready' ? 'lime' : p.health === 'On Track' ? 'green' : 'amber'}>
+                <Badge variant={p.health === 'Ready' ? 'blue' : p.health === 'On Track' ? 'green' : 'amber'}>
                   {p.progress_pct}%
                 </Badge>
               </Link>
@@ -538,7 +538,7 @@ export default function ClientDetailPage() {
               {leads.map((lead) => (
                 <Link
                   key={lead.id}
-                  href={`/leads?leadId=${lead.id}`}
+                  href={`/leads/${lead.id}`}
                   className="flex items-center justify-between p-3 rounded-lg bg-mv-cream-soft border border-mv-border hover:border-mv-green/50 transition-colors text-xs"
                 >
                   <div>
@@ -664,7 +664,7 @@ export default function ClientDetailPage() {
               <div key={msg.id} className="p-3 rounded-lg bg-mv-cream-soft border border-mv-border text-xs">
                 <div className="flex items-center justify-between mb-1">
                   <span className="flex items-center gap-1.5">
-                    <Badge variant={msg.sender_role === 'client' ? 'lime' : 'green'}>
+                    <Badge variant={msg.sender_role === 'client' ? 'blue' : 'green'}>
                       {msg.sender_role === 'client' ? 'Client' : 'Équipe'}
                     </Badge>
                     <span className="font-semibold text-mv-ink">{msg.sender_name}</span>

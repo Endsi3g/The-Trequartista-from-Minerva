@@ -478,6 +478,17 @@ export async function fetchLeads(clientId?: string): Promise<Lead[]> {
   );
 }
 
+export async function fetchLead(id: string): Promise<Lead | null> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase().from('leads').select('*').eq('id', id).maybeSingle();
+      if (error || !data) return null;
+      return data as Lead;
+    })(),
+    null
+  );
+}
+
 export async function addLead(lead: Omit<Lead, 'id' | 'created_at'>): Promise<Lead | null> {
   const { data, error } = await getSupabase().from('leads').insert([lead]).select().single();
   if (error) {

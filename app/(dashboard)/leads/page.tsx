@@ -2,9 +2,8 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { KanbanBoard } from '@/components/crm/KanbanBoard';
-import { LeadDetailDrawer } from '@/components/crm/LeadDetailDrawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SkeletonCards } from '@/components/ui/skeleton-rows';
@@ -37,14 +36,12 @@ const STAGE_VARIANT: Record<string, 'blue' | 'purple' | 'amber' | 'neutral' | 'g
 function LeadsCrmContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const pathname = usePathname();
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { isConnected, lastUpdateTimestamp } = useSupabaseRealtime();
@@ -69,17 +66,13 @@ function LeadsCrmContent() {
     loadData();
   }, [selectedClientId, lastUpdateTimestamp]);
 
-  // Deep-link support: /leads?leadId=... (e.g. from a client's detail page)
-  // opens that lead's drawer directly once it's loaded.
+  // Legacy deep-link support: /leads?leadId=... redirects straight to the
+  // lead's own page now that it's routed instead of a drawer.
   useEffect(() => {
     const targetId = searchParams.get('leadId');
-    if (!targetId || leads.length === 0) return;
-    const target = leads.find((l) => l.id === targetId);
-    if (target) {
-      setSelectedLead(target);
-      router.replace(pathname);
-    }
-  }, [searchParams, leads, router, pathname]);
+    if (!targetId) return;
+    router.replace(`/leads/${targetId}`);
+  }, [searchParams, router]);
 
   const filteredLeads = leads.filter((lead) => {
     const query = searchQuery.toLowerCase();
@@ -167,7 +160,7 @@ function LeadsCrmContent() {
             <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
               Pipeline & CRM Leads
             </h1>
-            <Badge variant={isConnected ? 'green' : 'lime'}>
+            <Badge variant={isConnected ? 'green' : 'amber'}>
               {isConnected ? 'Synchronisé en direct' : 'CRM central'}
             </Badge>
           </div>
@@ -290,7 +283,7 @@ function LeadsCrmContent() {
       ) : viewMode === 'kanban' ? (
         <KanbanBoard
           leads={filteredLeads}
-          onSelectLead={(lead) => setSelectedLead(lead)}
+          onSelectLead={(lead) => router.push(`/leads/${lead.id}`)}
           onLeadsUpdated={loadData}
         />
       ) : (
@@ -354,25 +347,25 @@ function LeadsCrmContent() {
                           className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-mv-green/30 cursor-pointer"
                         />
                       </td>
-                      <td className="py-3.5 px-4 cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                      <td className="py-3.5 px-4 cursor-pointer" onClick={() => router.push(`/leads/${lead.id}`)}>
                         <p className="font-bold text-mv-ink">{lead.company_name || lead.client_name || lead.contact_name}</p>
                         <p className="text-[11px] text-mv-ink-soft">{lead.contact_email}</p>
                       </td>
-                      <td className="py-3.5 px-4 font-semibold text-mv-green cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                      <td className="py-3.5 px-4 font-semibold text-mv-green cursor-pointer" onClick={() => router.push(`/leads/${lead.id}`)}>
                         {lead.service_requested}
                       </td>
-                      <td className="py-3.5 px-4 cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                      <td className="py-3.5 px-4 cursor-pointer" onClick={() => router.push(`/leads/${lead.id}`)}>
                         <Badge variant={STAGE_VARIANT[lead.stage || ''] || 'neutral'} className="capitalize">
                           {lead.stage || lead.status}
                         </Badge>
                       </td>
-                      <td className="py-3.5 px-4 font-extrabold text-mv-ink cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                      <td className="py-3.5 px-4 font-extrabold text-mv-ink cursor-pointer" onClick={() => router.push(`/leads/${lead.id}`)}>
                         {(lead.mrr_value || 0).toLocaleString('fr-CA')} $
                       </td>
-                      <td className="py-3.5 px-4 font-semibold text-mv-ink-soft cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                      <td className="py-3.5 px-4 font-semibold text-mv-ink-soft cursor-pointer" onClick={() => router.push(`/leads/${lead.id}`)}>
                         {(lead.one_time_value || 0).toLocaleString('fr-CA')} $
                       </td>
-                      <td className="py-3.5 px-4 text-mv-ink-faint cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                      <td className="py-3.5 px-4 text-mv-ink-faint cursor-pointer" onClick={() => router.push(`/leads/${lead.id}`)}>
                         {new Date(lead.created_at).toLocaleDateString('fr-CA')}
                       </td>
                     </tr>
@@ -383,15 +376,6 @@ function LeadsCrmContent() {
           </div>
         </div>
       )}
-
-      {/* ── Slide-Out Lead Detail Drawer ── */}
-      <LeadDetailDrawer
-        key={selectedLead?.id}
-        lead={selectedLead}
-        onClose={() => setSelectedLead(null)}
-        onLeadUpdated={loadData}
-      />
-
     </PageFadeIn>
   );
 }

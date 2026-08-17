@@ -255,7 +255,7 @@ export default function LaunchCheckPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-mv-surface border border-mv-green/50 rounded-2xl p-8 max-w-md w-full shadow-mv-lg animate-mv-scale-in text-center space-y-6">
-            <div className="w-16 h-16 rounded-full bg-mv-green-tint border border-mv-green flex items-center justify-center mx-auto text-mv-warm">
+            <div className="w-16 h-16 rounded-full bg-mv-green-tint border border-mv-green flex items-center justify-center mx-auto text-mv-green">
               <Sparkles className="w-8 h-8 animate-mv-leaf-breathe" />
             </div>
 

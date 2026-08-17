@@ -171,7 +171,7 @@ export default function TaskDetailPage() {
               </Link>
             )}
             {task.lead_name && task.lead_id && (
-              <Link href={`/leads?leadId=${task.lead_id}`} className="flex items-center gap-1.5 hover:text-mv-green transition-colors">
+              <Link href={`/leads/${task.lead_id}`} className="flex items-center gap-1.5 hover:text-mv-green transition-colors">
                 <Target className="w-3.5 h-3.5" /> {task.lead_name}
               </Link>
             )}
