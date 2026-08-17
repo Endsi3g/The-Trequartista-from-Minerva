@@ -96,11 +96,24 @@ function NavLink({ item, active, onNavigate }: { item: NavItem; active: boolean;
 
 const SPRING = { type: 'spring' as const, stiffness: 300, damping: 30, mass: 1 };
 
-function NavSection({ label, children }: { label: string; children: React.ReactNode }) {
+function NavSection({
+  label,
+  children,
+  alwaysOpen = false,
+}: {
+  label: string;
+  children: React.ReactNode;
+  // Skips the collapse toggle/chevron/localStorage entirely -- used for
+  // the "Principal" group of daily-use items, which should never be
+  // hidden by an accidental collapse. Every other section stays
+  // collapsible exactly as before.
+  alwaysOpen?: boolean;
+}) {
   const storageKey = `mv-sidebar-section-${label}`;
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
+    if (alwaysOpen) return;
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored !== null) setOpen(stored !== 'closed');
@@ -109,6 +122,7 @@ function NavSection({ label, children }: { label: string; children: React.ReactN
   }, []);
 
   const toggle = () => {
+    if (alwaysOpen) return;
     setOpen((prev) => {
       const next = !prev;
       try {
@@ -117,6 +131,17 @@ function NavSection({ label, children }: { label: string; children: React.ReactN
       return next;
     });
   };
+
+  if (alwaysOpen) {
+    return (
+      <div className="space-y-0.5">
+        <div className="px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-neutral-400">
+          {label}
+        </div>
+        <div className="space-y-0.5">{children}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-0.5">
@@ -251,7 +276,7 @@ export function AppSidebar() {
 
       {/* ── Nav Links ── */}
       <div className="flex-1 space-y-4 overflow-y-auto px-2.5 py-3 scrollbar-none">
-        <NavSection label="Principal">
+        <NavSection label="Principal" alwaysOpen>
           {mainMenuItems.map((item) => (
             <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
           ))}
