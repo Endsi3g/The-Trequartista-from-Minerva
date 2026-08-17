@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Send } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { createClient } from '@/lib/supabase/client';
 import { fetchClientMessages, sendClientMessage } from '@/lib/services/supabase-data';
 import type { ClientMessage } from '@/lib/types';
@@ -64,21 +65,41 @@ export default function PortalQuestionsPage() {
               Aucun message pour le moment — posez votre première question ci-dessous.
             </p>
           ) : (
-            messages.map((m) => (
-              <div key={m.id} className={cn('flex', m.sender_role === 'client' ? 'justify-end' : 'justify-start')}>
-                <div
-                  className={cn(
-                    'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm',
-                    m.sender_role === 'client' ? 'bg-mv-green text-white' : 'bg-mv-cream-soft text-mv-ink border border-mv-border'
+            messages.map((m, i) => {
+              const isClient = m.sender_role === 'client';
+              const isOwn = m.sender_id === userId;
+              const showHeader = i === 0 || messages[i - 1].sender_id !== m.sender_id;
+              return (
+                <div key={m.id} className={cn('flex items-end gap-2', isOwn ? 'justify-end' : 'justify-start')}>
+                  {!isOwn && (
+                    <UserAvatar
+                      name={m.sender_name}
+                      src={m.sender_avatar}
+                      size="xs"
+                      className={cn('shrink-0', showHeader ? 'visible' : 'invisible')}
+                    />
                   )}
-                >
-                  <p>{m.body}</p>
-                  <p className={cn('text-[10px] mt-1', m.sender_role === 'client' ? 'text-white/70' : 'text-mv-ink-faint')}>
-                    {new Date(m.created_at).toLocaleString('fr-CA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  <div className={cn('max-w-[70%] min-w-0', isOwn ? 'items-end' : 'items-start', 'flex flex-col')}>
+                    {showHeader && (
+                      <span className={cn('text-[10px] font-bold text-mv-ink-faint mb-1 px-1', isOwn ? 'text-right' : 'text-left')}>
+                        {isOwn ? 'Vous' : m.sender_name}
+                      </span>
+                    )}
+                    <div
+                      className={cn(
+                        'rounded-2xl px-4 py-2.5 text-sm',
+                        isClient ? 'bg-mv-green text-white' : 'bg-mv-cream-soft text-mv-ink border border-mv-border'
+                      )}
+                    >
+                      <p>{m.body}</p>
+                      <p className={cn('text-[10px] mt-1', isClient ? 'text-white/70' : 'text-mv-ink-faint')}>
+                        {new Date(m.created_at).toLocaleString('fr-CA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
           <div ref={bottomRef} />
         </div>

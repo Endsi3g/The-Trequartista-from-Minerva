@@ -229,7 +229,7 @@ export default function PortalOverviewPage() {
                       contentStyle={{ backgroundColor: '#ffffff', borderRadius: 12, border: '1px solid #e5e5e0', fontSize: 12, fontFamily: 'var(--font-mono)' }}
                       formatter={(value) => [value, 'Leads']}
                     />
-                    <Area type="monotone" dataKey="leads" stroke="#1E4B33" strokeWidth={2.5} fill="#1E4B33" fillOpacity={0.12} />
+                    <Area type="monotone" dataKey="leads" stroke="#059669" strokeWidth={2.5} fill="#059669" fillOpacity={0.12} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -281,19 +281,27 @@ export default function PortalOverviewPage() {
                 Aucun message pour le moment. Écrivez à votre équipe Minerva ci-dessous.
               </p>
             ) : (
-              messages.slice(-8).map((m) => (
-                <div key={m.id} className={`flex flex-col ${m.sender_role === 'client' ? 'items-end' : 'items-start'}`}>
-                  <div
-                    className={`max-w-[90%] p-3.5 rounded-2xl leading-relaxed ${
-                      m.sender_role === 'client'
-                        ? 'bg-mv-green text-white rounded-br-xs'
-                        : 'bg-mv-cream-soft text-mv-ink rounded-bl-xs'
-                    }`}
-                  >
-                    {m.body}
+              messages.slice(-8).map((m, i, arr) => {
+                const showHeader = i === 0 || arr[i - 1].sender_id !== m.sender_id;
+                return (
+                  <div key={m.id} className={`flex flex-col ${m.sender_role === 'client' ? 'items-end' : 'items-start'}`}>
+                    {showHeader && (
+                      <span className="text-[10px] font-bold text-mv-ink-faint mb-1 px-1">
+                        {m.sender_id === userId ? 'Vous' : m.sender_name}
+                      </span>
+                    )}
+                    <div
+                      className={`max-w-[90%] p-3.5 rounded-2xl leading-relaxed ${
+                        m.sender_role === 'client'
+                          ? 'bg-mv-green text-white rounded-br-xs'
+                          : 'bg-mv-cream-soft text-mv-ink rounded-bl-xs'
+                      }`}
+                    >
+                      {m.body}
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 

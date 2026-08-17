@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, Calendar, MessageCircle, LogOut, BarChart3 } from 'lucide-react';
 import { LogoMark } from '@/components/shell/Logo';
+import { TeamOnlineBadge } from '@/components/portal/TeamOnlineBadge';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -54,13 +55,16 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           </div>
         </div>
 
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-mv-surface border border-mv-border text-xs font-semibold text-mv-ink-soft hover:text-mv-ink hover:border-mv-ink-faint transition-all cursor-pointer shadow-mv-sm"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Déconnexion</span>
-        </button>
+        <div className="flex items-center gap-2.5">
+          <TeamOnlineBadge />
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-mv-surface border border-mv-border text-xs font-semibold text-mv-ink-soft hover:text-mv-ink hover:border-mv-ink-faint transition-all cursor-pointer shadow-mv-sm"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Déconnexion</span>
+          </button>
+        </div>
       </header>
 
       {/* Subnav Tabs */}

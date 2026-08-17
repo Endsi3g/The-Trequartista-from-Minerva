@@ -1,10 +1,17 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Calendar } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { fetchContentPosts } from '@/lib/services/supabase-data';
 import type { ContentPost } from '@/lib/types';
+
+const APPROVAL_DOT: Record<string, string> = {
+  approved: 'bg-mv-green',
+  changes_requested: 'bg-mv-amber',
+  pending: 'bg-mv-ink-faint',
+};
 
 export default function PortalCalendarPage() {
   const [posts, setPosts] = useState<ContentPost[]>([]);
@@ -90,9 +97,14 @@ export default function PortalCalendarPage() {
                       <span className="font-bold text-[11px] text-mv-ink-faint text-right shrink-0">{day.date.getDate()}</span>
                       <div className="space-y-1 overflow-y-auto flex-1">
                         {day.posts.map((p) => (
-                          <div key={p.id} className="p-1 rounded bg-mv-green/10 border border-mv-green/30 text-[10px] font-bold text-mv-green truncate">
-                            {p.title}
-                          </div>
+                          <Link
+                            key={p.id}
+                            href={`/portal/calendar/${p.id}`}
+                            className="flex items-center gap-1 p-1 rounded bg-mv-green/10 border border-mv-green/30 text-[10px] font-bold text-mv-green truncate hover:bg-mv-green hover:text-white transition-all"
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${APPROVAL_DOT[p.client_approval || 'pending']}`} />
+                            <span className="truncate">{p.title}</span>
+                          </Link>
                         ))}
                       </div>
                     </div>

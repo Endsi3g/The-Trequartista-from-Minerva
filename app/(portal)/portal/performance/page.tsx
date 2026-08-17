@@ -72,10 +72,10 @@ export default function PortalPerformancePage() {
             data={
               metrics.total_invested > metrics.google_ads_spent
                 ? [
-                    { label: 'Google Ads', value: metrics.google_ads_spent, color: '#1E4B33' },
+                    { label: 'Google Ads', value: metrics.google_ads_spent, color: '#059669' },
                     { label: 'Autres canaux', value: metrics.total_invested - metrics.google_ads_spent, color: '#a8c9b8' },
                   ]
-                : [{ label: 'Google Ads', value: metrics.google_ads_spent, color: '#1E4B33' }]
+                : [{ label: 'Google Ads', value: metrics.google_ads_spent, color: '#059669' }]
             }
           />
         )}
