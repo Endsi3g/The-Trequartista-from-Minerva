@@ -1,22 +1,36 @@
 import type { Metadata } from 'next';
-import { JetBrains_Mono, Inter } from 'next/font/google';
+import { JetBrains_Mono, Inter, Playfair_Display } from 'next/font/google';
 import './globals.css';
-import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { SupabaseRealtimeProvider } from '@/components/providers/SupabaseRealtimeProvider';
 import { ToastProvider } from '@/components/providers/ToastProvider';
+import { ConfirmProvider } from '@/components/providers/ConfirmProvider';
 import { CurrentUserProvider } from '@/components/providers/CurrentUserProvider';
+import { PresenceProvider } from '@/components/providers/PresenceProvider';
+import { AppPermissionsProvider } from '@/components/providers/AppPermissionsProvider';
 
-// v2 (2026-08-15): single sans-serif face (Inter) for both display and
-// body -- no more serif/sans pairing. Matches the neutral, geometric-sans
-// + monospace-for-data look of the v2 reference set (see CLAUDE.md
-// Typographie for the pairing history -- check git log before assuming
-// this is still current).
+// v3 (2026-08-16): matched against Reach/Flow -- Playfair Display for
+// headings (font-display), Inter for body/UI. Dark mode removed (see
+// CLAUDE.md Couleurs -- no toggle exists anymore).
 
+// Weight caps at 700 on purpose (2026-08-16, boldness pass): the app felt
+// too heavy overall, and `font-extrabold`/`font-black` utilities are used
+// pervasively across titles, labels and badges. Rather than hunting down
+// every occurrence, capping the loaded weight at 700 makes the browser
+// substitute the nearest available weight (700) for any 800/900 request,
+// softening the whole app in one place. Don't add '800'/'900' back without
+// deciding to re-introduce genuinely heavy type somewhere first.
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap',
-  weight: ['400', '500', '600', '700', '800'],
+  weight: ['400', '500', '600', '700'],
+});
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair',
+  display: 'swap',
+  weight: ['500', '600', '700'],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -61,20 +75,15 @@ export default function RootLayout({
     <html
       lang="fr"
       suppressHydrationWarning
-      className={`${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable}`}
     >
       <head>
-        <meta name="theme-color" content="#1E4B33" />
+        <meta name="theme-color" content="#059669" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        {/* Anti-flash: read theme from localStorage before first paint */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              try {
-                var t = localStorage.getItem('mv-theme');
-                if (t === 'dark') document.documentElement.classList.add('dark');
-              } catch(e) {}
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js').then(function(reg) {
@@ -107,15 +116,19 @@ export default function RootLayout({
       </head>
 
       <body className="antialiased font-sans">
-        <ThemeProvider>
-          <ToastProvider>
+        <ToastProvider>
+          <ConfirmProvider>
             <CurrentUserProvider>
-              <SupabaseRealtimeProvider>
-                {children}
-              </SupabaseRealtimeProvider>
+              <AppPermissionsProvider>
+                <SupabaseRealtimeProvider>
+                  <PresenceProvider>
+                    {children}
+                  </PresenceProvider>
+                </SupabaseRealtimeProvider>
+              </AppPermissionsProvider>
             </CurrentUserProvider>
-          </ToastProvider>
-        </ThemeProvider>
+          </ConfirmProvider>
+        </ToastProvider>
       </body>
     </html>
   );

@@ -3,63 +3,65 @@
 @tailwind utilities;
 
 @layer base {
-  /* ── Light Mode (default) — Couleurs EXACTES Minerva OS Lite / Minerva Reach
-     (Forêt & Crème) — mv-green/mv-cream/mv-warm/mv-ink/mv-border repris 1:1
-     depuis lib/themes.ts du repo Endsi3g/minerva-os-lite-desktop ; les
-     nuances dérivées (dark/darker/light/tint/soft) conservent les ratios
-     de la palette d'origine, recalculés sur cette nouvelle base. ── */
+  /* ── v3 direction (2026-08-16): matched directly against the two real
+     sibling products (Endsi3g/minerva-os-lite-desktop "Reach" and
+     Endsi3g/Minerva-Flow), per explicit sign-off across a 30-question
+     round. Warm cream canvas (not the v2 neutral white/grey), a real
+     multicolor status system (not a single green accent), literal Reach
+     hex values throughout. Dark mode removed (no toggle exists anymore --
+     don't reintroduce .dark overrides without deciding to re-add the
+     toggle first). ── */
   :root {
     color-scheme: light;
 
-    --mv-green: #1E4B33;
-    --mv-green-dark: #153524;
-    --mv-green-darker: #0f261a;
-    --mv-green-light: #dce3df;
-    --mv-green-tint: #edf0ee;
+    --mv-green: #059669;
+    --mv-green-dark: #047857;
+    --mv-green-darker: #065f46;
+    --mv-green-light: #a7f3d0;
+    --mv-green-tint: #ecfdf5;
 
     --mv-warm: #EAE7D9;
     --mv-warm-dark: #c6c3b7;
     --mv-warm-tint: #f8f7f2;
 
-    /* v2 direction (2026-08-15): the app moved off the warm Forêt & Crème
-       ivory entirely -- every full-bleed surface, not just the working app
-       chrome, is now neutral white/grey, with green as the sole surviving
-       accent (buttons, active states, links). Don't reintroduce a warm/
-       cream tint here without re-checking that decision first. */
-    --mv-cream: #fafaf9;
+    /* Warm cream canvas -- Reach's own globals.css ("v9 Forêt & Crème") and
+       Flow's --mv-cream both land here. --mv-surface (cards) stays a
+       near-white warm tone, distinct from the cream page background. */
+    --mv-cream: #F0EDE0;
     --mv-cream-soft: #f4f4f3;
-    --mv-surface: #ffffff;
+    --mv-surface: #FAFAF5;
 
-    --mv-ink: #1a1f1c;
-    --mv-ink-soft: #717472;
+    --mv-ink: #26251e;
+    --mv-ink-soft: #7a7a76;
     --mv-ink-faint: #a8aaa9;
     --mv-ink-mute: #cdcecd;
 
     --mv-border: #e5e5e0;
     --mv-border-soft: #ececea;
 
-    --mv-red: #cf2d56;
-    --mv-red-bg: #faeaee;
-    /* mv-amber is deliberately aliased to green, not a distinct hue --
-       the app uses a single accent color everywhere (a past design
-       decision), red remains the only other color and is reserved for
-       destructive/error states. Every mv-amber/mv-amber-bg class across
-       the app inherits this automatically -- don't hand-pick a new
-       amber value without re-checking that decision first. */
-    --mv-amber: #1E4B33;
-    --mv-amber-bg: #edf0ee;
+    --mv-red: #ef4444;
+    --mv-red-bg: #fef2f2;
 
-    /* Revenue-intensity heatmap scale — mirrors Minerva OS Lite's chart-1..5 */
-    --mv-heat-1: #edf0ee;
-    --mv-heat-2: #a8c9b8;
-    --mv-heat-3: #6ba585;
-    --mv-heat-4: #3d7a5a;
-    --mv-heat-5: #1E4B33;
+    /* Real, distinct status hues -- matches Reach's DESIGN.md lead-pipeline
+       table exactly, no longer aliased to green. */
+    --mv-amber: #d97706;
+    --mv-amber-bg: #fef3e2;
+    --mv-purple: #7c3aed;
+    --mv-purple-bg: #f3e8ff;
+    --mv-blue: #2563eb;
+    --mv-blue-bg: #eff6ff;
 
-    /* Shadows */
-    --shadow-mv-sm: 0 1px 2px rgba(26, 30, 22, 0.05);
-    --shadow-mv-md: 0 2px 4px rgba(26, 30, 22, 0.04), 0 8px 20px rgba(26, 30, 22, 0.06);
-    --shadow-mv-lg: 0 8px 16px rgba(26, 30, 22, 0.06), 0 24px 48px rgba(26, 30, 22, 0.10);
+    /* Revenue-intensity heatmap scale */
+    --mv-heat-1: #ecfdf5;
+    --mv-heat-2: #a7f3d0;
+    --mv-heat-3: #34d399;
+    --mv-heat-4: #059669;
+    --mv-heat-5: #047857;
+
+    /* Shadows -- near-flat, Reach/Flow style (border does most of the work) */
+    --shadow-mv-sm: 0 1px 2px rgba(38, 37, 30, 0.04);
+    --shadow-mv-md: 0 1px 3px rgba(38, 37, 30, 0.05), 0 4px 8px rgba(38, 37, 30, 0.04);
+    --shadow-mv-lg: 0 2px 6px rgba(38, 37, 30, 0.06), 0 12px 24px rgba(38, 37, 30, 0.08);
 
     --radius: 0.625rem;
 
@@ -80,58 +82,8 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  /* ── Dark Mode — opt-in via .dark on <html> ── */
-  .dark {
-    color-scheme: dark;
-
-    --mv-green: #4a9e6e;
-    --mv-green-dark: #3a7b56;
-    --mv-green-darker: #2c5f42;
-    --mv-green-light: #1a3727;
-    --mv-green-tint: #0f2016;
-
-    --mv-warm: #1e2a22;
-    --mv-warm-dark: #17201a;
-    --mv-warm-tint: #2c3830;
-
-    --mv-cream: #111810;
-    --mv-cream-soft: #192218;
-    --mv-surface: #1a2318;
-
-    --mv-ink: #EAE7D9;
-    --mv-ink-soft: #9a988f;
-    --mv-ink-faint: #67665f;
-    --mv-ink-mute: #464541;
-
-    --mv-border: #2a3a2e;
-    --mv-border-soft: #243228;
-
-    --mv-red: #e0395c;
-    --mv-red-bg: #2d1917;
-    --mv-amber: #4a9e6e;
-    --mv-amber-bg: #0f2016;
-
-    --mv-heat-1: #21291c;
-    --mv-heat-2: #164030;
-    --mv-heat-3: #186347;
-    --mv-heat-4: #3d7a5a;
-    --mv-heat-5: #4a9e6e;
-
-    --shadow-mv-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --shadow-mv-md: 0 2px 4px rgba(0, 0, 0, 0.25), 0 8px 20px rgba(0, 0, 0, 0.35);
-    --shadow-mv-lg: 0 8px 16px rgba(0, 0, 0, 0.35), 0 24px 48px rgba(0, 0, 0, 0.45);
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
   body {
-    background-color: var(--mv-surface);
+    background-color: var(--mv-cream);
     color: var(--mv-ink);
     font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     font-feature-settings: "ss01" 1, "cv05" 1;

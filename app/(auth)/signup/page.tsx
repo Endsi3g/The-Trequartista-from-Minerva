@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { SignupForm } from '@/components/signup-form';
 import { Logo } from '@/components/shell/Logo';
-import { HalftoneImage } from '@/components/ui/halftone-image';
+import { AnimatedMeshBackground } from '@/components/ui/animated-mesh-background';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,14 +10,8 @@ export default function SignupPage() {
     <div className="min-h-screen flex text-mv-ink bg-mv-cream">
       {/* Left: halftone portrait panel (desktop only) */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-mv-green-darker overflow-hidden">
-        <HalftoneImage
-          src="/images/login-portrait.jpg"
-          dotColor="#fafaf9"
-          backgroundColor="#0f261a"
-          dotSpacing={6}
-          className="absolute inset-0"
-        />
-        {/* Scrims -- guarantee text legibility regardless of the dot texture underneath */}
+        <AnimatedMeshBackground />
+        {/* Scrims -- guarantee text legibility regardless of the gradient motion underneath */}
         <div
           className="absolute inset-x-0 top-0 pointer-events-none"
           style={{ height: '11rem', background: 'linear-gradient(to bottom, #0f261a 0%, #0f261a 35%, transparent 100%)' }}

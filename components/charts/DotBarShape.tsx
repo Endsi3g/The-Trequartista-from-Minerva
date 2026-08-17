@@ -14,7 +14,7 @@ const DOT_RADIUS = 1.3;
 // Custom Recharts <Bar shape> that fills the bar's rect with a dot grid
 // instead of a solid fill -- the v2 "tramage" motif extended from photos
 // (HalftoneImage) into data-viz, per the Revenue dot-matrix reference.
-export function DotBarShape({ x = 0, y = 0, width = 0, height = 0, fill = '#1E4B33' }: DotBarShapeProps) {
+export function DotBarShape({ x = 0, y = 0, width = 0, height = 0, fill = '#059669' }: DotBarShapeProps) {
   if (width <= 0 || height <= 0) return null;
   const cols = Math.max(1, Math.round(width / DOT_SPACING));
   const rows = Math.max(1, Math.round(height / DOT_SPACING));

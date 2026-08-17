@@ -25,7 +25,7 @@ export function AreaChart({
   height = 220,
   valuePrefix = '',
   valueSuffix = '',
-  color = '#1E4B33',
+  color = '#059669',
 }: AreaChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 

@@ -33,6 +33,10 @@ module.exports = {
   				'coral-bg': 'var(--mv-red-bg)',
   				amber: 'var(--mv-amber)',
   				'amber-bg': 'var(--mv-amber-bg)',
+  				purple: 'var(--mv-purple)',
+  				'purple-bg': 'var(--mv-purple-bg)',
+  				blue: 'var(--mv-blue)',
+  				'blue-bg': 'var(--mv-blue-bg)',
   				'heat-1': 'var(--mv-heat-1)',
   				'heat-2': 'var(--mv-heat-2)',
   				'heat-3': 'var(--mv-heat-3)',
@@ -51,14 +55,14 @@ module.exports = {
   			}
   		},
   		borderRadius: {
-  			DEFAULT: '0.625rem',
-  			sm: 'calc(0.625rem * 0.6)',
-  			md: 'calc(0.625rem * 0.8)',
-  			lg: '0.625rem',
-  			xl: 'calc(0.625rem * 1.4)',
-  			'2xl': 'calc(0.625rem * 1.8)',
-  			'3xl': 'calc(0.625rem * 2.2)',
-  			'4xl': 'calc(0.625rem * 2.6)'
+  			DEFAULT: '8px',
+  			sm: '4px',
+  			md: '6px',
+  			lg: '8px',
+  			xl: '12px',
+  			'2xl': '16px',
+  			'3xl': '20px',
+  			'4xl': '24px'
   		},
   		boxShadow: {
   			'mv-sm': '0 1px 2px rgba(26,30,22,.05)',
@@ -67,10 +71,11 @@ module.exports = {
   		},
   		fontFamily: {
   			display: [
-  				'var(--font-inter)',
-  				'Inter',
-  				'-apple-system',
-  				'sans-serif'
+  				'var(--font-playfair)',
+  				'Playfair Display',
+  				'ui-serif',
+  				'Georgia',
+  				'serif'
   			],
   			sans: [
   				'var(--font-inter)',
@@ -78,10 +83,15 @@ module.exports = {
   				'-apple-system',
   				'sans-serif'
   			],
+  			/* Numbers now render in Inter, not JetBrains Mono -- font-mono
+  			   points at the same variable as font-sans on purpose so every
+  			   existing font-mono usage across the app switches to Inter
+  			   without touching each call site. */
   			mono: [
-  				'var(--font-mono)',
-  				'JetBrains Mono',
-  				'monospace'
+  				'var(--font-inter)',
+  				'Inter',
+  				'-apple-system',
+  				'sans-serif'
   			]
   		},
   		animation: {
@@ -90,7 +100,10 @@ module.exports = {
   			'mv-leaf-breathe': 'mvLeafBreathe 4.5s infinite ease-in-out',
   			'mv-check-pop': 'mvCheckPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
   			'mv-scale-in': 'mvScaleIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-  			'mv-fade-in': 'mvFadeIn 0.15s ease-out forwards'
+  			'mv-fade-in': 'mvFadeIn 0.15s ease-out forwards',
+  			'mv-mesh-drift-1': 'mvMeshDrift1 26s infinite ease-in-out',
+  			'mv-mesh-drift-2': 'mvMeshDrift2 32s infinite ease-in-out',
+  			'mv-mesh-drift-3': 'mvMeshDrift3 22s infinite ease-in-out'
   		},
   		keyframes: {
   			mvFadeUp: {
@@ -152,6 +165,20 @@ module.exports = {
   					opacity: '1',
   					transform: 'translateY(0)'
   				}
+  			},
+  			mvMeshDrift1: {
+  				'0%, 100%': { transform: 'translate(-8%, -6%) scale(1)' },
+  				'33%': { transform: 'translate(10%, 8%) scale(1.15)' },
+  				'66%': { transform: 'translate(-4%, 14%) scale(0.95)' }
+  			},
+  			mvMeshDrift2: {
+  				'0%, 100%': { transform: 'translate(12%, 10%) scale(1.1)' },
+  				'50%': { transform: 'translate(-10%, -8%) scale(0.9)' }
+  			},
+  			mvMeshDrift3: {
+  				'0%, 100%': { transform: 'translate(-6%, 12%) scale(0.9)' },
+  				'40%': { transform: 'translate(8%, -10%) scale(1.2)' },
+  				'75%': { transform: 'translate(4%, 4%) scale(1)' }
   			}
   		}
   	}

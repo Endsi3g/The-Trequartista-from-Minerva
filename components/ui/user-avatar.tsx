@@ -89,11 +89,11 @@ export function UserAvatar({
           className={cn(
             'w-full h-full flex items-center justify-center border border-mv-green/30 shadow-mv-sm select-none',
             shapeClass,
-            bgColor ? '' : 'bg-[#1E4B33]',
+            bgColor ? '' : 'bg-[#059669]',
             textColor ? '' : 'text-[#F7F5F0]'
           )}
           style={{
-            backgroundColor: bgColor || '#1E4B33',
+            backgroundColor: bgColor || '#059669',
             color: textColor || '#F7F5F0',
           }}
           title={name || email || 'Minerva'}
