@@ -23,7 +23,17 @@ import { PageFadeIn } from '@/components/ui/page-transition';
 import { fetchClients, fetchLeads, fetchProjects, fetchVoiceCalls } from '@/lib/services/supabase-data';
 import type { Client, Lead, Project, VoiceCall } from '@/lib/types';
 import { DotBarShape } from '@/components/charts/DotBarShape';
+import { FunnelChart, type FunnelStage } from '@/components/charts/FunnelChart';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
+
+const STAGE_ORDER: { key: string; label: string; color: string }[] = [
+  { key: 'nouveau', label: 'Nouveau', color: '#2563EB' },
+  { key: 'qualification', label: 'Qualification', color: '#7c3aed' },
+  { key: 'proposition', label: 'Proposition', color: '#D97706' },
+  { key: 'negociation', label: 'Négociation', color: '#059669' },
+  { key: 'gagne', label: 'Gagné', color: '#047857' },
+];
 
 const GREEN_SHADES = ['#059669', '#3d7a5a', '#6ba585', '#a8c9b8', '#c0cdc6'];
 
@@ -87,6 +97,12 @@ export default function OverviewPage() {
   const last7dCalls = voiceCalls.filter((c) => Date.now() - new Date(c.created_at).getTime() < 7 * 24 * 60 * 60 * 1000);
   const callMinutes = Math.round(last7dCalls.reduce((acc, c) => acc + (c.duration_seconds || 0), 0) / 60);
 
+  const leadFunnelStages: FunnelStage[] = STAGE_ORDER.map(({ key, label, color }) => ({
+    label,
+    color,
+    count: leads.filter((l) => (l.stage || 'nouveau') === key).length,
+  }));
+
   const topClientsByMrr = [...activeClients]
     .sort((a, b) => (b.mrr || 0) - (a.mrr || 0))
     .slice(0, 6)
@@ -118,7 +134,9 @@ export default function OverviewPage() {
               <Users className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">{loading ? '…' : activeClients.length}</div>
+          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">
+            {loading ? '…' : <AnimatedNumber value={activeClients.length} />}
+          </div>
           <div className="text-xs text-mv-ink-faint mt-1 font-mono">{loading ? '' : `${moneyFmt(totalMrr)} MRR total`}</div>
         </Link>
 
@@ -132,7 +150,9 @@ export default function OverviewPage() {
               <Target className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">{loading ? '…' : activeLeads.length}</div>
+          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">
+            {loading ? '…' : <AnimatedNumber value={activeLeads.length} />}
+          </div>
           <div className="text-xs text-mv-ink-faint mt-1">{loading ? '' : 'en cours de qualification'}</div>
         </Link>
 
@@ -146,7 +166,9 @@ export default function OverviewPage() {
               <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">{loading ? '…' : lateProjects.length}</div>
+          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">
+            {loading ? '…' : <AnimatedNumber value={lateProjects.length} />}
+          </div>
           <div className="text-xs text-mv-ink-faint mt-1">{loading ? '' : lateProjects.length === 0 ? 'Tout est à jour' : 'à surveiller'}</div>
         </Link>
 
@@ -160,7 +182,9 @@ export default function OverviewPage() {
               <PhoneCall className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">{loading ? '…' : last7dCalls.length}</div>
+          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">
+            {loading ? '…' : <AnimatedNumber value={last7dCalls.length} />}
+          </div>
           <div className="text-xs text-mv-ink-faint mt-1 font-mono">{loading ? '' : `${callMinutes} min au total`}</div>
         </Link>
       </div>
@@ -209,47 +233,19 @@ export default function OverviewPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 self-start">
-          <Link
-            href="/leads/new"
-            className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Target className="w-6 h-6 stroke-[2]" />
+        <Link href="/leads" className="self-start block">
+          {leads.length === 0 ? (
+            <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm h-full flex items-center justify-center">
+              <p className="text-xs text-mv-ink-faint text-center">Aucun lead pour le moment.</p>
             </div>
-            <span className="text-xs font-bold text-mv-ink">Nouveau lead</span>
-          </Link>
-
-          <Link
-            href="/clients/new"
-            className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Plus className="w-6 h-6 stroke-[2]" />
-            </div>
-            <span className="text-xs font-bold text-mv-ink">Nouveau client</span>
-          </Link>
-
-          <Link
-            href="/voice-agent"
-            className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center group-hover:scale-110 transition-transform">
-              <PhoneCall className="w-6 h-6 stroke-[2]" />
-            </div>
-            <span className="text-xs font-bold text-mv-ink">Agent Vocal</span>
-          </Link>
-
-          <Link
-            href="/overview/audit-logs"
-            className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green hover:shadow-mv-md transition-all text-center flex flex-col items-center justify-center gap-3 group cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center group-hover:scale-110 transition-transform">
-              <AlertTriangle className="w-6 h-6 stroke-[2]" />
-            </div>
-            <span className="text-xs font-bold text-mv-ink">Journal d&apos;audit</span>
-          </Link>
-        </div>
+          ) : (
+            <FunnelChart
+              stages={leadFunnelStages}
+              title="Pipeline des leads"
+              subtitle="Répartition par étape, cliquez pour voir le détail."
+            />
+          )}
+        </Link>
 
         <div className="lg:col-span-2 self-start bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm flex flex-col">
           <h2 className="text-lg font-bold text-mv-ink font-display mb-1">Revenu récurrent (MRR)</h2>

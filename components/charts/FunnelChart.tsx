@@ -34,14 +34,14 @@ export function FunnelChart({ stages, title, subtitle }: FunnelChartProps) {
           const conversionFromPrev =
             idx > 0 && stages[idx - 1].count > 0
               ? Math.round((stage.count / stages[idx - 1].count) * 100)
-              : 100;
+              : null;
 
           return (
             <div key={idx} className="space-y-1">
               <div className="flex items-center justify-between text-xs font-semibold">
                 <span className="text-mv-ink">{stage.label}</span>
                 <div className="flex items-center gap-2">
-                  {idx > 0 && (
+                  {idx > 0 && conversionFromPrev !== null && (
                     <span className="text-[10px] text-mv-ink-faint bg-mv-surface px-1.5 py-0.5 rounded border border-mv-border">
                       {conversionFromPrev}% conv.
                     </span>
