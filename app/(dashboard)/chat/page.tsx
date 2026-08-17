@@ -1,8 +1,21 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { MessageSquare, FolderKanban, Users, Send, Paperclip, Mic, Square } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
+import Link from 'next/link';
+import {
+  FolderKanban,
+  Users,
+  Send,
+  Paperclip,
+  Mic,
+  Square,
+  Search,
+  ExternalLink,
+  MessageSquare,
+  FileText,
+  Download,
+  X,
+} from 'lucide-react';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useTeamChatThread } from '@/hooks/use-team-chat-thread';
@@ -16,11 +29,22 @@ import {
 import type { Project, Client, TeamMemberSummary } from '@/lib/types';
 import { useToast } from '@/components/providers/ToastProvider';
 import { cn } from '@/lib/utils';
+import { PageFadeIn } from '@/components/ui/page-transition';
 
-type Channel = { type: 'project' | 'client' | 'member'; id: string; label: string; sublabel: string; memberId?: string };
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
+
+type Channel = {
+  type: 'project' | 'client' | 'member';
+  id: string;
+  label: string;
+  sublabel: string;
+  memberId?: string;
+  projectId?: string;
+  clientId?: string;
+};
 
 export default function ChatPage() {
-  const { id: userId, fullName } = useCurrentUser();
+  const { id: userId, fullName, avatarUrl } = useCurrentUser();
   const { toastError } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -28,22 +52,62 @@ export default function ChatPage() {
   const [loadingChannels, setLoadingChannels] = useState(true);
   const [active, setActive] = useState<Channel | null>(null);
   const [resolvingMemberId, setResolvingMemberId] = useState<string | null>(null);
+  const [filterQuery, setFilterQuery] = useState('');
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Keyboard shortcut: Cmd/Ctrl + F to focus channel search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     (async () => {
-      const [p, c, m] = await Promise.all([fetchProjects(), fetchClients(), fetchTeamMembers(userId)]);
-      setProjects(p);
-      setClients(c);
-      setMembers(m);
-      setLoadingChannels(false);
+      setLoadingChannels(true);
+      try {
+        const [p, c, m] = await Promise.all([fetchProjects(), fetchClients(), fetchTeamMembers(userId)]);
+        setProjects(p);
+        setClients(c);
+        setMembers(m);
+
+        // Auto-select first active channel on load to prevent empty screen
+        if (p.length > 0) {
+          setActive({
+            type: 'project',
+            id: p[0].id,
+            label: p[0].name,
+            sublabel: p[0].client_name || '',
+            projectId: p[0].id,
+          });
+        } else if (c.length > 0) {
+          setActive({
+            type: 'client',
+            id: c[0].id,
+            label: c[0].name,
+            sublabel: c[0].industry || '',
+            clientId: c[0].id,
+          });
+        }
+      } finally {
+        setLoadingChannels(false);
+      }
     })();
   }, [userId]);
 
@@ -58,9 +122,9 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!draft.trim()) return;
+  const handleSend = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!draft.trim() || sending) return;
     setSending(true);
     const ok = await send(draft);
     setSending(false);
@@ -75,7 +139,13 @@ export default function ChatPage() {
       toastError('Erreur', "Impossible d'ouvrir cette conversation.");
       return;
     }
-    setActive({ type: 'member', id: dmChannelId, label: member.full_name, sublabel: member.email, memberId: member.id });
+    setActive({
+      type: 'member',
+      id: dmChannelId,
+      label: member.full_name,
+      sublabel: member.email,
+      memberId: member.id,
+    });
   };
 
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,11 +168,15 @@ export default function ChatPage() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       audioChunksRef.current = [];
+      setRecordingDuration(0);
+
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
+
       recorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         if (blob.size === 0) return;
         setUploading(true);
@@ -114,164 +188,331 @@ export default function ChatPage() {
         }
         await send('', attachment);
       };
+
       recorder.start();
       mediaRecorderRef.current = recorder;
       setRecording(true);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
     } catch {
       toastError('Micro indisponible', "L'accès au micro a été refusé ou n'est pas disponible sur cet appareil.");
     }
   };
 
-  const stopRecording = () => {
-    mediaRecorderRef.current?.stop();
+  const stopRecording = (discard = false) => {
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    if (discard) {
+      audioChunksRef.current = [];
+      mediaRecorderRef.current?.stop();
+    } else {
+      mediaRecorderRef.current?.stop();
+    }
     setRecording(false);
+    setRecordingDuration(0);
   };
 
-  const busy = sending || uploading || recording;
+  // Filter channels based on filterQuery
+  const q = filterQuery.toLowerCase().trim();
+  const filteredProjects = useMemo(
+    () => projects.filter((p) => p.name.toLowerCase().includes(q) || (p.client_name || '').toLowerCase().includes(q)),
+    [projects, q]
+  );
+  const filteredClients = useMemo(
+    () => clients.filter((c) => c.name.toLowerCase().includes(q) || (c.industry || '').toLowerCase().includes(q)),
+    [clients, q]
+  );
+  const filteredMembers = useMemo(
+    () => members.filter((m) => m.full_name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)),
+    [members, q]
+  );
 
   return (
-    <div className="space-y-6 pb-12 flex flex-col h-[calc(100vh-160px)]">
-      <div>
-        <h1 className="text-2xl font-extrabold text-mv-ink font-display">Chat d&apos;équipe</h1>
-        <p className="text-xs text-mv-ink-faint mt-1">Un canal par projet, par client ou en privé avec un collègue — la discussion reste attachée au bon dossier.</p>
-      </div>
+    <PageFadeIn className="h-[calc(100vh-140px)] flex flex-col">
+      {/* Hidden file input */}
+      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelected} />
 
-      <div className="flex-1 flex gap-4 min-h-0">
-        {/* Channel list */}
-        <Card className="w-64 shrink-0 overflow-hidden flex flex-col" contentClassName="p-0 flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto">
+      {/* ── Monolithic Split-Pane Container ── */}
+      <div className="flex-1 bg-white border border-mv-border rounded-[6px] overflow-hidden flex shadow-2xs min-h-0">
+        {/* ── Left Column: Channels & Threads Navigation (280px) ── */}
+        <div className="w-[280px] shrink-0 border-r border-mv-border bg-white flex flex-col min-h-0">
+          {/* Quick Search Header */}
+          <div className="p-2.5 border-b border-mv-border">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2 top-2 pointer-events-none" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={filterQuery}
+                onChange={(e) => setFilterQuery(e.target.value)}
+                placeholder="Filtrer les discussions... (⌘F)"
+                className="w-full h-7 pl-7 pr-2 text-[11.5px] rounded-[4px] border border-mv-border bg-zinc-50/50 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-mv-green focus:bg-white transition-colors"
+              />
+              {filterQuery && (
+                <button
+                  onClick={() => setFilterQuery('')}
+                  className="absolute right-1.5 top-1.5 text-zinc-400 hover:text-zinc-700"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Channels Scrollable List */}
+          <div className="flex-1 overflow-y-auto divide-y divide-mv-border/40 py-1">
             {loadingChannels ? (
-              <p className="text-xs text-mv-ink-faint text-center py-8">Chargement…</p>
+              <p className="text-[11px] text-zinc-400 text-center py-8 font-mono">Chargement…</p>
             ) : (
               <>
-                <div className="px-3 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-mv-ink-faint">Projets</div>
-                {projects.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => setActive({ type: 'project', id: p.id, label: p.name, sublabel: p.client_name || '' })}
-                    className={cn(
-                      'w-full text-left px-3 py-2 flex items-center gap-2 text-xs hover:bg-mv-cream-soft transition-colors cursor-pointer',
-                      active?.type === 'project' && active.id === p.id && 'bg-mv-green-tint text-mv-green font-bold'
-                    )}
-                  >
-                    <FolderKanban className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{p.name}</span>
-                  </button>
-                ))}
+                {/* ── Projects Channels ── */}
+                {filteredProjects.length > 0 && (
+                  <div className="py-1">
+                    <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                      Projets ({filteredProjects.length})
+                    </div>
+                    {filteredProjects.map((p) => {
+                      const isSelected = active?.type === 'project' && active.id === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() =>
+                            setActive({
+                              type: 'project',
+                              id: p.id,
+                              label: p.name,
+                              sublabel: p.client_name || 'Projet',
+                              projectId: p.id,
+                            })
+                          }
+                          className={cn(
+                            'w-full text-left px-3 h-8 flex items-center justify-between text-[12px] transition-colors cursor-pointer',
+                            isSelected
+                              ? 'bg-zinc-100/90 text-zinc-900 font-semibold border-l-2 border-mv-green pl-2.5'
+                              : 'text-zinc-600 hover:bg-black/[0.025] hover:text-zinc-900'
+                          )}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FolderKanban className={cn('w-3.5 h-3.5 shrink-0', isSelected ? 'text-mv-green' : 'text-zinc-400')} />
+                            <span className="truncate">{p.name}</span>
+                          </div>
+                          {p.client_name && (
+                            <span className="text-[10px] font-mono text-zinc-400 shrink-0 ml-1.5 truncate max-w-[80px]">
+                              {p.client_name}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
-                <div className="px-3 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-mv-ink-faint">Clients</div>
-                {clients.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => setActive({ type: 'client', id: c.id, label: c.name, sublabel: c.industry || '' })}
-                    className={cn(
-                      'w-full text-left px-3 py-2 flex items-center gap-2 text-xs hover:bg-mv-cream-soft transition-colors cursor-pointer',
-                      active?.type === 'client' && active.id === c.id && 'bg-mv-green-tint text-mv-green font-bold'
-                    )}
-                  >
-                    <Users className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{c.name}</span>
-                  </button>
-                ))}
+                {/* ── Clients Channels ── */}
+                {filteredClients.length > 0 && (
+                  <div className="py-1">
+                    <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                      Clients ({filteredClients.length})
+                    </div>
+                    {filteredClients.map((c) => {
+                      const isSelected = active?.type === 'client' && active.id === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          onClick={() =>
+                            setActive({
+                              type: 'client',
+                              id: c.id,
+                              label: c.name,
+                              sublabel: c.industry || 'Client',
+                              clientId: c.id,
+                            })
+                          }
+                          className={cn(
+                            'w-full text-left px-3 h-8 flex items-center justify-between text-[12px] transition-colors cursor-pointer',
+                            isSelected
+                              ? 'bg-zinc-100/90 text-zinc-900 font-semibold border-l-2 border-mv-green pl-2.5'
+                              : 'text-zinc-600 hover:bg-black/[0.025] hover:text-zinc-900'
+                          )}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Users className={cn('w-3.5 h-3.5 shrink-0', isSelected ? 'text-mv-green' : 'text-zinc-400')} />
+                            <span className="truncate">{c.name}</span>
+                          </div>
+                          {c.industry && (
+                            <span className="text-[10px] font-mono text-zinc-400 shrink-0 ml-1.5 truncate max-w-[80px]">
+                              {c.industry}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
-                <div className="px-3 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-mv-ink-faint">Équipe</div>
-                {members.map((m) => (
-                  <button
-                    key={m.id}
-                    onClick={() => handleSelectMember(m)}
-                    disabled={resolvingMemberId === m.id}
-                    className={cn(
-                      'w-full text-left px-3 py-2 flex items-center gap-2 text-xs hover:bg-mv-cream-soft transition-colors cursor-pointer disabled:opacity-60',
-                      active?.type === 'member' && active.memberId === m.id && 'bg-mv-green-tint text-mv-green font-bold'
-                    )}
-                  >
-                    <UserAvatar name={m.full_name} src={m.avatar_url || ''} size="xs" className="shrink-0" />
-                    <span className="truncate">{resolvingMemberId === m.id ? 'Ouverture…' : m.full_name}</span>
-                  </button>
-                ))}
+                {/* ── Team Direct Messages ── */}
+                {filteredMembers.length > 0 && (
+                  <div className="py-1">
+                    <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                      Messages Directs ({filteredMembers.length})
+                    </div>
+                    {filteredMembers.map((m) => {
+                      const isSelected = active?.type === 'member' && active.memberId === m.id;
+                      return (
+                        <button
+                          key={m.id}
+                          onClick={() => handleSelectMember(m)}
+                          disabled={resolvingMemberId === m.id}
+                          className={cn(
+                            'w-full text-left px-3 h-8 flex items-center justify-between text-[12px] transition-colors cursor-pointer disabled:opacity-60',
+                            isSelected
+                              ? 'bg-zinc-100/90 text-zinc-900 font-semibold border-l-2 border-mv-green pl-2.5'
+                              : 'text-zinc-600 hover:bg-black/[0.025] hover:text-zinc-900'
+                          )}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <UserAvatar name={m.full_name} src={m.avatar_url || ''} size="xs" className="shrink-0 w-4 h-4 text-[9px]" />
+                            <span className="truncate">{resolvingMemberId === m.id ? 'Ouverture…' : m.full_name}</span>
+                          </div>
+                          <span className="w-1.5 h-1.5 rounded-full bg-mv-green shrink-0" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
-                {projects.length === 0 && clients.length === 0 && members.length === 0 && (
-                  <p className="text-xs text-mv-ink-faint text-center py-8 px-3">Aucun projet, client ou collègue pour le moment.</p>
+                {filteredProjects.length === 0 && filteredClients.length === 0 && filteredMembers.length === 0 && (
+                  <p className="text-[11px] text-zinc-400 text-center py-8 px-3">Aucune discussion trouvée.</p>
                 )}
               </>
             )}
           </div>
-        </Card>
+        </div>
 
-        {/* Thread */}
-        <Card className="flex-1 flex flex-col overflow-hidden min-w-0" contentClassName="p-0 flex-1 flex flex-col min-h-0">
+        {/* ── Right Column: Active Discussion Thread ── */}
+        <div className="flex-1 flex flex-col min-w-0 bg-white">
           {!active ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center px-6">
-              <MessageSquare className="w-8 h-8 text-mv-ink-faint" />
-              <p className="text-sm text-mv-ink-soft">Choisis un projet, un client ou un collègue à gauche pour ouvrir son canal.</p>
+              <MessageSquare className="w-7 h-7 text-zinc-300" />
+              <p className="text-xs font-semibold text-zinc-700">Sélectionnez une discussion</p>
+              <p className="text-[11px] text-zinc-400">Choisissez un projet, un client ou un collègue dans la colonne de gauche.</p>
             </div>
           ) : (
             <>
-              <div className="px-4 py-3 border-b border-mv-border shrink-0">
-                <div className="font-bold text-sm text-mv-ink">{active.label}</div>
-                {active.sublabel && <div className="text-[11px] text-mv-ink-faint">{active.sublabel}</div>}
+              {/* ── Channel Header (44px) ── */}
+              <div className="h-11 px-4 border-b border-mv-border flex items-center justify-between shrink-0 bg-white">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-semibold text-[13.5px] text-mv-ink truncate">{active.label}</span>
+                  {active.sublabel && (
+                    <span className="text-[11px] text-zinc-400 font-mono hidden sm:inline" style={MONO}>
+                      · {active.sublabel}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  {active.projectId && (
+                    <Link
+                      href={`/projects/${active.projectId}/roadmap`}
+                      className="text-[11px] font-medium text-mv-green hover:underline flex items-center gap-1"
+                    >
+                      <span>Fiche Projet</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Link>
+                  )}
+                  {active.clientId && (
+                    <Link
+                      href={`/clients/${active.clientId}/roi-tracker`}
+                      className="text-[11px] font-medium text-mv-green hover:underline flex items-center gap-1"
+                    >
+                      <span>Suivi ROI</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Link>
+                  )}
+                </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {/* ── Messages Flow (Dense & Linear Styled) ── */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
                 {loadingMessages ? (
-                  <p className="text-xs text-mv-ink-faint text-center py-8">Chargement…</p>
+                  <p className="text-xs text-zinc-400 text-center py-8 font-mono">Chargement des messages…</p>
                 ) : messages.length === 0 ? (
-                  <p className="text-xs text-mv-ink-faint text-center py-8">Aucun message dans ce canal — lance la discussion.</p>
+                  <div className="text-center py-12 space-y-1">
+                    <p className="text-xs font-semibold text-zinc-700">Aucun message pour le moment</p>
+                    <p className="text-[11px] text-zinc-400">Envoyez le premier message ou partagez un fichier dans ce canal.</p>
+                  </div>
                 ) : (
                   messages.map((m, i) => {
                     const isOwn = m.sender_id === userId;
                     const showHeader = i === 0 || messages[i - 1].sender_id !== m.sender_id;
+                    const timeStr = new Date(m.created_at).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+
                     return (
-                      <div key={m.id} className={cn('flex items-end gap-2', isOwn ? 'justify-end' : 'justify-start')}>
+                      <div key={m.id} className={cn('flex items-start gap-2 group', isOwn ? 'justify-end' : 'justify-start')}>
                         {!isOwn && (
-                          <UserAvatar
-                            name={m.sender_name}
-                            src={m.sender_avatar}
-                            size="xs"
-                            className={cn('shrink-0', showHeader ? 'visible' : 'invisible')}
-                          />
+                          <div className="w-6 shrink-0 pt-0.5">
+                            {showHeader ? (
+                              <UserAvatar name={m.sender_name} src={m.sender_avatar} size="xs" className="w-6 h-6 text-[10px]" />
+                            ) : (
+                              <div className="w-6" />
+                            )}
+                          </div>
                         )}
-                        <div className={cn('max-w-[70%] min-w-0 flex flex-col', isOwn ? 'items-end' : 'items-start')}>
+
+                        <div className={cn('max-w-[75%] min-w-0 flex flex-col', isOwn ? 'items-end' : 'items-start')}>
                           {showHeader && (
-                            <span className="text-[10px] font-bold text-mv-ink-faint mb-1 px-1">
-                              {isOwn ? 'Vous' : m.sender_name}
-                            </span>
+                            <div className="flex items-center gap-2 mb-0.5 px-1">
+                              <span className="text-[10.5px] font-semibold text-zinc-700">
+                                {isOwn ? 'Vous' : m.sender_name}
+                              </span>
+                              <span className="text-[9.5px] text-zinc-400 font-mono" style={MONO}>
+                                {timeStr}
+                              </span>
+                            </div>
                           )}
-                          <div className={cn(
-                            'rounded-2xl px-4 py-2.5 text-sm',
-                            isOwn ? 'bg-mv-green text-white' : 'bg-mv-cream-soft text-mv-ink border border-mv-border'
-                          )}>
+
+                          <div
+                            className={cn(
+                              'rounded-[6px] px-3 py-1.5 text-[12.5px] leading-relaxed break-words',
+                              isOwn
+                                ? 'bg-mv-green text-white shadow-2xs'
+                                : 'bg-zinc-100 text-zinc-900 border border-zinc-200/60'
+                            )}
+                          >
+                            {/* Image / GIF Attachment */}
                             {(m.attachment_type === 'image' || m.attachment_type === 'gif') && m.attachment_url && (
                               <a href={m.attachment_url} target="_blank" rel="noopener noreferrer" className="block mb-1.5">
-                                {/* eslint-disable-next-line @next/next/no-img-element -- remote Supabase Storage URL, thumbnail only */}
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                   src={m.attachment_url}
                                   alt={m.attachment_name || 'Image'}
-                                  className="rounded-lg max-w-[220px] max-h-[220px] object-cover"
+                                  className="rounded-[4px] max-w-[240px] max-h-[240px] object-cover border border-black/10"
                                 />
                               </a>
                             )}
+
+                            {/* Audio Voice Note Attachment */}
                             {m.attachment_type === 'audio' && m.attachment_url && (
-                              <audio controls src={m.attachment_url} className="mb-1.5 max-w-[220px]" />
+                              <div className="mb-1.5 flex items-center gap-2 bg-black/10 p-1.5 rounded-[4px]">
+                                <audio controls src={m.attachment_url} className="h-7 w-48 text-xs" />
+                              </div>
                             )}
+
+                            {/* Document Attachment */}
                             {m.attachment_type === 'file' && m.attachment_url && (
                               <a
                                 href={m.attachment_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className={cn(
-                                  'flex items-center gap-1.5 text-xs underline mb-1.5',
-                                  isOwn ? 'text-white' : 'text-mv-green'
-                                )}
+                                className="flex items-center gap-1.5 mb-1.5 bg-black/10 px-2 py-1 rounded-[4px] text-[11px] font-medium hover:underline"
                               >
-                                <Paperclip className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate">{m.attachment_name || 'Fichier'}</span>
+                                <FileText className="w-3.5 h-3.5" />
+                                <span className="truncate max-w-[160px]">{m.attachment_name || 'Document'}</span>
+                                <Download className="w-3 h-3 ml-1 opacity-70" />
                               </a>
                             )}
+
                             {m.body && <p>{m.body}</p>}
-                            <p className={cn('text-[10px] mt-1', isOwn ? 'text-white/70' : 'text-mv-ink-faint')}>
-                              {new Date(m.created_at).toLocaleString('fr-CA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                            </p>
                           </div>
                         </div>
                       </div>
@@ -281,50 +522,89 @@ export default function ChatPage() {
                 <div ref={bottomRef} />
               </div>
 
-              <input ref={fileInputRef} type="file" accept="image/*,.gif" className="hidden" onChange={handleFileSelected} />
+              {/* ── Fixed Command-Driven Input Bar ── */}
+              <div className="p-3 border-t border-mv-border bg-white">
+                {recording ? (
+                  <div className="h-10 px-3 bg-red-50/60 border border-red-200 rounded-[6px] flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping" />
+                      <span className="text-xs font-semibold text-rose-800">Enregistrement audio en cours…</span>
+                      <span className="text-xs font-mono text-rose-600 font-bold ml-2" style={MONO}>
+                        0:{recordingDuration.toString().padStart(2, '0')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => stopRecording(true)}
+                        className="px-2 py-1 text-[11px] font-medium text-zinc-600 hover:text-zinc-900 cursor-pointer"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        onClick={() => stopRecording(false)}
+                        className="px-2.5 py-1 text-[11px] font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-[4px] cursor-pointer flex items-center gap-1"
+                      >
+                        <Square className="w-3 h-3 fill-white" />
+                        <span>Envoyer</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSend} className="space-y-2">
+                    <div className="relative border border-mv-border focus-within:border-mv-green focus-within:ring-1 focus-within:ring-mv-green/20 rounded-[6px] bg-zinc-50/50 transition-all">
+                      <textarea
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSend();
+                          }
+                        }}
+                        placeholder={`Écrire dans #${active.label}... (Entrée pour envoyer)`}
+                        rows={2}
+                        className="w-full text-[12.5px] p-2.5 bg-transparent text-zinc-900 placeholder:text-zinc-400 focus:outline-none resize-none"
+                      />
 
-              <form onSubmit={handleSend} className="border-t border-mv-border p-3 pb-4 flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={busy}
-                  title="Joindre une image ou un GIF"
-                  className="p-2.5 rounded-xl text-mv-ink-soft hover:bg-mv-cream-soft hover:text-mv-ink transition-all disabled:opacity-40 cursor-pointer shrink-0"
-                >
-                  <Paperclip className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={recording ? stopRecording : startRecording}
-                  disabled={sending || uploading}
-                  title={recording ? 'Arrêter et envoyer la note vocale' : 'Enregistrer une note vocale'}
-                  className={cn(
-                    'p-2.5 rounded-xl transition-all disabled:opacity-40 cursor-pointer shrink-0',
-                    recording ? 'bg-mv-red text-white animate-pulse' : 'text-mv-ink-soft hover:bg-mv-cream-soft hover:text-mv-ink'
-                  )}
-                >
-                  {recording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </button>
-                <input
-                  type="text"
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  placeholder={uploading ? 'Envoi de la pièce jointe…' : recording ? 'Enregistrement en cours…' : `Écrire dans #${active.label}…`}
-                  disabled={uploading || recording}
-                  className="flex-1 bg-mv-cream-soft border border-mv-border rounded-xl px-3.5 py-2.5 text-sm text-mv-ink focus:outline-none focus:border-mv-green disabled:opacity-60"
-                />
-                <button
-                  type="submit"
-                  disabled={busy || !draft.trim()}
-                  className="p-2.5 rounded-xl bg-mv-green hover:bg-mv-green-dark text-white transition-all disabled:opacity-50 cursor-pointer shrink-0"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </form>
+                      <div className="flex items-center justify-between px-2.5 pb-2">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploading}
+                            className="h-6 w-6 rounded border border-mv-border flex items-center justify-center text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 transition-colors cursor-pointer"
+                            title="Joindre un fichier ou image"
+                          >
+                            <Paperclip className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={startRecording}
+                            disabled={uploading}
+                            className="h-6 w-6 rounded border border-mv-border flex items-center justify-center text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 transition-colors cursor-pointer"
+                            title="Enregistrer une note vocale"
+                          >
+                            <Mic className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={!draft.trim() || sending}
+                          className="h-6 px-2.5 rounded-[4px] bg-mv-green text-white text-[11px] font-medium hover:bg-emerald-700 disabled:opacity-40 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                        >
+                          <span>{sending ? '…' : 'Envoyer'}</span>
+                          <Send className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                )}
+              </div>
             </>
           )}
-        </Card>
+        </div>
       </div>
-    </div>
+    </PageFadeIn>
   );
 }

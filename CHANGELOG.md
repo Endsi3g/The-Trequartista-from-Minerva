@@ -4,6 +4,35 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-17 (v2.2.0) — Refonte Totale Haute Densité Linear & Superhuman sur l'Ensemble des 8 Modules
+
+Déploiement de la version majeure **v2.2.0** apportant une refonte chirurgicale de l'expérience utilisateur et de la densité visuelle selon les standards de craft de **Linear** et **Superhuman** :
+
+- **Page 0 : Vue d'ensemble (/overview)** :
+  - Ruban télémétrique connecté 5 métriques (64px `h-16`), graphiques `AreaChart` à courbe fine 1.5px et dégradé subtil, `DonutChart` anneau 80px, tables 36px et mini-sparkline MRR 6 mois.
+- **Page 1 : Suivi ROI & Leads (/clients/[id]/roi-tracker)** :
+  - En-tête compact 24px TB avec statut `● Live tracking`, ruban 4-KPIs, Segmented Control `[ 7D | 30D | 90D | YTD ]`, comparatif 2 colonnes SEO vs Ads (32px) et zone d'importation hairlines 44px.
+- **Page 2 : Agent Vocal IA (/voice-agent)** :
+  - Ruban 4 métriques de télémétrie, histogramme fantôme de volume 7 jours avec badges HD 24kHz et latence `< 650 ms`, table des logs d'appels 36px, tiroir latéral 380px avec oscillogramme et console de test intégrée inline (sans modal flottant).
+- **Page 3 : Chat d'Équipe (/chat)** :
+  - Split-pane continue pleine hauteur (`h-[calc(100vh-140px)]`), colonne de canaux 280px avec filtre rapide ⌘F, en-tête 44px, bulles groupées avec micro-avatars 24px et barre d'enregistrement vocal avec chrono live.
+- **Page 4 : Répertoire Clients & Suivi MRR (/clients)** :
+  - En-tête compact sans-serif `Clients & Revenus`, ruban 3-KPI continu 64px, barre d'outils unifiée avec recherche rapide (`/`), DataTable 40px avec point d'état dynamique 6px, liens contextuels et barre flottante d'actions groupées.
+- **Page 5 : Pipeline & CRM Leads (/leads)** :
+  - En-tête `Pipeline Leads` avec `● Sync live`, Segmented Control `[ ⊞ Kanban | ☰ Table ]`, ruban 4-KPIs financier, Kanban dense avec titres sans troncature et micro-badges `📅 Meeting booké`, table 36px et export CSV exhaustif.
+- **Page 6 : Pipeline Projets & Delivery (/projects)** :
+  - Bandeau supérieur de synthèse continue 32px (`PROJETS ACTIFS · DANS LES TEMPS · LIVRAISONS · TEMPS RESTANT`), table 36px Linear Issues avec clés `MIN-01`, échéances relatives `15 Sept (J-29)` et vue Kanban compacte.
+- **Page 7 : Social Reels Studio & Contenus (/content-planner)** :
+  - Jauge linéaire multi-plateforme 56px, grille calendrier monolithique continue (style Notion Calendar / Cron) avec jours hors-mois `#FAFAFA`, numéro du jour en haut à gauche, surbrillance Aujourd'hui 20px émeraude, micro-pills vidéo 22px, double-clic de création directe et sous-vues Opus Clip.
+- **Page 8 : Académie Interne & SOPs (/academy)** :
+  - En-tête compact avec compteur `(N guides)`, barre d'outils unifiée avec micro-onglets de catégories, commutateur `[ ⊞ Grille | ☰ Liste ]` (36px style Linear Docs), aperçus vidéo 16:9 et tiroir de stockage repliable à la demande.
+- **Composants Système & Navigation Globale** :
+  - Popover de compte utilisateur macOS / Linear avec bande d'identité et raccourcis alignés.
+  - Bannière de version dynamique automatique (`v2.2.0`).
+  - Captures d'écran in-app haute résolution prises en direct via automatisation Playwright pour `/changelog`.
+
+---
+
 ## 2026-08-17 (suite 6) — Refonte de densité Linear / Superhuman, Monochrome & Vert signature, Sparkline MRR & Command Bar
 
 Refonte structurelle complète de l'interface d'après les standards de densité, de précision et de craft de **Linear** et **Superhuman** :

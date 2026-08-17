@@ -18,11 +18,13 @@ interface AreaChartProps {
   color?: string;
 }
 
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
+
 export function AreaChart({
   data,
   title,
   subtitle,
-  height = 220,
+  height = 190,
   valuePrefix = '',
   valueSuffix = '',
   color = '#059669',
@@ -33,11 +35,10 @@ export function AreaChart({
 
   const values = data.map((d) => d.value);
   const maxVal = Math.max(...values) * 1.15 || 100;
-  const minVal = 0;
 
   const width = 600;
-  const paddingX = 40;
-  const paddingY = 30;
+  const paddingX = 28;
+  const paddingY = 20;
   const chartWidth = width - paddingX * 2;
   const chartHeight = height - paddingY * 2;
 
@@ -56,19 +57,21 @@ export function AreaChart({
   const activePoint = activeIndex !== null ? points[activeIndex] : points[points.length - 1];
 
   return (
-    <div className="bg-mv-cream-soft border border-mv-border rounded-xl p-5 shadow-mv-sm">
+    <div className="bg-mv-surface border border-mv-border rounded-[6px] p-4 shadow-2xs">
       {(title || subtitle) && (
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-mv-border">
           <div>
-            {title && <h3 className="text-sm font-bold text-mv-ink">{title}</h3>}
-            {subtitle && <p className="text-xs text-mv-ink-soft">{subtitle}</p>}
+            {title && <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">{title}</span>}
+            {subtitle && <p className="text-[10.5px] text-mv-ink-faint">{subtitle}</p>}
           </div>
           {activePoint && (
-            <div className="text-right">
-              <span className="text-xs text-mv-ink-faint uppercase font-semibold">{activePoint.label}</span>
-              <p className="text-base font-extrabold text-mv-green">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-mv-ink-faint uppercase font-mono" style={MONO}>
+                {activePoint.label}
+              </span>
+              <span className="text-[13px] font-semibold text-mv-green" style={MONO}>
                 {valuePrefix}{activePoint.value.toLocaleString('fr-CA')}{valueSuffix}
-              </p>
+              </span>
             </div>
           )}
         </div>
@@ -77,13 +80,13 @@ export function AreaChart({
       <div className="relative w-full overflow-hidden">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible">
           <defs>
-            <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.35} />
-              <stop offset="100%" stopColor={color} stopOpacity={0.02} />
+            <linearGradient id="areaGradientPrecision" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.08} />
+              <stop offset="100%" stopColor={color} stopOpacity={0.0} />
             </linearGradient>
           </defs>
 
-          {/* Grid lines */}
+          {/* Precision dashed grid lines */}
           {[0, 0.33, 0.66, 1].map((ratio, i) => {
             const y = paddingY + chartHeight * ratio;
             return (
@@ -93,31 +96,27 @@ export function AreaChart({
                 y1={y}
                 x2={width - paddingX}
                 y2={y}
-                stroke="var(--mv-border)"
-                strokeDasharray="4 4"
+                stroke="#E4E4E7"
+                strokeDasharray="2 4"
                 strokeWidth="1"
               />
             );
           })}
 
           {/* Area fill */}
-          <path d={areaD} fill="url(#areaGradient)" />
+          <path d={areaD} fill="url(#areaGradientPrecision)" />
 
-          {/* Smooth line */}
-          <path d={pathD} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Precision 1.5px line */}
+          <path d={pathD} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
 
-          {/* Data points & hover triggers */}
+          {/* Hover interactive columns */}
           {points.map((p, i) => (
-            <g key={i} onMouseEnter={() => setActiveIndex(i)} onMouseLeave={() => setActiveIndex(null)} className="cursor-pointer">
-              <circle
-                cx={p.x}
-                cy={p.y}
-                r={activeIndex === i ? 6 : 4}
-                fill={activeIndex === i ? '#dfff5f' : color}
-                stroke={color}
-                strokeWidth="2"
-                className="transition-all duration-150"
-              />
+            <g
+              key={i}
+              onMouseEnter={() => setActiveIndex(i)}
+              onMouseLeave={() => setActiveIndex(null)}
+              className="cursor-pointer"
+            >
               <rect
                 x={p.x - chartWidth / (data.length * 2)}
                 y={paddingY}
@@ -125,6 +124,18 @@ export function AreaChart({
                 height={chartHeight}
                 fill="transparent"
               />
+              {/* Point: visible if hovered or if it's the last point */}
+              {(activeIndex === i || (activeIndex === null && i === points.length - 1)) && (
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r="3.5"
+                  fill="#FFFFFF"
+                  stroke={color}
+                  strokeWidth="2"
+                  className="transition-transform duration-100"
+                />
+              )}
             </g>
           ))}
 
@@ -133,9 +144,10 @@ export function AreaChart({
             <text
               key={i}
               x={p.x}
-              y={height - 8}
+              y={height - 4}
               textAnchor="middle"
-              className="text-[10px] font-semibold fill-mv-ink-faint"
+              className="text-[9.5px] font-mono fill-zinc-400"
+              style={MONO}
             >
               {p.label}
             </text>

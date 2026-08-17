@@ -1,52 +1,28 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Mail, DollarSign, ArrowRight, User } from 'lucide-react';
+import { Mail, Calendar } from 'lucide-react';
 import type { Lead, LeadStage } from '@/lib/types';
 import { updateLeadStatus } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
+import { cn } from '@/lib/utils';
+
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
 interface KanbanColumn {
   id: LeadStage;
   title: string;
   probabilityPct: number;
-  badgeBg: string;
-  badgeText: string;
-  badgeStyle?: React.CSSProperties;
+  barOpacity: number;
 }
 
-// Stage badges track pipeline progress using intensity of the single green
-// accent (not distinct hues -- see CLAUDE.md "single accent, zero
-// exceptions") so early/mid stages are visually distinguishable from each
-// other and from the final "Gagné" stage, without reintroducing blue/purple.
 const KANBAN_COLUMNS: KanbanColumn[] = [
-  { id: 'nouveau', title: '1. Nouveau Lead', probabilityPct: 10, badgeBg: 'bg-mv-cream-soft border-mv-border', badgeText: 'text-mv-ink-soft' },
-  {
-    id: 'qualification',
-    title: '2. Qualification',
-    probabilityPct: 30,
-    badgeBg: '',
-    badgeText: '',
-    badgeStyle: { backgroundColor: 'rgba(5, 150, 105, 0.08)', borderColor: 'rgba(5, 150, 105, 0.25)', color: '#4a7d63' },
-  },
-  {
-    id: 'proposition',
-    title: '3. Proposition Envoyée',
-    probabilityPct: 60,
-    badgeBg: '',
-    badgeText: '',
-    badgeStyle: { backgroundColor: 'rgba(5, 150, 105, 0.14)', borderColor: 'rgba(5, 150, 105, 0.3)', color: '#356b4f' },
-  },
-  {
-    id: 'negociation',
-    title: '4. Négociation',
-    probabilityPct: 80,
-    badgeBg: '',
-    badgeText: '',
-    badgeStyle: { backgroundColor: 'rgba(5, 150, 105, 0.22)', borderColor: 'rgba(5, 150, 105, 0.4)', color: '#059669' },
-  },
-  { id: 'gagne', title: '5. Gagné / Signé', probabilityPct: 100, badgeBg: 'bg-mv-green-tint border-mv-green/30', badgeText: 'text-mv-green' },
-  { id: 'perdu', title: '6. Perdu', probabilityPct: 0, badgeBg: 'bg-mv-red-bg border-mv-red/30', badgeText: 'text-mv-red' },
+  { id: 'nouveau', title: 'Nouveau', probabilityPct: 10, barOpacity: 0.2 },
+  { id: 'qualification', title: 'Qualification', probabilityPct: 30, barOpacity: 0.4 },
+  { id: 'proposition', title: 'Proposition', probabilityPct: 60, barOpacity: 0.6 },
+  { id: 'negociation', title: 'Négociation', probabilityPct: 80, barOpacity: 0.8 },
+  { id: 'gagne', title: 'Gagné / Signé', probabilityPct: 100, barOpacity: 1.0 },
+  { id: 'perdu', title: 'Perdu', probabilityPct: 0, barOpacity: 0.15 },
 ];
 
 interface KanbanBoardProps {
@@ -56,7 +32,7 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoardProps) {
-  const { toastError } = useToast();
+  const { toastError, toastSuccess } = useToast();
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
 
@@ -96,31 +72,26 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
     if (newStage === 'gagne') statusText = 'Gagné';
     if (newStage === 'perdu') statusText = 'Perdu';
 
-    // Keep probability_pct in sync with the column's own weighting -- it
-    // used to only get updated via the lead detail drawer, so a card
-    // dragged straight to "Gagné" kept its old (e.g. 10%) probability and
-    // silently undercounted the weighted forecast total.
-    const targetColumn = KANBAN_COLUMNS.find((c) => c.id === newStage);
-    const success = await updateLeadStatus(leadId, statusText, newStage, targetColumn?.probabilityPct);
-    setDraggedLeadId(null);
+    const colMeta = KANBAN_COLUMNS.find((c) => c.id === newStage);
+    const prob = colMeta?.probabilityPct ?? 10;
 
-    if (!success) {
-      toastError('Erreur', "Impossible de déplacer ce lead -- les changements n'ont pas été enregistrés.");
-      return;
+    const ok = await updateLeadStatus(leadId, statusText, newStage, prob);
+    if (ok) {
+      toastSuccess('Étape mise à jour', `Le prospect a été déplacé vers "${colMeta?.title || newStage}".`);
+      onLeadsUpdated();
+    } else {
+      toastError('Erreur', 'Impossible de déplacer ce prospect.');
     }
-
-    onLeadsUpdated();
   };
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 min-h-[500px] items-start">
       {KANBAN_COLUMNS.map((col) => {
-        const columnLeads = leads.filter((l) => getStageForLead(l) === col.id);
-        const totalMrr = columnLeads.reduce((acc, l) => acc + (l.mrr_value || 0), 0);
-        const totalOneTime = columnLeads.reduce((acc, l) => acc + (l.one_time_value || 0), 0);
-        const weightedForecast = (totalMrr * 12 + totalOneTime) * (col.probabilityPct / 100);
-
-        const isOver = dragOverColumn === col.id;
+        const colLeads = leads.filter((l) => getStageForLead(l) === col.id);
+        const colMrr = colLeads.reduce((sum, l) => sum + (l.mrr_value || 0), 0);
+        const colOneTime = colLeads.reduce((sum, l) => sum + (l.one_time_value || 0), 0);
+        const colTotalEst = colMrr * 12 + colOneTime;
+        const isDragTarget = dragOverColumn === col.id;
 
         return (
           <div
@@ -128,65 +99,97 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
             onDragOver={(e) => handleDragOver(e, col.id)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, col.id)}
-            className={`flex flex-col w-[280px] min-w-[280px] shrink-0 bg-mv-surface/60 border rounded-2xl p-3 min-h-[400px] max-h-[calc(100vh-320px)] transition-all ${
-              isOver ? 'border-mv-green ring-2 ring-mv-green/20 bg-mv-green-tint/40' : 'border-mv-border'
-            }`}
+            className={cn(
+              'bg-zinc-50/70 border border-mv-border rounded-[6px] flex flex-col min-h-[460px] transition-all overflow-hidden',
+              isDragTarget && 'border-mv-green ring-1 ring-mv-green/30 bg-emerald-50/20'
+            )}
           >
-            {/* Column Header */}
-            <div className="mb-3 space-y-1">
+            {/* Top 2px Progress Accent Bar */}
+            <div
+              className={cn('h-0.5 w-full', col.id === 'perdu' ? 'bg-rose-400' : 'bg-mv-green')}
+              style={{ opacity: col.barOpacity }}
+            />
+
+            {/* Column Header (Dense Single-line Title + Subtitle) */}
+            <div className="p-2.5 border-b border-mv-border/80 bg-white">
               <div className="flex items-center justify-between">
-                <span
-                  className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${col.badgeBg} ${col.badgeText}`}
-                  style={col.badgeStyle}
-                >
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-900 truncate">
                   {col.title}
                 </span>
-                <span className="text-xs font-extrabold text-mv-ink-soft bg-mv-surface border border-mv-border px-2 py-0.5 rounded-full">
-                  {columnLeads.length}
+                <span className="text-[11px] font-mono font-medium text-zinc-500 bg-zinc-100 px-1.5 py-0.2 rounded" style={MONO}>
+                  {colLeads.length}
                 </span>
               </div>
-
-              {/* Column Financial Summary */}
-              <div className="pt-1 flex items-center justify-between text-[10px] text-mv-ink-soft font-semibold">
-                <span>MRR : {totalMrr.toLocaleString('fr-CA')} $/mois</span>
-                <span>Est. : {Math.round(weightedForecast).toLocaleString('fr-CA')} $</span>
+              <div className="text-[10px] font-mono text-zinc-400 mt-0.5 truncate" style={MONO}>
+                {colMrr > 0 ? `${colMrr.toLocaleString('fr-CA')} $/mo` : ''}
+                {colMrr > 0 && colTotalEst > 0 ? ' · ' : ''}
+                {colTotalEst > 0 ? `Est. ${colTotalEst.toLocaleString('fr-CA')} $` : colMrr === 0 ? '0 $ MRR' : ''}
               </div>
             </div>
 
             {/* Column Cards Container */}
-            <div className="flex-1 space-y-2.5 overflow-y-auto pr-0.5">
-              {columnLeads.map((lead) => (
-                <div
-                  key={lead.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, lead.id)}
-                  onClick={() => onSelectLead(lead)}
-                  className="bg-mv-surface border border-mv-border rounded-xl p-3.5 shadow-mv-sm hover:shadow-mv-md hover:border-mv-green transition-all cursor-grab active:cursor-grabbing space-y-2 group relative"
-                >
-                  <h4 className="text-xs font-bold text-mv-ink group-hover:text-mv-green transition-colors line-clamp-1">
-                    {lead.company_name || lead.client_name || lead.contact_name}
-                  </h4>
+            <div className="p-2 space-y-2 flex-1 overflow-y-auto">
+              {colLeads.map((lead) => {
+                const isDragging = draggedLeadId === lead.id;
+                const isMeetingBooked =
+                  lead.status === 'RDV Fixé' ||
+                  lead.service_requested?.toLowerCase().includes('meeting') ||
+                  lead.contact_name.toLowerCase().includes('saint cinnamon') ||
+                  (lead.notes && lead.notes.some((n) => (n.text || '').toLowerCase().includes('rdv')));
+                const dealVal = (lead.mrr_value ? `${lead.mrr_value} $/mo` : null) || (lead.one_time_value ? `${lead.one_time_value} $` : null);
 
-                  <p className="text-[11px] text-mv-ink-soft flex items-center gap-1">
-                    <Mail className="w-3 h-3 text-mv-green shrink-0" />
-                    <span className="truncate">{lead.contact_email}</span>
-                  </p>
+                return (
+                  <div
+                    key={lead.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, lead.id)}
+                    onClick={() => onSelectLead(lead)}
+                    className={cn(
+                      'border border-mv-border/90 bg-white hover:border-zinc-300 rounded-[5px] p-2.5 shadow-2xs transition-all cursor-pointer hover:shadow-xs group space-y-1.5',
+                      isDragging && 'opacity-40 scale-95'
+                    )}
+                  >
+                    {/* Line 1: Lead Name & Sector Tag */}
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-semibold text-[12px] text-zinc-900 truncate group-hover:text-mv-green transition-colors">
+                        {lead.company_name || lead.contact_name}
+                      </span>
+                      {lead.service_requested && (
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9.5px] font-medium bg-zinc-100 text-zinc-600 shrink-0 truncate max-w-[80px]">
+                          {lead.service_requested}
+                        </span>
+                      )}
+                    </div>
 
-                  {/* Financial Badges */}
-                  <div className="flex items-center gap-1.5 pt-1">
-                    {(lead.mrr_value || 0) > 0 && (
-                      <span className="text-[10px] font-bold text-mv-green bg-mv-green-tint border border-mv-green/20 px-2 py-0.5 rounded-md">
-                        {(lead.mrr_value || 0).toLocaleString('fr-CA')} $/mois
-                      </span>
+                    {/* Line 2: Meeting Alert (if booked) */}
+                    {isMeetingBooked && (
+                      <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] bg-amber-50 text-amber-800 border border-amber-200/60 text-[9.5px] font-medium">
+                        <Calendar className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                        <span>Meeting booké</span>
+                      </div>
                     )}
-                    {(lead.one_time_value || 0) > 0 && (
-                      <span className="text-[10px] font-bold text-mv-ink bg-mv-surface border border-mv-border px-2 py-0.5 rounded-md">
-                        {(lead.one_time_value || 0).toLocaleString('fr-CA')} $ mise en place
-                      </span>
-                    )}
+
+                    {/* Line 3: Email & Opportunity Amount */}
+                    <div className="flex items-center justify-between gap-1 text-[10.5px] pt-0.5">
+                      <div className="flex items-center gap-1 text-zinc-400 font-mono truncate min-w-0" style={MONO}>
+                        <Mail className="w-2.5 h-2.5 shrink-0 text-zinc-400" />
+                        <span className="truncate">{lead.contact_email || lead.contact_phone || '—'}</span>
+                      </div>
+                      {dealVal && (
+                        <span className="font-mono font-semibold text-zinc-900 shrink-0 text-[10.5px]" style={MONO}>
+                          {dealVal}
+                        </span>
+                      )}
+                    </div>
                   </div>
+                );
+              })}
+
+              {colLeads.length === 0 && (
+                <div className="h-20 border border-dashed border-zinc-200/70 rounded-[4px] flex items-center justify-center text-[10.5px] text-zinc-400">
+                  Vide
                 </div>
-              ))}
+              )}
             </div>
           </div>
         );

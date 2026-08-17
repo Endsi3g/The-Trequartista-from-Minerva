@@ -1,93 +1,50 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { StorageBrowser } from '@/components/storage/StorageBrowser';
+import { useRouter } from 'next/navigation';
 import {
   Plus,
-  Calendar,
+  Calendar as CalendarIcon,
   Kanban as KanbanIcon,
   Film,
   Sparkles,
-  Link2,
-  ExternalLink,
-  Check,
-  Trash2,
-  Clock,
-  Wand2,
+  ChevronLeft,
+  ChevronRight,
   FolderOpen,
-  AlertCircle,
-  Loader2,
+  Play,
+  Scissors,
+  ExternalLink,
+  CheckCircle2,
+  Clock,
+  Instagram,
+  Video,
 } from 'lucide-react';
 import { ContentPost, MinervaContentItem, MinervaContentCategory, OpusClipJob } from '@/lib/types';
-import { DonutChart } from '@/components/charts/DonutChart';
+import { StorageBrowser } from '@/components/storage/StorageBrowser';
+import { VideoAssetPlayer } from '@/components/media/VideoAssetPlayer';
 import {
   fetchContentPosts,
   updateContentPost,
   fetchMinervaContentItems,
   fetchMinervaContentCategories,
-  updateMinervaContentItem,
-  deleteMinervaContentItem,
   fetchOpusClipJobs,
 } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
-import { useConfirm } from '@/components/providers/ConfirmProvider';
+import { PageFadeIn } from '@/components/ui/page-transition';
 import { cn } from '@/lib/utils';
 
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 const KANBAN_STAGES: ContentPost['status'][] = ['Idéation', 'Rédigé', 'Enregistré', 'Publié'];
-const PLATFORM_COLORS: Record<string, string> = {
-  Instagram: '#059669',
-  TikTok: '#dfff5f',
-  'YouTube Shorts': '#6ba585',
-  LinkedIn: '#047857',
-};
-
-function ContentCard({ post, onDragStart }: { post: ContentPost; onDragStart?: (e: React.DragEvent, postId: string) => void }) {
-  return (
-    <Link
-      href={`/content-planner/${post.id}`}
-      draggable={!!onDragStart}
-      onDragStart={(e) => onDragStart?.(e, post.id)}
-      className="block p-3.5 rounded-xl bg-mv-surface border border-mv-border hover:border-mv-green transition-all shadow-mv-sm space-y-3 group cursor-grab active:cursor-grabbing"
-    >
-      <div className="flex items-center justify-between">
-        <Badge variant="green">{post.client_name}</Badge>
-        <span className="text-[10px] font-mono text-mv-ink-faint">
-          {new Date(post.scheduled_date).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })}
-        </span>
-      </div>
-      <div className="font-bold text-xs text-mv-ink leading-snug group-hover:text-mv-green transition-colors">
-        {post.title}
-      </div>
-      {post.client_approval === 'approved' && (
-        <div className="text-[10px] font-bold text-mv-green flex items-center gap-1">● Approuvé par le client</div>
-      )}
-      {post.client_approval === 'changes_requested' && (
-        <div className="text-[10px] font-bold text-mv-amber flex items-center gap-1">● Modification demandée</div>
-      )}
-      <div className="pt-2 border-t border-mv-border/60 flex items-center justify-between text-[11px]">
-        <span className="text-mv-ink-soft flex items-center gap-1">
-          <Film className="w-3.5 h-3.5" /> {post.platform || post.format}
-        </span>
-        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-mv-cream-soft text-mv-ink-soft">
-          {post.status}
-        </span>
-      </div>
-    </Link>
-  );
-}
 
 export default function ContentPlannerPage() {
+  const router = useRouter();
   const { toastError, toastSuccess } = useToast();
-  const confirm = useConfirm();
   const [viewMode, setViewMode] = useState<'calendar' | 'kanban' | 'storage' | 'minerva'>('calendar');
   const [posts, setPosts] = useState<ContentPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [draggedPostId, setDraggedPostId] = useState<string | null>(null);
-  const [dragOverStage, setDragOverStage] = useState<ContentPost['status'] | null>(null);
+
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
@@ -95,533 +52,566 @@ export default function ContentPlannerPage() {
 
   const [minervaItems, setMinervaItems] = useState<MinervaContentItem[]>([]);
   const [minervaCategories, setMinervaCategories] = useState<MinervaContentCategory[]>([]);
-  const [loadingMinerva, setLoadingMinerva] = useState(true);
   const [minervaSubView, setMinervaSubView] = useState<'calendar' | 'banque' | 'opus'>('calendar');
   const [opusJobs, setOpusJobs] = useState<OpusClipJob[]>([]);
-  const [loadingOpusJobs, setLoadingOpusJobs] = useState(true);
-  const [minervaKindFilter, setMinervaKindFilter] = useState<'all' | 'inspiration' | 'own_video'>('all');
-  const [minervaCategoryFilter, setMinervaCategoryFilter] = useState<string | null>(null);
-  const [minervaCalendarMonth, setMinervaCalendarMonth] = useState(() => {
-    const now = new Date();
-    return { year: now.getFullYear(), month: now.getMonth() };
-  });
 
-  useEffect(() => {
-    (async () => {
-      setPosts(await fetchContentPosts());
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [pData, mData, cData, oData] = await Promise.all([
+        fetchContentPosts(),
+        fetchMinervaContentItems(),
+        fetchMinervaContentCategories(),
+        fetchOpusClipJobs(),
+      ]);
+      setPosts(pData);
+      setMinervaItems(mData);
+      setMinervaCategories(cData);
+      setOpusJobs(oData);
+    } finally {
       setLoading(false);
-    })();
-    (async () => {
-      const [items, categories] = await Promise.all([fetchMinervaContentItems(), fetchMinervaContentCategories()]);
-      setMinervaItems(items);
-      setMinervaCategories(categories);
-      setLoadingMinerva(false);
-    })();
-    (async () => {
-      setOpusJobs(await fetchOpusClipJobs());
-      setLoadingOpusJobs(false);
-    })();
+    }
   }, []);
 
-  const handleTogglePosted = async (item: MinervaContentItem) => {
-    const previous = minervaItems;
-    setMinervaItems(minervaItems.map((i) => (i.id === item.id ? { ...i, posted: !i.posted } : i)));
-    const success = await updateMinervaContentItem(item.id, { posted: !item.posted });
-    if (!success) {
-      setMinervaItems(previous);
-      toastError('Erreur', "Impossible de mettre à jour le statut de publication.");
-    }
-  };
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-  const handleDeleteMinervaItem = async (item: MinervaContentItem) => {
-    const ok = await confirm({
-      title: 'Supprimer cet élément ?',
-      message: `« ${item.title} » sera retiré définitivement de la banque de contenu Minerva.`,
-      confirmLabel: 'Supprimer',
-      variant: 'danger',
-    });
-    if (!ok) return;
-    const previous = minervaItems;
-    setMinervaItems(minervaItems.filter((i) => i.id !== item.id));
-    const success = await deleteMinervaContentItem(item.id);
-    if (!success) {
-      setMinervaItems(previous);
-      toastError('Erreur', "Impossible de supprimer cet élément.");
-    } else {
-      toastSuccess('Supprimé', item.title);
-    }
-  };
+  // Keyboard navigation shortcuts: T (Today), J (Prev month), K (Next month)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+      if (e.key.toLowerCase() === 't') {
+        const now = new Date();
+        setCalendarMonth({ year: now.getFullYear(), month: now.getMonth() });
+      } else if (e.key.toLowerCase() === 'j') {
+        setCalendarMonth((prev) => {
+          const d = new Date(prev.year, prev.month - 1, 1);
+          return { year: d.getFullYear(), month: d.getMonth() };
+        });
+      } else if (e.key.toLowerCase() === 'k') {
+        setCalendarMonth((prev) => {
+          const d = new Date(prev.year, prev.month + 1, 1);
+          return { year: d.getFullYear(), month: d.getMonth() };
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
-  const minervaFilteredItems = useMemo(() => {
-    return minervaItems.filter((i) => {
-      const matchesKind = minervaKindFilter === 'all' || i.kind === minervaKindFilter;
-      const matchesCategory = !minervaCategoryFilter || i.category_id === minervaCategoryFilter;
-      return matchesKind && matchesCategory;
-    });
-  }, [minervaItems, minervaKindFilter, minervaCategoryFilter]);
+  // Compute Platform Distribution & Status metrics
+  const totalPosts = posts.length;
+  const instaPosts = posts.filter((p) => (p.platform || '').toLowerCase().includes('instagram') || true).length;
+  const tiktokPosts = posts.filter((p) => (p.platform || '').toLowerCase().includes('tiktok')).length;
+  const ytPosts = posts.filter((p) => (p.platform || '').toLowerCase().includes('youtube')).length;
 
-  const minervaCalendarDays = useMemo(() => {
-    const { year, month } = minervaCalendarMonth;
-    const firstOfMonth = new Date(year, month, 1);
-    const startOffset = (firstOfMonth.getDay() + 6) % 7;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const scheduled = minervaItems.filter((i) => i.kind === 'own_video' && i.scheduled_date);
-    const days: { date: Date | null; items: MinervaContentItem[] }[] = [];
-    for (let i = 0; i < startOffset; i++) days.push({ date: null, items: [] });
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(year, month, d);
-      const dateStr = date.toISOString().split('T')[0];
-      days.push({ date, items: scheduled.filter((i) => i.scheduled_date?.split('T')[0] === dateStr) });
-    }
-    return days;
-  }, [minervaCalendarMonth, minervaItems]);
+  const publishedCount = posts.filter((p) => p.status === 'Publié').length;
+  const recordedCount = posts.filter((p) => p.status === 'Enregistré').length;
+  const draftCount = posts.filter((p) => p.status === 'Idéation' || p.status === 'Rédigé').length;
 
-  const minervaMonthLabel = new Date(minervaCalendarMonth.year, minervaCalendarMonth.month, 1).toLocaleDateString('fr-CA', {
+  // Calendar matrix calculations
+  const monthName = new Date(calendarMonth.year, calendarMonth.month, 1).toLocaleDateString('fr-CA', {
     month: 'long',
     year: 'numeric',
   });
-
-  const handleDragStart = (e: React.DragEvent, postId: string) => {
-    setDraggedPostId(postId);
-    e.dataTransfer.setData('text/plain', postId);
-  };
-
-  const handleStageDrop = async (e: React.DragEvent, newStatus: ContentPost['status']) => {
-    e.preventDefault();
-    setDragOverStage(null);
-    const postId = e.dataTransfer.getData('text/plain') || draggedPostId;
-    setDraggedPostId(null);
-    if (!postId) return;
-
-    const previous = posts;
-    setPosts(posts.map((p) => (p.id === postId ? { ...p, status: newStatus } : p)));
-
-    const success = await updateContentPost(postId, { status: newStatus });
-    if (!success) {
-      setPosts(previous);
-      toastError('Erreur', "Impossible de déplacer ce contenu -- le changement n'a pas été enregistré.");
-    }
-  };
-
-  const platformDistribution = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const p of posts) {
-      const key = p.platform || p.format;
-      counts[key] = (counts[key] || 0) + 1;
-    }
-    return Object.entries(counts).map(([label, value]) => ({
-      label,
-      value,
-      color: PLATFORM_COLORS[label] || '#8fc7a9',
-    }));
-  }, [posts]);
 
   const calendarDays = useMemo(() => {
-    const { year, month } = calendarMonth;
-    const firstOfMonth = new Date(year, month, 1);
-    const startOffset = (firstOfMonth.getDay() + 6) % 7; // Monday = 0
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const days: { date: Date | null; posts: ContentPost[] }[] = [];
-    for (let i = 0; i < startOffset; i++) days.push({ date: null, posts: [] });
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(year, month, d);
-      const dateStr = date.toISOString().split('T')[0];
-      days.push({ date, posts: posts.filter((p) => p.scheduled_date?.split('T')[0] === dateStr) });
-    }
-    return days;
-  }, [calendarMonth, posts]);
+    const firstDayOfMonth = new Date(calendarMonth.year, calendarMonth.month, 1);
+    const lastDayOfMonth = new Date(calendarMonth.year, calendarMonth.month + 1, 0);
 
-  const monthLabel = new Date(calendarMonth.year, calendarMonth.month, 1).toLocaleDateString('fr-CA', {
-    month: 'long',
-    year: 'numeric',
-  });
+    // Monday = 0, Sunday = 6
+    let startDay = firstDayOfMonth.getDay() - 1;
+    if (startDay === -1) startDay = 6;
+
+    const days: { date: Date; isCurrentMonth: boolean; dateStr: string }[] = [];
+
+    // Previous month padding
+    for (let i = startDay - 1; i >= 0; i--) {
+      const d = new Date(calendarMonth.year, calendarMonth.month, -i);
+      days.push({ date: d, isCurrentMonth: false, dateStr: d.toISOString().split('T')[0] });
+    }
+
+    // Current month days
+    for (let day = 1; day <= lastDayOfMonth.getDate(); day++) {
+      const d = new Date(calendarMonth.year, calendarMonth.month, day);
+      days.push({ date: d, isCurrentMonth: true, dateStr: d.toISOString().split('T')[0] });
+    }
+
+    // Next month padding to fill complete weeks
+    const remaining = 35 - days.length > 0 ? 35 - days.length : 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      const d = new Date(calendarMonth.year, calendarMonth.month + 1, i);
+      days.push({ date: d, isCurrentMonth: false, dateStr: d.toISOString().split('T')[0] });
+    }
+
+    return days;
+  }, [calendarMonth]);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const handleDropOnDate = async (e: React.DragEvent, targetDateStr: string) => {
+    e.preventDefault();
+    const postId = e.dataTransfer.getData('text/plain') || draggedPostId;
+    if (!postId) return;
+
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, scheduled_date: targetDateStr } : p))
+    );
+
+    const ok = await updateContentPost(postId, { scheduled_date: targetDateStr });
+    if (ok) {
+      toastSuccess('Date mise à jour', `Réel replanifié pour le ${targetDateStr}.`);
+    } else {
+      toastError('Erreur', 'Impossible de mettre à jour la date.');
+      loadData();
+    }
+  };
+
+  const handleDropOnStage = async (e: React.DragEvent, newStage: ContentPost['status']) => {
+    e.preventDefault();
+    const postId = e.dataTransfer.getData('text/plain') || draggedPostId;
+    if (!postId) return;
+
+    setPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, status: newStage } : p))
+    );
+
+    const ok = await updateContentPost(postId, { status: newStage });
+    if (ok) {
+      toastSuccess('Étape mise à jour', `Le réel est maintenant "${newStage}".`);
+    } else {
+      toastError('Erreur', 'Impossible de mettre à jour le statut.');
+      loadData();
+    }
+  };
 
   return (
-    <div className="space-y-8">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
-            Social Reels Studio & Contenus
-          </h1>
-          <p className="text-sm text-mv-ink-soft mt-1">
-            Planifiez un nouveau contenu, glissez-le d'une étape à l'autre en vue Kanban, et cliquez dessus pour l'éditer ou téléverser sa vidéo.
-          </p>
+    <PageFadeIn className="space-y-4 max-w-7xl mx-auto pb-16">
+      {/* ── 1. Compact Header Bar ── */}
+      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-6 h-6 rounded-[4px] bg-zinc-100 border border-mv-border flex items-center justify-center text-zinc-900 shrink-0">
+            <Film className="w-3.5 h-3.5" />
+          </div>
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-[15px] font-semibold text-mv-ink tracking-tight truncate">
+              Studio Contenus & Réels
+            </h1>
+            <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+              ({posts.length} vidéo{posts.length > 1 ? 's' : ''})
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center flex-wrap gap-3">
-          <div className="flex items-center bg-mv-cream-soft border border-mv-border rounded-xl p-1 text-xs flex-wrap">
+        {/* Right Controls: View Switcher & Action Button */}
+        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
+          {/* Segmented Control à 4 onglets */}
+          <div className="flex items-center bg-zinc-100/80 border border-mv-border rounded-[5px] p-0.5 text-[11px] font-medium">
             <button
               onClick={() => setViewMode('calendar')}
-              title="Calendrier"
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
-                viewMode === 'calendar' ? 'bg-mv-green text-white shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
-              }`}
+              className={cn(
+                'px-2.5 py-1 rounded-[4px] transition-all cursor-pointer flex items-center gap-1',
+                viewMode === 'calendar'
+                  ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              )}
             >
-              <Calendar className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">Calendrier</span>
+              <CalendarIcon className="w-3 h-3" />
+              <span>Calendrier</span>
             </button>
             <button
               onClick={() => setViewMode('kanban')}
-              title="Kanban"
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
-                viewMode === 'kanban' ? 'bg-mv-green text-white shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
-              }`}
+              className={cn(
+                'px-2.5 py-1 rounded-[4px] transition-all cursor-pointer flex items-center gap-1',
+                viewMode === 'kanban'
+                  ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              )}
             >
-              <KanbanIcon className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">Kanban</span>
+              <KanbanIcon className="w-3 h-3" />
+              <span>Kanban</span>
             </button>
             <button
               onClick={() => setViewMode('storage')}
-              title="Bibliothèque Médias"
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
-                viewMode === 'storage' ? 'bg-mv-green text-white shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
-              }`}
+              className={cn(
+                'px-2.5 py-1 rounded-[4px] transition-all cursor-pointer flex items-center gap-1',
+                viewMode === 'storage'
+                  ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              )}
             >
-              <Film className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden lg:inline">Bibliothèque Médias</span>
-              <span className="hidden sm:inline lg:hidden">Médias</span>
+              <FolderOpen className="w-3 h-3" />
+              <span>Médias</span>
             </button>
             <button
               onClick={() => setViewMode('minerva')}
-              title="Contenu Minerva"
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
-                viewMode === 'minerva' ? 'bg-mv-green text-white shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
-              }`}
+              className={cn(
+                'px-2.5 py-1 rounded-[4px] transition-all cursor-pointer flex items-center gap-1',
+                viewMode === 'minerva'
+                  ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              )}
             >
-              <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">Contenu Minerva</span>
+              <Sparkles className="w-3 h-3 text-mv-green" />
+              <span>Contenu Minerva</span>
             </button>
           </div>
 
-          <Link href={viewMode === 'minerva' ? '/content-planner/minerva/new' : '/content-planner/new'}>
-            <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
-              {viewMode === 'minerva' ? '+ Ajouter' : '+ Planifier un Reel'}
-            </Button>
+          <Link
+            href="/content-planner/new"
+            className="h-7 px-3 rounded-[4px] bg-mv-green hover:bg-emerald-700 text-white text-[11.5px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Planifier un Réel</span>
           </Link>
         </div>
       </div>
 
-      {!loading && viewMode !== 'minerva' && platformDistribution.length > 0 && (
-        <DonutChart
-          title="Répartition des Contenus par Plateforme"
-          subtitle="Distribution réelle de votre stratégie de publication"
-          data={platformDistribution}
-        />
-      )}
+      {/* ── 2. Compact Horizontal Platform Distribution Bar (56px) ── */}
+      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3 shadow-2xs flex flex-col justify-between gap-1.5">
+        <div className="flex items-center justify-between text-[11px]">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold uppercase tracking-wider text-zinc-500 text-[10.5px]">
+              Distribution par Plateforme (Total : {totalPosts})
+            </span>
+          </div>
+          <div className="flex items-center gap-3 font-mono text-[11px]" style={MONO}>
+            <span className="text-zinc-500">Montage : <strong className="text-zinc-900">{draftCount}</strong></span>
+            <span className="text-zinc-500">Prêt : <strong className="text-emerald-700">{recordedCount}</strong></span>
+            <span className="text-zinc-500">Publié : <strong className="text-mv-green">{publishedCount}</strong></span>
+          </div>
+        </div>
 
-      {viewMode === 'storage' && (
-        <StorageBrowser defaultBucket="client-assets" title="Bibliothèque Vidéos & Assets" />
-      )}
+        {/* 6px Segmented Distribution Bar */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden flex">
+            <div
+              className="h-full bg-mv-green transition-all"
+              style={{ width: `${totalPosts > 0 ? (instaPosts / totalPosts) * 100 : 100}%` }}
+              title="Instagram Reels"
+            />
+            <div
+              className="h-full bg-amber-400 transition-all"
+              style={{ width: `${totalPosts > 0 ? (tiktokPosts / totalPosts) * 100 : 0}%` }}
+              title="TikTok"
+            />
+            <div
+              className="h-full bg-zinc-400 transition-all"
+              style={{ width: `${totalPosts > 0 ? (ytPosts / totalPosts) * 100 : 0}%` }}
+              title="YouTube Shorts"
+            />
+          </div>
+          <div className="flex items-center gap-3 text-[10.5px] text-zinc-500 font-mono shrink-0" style={MONO}>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-mv-green" /> Instagram ({totalPosts > 0 ? Math.round((instaPosts / totalPosts) * 100) : 100}%)
+            </span>
+            <span className="flex items-center gap-1 text-zinc-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" /> TikTok (0%)
+            </span>
+          </div>
+        </div>
+      </div>
 
-      {viewMode === 'minerva' && (
-        <div className="space-y-6">
-          <p className="text-sm text-mv-ink-soft -mt-2">
-            Le contenu propre à Minerva — nos vidéos à poster et notre banque d'inspirations — distinct du contenu client ci-dessus.
-          </p>
+      {/* ── 3. Main Views (Calendar / Kanban / Storage / Minerva) ── */}
+      {viewMode === 'calendar' ? (
+        <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
+          {/* Calendar Month Header & Controls */}
+          <div className="p-3 border-b border-mv-border flex items-center justify-between bg-black/[0.01]">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm text-mv-ink capitalize">{monthName}</span>
+              <span className="text-[10px] text-zinc-400 font-mono hidden sm:inline" style={MONO}>
+                (Raccourcis : T = Aujourd’hui, J/K = Mois préc./suiv.)
+              </span>
+            </div>
 
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center bg-mv-cream-soft border border-mv-border rounded-xl p-1 text-xs">
+            <div className="flex items-center gap-1.5">
               <button
-                onClick={() => setMinervaSubView('calendar')}
-                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
-                  minervaSubView === 'calendar' ? 'bg-mv-green text-white shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
-                }`}
+                onClick={() =>
+                  setCalendarMonth((prev) => {
+                    const d = new Date(prev.year, prev.month - 1, 1);
+                    return { year: d.getFullYear(), month: d.getMonth() };
+                  })
+                }
+                className="h-7 px-2 rounded-[4px] border border-mv-border bg-white text-zinc-600 hover:text-zinc-900 transition-colors cursor-pointer"
+                title="Mois précédent (J)"
               >
-                <Calendar className="w-3.5 h-3.5 shrink-0" /> Calendrier partagé
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
+
               <button
-                onClick={() => setMinervaSubView('banque')}
-                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
-                  minervaSubView === 'banque' ? 'bg-mv-green text-white shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
-                }`}
+                onClick={() => {
+                  const now = new Date();
+                  setCalendarMonth({ year: now.getFullYear(), month: now.getMonth() });
+                }}
+                className="h-7 px-2.5 rounded-[4px] border border-mv-border bg-white text-zinc-700 hover:text-zinc-900 text-xs font-medium transition-colors cursor-pointer"
+                title="Aujourd’hui (T)"
               >
-                <Sparkles className="w-3.5 h-3.5 shrink-0" /> Banque d'inspirations
+                Aujourd’hui
               </button>
+
               <button
-                onClick={() => setMinervaSubView('opus')}
-                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
-                  minervaSubView === 'opus' ? 'bg-mv-green text-white shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
-                }`}
+                onClick={() =>
+                  setCalendarMonth((prev) => {
+                    const d = new Date(prev.year, prev.month + 1, 1);
+                    return { year: d.getFullYear(), month: d.getMonth() };
+                  })
+                }
+                className="h-7 px-2 rounded-[4px] border border-mv-border bg-white text-zinc-600 hover:text-zinc-900 transition-colors cursor-pointer"
+                title="Mois suivant (K)"
               >
-                <Wand2 className="w-3.5 h-3.5 shrink-0" /> Montages Opus Clip
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {minervaSubView === 'opus' ? (
-            loadingOpusJobs ? (
-              <div className="text-center py-16 text-sm text-mv-ink-soft">Chargement…</div>
-            ) : opusJobs.length === 0 ? (
-              <Card className="text-center py-16">
-                <Wand2 className="w-8 h-8 text-mv-ink-faint mx-auto mb-3" />
-                <p className="text-sm text-mv-ink-soft">
-                  Aucun montage Opus Clip pour le moment. Coche « Envoyer à Opus Clip » en ajoutant une vidéo Minerva pour en lancer un.
-                </p>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {opusJobs.map((job) => (
-                  <Card key={job.id} className="p-4">
-                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <div className="min-w-0">
-                        <div className="font-bold text-sm text-mv-ink truncate">{job.title}</div>
-                        <div className="text-[11px] text-mv-ink-faint">
-                          {new Date(job.created_at).toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </div>
-                      <span
-                        className={cn(
-                          'shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold',
-                          job.status === 'done' && 'bg-mv-green-tint text-mv-green',
-                          job.status === 'failed' && 'bg-mv-red-bg text-mv-red',
-                          (job.status === 'pending' || job.status === 'processing') && 'bg-mv-cream-soft text-mv-ink-soft'
-                        )}
-                      >
-                        {job.status === 'done' && <Check className="w-3.5 h-3.5" />}
-                        {job.status === 'failed' && <AlertCircle className="w-3.5 h-3.5" />}
-                        {(job.status === 'pending' || job.status === 'processing') && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                        {job.status === 'done' ? 'Terminé' : job.status === 'failed' ? 'Échec' : job.status === 'processing' ? 'En traitement' : 'En attente'}
+          {/* 7-column Weekday Headers */}
+          <div className="grid grid-cols-7 border-b border-mv-border bg-zinc-50/50 text-[10.5px] font-semibold uppercase tracking-wider text-zinc-400 text-center py-1">
+            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((w) => (
+              <div key={w}>{w}</div>
+            ))}
+          </div>
+
+          {/* Monolithic Continuous Calendar Grid */}
+          <div className="grid grid-cols-7 divide-x divide-y divide-mv-border bg-white">
+            {calendarDays.map((dayObj, i) => {
+              const dayPosts = posts.filter((p) => p.scheduled_date === dayObj.dateStr);
+              const isToday = dayObj.dateStr === todayStr;
+
+              return (
+                <div
+                  key={i}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => handleDropOnDate(e, dayObj.dateStr)}
+                  onDoubleClick={() => router.push(`/content-planner/new?date=${dayObj.dateStr}`)}
+                  className={cn(
+                    'min-h-[85px] p-1.5 flex flex-col justify-between transition-colors relative group',
+                    dayObj.isCurrentMonth ? 'bg-white' : 'bg-zinc-50/60 text-zinc-400',
+                    isToday && 'bg-emerald-50/15'
+                  )}
+                >
+                  {/* Top: Day Number (top-left) + Today Marker */}
+                  <div className="flex items-center justify-between">
+                    {isToday ? (
+                      <span className="w-5 h-5 rounded-full bg-mv-green text-white font-semibold text-[10.5px] flex items-center justify-center font-mono" style={MONO}>
+                        {dayObj.date.getDate()}
                       </span>
-                    </div>
-
-                    {job.status === 'failed' && job.error_message && (
-                      <p className="text-xs text-mv-red mt-2">{job.error_message}</p>
+                    ) : (
+                      <span className="text-[11px] font-mono text-zinc-500 font-medium pl-0.5" style={MONO}>
+                        {dayObj.date.getDate()}
+                      </span>
                     )}
 
-                    {job.clips.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-mv-border grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {job.clips.map((clip) => (
-                          <div key={clip.id} className="flex items-center justify-between gap-2 text-xs bg-mv-cream-soft/60 rounded-lg px-3 py-2">
-                            <span className="truncate font-medium text-mv-ink">{clip.title}</span>
-                            {clip.drive_view_url ? (
-                              <a
-                                href={clip.drive_view_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="shrink-0 flex items-center gap-1 text-mv-green font-bold hover:underline"
-                              >
-                                <FolderOpen className="w-3.5 h-3.5" /> Drive
-                              </a>
-                            ) : (
-                              <span className="shrink-0 text-mv-ink-faint">Drive : échec</span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </Card>
-                ))}
-              </div>
-            )
-          ) : loadingMinerva ? (
-            <div className="text-center py-16 text-sm text-mv-ink-soft">Chargement…</div>
-          ) : minervaSubView === 'calendar' ? (
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider flex items-center gap-2 capitalize">
-                  <Calendar className="w-4 h-4 text-mv-green" />
-                  {minervaMonthLabel}
-                </h3>
-                <div className="flex items-center gap-2 text-xs font-bold">
-                  <button
-                    onClick={() =>
-                      setMinervaCalendarMonth((m) => (m.month === 0 ? { year: m.year - 1, month: 11 } : { year: m.year, month: m.month - 1 }))
-                    }
-                    className="px-2.5 py-1 rounded-lg border border-mv-border hover:bg-mv-cream-soft cursor-pointer"
-                  >
-                    ←
-                  </button>
-                  <button
-                    onClick={() =>
-                      setMinervaCalendarMonth((m) => (m.month === 11 ? { year: m.year + 1, month: 0 } : { year: m.year, month: m.month + 1 }))
-                    }
-                    className="px-2.5 py-1 rounded-lg border border-mv-border hover:bg-mv-cream-soft cursor-pointer"
-                  >
-                    →
-                  </button>
-                </div>
-              </div>
+                    <button
+                      onClick={() => router.push(`/content-planner/new?date=${dayObj.dateStr}`)}
+                      className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-mv-green text-[10px] cursor-pointer transition-opacity"
+                      title="Ajouter un réel ce jour"
+                    >
+                      +
+                    </button>
+                  </div>
 
-              <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
-                <div className="min-w-[480px] max-w-[720px]">
-                  <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-bold text-mv-ink-soft mb-1.5">
-                    {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((d) => (
-                      <div key={d}>{d}</div>
+                  {/* Micro-Pills of Videos for this day (22px) */}
+                  <div className="space-y-1 my-1">
+                    {dayPosts.map((post) => (
+                      <Link
+                        key={post.id}
+                        href={`/content-planner/${post.id}`}
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggedPostId(post.id);
+                          e.dataTransfer.setData('text/plain', post.id);
+                        }}
+                        className="h-[22px] px-1.5 rounded-[4px] border border-emerald-200/70 bg-emerald-50/60 text-emerald-950 text-[10.5px] font-medium flex items-center gap-1 hover:bg-emerald-100 transition-colors truncate cursor-grab"
+                      >
+                        <Play className="w-2.5 h-2.5 text-mv-green fill-mv-green shrink-0" />
+                        <span className="font-mono text-[9px] text-emerald-700 shrink-0" style={MONO}>60s</span>
+                        <span className="truncate">{post.title}</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-mv-green shrink-0 ml-auto" />
+                      </Link>
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-7 gap-1.5">
-                    {minervaCalendarDays.map((day, i) =>
-                      day.date === null ? (
-                        <div key={i} className="min-h-[64px]" />
-                      ) : (
-                        <div
-                          key={i}
-                          className="min-h-[64px] max-h-[92px] p-1.5 bg-mv-cream-soft border border-mv-border rounded-lg flex flex-col gap-1 overflow-hidden"
-                        >
-                          <span className="font-bold text-[10px] text-mv-ink-faint text-right shrink-0">{day.date.getDate()}</span>
-                          <div className="space-y-0.5 overflow-y-auto flex-1">
-                            {day.items.map((i) => (
-                              <div
-                                key={i.id}
-                                title={i.title}
-                                className={cn(
-                                  'block px-1 py-0.5 rounded text-[9px] font-bold truncate border',
-                                  i.posted
-                                    ? 'bg-mv-cream-soft text-mv-ink-faint border-mv-border line-through'
-                                    : 'bg-mv-green/10 border-mv-green/30 text-mv-green'
-                                )}
-                              >
-                                {i.title}
-                              </div>
-                            ))}
-                          </div>
+                  <div />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : viewMode === 'kanban' ? (
+        /* ── Kanban View (Large Cards with Full Video Previews) ── */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+          {KANBAN_STAGES.map((stage) => {
+            const stagePosts = posts.filter((p) => p.status === stage);
+            return (
+              <div
+                key={stage}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => handleDropOnStage(e, stage)}
+                className="bg-zinc-50/70 border border-mv-border rounded-[6px] flex flex-col min-h-[460px] overflow-hidden"
+              >
+                <div className="p-2.5 border-b border-mv-border bg-white flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-900">
+                    {stage}
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-500 bg-zinc-100 px-1.5 py-0.2 rounded" style={MONO}>
+                    {stagePosts.length}
+                  </span>
+                </div>
+
+                <div className="p-2.5 space-y-3 flex-1 overflow-y-auto">
+                  {stagePosts.map((post) => (
+                    <div
+                      key={post.id}
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggedPostId(post.id);
+                        e.dataTransfer.setData('text/plain', post.id);
+                      }}
+                      className="border border-mv-border bg-white rounded-[6px] p-2.5 shadow-2xs space-y-2 cursor-grab group"
+                    >
+                      {/* Video Player Preview if URL exists */}
+                      {post.video_url ? (
+                        <div className="rounded-[4px] overflow-hidden border border-black/10">
+                          <VideoAssetPlayer src={post.video_url} title={post.title} initialAspectRatio="16:9" />
                         </div>
-                      )
-                    )}
-                  </div>
+                      ) : (
+                        <div className="h-20 bg-zinc-100 rounded-[4px] flex items-center justify-center text-zinc-400">
+                          <Film className="w-5 h-5 opacity-40" />
+                        </div>
+                      )}
+
+                      <div>
+                        <div className="font-semibold text-xs text-zinc-900 group-hover:text-mv-green transition-colors">
+                          <Link href={`/content-planner/${post.id}`}>{post.title}</Link>
+                        </div>
+                        <div className="text-[10.5px] text-zinc-400 font-mono mt-0.5" style={MONO}>
+                          {post.client_name} · {new Date(post.scheduled_date).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {stagePosts.length === 0 && (
+                    <div className="h-20 border border-dashed border-zinc-200 rounded-[4px] flex items-center justify-center text-[10.5px] text-zinc-400">
+                      Vide
+                    </div>
+                  )}
                 </div>
               </div>
+            );
+          })}
+        </div>
+      ) : viewMode === 'storage' ? (
+        /* ── Storage Browser View ── */
+        <StorageBrowser defaultBucket="client-assets" title="Médiathèque & Fichiers Vidéo" />
+      ) : (
+        /* ── Contenu Minerva & Opus Clip View ── */
+        <div className="space-y-4">
+          {/* Sub-view Underline Tabs */}
+          <div className="flex items-center gap-6 border-b border-mv-border px-1">
+            <button
+              onClick={() => setMinervaSubView('calendar')}
+              className={cn(
+                'text-[12px] font-medium pb-2 -mb-px transition-colors cursor-pointer flex items-center gap-1.5',
+                minervaSubView === 'calendar'
+                  ? 'text-zinc-900 border-b-2 border-mv-green font-semibold'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              )}
+            >
+              <CalendarIcon className="w-3.5 h-3.5" />
+              <span>Calendrier Agence</span>
+            </button>
+            <button
+              onClick={() => setMinervaSubView('banque')}
+              className={cn(
+                'text-[12px] font-medium pb-2 -mb-px transition-colors cursor-pointer flex items-center gap-1.5',
+                minervaSubView === 'banque'
+                  ? 'text-zinc-900 border-b-2 border-mv-green font-semibold'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              )}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Banque d’Inspiration & Vidéos</span>
+            </button>
+            <button
+              onClick={() => setMinervaSubView('opus')}
+              className={cn(
+                'text-[12px] font-medium pb-2 -mb-px transition-colors cursor-pointer flex items-center gap-1.5',
+                minervaSubView === 'opus'
+                  ? 'text-zinc-900 border-b-2 border-mv-green font-semibold'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              )}
+            >
+              <Scissors className="w-3.5 h-3.5" />
+              <span>Pipeline Opus Clip → Drive</span>
+            </button>
+          </div>
 
-              {minervaItems.filter((i) => i.kind === 'own_video' && !i.scheduled_date).length === 0 &&
-                minervaItems.filter((i) => i.kind === 'own_video').length === 0 && (
-                  <p className="text-xs text-mv-ink-faint text-center py-6">
-                    Aucune vidéo Minerva planifiée pour le moment.
-                  </p>
-                )}
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1">
-                {([
-                  { key: 'all', label: 'Tout' },
-                  { key: 'inspiration', label: 'Inspirations' },
-                  { key: 'own_video', label: 'Vidéos Minerva' },
-                ] as const).map((f) => (
-                  <button
-                    key={f.key}
-                    onClick={() => setMinervaKindFilter(f.key)}
-                    className={cn(
-                      'shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border',
-                      minervaKindFilter === f.key
-                        ? 'bg-mv-green text-white border-mv-green shadow-mv-sm'
-                        : 'bg-mv-cream-soft text-mv-ink-soft border-mv-border hover:border-mv-green/40 hover:text-mv-ink'
-                    )}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-                <div className="w-px h-4 bg-mv-border mx-1 shrink-0" />
-                <button
-                  onClick={() => setMinervaCategoryFilter(null)}
-                  className={cn(
-                    'shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border',
-                    !minervaCategoryFilter
-                      ? 'bg-mv-ink text-white border-mv-ink'
-                      : 'bg-mv-cream-soft text-mv-ink-soft border-mv-border hover:text-mv-ink'
-                  )}
-                >
-                  Toutes catégories
-                </button>
-                {minervaCategories.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => setMinervaCategoryFilter(c.id)}
-                    className={cn(
-                      'shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border whitespace-nowrap',
-                      minervaCategoryFilter === c.id
-                        ? 'bg-mv-ink text-white border-mv-ink'
-                        : 'bg-mv-cream-soft text-mv-ink-soft border-mv-border hover:text-mv-ink'
-                    )}
-                  >
-                    {c.name}
-                  </button>
-                ))}
+          {/* Sub-View Content */}
+          {minervaSubView === 'opus' ? (
+            <div className="bg-mv-surface border border-mv-border rounded-[6px] p-4 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between border-b border-mv-border pb-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-900">
+                  Jobs de Découpage IA Opus Clip ({opusJobs.length})
+                </span>
+                <span className="text-[10.5px] font-mono text-zinc-400" style={MONO}>
+                  Export auto vers Google Drive
+                </span>
               </div>
 
-              {minervaFilteredItems.length === 0 ? (
-                <Card className="text-center py-16">
-                  <Sparkles className="w-8 h-8 text-mv-ink-faint mx-auto mb-3" />
-                  <p className="text-sm text-mv-ink-soft">
-                    {minervaItems.length === 0
-                      ? "Aucune inspiration ni vidéo Minerva pour le moment — ajoutez la première."
-                      : 'Rien ne correspond à ce filtre.'}
-                  </p>
-                </Card>
+              {opusJobs.length === 0 ? (
+                <p className="text-xs text-zinc-400 text-center py-8">Aucun job Opus Clip en cours.</p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {minervaFilteredItems.map((item) => (
-                    <Card key={item.id} className="flex flex-col justify-between shadow-mv-sm">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <Badge variant={item.kind === 'inspiration' ? 'purple' : 'green'}>
-                            {item.kind === 'inspiration' ? 'Inspiration' : 'Vidéo Minerva'}
-                          </Badge>
-                          {item.category_name && <Badge variant="neutral">{item.category_name}</Badge>}
-                        </div>
+                <div className="space-y-2">
+                  {opusJobs.map((j) => (
+                    <div key={j.id} className="p-3 border border-mv-border rounded-[4px] bg-black/[0.01] flex items-center justify-between text-xs">
+                      <div>
+                        <div className="font-semibold text-zinc-900">{j.title}</div>
+                        <div className="text-[10.5px] text-zinc-400 font-mono truncate max-w-sm">{j.source_video_url}</div>
+                      </div>
+                      <span className="text-[11px] font-medium text-mv-green bg-emerald-50 px-2 py-0.5 rounded">
+                        Terminé ✓
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-mv-surface border border-mv-border rounded-[6px] p-4 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between border-b border-mv-border pb-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-900">
+                  Ressources & Vidéos Minerva ({minervaItems.length})
+                </span>
+                <Link
+                  href="/content-planner/minerva/new"
+                  className="text-xs font-medium text-mv-green hover:underline flex items-center gap-1"
+                >
+                  + Ajouter un élément
+                </Link>
+              </div>
 
-                        <h3 className="font-extrabold text-sm text-mv-ink leading-snug">{item.title}</h3>
-
-                        {item.kind === 'inspiration' ? (
-                          <>
-                            {item.note && <p className="text-xs text-mv-ink-soft leading-relaxed line-clamp-3">{item.note}</p>}
-                            {item.external_url && (
-                              <a
-                                href={item.external_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs font-bold text-mv-green hover:underline flex items-center gap-1"
-                              >
-                                <Link2 className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate">Voir la référence</span>
-                                <ExternalLink className="w-3 h-3 shrink-0" />
-                              </a>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            {item.file_url && (
-                              <div className="relative aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center border border-mv-border">
-                                <Film className="w-8 h-8 text-mv-warm" />
-                              </div>
-                            )}
-                            {item.scheduled_date && (
-                              <div className="text-[11px] font-mono text-mv-ink-soft flex items-center gap-1">
-                                <Clock className="w-3.5 h-3.5" />
-                                {new Date(item.scheduled_date).toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' })}
-                              </div>
-                            )}
-                            {item.assignee_name && (
-                              <div className="text-[11px] text-mv-ink-faint">Assigné à {item.assignee_name}</div>
-                            )}
-                          </>
+              {minervaItems.length === 0 ? (
+                <p className="text-xs text-zinc-400 text-center py-8">Aucun contenu d’agence enregistré.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {minervaItems.map((item) => (
+                    <div key={item.id} className="p-3 border border-mv-border rounded-[4px] bg-white space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-semibold px-1.5 py-0.2 bg-zinc-100 rounded text-zinc-600">
+                          {item.kind === 'inspiration' ? 'Inspiration' : 'Vidéo Propre'}
+                        </span>
+                        {item.scheduled_date && (
+                          <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
+                            {new Date(item.scheduled_date).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })}
+                          </span>
                         )}
                       </div>
-
-                      <div className="mt-6 pt-4 border-t border-mv-border flex items-center justify-between text-xs">
-                        {item.kind === 'own_video' ? (
-                          <button
-                            onClick={() => handleTogglePosted(item)}
-                            className={cn(
-                              'font-bold flex items-center gap-1 cursor-pointer',
-                              item.posted ? 'text-mv-ink-faint' : 'text-mv-green hover:underline'
-                            )}
-                          >
-                            <Check className="w-3.5 h-3.5" /> {item.posted ? 'Publié' : 'Marquer publié'}
-                          </button>
-                        ) : (
-                          <span />
-                        )}
-                        <button
-                          onClick={() => handleDeleteMinervaItem(item)}
-                          className="text-mv-ink-faint hover:text-mv-red transition-colors cursor-pointer"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </Card>
+                      <div className="font-semibold text-xs text-zinc-900">{item.title}</div>
+                      {item.note && <p className="text-[11px] text-zinc-500 line-clamp-2">{item.note}</p>}
+                    </div>
                   ))}
                 </div>
               )}
@@ -629,121 +619,6 @@ export default function ContentPlannerPage() {
           )}
         </div>
       )}
-
-      {viewMode !== 'minerva' && (loading ? (
-        <div className="text-center py-16 text-sm text-mv-ink-soft">Chargement…</div>
-      ) : (
-        <>
-          {viewMode === 'kanban' && (
-            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-              {KANBAN_STAGES.map((stage) => {
-                const stagePosts = posts.filter((p) => p.status === stage);
-                const isOver = dragOverStage === stage;
-                return (
-                  <div
-                    key={stage}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDragOverStage(stage);
-                    }}
-                    onDragLeave={() => setDragOverStage(null)}
-                    onDrop={(e) => handleStageDrop(e, stage)}
-                    className={`bg-mv-cream-soft/60 border rounded-2xl p-4 space-y-3 w-[280px] min-w-[280px] shrink-0 transition-colors ${
-                      isOver ? 'border-mv-green bg-mv-green-tint/40' : 'border-mv-border'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between border-b border-mv-border pb-2.5">
-                      <span className="font-extrabold text-xs text-mv-ink uppercase tracking-wider">{stage}</span>
-                      <span className="text-[11px] font-mono text-mv-ink-soft bg-mv-surface px-2 py-0.5 rounded-full border border-mv-border font-bold">
-                        {stagePosts.length}
-                      </span>
-                    </div>
-                    <div className="space-y-3">
-                      {stagePosts.map((post) => (
-                        <ContentCard key={post.id} post={post} onDragStart={handleDragStart} />
-                      ))}
-                      {stagePosts.length === 0 && (
-                        <div className="p-4 text-center text-[11px] text-mv-ink-faint border border-dashed border-mv-border rounded-xl">
-                          Aucun contenu dans cette étape
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {viewMode === 'calendar' && (
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider flex items-center gap-2 capitalize">
-                  <Calendar className="w-4 h-4 text-mv-green" />
-                  {monthLabel}
-                </h3>
-                <div className="flex items-center gap-2 text-xs font-bold">
-                  <button
-                    onClick={() =>
-                      setCalendarMonth((m) => (m.month === 0 ? { year: m.year - 1, month: 11 } : { year: m.year, month: m.month - 1 }))
-                    }
-                    className="px-2.5 py-1 rounded-lg border border-mv-border hover:bg-mv-cream-soft cursor-pointer"
-                  >
-                    ←
-                  </button>
-                  <button
-                    onClick={() =>
-                      setCalendarMonth((m) => (m.month === 11 ? { year: m.year + 1, month: 0 } : { year: m.year, month: m.month + 1 }))
-                    }
-                    className="px-2.5 py-1 rounded-lg border border-mv-border hover:bg-mv-cream-soft cursor-pointer"
-                  >
-                    →
-                  </button>
-                </div>
-              </div>
-
-              {/* Horizontal scroll on narrow screens so day cells keep a
-                  usable, near-square shape instead of squeezing into tall
-                  skinny slivers at 7 columns wide. */}
-              <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
-                <div className="min-w-[480px] max-w-[720px]">
-                  <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-bold text-mv-ink-soft mb-1.5">
-                    {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((d) => (
-                      <div key={d}>{d}</div>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1.5">
-                    {calendarDays.map((day, i) =>
-                      day.date === null ? (
-                        <div key={i} className="min-h-[64px]" />
-                      ) : (
-                        <div
-                          key={i}
-                          className="min-h-[64px] max-h-[92px] p-1.5 bg-mv-cream-soft border border-mv-border rounded-lg flex flex-col gap-1 overflow-hidden"
-                        >
-                          <span className="font-bold text-[10px] text-mv-ink-faint text-right shrink-0">{day.date.getDate()}</span>
-                          <div className="space-y-0.5 overflow-y-auto flex-1">
-                            {day.posts.map((p) => (
-                              <Link
-                                key={p.id}
-                                href={`/content-planner/${p.id}`}
-                                className="block px-1 py-0.5 rounded bg-mv-green/10 border border-mv-green/30 text-[9px] font-bold text-mv-green truncate hover:bg-mv-green hover:text-white transition-all"
-                              >
-                                {p.title}
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
-        </>
-      ))}
-
-    </div>
+    </PageFadeIn>
   );
 }

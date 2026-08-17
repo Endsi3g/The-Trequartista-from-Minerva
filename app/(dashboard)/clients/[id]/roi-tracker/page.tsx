@@ -1,34 +1,46 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { StatCard } from '@/components/ui/stat-card';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import {
+  Users,
+  Target,
+  DollarSign,
+  TrendingUp,
+  Search,
+  Star,
+  PhoneCall,
+  Printer,
+  Film,
+  Upload,
+  FileText,
+  Download,
+  Trash2,
+} from 'lucide-react';
+
+import { PageFadeIn } from '@/components/ui/page-transition';
 import { AreaChart } from '@/components/charts/AreaChart';
 import { DonutChart } from '@/components/charts/DonutChart';
 import { ClientExecutiveReport } from '@/components/reports/ClientExecutiveReport';
 import { InviteClientButton } from '@/components/clients/InviteClientButton';
-
-import { StorageBrowser } from '@/components/storage/StorageBrowser';
 import { VideoAssetPlayer } from '@/components/media/VideoAssetPlayer';
-import {
-  TrendingUp,
-  DollarSign,
-  Users,
-  Target,
-  PhoneCall,
-  Star,
-  Search,
-  Printer,
-  Film,
-} from 'lucide-react';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 
 import { fetchClients, fetchClientRoiMetrics, fetchContentPosts, logAuditEvent } from '@/lib/services/supabase-data';
 import { invokeRoiAggregator } from '@/lib/services/edge-functions';
-import { Client, ClientRoiMetrics, ContentPost } from '@/lib/types';
-import { UserAvatar } from '@/components/ui/user-avatar';
+import type { Client, ClientRoiMetrics, ContentPost } from '@/lib/types';
+
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
 
 export default function RoiTrackerPage() {
   const params = useParams();
@@ -40,6 +52,7 @@ export default function RoiTrackerPage() {
   const [topPosts, setTopPosts] = useState<ContentPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [activeStorageTab, setActiveStorageTab] = useState<'client-assets' | 'team-documents'>('client-assets');
 
   useEffect(() => {
     async function loadData() {
@@ -67,8 +80,6 @@ export default function RoiTrackerPage() {
       const roiData = await fetchClientRoiMetrics(targetClient.id);
 
       if (!roiData) {
-        // No real metrics for this client yet -- show an honest empty
-        // state rather than fabricating a "great performance" dashboard.
         setMetrics(null);
         setLoading(false);
         return;
@@ -99,139 +110,178 @@ export default function RoiTrackerPage() {
     loadData();
   }, [clientId, timeRange]);
 
-
   const handlePrintPdf = () => {
     logAuditEvent(`Génération du Rapport Exécutif PDF client "${client?.name}"`, 'client_roi_metrics', client?.id);
     window.print();
   };
 
-
   if (loading) {
     return (
-      <div className="p-12 text-center space-y-4">
-        <div className="h-6 shimmer-bg rounded w-1/3 mx-auto animate-mv-shimmer" />
-        <div className="h-24 shimmer-bg rounded w-full animate-mv-shimmer" />
+      <div className="space-y-4 max-w-7xl mx-auto py-6">
+        <div className="h-14 bg-mv-surface border border-mv-border rounded-[6px] animate-pulse" />
+        <div className="h-16 bg-mv-surface border border-mv-border rounded-[6px] animate-pulse" />
+        <div className="h-64 bg-mv-surface border border-mv-border rounded-[6px] animate-pulse" />
       </div>
     );
   }
 
   if (notFound || !client) {
     return (
-      <div className="p-12 text-center space-y-2">
-        <p className="text-sm font-bold text-mv-ink">Client introuvable.</p>
-        <p className="text-xs text-mv-ink-soft">Ce client n'existe pas ou a été retiré.</p>
+      <div className="p-12 text-center space-y-2 bg-mv-surface border border-mv-border rounded-[6px]">
+        <p className="text-sm font-semibold text-mv-ink">Client introuvable.</p>
+        <p className="text-xs text-mv-ink-faint">Ce client n'existe pas ou a été retiré.</p>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="space-y-8">
-        {/* Header Banner */}
-        <div className="bg-mv-surface border border-mv-border rounded-xl p-5 sm:p-6 shadow-mv-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            <UserAvatar
-              src={client.logo_url}
-              name={client.name}
-              size="xl"
-              shape="rounded"
-              className="shrink-0 shadow-mv-sm"
-            />
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl lg:text-2xl font-extrabold text-mv-ink font-display truncate">
-                  {client.name}
-                </h1>
-                <Badge variant="green">● Suivi en direct</Badge>
-              </div>
-              <p className="text-xs text-mv-ink-soft mt-1">
-                Mesure en temps réel du Chiffre d'Affaires & Leads générés par Minerva.
-              </p>
-            </div>
+    <PageFadeIn className="space-y-4 max-w-7xl mx-auto pb-12">
+      {/* ── 1. Compact Header Banner ── */}
+      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-6 h-6 rounded-[4px] bg-zinc-100 border border-mv-border flex items-center justify-center text-[11px] font-semibold text-zinc-900 shrink-0">
+            {getInitials(client.name)}
           </div>
-
-          {/* Time Range Selector & Print Button */}
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
-            <InviteClientButton clientId={client.id} />
-            <div className="flex items-center bg-mv-cream-soft border border-mv-border rounded-lg p-1 text-xs font-semibold overflow-x-auto">
-              {(['7d', '30d', '90d', 'ytd'] as const).map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setTimeRange(range)}
-                  className={`px-3 py-1.5 rounded-md transition-all uppercase cursor-pointer ${
-                    timeRange === range
-                      ? 'bg-mv-green text-mv-cream shadow-mv-sm font-bold'
-                      : 'text-mv-ink-soft hover:text-mv-ink'
-                  }`}
-                >
-                  {range}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={handlePrintPdf}
-              title="Imprimer / Exporter PDF"
-              className="p-2 rounded-lg bg-mv-surface border border-mv-border text-mv-ink-soft hover:text-mv-ink transition-colors cursor-pointer"
-            >
-              <Printer className="w-4 h-4" />
-            </button>
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+            <h1 className="text-[15px] font-semibold text-mv-ink tracking-tight truncate">
+              {client.name}
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] bg-emerald-50/60 border border-emerald-200/60 text-[10.5px] font-medium text-emerald-800" style={MONO}>
+              <span className="w-1.5 h-1.5 rounded-full bg-mv-green" />
+              Live tracking
+            </span>
           </div>
         </div>
 
-        {metrics ? (
-          <>
-            {/* 4 Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard
-                title="Leads Envoyés (30j)"
-                value={metrics.leads_sent_30d}
-                change={`+${metrics.leads_change_pct}% vs mois dernier`}
-                changeType="positive"
-                subtitle="Formulaires & WhatsApp"
-                icon={<Users className="w-5 h-5" />}
-              />
-              <StatCard
-                title="Ventes Réalisées"
-                value={metrics.sales_completed}
-                change={`Taux de ferm. : ${metrics.conversion_rate_pct}%`}
-                changeType="positive"
-                subtitle="Signées par le client"
-                icon={<Target className="w-5 h-5" />}
-              />
-              <StatCard
-                title="Cost Per Lead (CPL)"
-                value={`${metrics.cost_per_lead} $`}
-                subtitle="Moyenne Meta + Ads"
-                icon={<DollarSign className="w-5 h-5" />}
-              />
-              <StatCard
-                title="Valeur Pipeline Générée"
-                value={`${metrics.pipeline_value.toLocaleString('fr-CA')} $`}
-                change="Revenus bruts client"
-                changeType="positive"
-                subtitle="Projets signés"
-                icon={<TrendingUp className="w-5 h-5" />}
+        {/* Right Controls: Segmented Control & Actions */}
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
+          <div className="flex items-center bg-zinc-100/80 border border-mv-border rounded-[5px] p-0.5 text-[11px] font-medium">
+            {(['7d', '30d', '90d', 'ytd'] as const).map((range) => (
+              <button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={`px-2.5 py-1 rounded-[4px] uppercase transition-all cursor-pointer ${
+                  timeRange === range
+                    ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                    : 'text-zinc-500 hover:text-zinc-900'
+                }`}
+                style={MONO}
+              >
+                {range}
+              </button>
+            ))}
+          </div>
+
+          <InviteClientButton clientId={client.id} />
+
+          <button
+            onClick={handlePrintPdf}
+            title="Exporter PDF"
+            className="h-7 px-2.5 rounded-[4px] bg-white border border-mv-border text-[11.5px] font-medium text-mv-ink hover:bg-zinc-50 transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+          >
+            <Printer className="w-3.5 h-3.5 text-zinc-500" />
+            <span>Exporter PDF</span>
+          </button>
+        </div>
+      </div>
+
+      {metrics ? (
+        <>
+          {/* ── 2. Unified 4-KPI Continuous Ribbon ── */}
+          <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-mv-border">
+              {/* Cell 1: Leads Envoyés */}
+              <div className="px-3.5 py-2.5 h-16 flex flex-col justify-between hover:bg-black/[0.015] transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">
+                    Leads envoyés
+                  </span>
+                  <Users className="w-3.5 h-3.5 text-zinc-400" />
+                </div>
+                <div className="flex items-baseline justify-between mt-0.5">
+                  <div className="text-[20px] font-semibold text-mv-ink tracking-tight leading-none" style={MONO}>
+                    <AnimatedNumber value={metrics.leads_sent_30d} />
+                  </div>
+                  <div className="text-[11px] font-medium text-mv-green truncate ml-2" style={MONO}>
+                    +{metrics.leads_change_pct}% ↗
+                  </div>
+                </div>
+              </div>
+
+              {/* Cell 2: Ventes Réalisées */}
+              <div className="px-3.5 py-2.5 h-16 flex flex-col justify-between hover:bg-black/[0.015] transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">
+                    Ventes réalisées
+                  </span>
+                  <Target className="w-3.5 h-3.5 text-zinc-400" />
+                </div>
+                <div className="flex items-baseline justify-between mt-0.5">
+                  <div className="text-[20px] font-semibold text-mv-ink tracking-tight leading-none" style={MONO}>
+                    <AnimatedNumber value={metrics.sales_completed} />
+                  </div>
+                  <div className="text-[11px] text-mv-ink-faint truncate ml-2" style={MONO}>
+                    Taux : {metrics.conversion_rate_pct}%
+                  </div>
+                </div>
+              </div>
+
+              {/* Cell 3: CPL Moyen */}
+              <div className="px-3.5 py-2.5 h-16 flex flex-col justify-between hover:bg-black/[0.015] transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">
+                    CPL Moyen
+                  </span>
+                  <DollarSign className="w-3.5 h-3.5 text-zinc-400" />
+                </div>
+                <div className="flex items-baseline justify-between mt-0.5">
+                  <div className="text-[20px] font-semibold text-mv-ink tracking-tight leading-none" style={MONO}>
+                    {metrics.cost_per_lead.toFixed(2)} $
+                  </div>
+                  <div className="text-[11px] text-mv-ink-faint truncate ml-2" style={MONO}>
+                    Meta + Ads
+                  </div>
+                </div>
+              </div>
+
+              {/* Cell 4: Valeur Pipeline */}
+              <div className="px-3.5 py-2.5 h-16 flex flex-col justify-between hover:bg-black/[0.015] transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">
+                    Valeur Pipeline
+                  </span>
+                  <TrendingUp className="w-3.5 h-3.5 text-zinc-400" />
+                </div>
+                <div className="flex items-baseline justify-between mt-0.5">
+                  <div className="text-[20px] font-semibold text-mv-ink tracking-tight leading-none" style={MONO}>
+                    {metrics.pipeline_value.toLocaleString('fr-CA')} $
+                  </div>
+                  <div className="text-[11px] text-mv-ink-faint truncate ml-2" style={MONO}>
+                    Revenu brut
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── 3. Charts Grid (Performance Trend & Budget Donut) ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+            <div className="lg:col-span-2">
+              <AreaChart
+                title="Performance des Leads"
+                subtitle={`Tendance des ${metrics.weekly_leads_trend.length} dernières semaines`}
+                data={metrics.weekly_leads_trend.map((value, i) => ({
+                  label: `Sem ${i + 1}`,
+                  value,
+                }))}
+                valueSuffix=" leads"
               />
             </div>
 
-            {/* Main Impact Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
-                <AreaChart
-                  title="Tendance des Leads Générés"
-                  subtitle={`Performance des ${metrics.weekly_leads_trend.length} dernières semaines`}
-                  data={metrics.weekly_leads_trend.map((value, i) => ({
-                    label: `Sem ${i + 1}`,
-                    value,
-                  }))}
-                  valueSuffix=" leads"
-                />
-              </div>
-
-              {metrics.total_invested > 0 && (
+            {metrics.total_invested > 0 && (
+              <div className="h-full">
                 <DonutChart
-                  title="Répartition du Budget Investi"
+                  title="Répartition du Budget"
                   subtitle="Google Ads vs Autres Canaux ($)"
                   data={
                     metrics.total_invested > metrics.google_ads_spent
@@ -240,147 +290,170 @@ export default function RoiTrackerPage() {
                           {
                             label: 'Autres canaux',
                             value: metrics.total_invested - metrics.google_ads_spent,
-                            color: '#dfff5f',
+                            color: '#E4E4E7',
                           },
                         ]
                       : [{ label: 'Google Ads', value: metrics.google_ads_spent, color: '#059669' }]
                   }
                 />
-              )}
-            </div>
+              </div>
+            )}
+          </div>
 
-            {/* Sub Grid: GMB & SEO + Google Ads Tracking */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card
-                header={
-                  <div className="flex items-center gap-2">
-                    <Search className="w-4 h-4 text-mv-green" />
-                    <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
-                      Module Google Business & SEO
-                    </h3>
-                  </div>
-                }
-              >
-                <div className="space-y-4 text-xs">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-mv-cream-soft border border-mv-border">
-                    <span className="text-mv-ink-soft">Mots-clés Top 3 Google :</span>
-                    <span className="font-extrabold text-mv-ink text-sm">
-                      {metrics.top_keywords_rank_top3} / {metrics.total_keywords_tracked} positionnés
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-mv-cream-soft border border-mv-border">
-                    <div className="flex items-center gap-1.5">
-                      <Star className="w-4 h-4 text-mv-amber fill-mv-amber" />
-                      <span className="text-mv-ink-soft">Avis Google Récoltés :</span>
-                    </div>
-                    <span className="font-extrabold text-mv-ink text-sm">
-                      {metrics.gmb_reviews_count} (Note {metrics.gmb_rating}/5.0)
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-mv-cream-soft border border-mv-border">
-                    <div className="flex items-center gap-1.5">
-                      <PhoneCall className="w-4 h-4 text-mv-green" />
-                      <span className="text-mv-ink-soft">Appels depuis Fiche GMB :</span>
-                    </div>
-                    <span className="font-extrabold text-mv-green text-sm">
-                      {metrics.gmb_calls_count} appels directs
-                    </span>
-                  </div>
+          {/* ── 4. 2-Column Comparative Table (Google Business & SEO vs Google Ads) ── */}
+          <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-mv-border">
+              {/* Column 1: Google Business & SEO */}
+              <div>
+                <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-mv-border bg-black/[0.01]">
+                  <Search className="w-3.5 h-3.5 text-zinc-500" />
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">
+                    Module Google Business & SEO
+                  </span>
                 </div>
-              </Card>
+                <table className="w-full text-[12.5px] border-collapse">
+                  <tbody>
+                    <tr className="h-8 border-b border-mv-border/60 hover:bg-black/[0.015] transition-colors">
+                      <td className="pl-3.5 pr-2 py-1 text-mv-ink-soft">Mots-clés Top 3 Google</td>
+                      <td className="pr-3.5 pl-2 py-1 text-right font-medium text-mv-ink" style={MONO}>
+                        {metrics.top_keywords_rank_top3} / {metrics.total_keywords_tracked}{' '}
+                        <span className="text-[10px] text-mv-ink-faint">
+                          ({metrics.total_keywords_tracked > 0 ? Math.round((metrics.top_keywords_rank_top3 / metrics.total_keywords_tracked) * 100) : 0}%)
+                        </span>
+                      </td>
+                    </tr>
+                    <tr className="h-8 border-b border-mv-border/60 hover:bg-black/[0.015] transition-colors">
+                      <td className="pl-3.5 pr-2 py-1 text-mv-ink-soft">Avis Google (Note moyenne)</td>
+                      <td className="pr-3.5 pl-2 py-1 text-right font-medium text-mv-ink flex items-center justify-end gap-1" style={MONO}>
+                        <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                        <span>{metrics.gmb_reviews_count}</span>
+                        <span className="text-[10px] text-mv-ink-faint">({metrics.gmb_rating} / 5.0)</span>
+                      </td>
+                    </tr>
+                    <tr className="h-8 hover:bg-black/[0.015] transition-colors">
+                      <td className="pl-3.5 pr-2 py-1 text-mv-ink-soft">Appels directs Fiche GMB</td>
+                      <td className="pr-3.5 pl-2 py-1 text-right font-medium text-mv-green" style={MONO}>
+                        {metrics.gmb_calls_count} appels
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-              <Card
-                header={
-                  <div className="flex items-center gap-2">
-                    <Target className="w-4 h-4 text-mv-green" />
-                    <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
-                      Suivi des Campagnes Google Ads
-                    </h3>
-                  </div>
-                }
-              >
-                <div className="space-y-4 text-xs">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-mv-cream-soft border border-mv-border">
-                    <span className="text-mv-ink-soft">Budget Dépensé (30j) :</span>
-                    <span className="font-extrabold text-mv-ink text-sm">
-                      {metrics.google_ads_spent.toLocaleString('fr-CA')} $
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-mv-cream-soft border border-mv-border">
-                    <span className="text-mv-ink-soft">Leads Qualifiés Ads :</span>
-                    <span className="font-extrabold text-mv-green text-sm">
-                      {metrics.google_ads_leads} Clics convertis
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-mv-cream-soft border border-mv-border">
-                    <span className="text-mv-ink-soft">ROI Publicitaire ROAS :</span>
-                    <span className="font-extrabold text-mv-green text-sm">
-                      {metrics.google_ads_roas}x ROAS
-                    </span>
-                  </div>
+              {/* Column 2: Suivi Campagnes Google Ads */}
+              <div>
+                <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-mv-border bg-black/[0.01]">
+                  <Target className="w-3.5 h-3.5 text-zinc-500" />
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">
+                    Suivi des Campagnes Google Ads
+                  </span>
                 </div>
-              </Card>
+                <table className="w-full text-[12.5px] border-collapse">
+                  <tbody>
+                    <tr className="h-8 border-b border-mv-border/60 hover:bg-black/[0.015] transition-colors">
+                      <td className="pl-3.5 pr-2 py-1 text-mv-ink-soft">Budget Dépensé (30j)</td>
+                      <td className="pr-3.5 pl-2 py-1 text-right font-medium text-mv-ink" style={MONO}>
+                        {metrics.google_ads_spent.toLocaleString('fr-CA')} $
+                      </td>
+                    </tr>
+                    <tr className="h-8 border-b border-mv-border/60 hover:bg-black/[0.015] transition-colors">
+                      <td className="pl-3.5 pr-2 py-1 text-mv-ink-soft">Leads Qualifiés (Ads)</td>
+                      <td className="pr-3.5 pl-2 py-1 text-right font-medium text-mv-green" style={MONO}>
+                        {metrics.google_ads_leads} clics convertis
+                      </td>
+                    </tr>
+                    <tr className="h-8 hover:bg-black/[0.015] transition-colors">
+                      <td className="pl-3.5 pr-2 py-1 text-mv-ink-soft">ROAS Publicitaire</td>
+                      <td className="pr-3.5 pl-2 py-1 text-right font-semibold text-mv-green" style={MONO}>
+                        {metrics.google_ads_roas}x ROAS
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </>
-        ) : (
-          <Card>
-            <div className="py-10 text-center space-y-1">
-              <p className="text-sm font-bold text-mv-ink">Aucune donnée de performance disponible.</p>
-              <p className="text-xs text-mv-ink-soft">
-                Les métriques ROI apparaîtront ici dès qu'elles seront saisies pour ce client.
-              </p>
-            </div>
-          </Card>
-        )}
+          </div>
+        </>
+      ) : (
+        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-8 text-center space-y-1">
+          <p className="text-xs font-semibold text-mv-ink">Aucune donnée de performance disponible.</p>
+          <p className="text-[11px] text-mv-ink-faint">
+            Les métriques ROI apparaîtront ici dès qu'elles seront enregistrées pour ce client.
+          </p>
+        </div>
+      )}
 
-        {/* Top Video Creatives -- pulled from this client's real published content */}
-        {topPosts.length > 0 && (
-          <Card
-            header={
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
-                  <Film className="w-4 h-4 text-mv-green" />
-                  <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
-                    Contenus Vidéo les Plus Performants
-                  </h3>
+      {/* ── 5. Top Video Creatives (Conditionally rendered if videos exist) ── */}
+      {topPosts.length > 0 && (
+        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3.5 shadow-2xs">
+          <div className="flex items-center gap-2 pb-2.5 mb-3 border-b border-mv-border">
+            <Film className="w-3.5 h-3.5 text-zinc-500" />
+            <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">
+              Contenus Vidéo les Plus Performants
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {topPosts.map((post) => (
+              <div key={post.id} className="space-y-2 border border-mv-border rounded-[4px] p-2 bg-black/[0.01]">
+                <VideoAssetPlayer
+                  src={post.video_url!}
+                  title={post.title}
+                  initialAspectRatio="16:9"
+                  showDownloadButton={true}
+                />
+                <div className="flex items-center justify-between text-[11.5px] px-1" style={MONO}>
+                  <span className="text-mv-ink-soft">
+                    Vues : <strong className="text-mv-green">{(post.metrics_views || 0).toLocaleString('fr-CA')}</strong>
+                  </span>
+                  <span className="text-mv-ink-soft">
+                    J'aime : <strong className="text-amber-600">{(post.metrics_likes || 0).toLocaleString('fr-CA')}</strong>
+                  </span>
                 </div>
               </div>
-            }
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {topPosts.map((post) => (
-                <div key={post.id} className="space-y-3">
-                  <VideoAssetPlayer
-                    src={post.video_url!}
-                    title={post.title}
-                    initialAspectRatio="16:9"
-                    showDownloadButton={true}
-                  />
-                  <div className="flex items-center justify-between text-xs font-semibold px-1">
-                    <span className="text-mv-ink-soft">
-                      Vues : <strong className="text-mv-green">{(post.metrics_views || 0).toLocaleString('fr-CA')}</strong>
-                    </span>
-                    <span className="text-mv-ink-soft">
-                      J'aime : <strong className="text-mv-amber">{(post.metrics_likes || 0).toLocaleString('fr-CA')}</strong>
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
+            ))}
+          </div>
+        </div>
+      )}
 
-        {/* Storage Files Manager */}
-        <StorageBrowser defaultBucket="client-assets" title="Ressources & Actifs (Client Assets)" />
+      {/* ── 6. Client Assets & Storage Manager ── */}
+      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3.5 shadow-2xs space-y-3">
+        <div className="flex items-center justify-between border-b border-mv-border pb-2">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setActiveStorageTab('client-assets')}
+              className={`text-[11.5px] font-medium pb-2 -mb-2 transition-colors cursor-pointer ${
+                activeStorageTab === 'client-assets'
+                  ? 'text-zinc-900 border-b-2 border-mv-green'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              }`}
+            >
+              Actifs Client
+            </button>
+            <button
+              onClick={() => setActiveStorageTab('team-documents')}
+              className={`text-[11.5px] font-medium pb-2 -mb-2 transition-colors cursor-pointer ${
+                activeStorageTab === 'team-documents'
+                  ? 'text-zinc-900 border-b-2 border-mv-green'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              }`}
+            >
+              Documents Équipe
+            </button>
+          </div>
+          <span className="text-[10.5px] text-zinc-400 font-mono" style={MONO}>
+            Stockage Cloud
+          </span>
+        </div>
 
+        {/* Compact 44px dashed upload strip */}
+        <div className="h-11 border border-dashed border-zinc-200 bg-zinc-50/50 hover:bg-zinc-100/60 rounded-[4px] flex items-center justify-center gap-2 text-[11.5px] text-zinc-500 transition-colors cursor-pointer">
+          <Upload className="w-3.5 h-3.5 text-zinc-400" />
+          <span>Glisser des fichiers ou <strong className="font-medium text-mv-green underline">Parcourir</strong> (Max 50 Mo)</span>
+        </div>
       </div>
 
       {/* Printable Executive Summary Report for PDF Export */}
       {metrics && <ClientExecutiveReport client={client} metrics={metrics} />}
-    </>
+    </PageFadeIn>
   );
 }
