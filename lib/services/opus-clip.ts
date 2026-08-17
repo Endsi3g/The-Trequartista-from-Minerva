@@ -84,7 +84,11 @@ export async function fetchOpusClipClips(projectId: string): Promise<{ clips: Op
       return { error: `Opus Clip : impossible de récupérer les clips (${res.status}) : ${text || res.statusText}` };
     }
     const data = await res.json();
-    const list: unknown[] = Array.isArray(data) ? data : (data?.clips ?? data?.items ?? []);
+    // {list, paging} is the confirmed envelope shape for GET
+    // /clip-projects (verified live against a real API key, 2026-08-17)
+    // -- clips ?? items are kept as fallbacks in case the clips
+    // sub-resource uses a different envelope than the projects list did.
+    const list: unknown[] = Array.isArray(data) ? data : (data?.list ?? data?.clips ?? data?.items ?? []);
     const clips: OpusClipResult[] = list
       .map((raw): OpusClipResult | null => {
         const c = raw as Record<string, unknown>;
