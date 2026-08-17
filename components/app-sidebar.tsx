@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
@@ -30,6 +30,7 @@ import {
   PhoneCall,
   Building2,
   Plus,
+  Rocket,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -92,11 +93,55 @@ function NavLink({ item, active, onNavigate }: { item: NavItem; active: boolean;
   );
 }
 
+const SPRING = { type: 'spring' as const, stiffness: 300, damping: 30, mass: 1 };
+
 function NavSection({ label, children }: { label: string; children: React.ReactNode }) {
+  const storageKey = `mv-sidebar-section-${label}`;
+  const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored !== null) setOpen(stored !== 'closed');
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggle = () => {
+    setOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(storageKey, next ? 'open' : 'closed');
+      } catch {}
+      return next;
+    });
+  };
+
   return (
     <div className="space-y-0.5">
-      <div className="px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-neutral-400">{label}</div>
-      <div className="space-y-0.5">{children}</div>
+      <button
+        onClick={toggle}
+        className="w-full flex items-center justify-between px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-neutral-400 hover:text-neutral-600 transition-colors cursor-pointer"
+      >
+        <span>{label}</span>
+        <ChevronDown
+          size={12}
+          className={cn('shrink-0 transition-transform duration-200', open ? 'rotate-0' : '-rotate-90')}
+        />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={SPRING}
+            className="overflow-hidden"
+          >
+            <div className="space-y-0.5">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -112,29 +157,40 @@ export function AppSidebar() {
   // Workspaces state for minimalist switcher
   const [selectedWorkspace, setSelectedWorkspace] = useState('Minerva Agency');
 
-  // "Menu principal"
+  // "Principal" -- daily-use, personal-scope items
   const mainMenuItems: NavItem[] = [
     { key: 'overview', label: 'Accueil', href: '/overview', icon: LayoutDashboard },
     { key: 'voice-agent', label: 'Agent Vocal IA', href: '/voice-agent', icon: PhoneCall, isNew: true },
     { key: 'tasks', label: 'Tâches', href: '/tasks', icon: CheckSquare, count: counts.myTasks ?? undefined },
   ];
 
-  // "Données"
-  const dataItems: NavItem[] = [
+  // "CRM" -- the sales pipeline
+  const crmItems: NavItem[] = [
     { key: 'clients', label: 'Clients', href: '/clients', icon: Users },
     { key: 'leads', label: 'Leads', href: '/leads', icon: Target },
+  ];
+
+  // "Livraison" -- client-facing production work
+  const deliveryItems: NavItem[] = [
     { key: 'projects', label: 'Projets', href: '/projects', icon: FolderKanban },
-    { key: 'team', label: 'Équipe', href: '/team', icon: UsersRound },
     { key: 'reels', label: 'Réels', href: '/content-planner', icon: Clapperboard },
     { key: 'academy', label: 'Académie', href: '/academy', icon: GraduationCap },
-    ...(isAdmin
-      ? [
-          { key: 'workload', label: 'Charge de travail', href: '/team/workload', icon: Gauge } as NavItem,
-          { key: 'acquisition', label: 'Acquisition', href: '/acquisition', icon: Sparkles } as NavItem,
-          { key: 'audits', label: 'Audits IA', href: '/audits', icon: ClipboardCheck } as NavItem,
-        ]
-      : []),
   ];
+
+  // "Équipe" -- people ops
+  const teamItems: NavItem[] = [
+    { key: 'team', label: 'Équipe', href: '/team', icon: UsersRound },
+    ...(isAdmin ? [{ key: 'workload', label: 'Charge de travail', href: '/team/workload', icon: Gauge } as NavItem] : []),
+  ];
+
+  // "Croissance" -- admin-only, top-of-funnel
+  const growthItems: NavItem[] = isAdmin
+    ? [
+        { key: 'acquisition', label: 'Acquisition', href: '/acquisition', icon: Sparkles },
+        { key: 'audits', label: 'Audits IA', href: '/audits', icon: ClipboardCheck },
+        { key: 'produits', label: 'Produits Minerva', href: '/produits', icon: Rocket },
+      ]
+    : [];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
@@ -153,7 +209,7 @@ export function AppSidebar() {
           <DropdownMenuTrigger asChild>
             <button className="flex w-full items-center justify-between gap-2.5 rounded-xl border border-neutral-200/90 bg-white p-2 text-left hover:border-neutral-300 transition-colors cursor-pointer">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-[#1E4B33] text-white flex items-center justify-center shrink-0 text-[10px] font-extrabold">
+                <div className="w-6 h-6 rounded-lg bg-[#059669] text-white flex items-center justify-center shrink-0 text-[10px] font-extrabold">
                   M
                 </div>
                 <div className="min-w-0">
@@ -192,17 +248,37 @@ export function AppSidebar() {
 
       {/* ── Nav Links ── */}
       <div className="flex-1 space-y-4 overflow-y-auto px-2.5 py-3 scrollbar-none">
-        <NavSection label="Menu principal">
+        <NavSection label="Principal">
           {mainMenuItems.map((item) => (
             <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
           ))}
         </NavSection>
 
-        <NavSection label="Données">
-          {dataItems.map((item) => (
+        <NavSection label="CRM">
+          {crmItems.map((item) => (
             <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
           ))}
         </NavSection>
+
+        <NavSection label="Livraison">
+          {deliveryItems.map((item) => (
+            <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
+          ))}
+        </NavSection>
+
+        <NavSection label="Équipe">
+          {teamItems.map((item) => (
+            <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
+          ))}
+        </NavSection>
+
+        {growthItems.length > 0 && (
+          <NavSection label="Croissance">
+            {growthItems.map((item) => (
+              <NavLink key={item.key} item={item} active={isActive(item.href)} onNavigate={closeOnNavigate} />
+            ))}
+          </NavSection>
+        )}
 
         {/* Aujourd'hui */}
         {recentItems.length > 0 && (

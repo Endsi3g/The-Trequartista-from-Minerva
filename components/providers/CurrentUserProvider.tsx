@@ -49,7 +49,7 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
       email: user.email || '',
       avatarUrl:
         profile?.avatar_url ||
-        `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName || user.email || 'MV')}&backgroundColor=1E4B33&fontColor=ffffff`,
+        `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName || user.email || 'MV')}&backgroundColor=059669&fontColor=ffffff`,
       role: profile?.role || 'member',
       loading: false,
     });

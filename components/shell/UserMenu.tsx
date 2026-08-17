@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, User, Settings2, CreditCard, Users, Zap, LogOut, Sparkles } from 'lucide-react';
+import { ChevronDown, User, Settings2, CreditCard, Users, Zap, LogOut, Sparkles, ShieldCheck, Bell, HelpCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import {
@@ -14,6 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+
+import { UserAvatar } from '@/components/ui/user-avatar';
 
 interface UserMenuProps {
   collapsed?: boolean;
@@ -36,11 +38,11 @@ export function UserMenu({ collapsed = false, onNavigate, align = 'start', varia
   };
 
   const avatar = (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <UserAvatar
       src={avatarUrl}
-      alt={fullName || email}
-      className="h-7 w-7 shrink-0 rounded-full object-cover border border-mv-border"
+      name={fullName}
+      email={email}
+      size="sm"
     />
   );
 
@@ -161,7 +163,7 @@ function MenuBody({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 350, damping: 40 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 1 }}
             className="overflow-hidden"
           >
             <DropdownMenuItem asChild onClick={onNavigate}>
@@ -170,11 +172,31 @@ function MenuBody({
                 <span>Intégrations</span>
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem asChild onClick={onNavigate}>
+              <Link href="/settings/notifications" className="flex items-center gap-2.5 pl-6">
+                <Bell size={14} className="shrink-0" />
+                <span>Notifications</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild onClick={onNavigate}>
+              <Link href="/help" className="flex items-center gap-2.5 pl-6">
+                <HelpCircle size={14} className="shrink-0" />
+                <span>Aide</span>
+              </Link>
+            </DropdownMenuItem>
             {role === 'admin' && (
               <DropdownMenuItem asChild onClick={onNavigate}>
                 <Link href="/settings/billing" className="flex items-center gap-2.5 pl-6">
                   <CreditCard size={14} className="shrink-0" />
                   <span>Facturation</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
+            {role === 'admin' && (
+              <DropdownMenuItem asChild onClick={onNavigate}>
+                <Link href="/settings/permissions" className="flex items-center gap-2.5 pl-6">
+                  <ShieldCheck size={14} className="shrink-0" />
+                  <span>Permissions</span>
                 </Link>
               </DropdownMenuItem>
             )}

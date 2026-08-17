@@ -5,9 +5,10 @@ import { Search, Bell, X } from 'lucide-react';
 import Link from 'next/link';
 import { SearchDialog } from './SearchDialog';
 import { NewMenu } from './NewMenu';
-import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
+import { TeamPresence } from './TeamPresence';
 import { enablePushNotifications } from '@/lib/push-client';
+import { fetchProjects, fetchClientPaymentLinks } from '@/lib/services/supabase-data';
 
 type Alert = {
   id: string;
@@ -17,6 +18,46 @@ type Alert = {
   url: string;
   created_at: string;
 };
+
+// Computed live -- not persisted in `alerts` (that table exists behind a
+// pending migration; see CLAUDE.md Pending migrations). Deriving these
+// directly from projects/payment links means the bell shows something real
+// today instead of waiting on a deploy, and never needs a background job to
+// keep an alert row's "resolved" state in sync with reality.
+async function computeLiveAlerts(): Promise<Alert[]> {
+  const [projects, paymentLinks] = await Promise.all([fetchProjects(), fetchClientPaymentLinks()]);
+  const now = new Date();
+  const live: Alert[] = [];
+
+  for (const p of projects) {
+    const isPastDue = p.due_date && new Date(p.due_date) < now;
+    if (p.health === 'Needs Review' || isPastDue) {
+      live.push({
+        id: `live-project-${p.id}`,
+        title: isPastDue ? 'Projet en retard' : 'Projet à surveiller',
+        description: p.name,
+        severity: isPastDue ? 'critical' : 'warning',
+        url: `/projects/${p.id}/roadmap`,
+        created_at: p.due_date || now.toISOString(),
+      });
+    }
+  }
+
+  for (const link of paymentLinks) {
+    if (link.status === 'expired') {
+      live.push({
+        id: `live-payment-${link.id}`,
+        title: 'Lien de paiement expiré',
+        description: link.client_name || 'Client',
+        severity: 'warning',
+        url: '/settings/billing',
+        created_at: now.toISOString(),
+      });
+    }
+  }
+
+  return live;
+}
 
 export function TopbarActions() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -32,6 +73,8 @@ export function TopbarActions() {
 
   useEffect(() => {
     (async () => {
+      const live = await computeLiveAlerts().catch(() => []);
+      let persisted: Alert[] = [];
       try {
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
@@ -41,10 +84,14 @@ export function TopbarActions() {
           .eq('resolved', false)
           .order('created_at', { ascending: false })
           .limit(10);
-        if (data) setAlerts(data as Alert[]);
+        if (data) persisted = data as Alert[];
       } catch {
-        setAlerts([]);
+        // `alerts` table is behind a pending migration -- live-computed
+        // alerts above still work regardless.
       }
+      setAlerts(
+        [...persisted, ...live].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10)
+      );
     })();
   }, []);
 
@@ -100,7 +147,7 @@ export function TopbarActions() {
       </button>
 
       <NewMenu />
-      <ThemeToggle />
+      <TeamPresence />
 
       <div className="relative">
         <button

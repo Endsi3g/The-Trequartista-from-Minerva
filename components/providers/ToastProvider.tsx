@@ -74,13 +74,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     >
       {children}
 
-      {/* Floating Animated Toast Container — aria-live so screen readers announce new toasts */}
+      {/* Floating toast container -- compact/discreet by design (Q36): a
+          thin single-line-first pill rather than a full card, small icon,
+          no heavy shadow. aria-live so screen readers announce new toasts. */}
       <div
         role="region"
         aria-label="Notifications"
         aria-live="polite"
         aria-atomic="false"
-        className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"
+        className="fixed bottom-4 right-4 z-50 flex flex-col gap-1.5 max-w-[300px] w-full pointer-events-none px-4 sm:px-0"
       >
         {toasts.map((t) => {
           const isSuccess = t.variant === 'success';
@@ -90,34 +92,32 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           return (
             <div
               key={t.id}
-              className={`pointer-events-auto p-3.5 rounded-2xl border shadow-mv-lg flex items-start justify-between gap-3 animate-mv-scale-in transition-all ${
+              className={`pointer-events-auto py-2 pl-2.5 pr-2 rounded-lg border shadow-mv-md flex items-start gap-2 animate-mv-scale-in transition-all bg-mv-surface ${
                 isSuccess
-                  ? 'bg-mv-surface border-mv-green/40 text-mv-ink'
+                  ? 'border-mv-green/30'
                   : isError
-                  ? 'bg-mv-surface border-mv-coral/40 text-mv-ink'
+                  ? 'border-mv-red/30'
                   : isWarning
-                  ? 'bg-mv-surface border-mv-amber/40 text-mv-ink'
-                  : 'bg-mv-surface border-mv-border text-mv-ink'
+                  ? 'border-mv-amber/30'
+                  : 'border-mv-border'
               }`}
             >
-              <div className="flex items-start gap-2.5">
-                {isSuccess && <CheckCircle2 className="w-5 h-5 text-mv-green shrink-0 mt-0.5" />}
-                {isError && <AlertCircle className="w-5 h-5 text-mv-coral shrink-0 mt-0.5" />}
-                {isWarning && <AlertTriangle className="w-5 h-5 text-mv-amber shrink-0 mt-0.5" />}
-                {!isSuccess && !isError && !isWarning && <Info className="w-5 h-5 text-mv-green shrink-0 mt-0.5" />}
+              {isSuccess && <CheckCircle2 className="w-3.5 h-3.5 text-mv-green shrink-0 mt-0.5" />}
+              {isError && <AlertCircle className="w-3.5 h-3.5 text-mv-red shrink-0 mt-0.5" />}
+              {isWarning && <AlertTriangle className="w-3.5 h-3.5 text-mv-amber shrink-0 mt-0.5" />}
+              {!isSuccess && !isError && !isWarning && <Info className="w-3.5 h-3.5 text-mv-green shrink-0 mt-0.5" />}
 
-                <div className="space-y-0.5">
-                  <h4 className="text-xs font-extrabold text-mv-ink leading-tight">{t.title}</h4>
-                  {t.description && <p className="text-[11px] text-mv-ink-soft leading-normal">{t.description}</p>}
-                </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-[11px] font-bold text-mv-ink leading-tight">{t.title}</h4>
+                {t.description && <p className="text-[10px] text-mv-ink-soft leading-snug mt-0.5">{t.description}</p>}
               </div>
 
               <button
                 onClick={() => removeToast(t.id)}
                 aria-label={`Fermer la notification : ${t.title}`}
-                className="p-1 rounded-lg text-mv-ink-soft hover:text-mv-ink hover:bg-mv-cream cursor-pointer"
+                className="p-0.5 rounded text-mv-ink-faint hover:text-mv-ink hover:bg-mv-cream-soft cursor-pointer shrink-0"
               >
-                <X className="w-3.5 h-3.5" aria-hidden="true" />
+                <X className="w-3 h-3" aria-hidden="true" />
               </button>
             </div>
           );

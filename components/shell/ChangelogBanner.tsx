@@ -2,15 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { X, Sparkles } from 'lucide-react';
+import { X, ArrowRight, Sparkles } from 'lucide-react';
 import { useLatestChangelogEntry } from '@/hooks/use-latest-changelog-entry';
 
 const STORAGE_KEY = 'mv-changelog-banner-dismissed-id';
 
-// Full-bleed strip above the sidebar/topbar announcing the latest shipped
-// changelog entry -- dismissal is remembered per entry id (localStorage),
-// so a NEW entry always re-shows the banner even if a previous one was
-// dismissed.
 export function ChangelogBanner() {
   const entry = useLatestChangelogEntry();
   const [dismissedId, setDismissedId] = useState<string | null>(null);
@@ -29,24 +25,32 @@ export function ChangelogBanner() {
   };
 
   return (
-    <div className="flex items-center justify-center gap-2 px-4 py-2 bg-mv-green text-white text-xs sm:text-sm relative">
-      <Sparkles className="w-3.5 h-3.5 shrink-0" />
-      <span className="text-center">
-        <strong className="font-bold">{entry.version ? `Version ${entry.version}` : entry.title} disponible !</strong>{' '}
-        <span className="opacity-90">
-          {entry.version && `${entry.title} — `}Consultez les notes complètes{' '}
-          <Link href="/changelog" className="underline underline-offset-2 font-semibold">
-            ici
-          </Link>
-          .
+    <div className="flex items-center justify-center gap-2.5 px-4 py-2 bg-[#059669] text-white text-xs relative z-50 border-b border-mv-green-dark">
+      <div className="flex items-center gap-2 flex-wrap justify-center pr-6">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/30 text-white text-[11px] font-bold shrink-0">
+          <Sparkles className="w-3 h-3 text-[#dfff5f]" />
+          {entry.version ? `v${entry.version}` : 'Nouveauté'}
         </span>
-      </span>
+
+        <span className="font-semibold text-white/95 truncate max-w-md sm:max-w-xl">
+          {entry.title}
+        </span>
+
+        <Link
+          href="/changelog"
+          className="inline-flex items-center gap-1 text-[#dfff5f] hover:underline font-bold text-xs shrink-0"
+        >
+          <span>Lire la suite</span>
+          <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
+
       <button
         onClick={handleDismiss}
-        aria-label="Fermer"
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white transition-colors cursor-pointer"
+        aria-label="Fermer la bannière"
+        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-white/70 hover:text-white hover:bg-black/20 transition-all cursor-pointer"
       >
-        <X className="w-4 h-4" />
+        <X className="w-3.5 h-3.5" />
       </button>
     </div>
   );
