@@ -11,11 +11,26 @@ import {
   Calendar,
   Kanban as KanbanIcon,
   Film,
+  Sparkles,
+  Link2,
+  ExternalLink,
+  Check,
+  Trash2,
+  Clock,
 } from 'lucide-react';
-import { ContentPost } from '@/lib/types';
+import { ContentPost, MinervaContentItem, MinervaContentCategory } from '@/lib/types';
 import { DonutChart } from '@/components/charts/DonutChart';
-import { fetchContentPosts, updateContentPost } from '@/lib/services/supabase-data';
+import {
+  fetchContentPosts,
+  updateContentPost,
+  fetchMinervaContentItems,
+  fetchMinervaContentCategories,
+  updateMinervaContentItem,
+  deleteMinervaContentItem,
+} from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
+import { cn } from '@/lib/utils';
 
 const KANBAN_STAGES: ContentPost['status'][] = ['Idéation', 'Rédigé', 'Enregistré', 'Publié'];
 const PLATFORM_COLORS: Record<string, string> = {
@@ -61,8 +76,9 @@ function ContentCard({ post, onDragStart }: { post: ContentPost; onDragStart?: (
 }
 
 export default function ContentPlannerPage() {
-  const { toastError } = useToast();
-  const [viewMode, setViewMode] = useState<'calendar' | 'kanban' | 'storage'>('calendar');
+  const { toastError, toastSuccess } = useToast();
+  const confirm = useConfirm();
+  const [viewMode, setViewMode] = useState<'calendar' | 'kanban' | 'storage' | 'minerva'>('calendar');
   const [posts, setPosts] = useState<ContentPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [draggedPostId, setDraggedPostId] = useState<string | null>(null);
@@ -72,12 +88,87 @@ export default function ContentPlannerPage() {
     return { year: now.getFullYear(), month: now.getMonth() };
   });
 
+  const [minervaItems, setMinervaItems] = useState<MinervaContentItem[]>([]);
+  const [minervaCategories, setMinervaCategories] = useState<MinervaContentCategory[]>([]);
+  const [loadingMinerva, setLoadingMinerva] = useState(true);
+  const [minervaSubView, setMinervaSubView] = useState<'calendar' | 'banque'>('calendar');
+  const [minervaKindFilter, setMinervaKindFilter] = useState<'all' | 'inspiration' | 'own_video'>('all');
+  const [minervaCategoryFilter, setMinervaCategoryFilter] = useState<string | null>(null);
+  const [minervaCalendarMonth, setMinervaCalendarMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+
   useEffect(() => {
     (async () => {
       setPosts(await fetchContentPosts());
       setLoading(false);
     })();
+    (async () => {
+      const [items, categories] = await Promise.all([fetchMinervaContentItems(), fetchMinervaContentCategories()]);
+      setMinervaItems(items);
+      setMinervaCategories(categories);
+      setLoadingMinerva(false);
+    })();
   }, []);
+
+  const handleTogglePosted = async (item: MinervaContentItem) => {
+    const previous = minervaItems;
+    setMinervaItems(minervaItems.map((i) => (i.id === item.id ? { ...i, posted: !i.posted } : i)));
+    const success = await updateMinervaContentItem(item.id, { posted: !item.posted });
+    if (!success) {
+      setMinervaItems(previous);
+      toastError('Erreur', "Impossible de mettre à jour le statut de publication.");
+    }
+  };
+
+  const handleDeleteMinervaItem = async (item: MinervaContentItem) => {
+    const ok = await confirm({
+      title: 'Supprimer cet élément ?',
+      message: `« ${item.title} » sera retiré définitivement de la banque de contenu Minerva.`,
+      confirmLabel: 'Supprimer',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    const previous = minervaItems;
+    setMinervaItems(minervaItems.filter((i) => i.id !== item.id));
+    const success = await deleteMinervaContentItem(item.id);
+    if (!success) {
+      setMinervaItems(previous);
+      toastError('Erreur', "Impossible de supprimer cet élément.");
+    } else {
+      toastSuccess('Supprimé', item.title);
+    }
+  };
+
+  const minervaFilteredItems = useMemo(() => {
+    return minervaItems.filter((i) => {
+      const matchesKind = minervaKindFilter === 'all' || i.kind === minervaKindFilter;
+      const matchesCategory = !minervaCategoryFilter || i.category_id === minervaCategoryFilter;
+      return matchesKind && matchesCategory;
+    });
+  }, [minervaItems, minervaKindFilter, minervaCategoryFilter]);
+
+  const minervaCalendarDays = useMemo(() => {
+    const { year, month } = minervaCalendarMonth;
+    const firstOfMonth = new Date(year, month, 1);
+    const startOffset = (firstOfMonth.getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const scheduled = minervaItems.filter((i) => i.kind === 'own_video' && i.scheduled_date);
+    const days: { date: Date | null; items: MinervaContentItem[] }[] = [];
+    for (let i = 0; i < startOffset; i++) days.push({ date: null, items: [] });
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month, d);
+      const dateStr = date.toISOString().split('T')[0];
+      days.push({ date, items: scheduled.filter((i) => i.scheduled_date?.split('T')[0] === dateStr) });
+    }
+    return days;
+  }, [minervaCalendarMonth, minervaItems]);
+
+  const minervaMonthLabel = new Date(minervaCalendarMonth.year, minervaCalendarMonth.month, 1).toLocaleDateString('fr-CA', {
+    month: 'long',
+    year: 'numeric',
+  });
 
   const handleDragStart = (e: React.DragEvent, postId: string) => {
     setDraggedPostId(postId);
@@ -180,17 +271,27 @@ export default function ContentPlannerPage() {
               <span className="hidden lg:inline">Bibliothèque Médias</span>
               <span className="hidden sm:inline lg:hidden">Médias</span>
             </button>
+            <button
+              onClick={() => setViewMode('minerva')}
+              title="Contenu Minerva"
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
+                viewMode === 'minerva' ? 'bg-mv-green text-white shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Contenu Minerva</span>
+            </button>
           </div>
 
-          <Link href="/content-planner/new">
+          <Link href={viewMode === 'minerva' ? '/content-planner/minerva/new' : '/content-planner/new'}>
             <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
-              + Planifier un Reel
+              {viewMode === 'minerva' ? '+ Ajouter' : '+ Planifier un Reel'}
             </Button>
           </Link>
         </div>
       </div>
 
-      {!loading && platformDistribution.length > 0 && (
+      {!loading && viewMode !== 'minerva' && platformDistribution.length > 0 && (
         <DonutChart
           title="Répartition des Contenus par Plateforme"
           subtitle="Distribution réelle de votre stratégie de publication"
@@ -202,7 +303,250 @@ export default function ContentPlannerPage() {
         <StorageBrowser defaultBucket="client-assets" title="Bibliothèque Vidéos & Assets" />
       )}
 
-      {loading ? (
+      {viewMode === 'minerva' && (
+        <div className="space-y-6">
+          <p className="text-sm text-mv-ink-soft -mt-2">
+            Le contenu propre à Minerva — nos vidéos à poster et notre banque d'inspirations — distinct du contenu client ci-dessus.
+          </p>
+
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center bg-mv-cream-soft border border-mv-border rounded-xl p-1 text-xs">
+              <button
+                onClick={() => setMinervaSubView('calendar')}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
+                  minervaSubView === 'calendar' ? 'bg-mv-green text-white shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5 shrink-0" /> Calendrier partagé
+              </button>
+              <button
+                onClick={() => setMinervaSubView('banque')}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold cursor-pointer ${
+                  minervaSubView === 'banque' ? 'bg-mv-green text-white shadow-mv-sm' : 'text-mv-ink-soft hover:text-mv-ink'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 shrink-0" /> Banque d'inspirations
+              </button>
+            </div>
+          </div>
+
+          {loadingMinerva ? (
+            <div className="text-center py-16 text-sm text-mv-ink-soft">Chargement…</div>
+          ) : minervaSubView === 'calendar' ? (
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider flex items-center gap-2 capitalize">
+                  <Calendar className="w-4 h-4 text-mv-green" />
+                  {minervaMonthLabel}
+                </h3>
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <button
+                    onClick={() =>
+                      setMinervaCalendarMonth((m) => (m.month === 0 ? { year: m.year - 1, month: 11 } : { year: m.year, month: m.month - 1 }))
+                    }
+                    className="px-2.5 py-1 rounded-lg border border-mv-border hover:bg-mv-cream-soft cursor-pointer"
+                  >
+                    ←
+                  </button>
+                  <button
+                    onClick={() =>
+                      setMinervaCalendarMonth((m) => (m.month === 11 ? { year: m.year + 1, month: 0 } : { year: m.year, month: m.month + 1 }))
+                    }
+                    className="px-2.5 py-1 rounded-lg border border-mv-border hover:bg-mv-cream-soft cursor-pointer"
+                  >
+                    →
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
+                <div className="min-w-[480px] max-w-[720px]">
+                  <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-bold text-mv-ink-soft mb-1.5">
+                    {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((d) => (
+                      <div key={d}>{d}</div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {minervaCalendarDays.map((day, i) =>
+                      day.date === null ? (
+                        <div key={i} className="min-h-[64px]" />
+                      ) : (
+                        <div
+                          key={i}
+                          className="min-h-[64px] max-h-[92px] p-1.5 bg-mv-cream-soft border border-mv-border rounded-lg flex flex-col gap-1 overflow-hidden"
+                        >
+                          <span className="font-bold text-[10px] text-mv-ink-faint text-right shrink-0">{day.date.getDate()}</span>
+                          <div className="space-y-0.5 overflow-y-auto flex-1">
+                            {day.items.map((i) => (
+                              <div
+                                key={i.id}
+                                title={i.title}
+                                className={cn(
+                                  'block px-1 py-0.5 rounded text-[9px] font-bold truncate border',
+                                  i.posted
+                                    ? 'bg-mv-cream-soft text-mv-ink-faint border-mv-border line-through'
+                                    : 'bg-mv-green/10 border-mv-green/30 text-mv-green'
+                                )}
+                              >
+                                {i.title}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {minervaItems.filter((i) => i.kind === 'own_video' && !i.scheduled_date).length === 0 &&
+                minervaItems.filter((i) => i.kind === 'own_video').length === 0 && (
+                  <p className="text-xs text-mv-ink-faint text-center py-6">
+                    Aucune vidéo Minerva planifiée pour le moment.
+                  </p>
+                )}
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1">
+                {([
+                  { key: 'all', label: 'Tout' },
+                  { key: 'inspiration', label: 'Inspirations' },
+                  { key: 'own_video', label: 'Vidéos Minerva' },
+                ] as const).map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setMinervaKindFilter(f.key)}
+                    className={cn(
+                      'shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border',
+                      minervaKindFilter === f.key
+                        ? 'bg-mv-green text-white border-mv-green shadow-mv-sm'
+                        : 'bg-mv-cream-soft text-mv-ink-soft border-mv-border hover:border-mv-green/40 hover:text-mv-ink'
+                    )}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+                <div className="w-px h-4 bg-mv-border mx-1 shrink-0" />
+                <button
+                  onClick={() => setMinervaCategoryFilter(null)}
+                  className={cn(
+                    'shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border',
+                    !minervaCategoryFilter
+                      ? 'bg-mv-ink text-white border-mv-ink'
+                      : 'bg-mv-cream-soft text-mv-ink-soft border-mv-border hover:text-mv-ink'
+                  )}
+                >
+                  Toutes catégories
+                </button>
+                {minervaCategories.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setMinervaCategoryFilter(c.id)}
+                    className={cn(
+                      'shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border whitespace-nowrap',
+                      minervaCategoryFilter === c.id
+                        ? 'bg-mv-ink text-white border-mv-ink'
+                        : 'bg-mv-cream-soft text-mv-ink-soft border-mv-border hover:text-mv-ink'
+                    )}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+
+              {minervaFilteredItems.length === 0 ? (
+                <Card className="text-center py-16">
+                  <Sparkles className="w-8 h-8 text-mv-ink-faint mx-auto mb-3" />
+                  <p className="text-sm text-mv-ink-soft">
+                    {minervaItems.length === 0
+                      ? "Aucune inspiration ni vidéo Minerva pour le moment — ajoutez la première."
+                      : 'Rien ne correspond à ce filtre.'}
+                  </p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {minervaFilteredItems.map((item) => (
+                    <Card key={item.id} className="flex flex-col justify-between shadow-mv-sm">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <Badge variant={item.kind === 'inspiration' ? 'purple' : 'green'}>
+                            {item.kind === 'inspiration' ? 'Inspiration' : 'Vidéo Minerva'}
+                          </Badge>
+                          {item.category_name && <Badge variant="neutral">{item.category_name}</Badge>}
+                        </div>
+
+                        <h3 className="font-extrabold text-sm text-mv-ink leading-snug">{item.title}</h3>
+
+                        {item.kind === 'inspiration' ? (
+                          <>
+                            {item.note && <p className="text-xs text-mv-ink-soft leading-relaxed line-clamp-3">{item.note}</p>}
+                            {item.external_url && (
+                              <a
+                                href={item.external_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs font-bold text-mv-green hover:underline flex items-center gap-1"
+                              >
+                                <Link2 className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">Voir la référence</span>
+                                <ExternalLink className="w-3 h-3 shrink-0" />
+                              </a>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            {item.file_url && (
+                              <div className="relative aspect-video rounded-xl overflow-hidden bg-black flex items-center justify-center border border-mv-border">
+                                <Film className="w-8 h-8 text-mv-warm" />
+                              </div>
+                            )}
+                            {item.scheduled_date && (
+                              <div className="text-[11px] font-mono text-mv-ink-soft flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" />
+                                {new Date(item.scheduled_date).toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              </div>
+                            )}
+                            {item.assignee_name && (
+                              <div className="text-[11px] text-mv-ink-faint">Assigné à {item.assignee_name}</div>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      <div className="mt-6 pt-4 border-t border-mv-border flex items-center justify-between text-xs">
+                        {item.kind === 'own_video' ? (
+                          <button
+                            onClick={() => handleTogglePosted(item)}
+                            className={cn(
+                              'font-bold flex items-center gap-1 cursor-pointer',
+                              item.posted ? 'text-mv-ink-faint' : 'text-mv-green hover:underline'
+                            )}
+                          >
+                            <Check className="w-3.5 h-3.5" /> {item.posted ? 'Publié' : 'Marquer publié'}
+                          </button>
+                        ) : (
+                          <span />
+                        )}
+                        <button
+                          onClick={() => handleDeleteMinervaItem(item)}
+                          className="text-mv-ink-faint hover:text-mv-red transition-colors cursor-pointer"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {viewMode !== 'minerva' && (loading ? (
         <div className="text-center py-16 text-sm text-mv-ink-soft">Chargement…</div>
       ) : (
         <>
@@ -314,7 +658,7 @@ export default function ContentPlannerPage() {
             </Card>
           )}
         </>
-      )}
+      ))}
 
     </div>
   );

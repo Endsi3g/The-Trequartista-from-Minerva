@@ -2,43 +2,80 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Users,
   Target,
   AlertTriangle,
-  Plus,
   PhoneCall,
   ArrowRight,
 } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Cell,
-} from 'recharts';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { fetchClients, fetchLeads, fetchProjects, fetchVoiceCalls } from '@/lib/services/supabase-data';
 import type { Client, Lead, Project, VoiceCall } from '@/lib/types';
-import { DotBarShape } from '@/components/charts/DotBarShape';
-import { FunnelChart, type FunnelStage } from '@/components/charts/FunnelChart';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
 
-const STAGE_ORDER: { key: string; label: string; color: string }[] = [
-  { key: 'nouveau', label: 'Nouveau', color: '#2563EB' },
-  { key: 'qualification', label: 'Qualification', color: '#7c3aed' },
-  { key: 'proposition', label: 'Proposition', color: '#D97706' },
-  { key: 'negociation', label: 'Négociation', color: '#059669' },
-  { key: 'gagne', label: 'Gagné', color: '#047857' },
-];
+// --- Design-prototype note -----------------------------------------------
+// This page is a deliberate, ISOLATED break from the rest of the app's
+// design system (Playfair Display, warm cream, 5-color badge palette) --
+// a Linear/Superhuman-style density pass, scoped to Overview only per an
+// explicit product decision. No shared tokens (tailwind.config.js,
+// globals.css, CLAUDE.md) were touched, so every other page keeps the
+// current look until/unless this direction is validated and propagated
+// on purpose. `MONO` bypasses the app's tailwind `font-mono` -> Inter
+// alias (a known quirk, see CLAUDE.md's Typography section) to get real
+// monospaced tabular figures from the already-loaded JetBrains Mono
+// variable.
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
+const HAIRLINE = 'border-black/[0.08]';
 
-const GREEN_SHADES = ['#059669', '#3d7a5a', '#6ba585', '#a8c9b8', '#c0cdc6'];
+const STAGE_ORDER: { key: string; label: string }[] = [
+  { key: 'nouveau', label: 'Nouveau' },
+  { key: 'qualification', label: 'Qualification' },
+  { key: 'proposition', label: 'Proposition' },
+  { key: 'negociation', label: 'Négociation' },
+  { key: 'gagne', label: 'Gagné' },
+];
 
 function moneyFmt(n: number) {
   return `${Math.round(n).toLocaleString('fr-CA')} $`;
+}
+
+// Two-key sequences (Linear-style "G then X"), scoped to this page only --
+// ignored while focus is in a text field, and cleared if the second key
+// doesn't land within 800ms.
+const SHORTCUTS: { keys: string; href: string }[] = [
+  { keys: 'gc', href: '/clients' },
+  { keys: 'gl', href: '/leads' },
+  { keys: 'gp', href: '/projects' },
+  { keys: 'gv', href: '/voice-agent' },
+];
+
+function useSequenceShortcuts() {
+  const router = useRouter();
+  useEffect(() => {
+    let buffer = '';
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      buffer = (buffer + e.key.toLowerCase()).slice(-2);
+      clearTimeout(timer);
+      timer = setTimeout(() => { buffer = ''; }, 800);
+      const match = SHORTCUTS.find((s) => s.keys === buffer);
+      if (match) {
+        buffer = '';
+        router.push(match.href);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => {
+      window.removeEventListener('keydown', handler);
+      clearTimeout(timer);
+    };
+  }, [router]);
 }
 
 export default function OverviewPage() {
@@ -47,20 +84,13 @@ export default function OverviewPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [voiceCalls, setVoiceCalls] = useState<VoiceCall[]>([]);
   const [loading, setLoading] = useState(true);
-  const [firstName, setFirstName] = useState('');
+
+  useSequenceShortcuts();
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        const { createClient } = await import('@/lib/supabase/client');
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const rawName = user.user_metadata?.full_name || user.email?.split('@')[0] || '';
-          const first = rawName.split(/[\s._-]/)[0] || '';
-          setFirstName(first.charAt(0).toUpperCase() + first.slice(1));
-        }
         const [cData, lData, pData, vData] = await Promise.all([
           fetchClients(),
           fetchLeads(),
@@ -78,12 +108,6 @@ export default function OverviewPage() {
   }, []);
 
   const todayDateStr = new Date().toLocaleDateString('fr-CA', { weekday: 'long', month: 'long', day: 'numeric' });
-  const getGreetingPrefix = () => {
-    const hour = new Date().getHours();
-    if (hour >= 4 && hour < 12) return 'Bon matin';
-    if (hour >= 12 && hour < 18) return 'Bon après-midi';
-    return 'Bonsoir';
-  };
 
   const activeClients = clients.filter((c) => c.status === 'Active');
   const totalMrr = activeClients.reduce((sum, c) => sum + (c.mrr || 0), 0);
@@ -97,193 +121,223 @@ export default function OverviewPage() {
   const last7dCalls = voiceCalls.filter((c) => Date.now() - new Date(c.created_at).getTime() < 7 * 24 * 60 * 60 * 1000);
   const callMinutes = Math.round(last7dCalls.reduce((acc, c) => acc + (c.duration_seconds || 0), 0) / 60);
 
-  const leadFunnelStages: FunnelStage[] = STAGE_ORDER.map(({ key, label, color }) => ({
+  const leadFunnelStages = STAGE_ORDER.map(({ key, label }) => ({
     label,
-    color,
     count: leads.filter((l) => (l.stage || 'nouveau') === key).length,
   }));
+  const maxStageCount = Math.max(...leadFunnelStages.map((s) => s.count), 1);
 
   const topClientsByMrr = [...activeClients]
     .sort((a, b) => (b.mrr || 0) - (a.mrr || 0))
     .slice(0, 6)
     .map((c) => ({ name: c.name, mrr: c.mrr || 0 }));
+  const maxClientMrr = topClientsByMrr[0]?.mrr || 1;
 
   const recentProjects = [...projects]
     .sort((a, b) => (a.due_date && b.due_date ? new Date(a.due_date).getTime() - new Date(b.due_date).getTime() : 0))
-    .slice(0, 5);
+    .slice(0, 6);
+
+  const metrics = [
+    {
+      key: 'clients',
+      href: '/clients',
+      shortcut: 'G C',
+      label: 'Clients actifs',
+      icon: Users,
+      value: activeClients.length,
+      sublabel: `${moneyFmt(totalMrr)} MRR total`,
+    },
+    {
+      key: 'leads',
+      href: '/leads',
+      shortcut: 'G L',
+      label: 'Leads actifs',
+      icon: Target,
+      value: activeLeads.length,
+      sublabel: 'en cours de qualification',
+    },
+    {
+      key: 'projects',
+      href: '/projects',
+      shortcut: 'G P',
+      label: 'Projets en retard',
+      icon: AlertTriangle,
+      value: lateProjects.length,
+      sublabel: lateProjects.length === 0 ? 'Tout est à jour' : 'à surveiller',
+      alert: lateProjects.length > 0,
+    },
+    {
+      key: 'calls',
+      href: '/voice-agent',
+      shortcut: 'G V',
+      label: 'Appels IA (7j)',
+      icon: PhoneCall,
+      value: last7dCalls.length,
+      sublabel: `${callMinutes} min au total`,
+    },
+  ];
 
   return (
-    <PageFadeIn className="space-y-8 max-w-7xl mx-auto pb-12">
-      {/* ── Greeting ── */}
-      <div className="space-y-1">
-        <p className="text-sm font-semibold text-mv-ink-soft capitalize">{todayDateStr}</p>
-        <h1 className="text-3xl lg:text-4xl font-extrabold text-mv-ink tracking-tight font-display">
-          {getGreetingPrefix()}{firstName ? `, ${firstName}` : ''}.
-        </h1>
+    <PageFadeIn className="space-y-6 max-w-7xl mx-auto pb-12">
+      {/* Context bar -- replaces the old giant greeting with one line of
+          real, actionable numbers pulled from the same data as the rest
+          of the page. */}
+      <div className="flex items-center justify-between flex-wrap gap-x-4 gap-y-1">
+        <span className="text-sm font-medium text-mv-ink capitalize">{todayDateStr}</span>
+        {!loading && (
+          <span className="text-[13px] text-mv-ink-faint" style={MONO}>
+            {activeLeads.length} lead{activeLeads.length !== 1 ? 's' : ''} actif{activeLeads.length !== 1 ? 's' : ''}
+            {' · '}
+            {lateProjects.length} projet{lateProjects.length !== 1 ? 's' : ''} en retard
+            {' · '}
+            {last7dCalls.length} appel{last7dCalls.length !== 1 ? 's' : ''} IA (7j)
+          </span>
+        )}
       </div>
 
-      {/* ── KPI row ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link
-          href="/clients"
-          className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green/40 hover:shadow-mv-md transition-all"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-mv-ink-soft uppercase tracking-wider">Clients actifs</span>
-            <div className="w-8 h-8 rounded-lg bg-mv-green-tint text-mv-green flex items-center justify-center shrink-0">
-              <Users className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">
-            {loading ? '…' : <AnimatedNumber value={activeClients.length} />}
-          </div>
-          <div className="text-xs text-mv-ink-faint mt-1 font-mono">{loading ? '' : `${moneyFmt(totalMrr)} MRR total`}</div>
-        </Link>
-
-        <Link
-          href="/leads"
-          className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green/40 hover:shadow-mv-md transition-all"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-mv-ink-soft uppercase tracking-wider">Leads actifs</span>
-            <div className="w-8 h-8 rounded-lg bg-mv-green-tint text-mv-green flex items-center justify-center shrink-0">
-              <Target className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">
-            {loading ? '…' : <AnimatedNumber value={activeLeads.length} />}
-          </div>
-          <div className="text-xs text-mv-ink-faint mt-1">{loading ? '' : 'en cours de qualification'}</div>
-        </Link>
-
-        <Link
-          href="/projects"
-          className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-red/40 hover:shadow-mv-md transition-all"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-mv-ink-soft uppercase tracking-wider">Projets en retard</span>
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${lateProjects.length > 0 ? 'bg-mv-red-bg text-mv-red' : 'bg-mv-cream-soft text-mv-ink-faint'}`}>
-              <AlertTriangle className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">
-            {loading ? '…' : <AnimatedNumber value={lateProjects.length} />}
-          </div>
-          <div className="text-xs text-mv-ink-faint mt-1">{loading ? '' : lateProjects.length === 0 ? 'Tout est à jour' : 'à surveiller'}</div>
-        </Link>
-
-        <Link
-          href="/voice-agent"
-          className="bg-mv-surface border border-mv-border rounded-2xl p-5 hover:border-mv-green/40 hover:shadow-mv-md transition-all"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-mv-ink-soft uppercase tracking-wider">Appels IA (7j)</span>
-            <div className="w-8 h-8 rounded-lg bg-mv-green-tint text-mv-green flex items-center justify-center shrink-0">
-              <PhoneCall className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-extrabold text-mv-ink font-mono tabular-nums">
-            {loading ? '…' : <AnimatedNumber value={last7dCalls.length} />}
-          </div>
-          <div className="text-xs text-mv-ink-faint mt-1 font-mono">{loading ? '' : `${callMinutes} min au total`}</div>
-        </Link>
+      {/* Unified metric band */}
+      <div className={`bg-white border ${HAIRLINE} rounded-lg overflow-hidden`}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-black/[0.08]">
+          {metrics.map((m) => (
+            <Link
+              key={m.key}
+              href={m.href}
+              className="group relative px-5 py-3.5 hover:bg-black/[0.025] transition-colors"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10.5px] font-medium uppercase tracking-wider text-mv-ink-faint">{m.label}</span>
+                <kbd
+                  className="hidden md:inline-flex opacity-0 group-hover:opacity-100 items-center gap-0.5 text-[9px] font-bold text-mv-ink-faint border border-black/10 rounded px-1 py-0.5 transition-opacity"
+                  style={MONO}
+                >
+                  {m.shortcut}
+                </kbd>
+              </div>
+              <div
+                className={`text-[22px] font-semibold leading-tight ${m.alert ? 'text-mv-red' : 'text-mv-ink'}`}
+                style={MONO}
+              >
+                {loading ? '—' : <AnimatedNumber value={m.value} />}
+              </div>
+              <div className="text-[11px] text-mv-ink-faint mt-0.5" style={MONO}>{loading ? '' : m.sublabel}</div>
+            </Link>
+          ))}
+        </div>
       </div>
 
-      {/* ── Main grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 self-start bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-lg font-bold text-mv-ink font-display">Projets</h2>
-            <Link href="/projects" className="text-xs font-semibold text-mv-green hover:underline flex items-center gap-1">
+      {/* Main grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Dense project table */}
+        <div className={`lg:col-span-2 bg-white border ${HAIRLINE} rounded-lg overflow-hidden self-start`}>
+          <div className={`flex items-center justify-between px-4 py-3 border-b ${HAIRLINE}`}>
+            <h2 className="text-[13px] font-semibold text-mv-ink">Projets</h2>
+            <Link href="/projects" className="text-[11px] font-medium text-mv-green hover:underline flex items-center gap-1">
               Voir tout <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
-          <p className="text-xs text-mv-ink-faint mb-4">Les 5 prochains projets à échéance.</p>
-
           {loading ? (
             <p className="text-xs text-mv-ink-faint py-8 text-center">Chargement…</p>
           ) : recentProjects.length === 0 ? (
             <p className="text-xs text-mv-ink-faint py-8 text-center">Aucun projet pour le moment.</p>
           ) : (
-            <div className="divide-y divide-mv-border/60">
-              {recentProjects.map((p) => (
-                <div key={p.id} className="py-3.5 flex items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-mv-ink text-sm truncate">{p.name}</div>
-                    <div className="text-xs text-mv-ink-faint">{p.client_name || 'Client'} · {p.current_stage}</div>
+            <table className="w-full text-[13px] border-collapse">
+              <tbody>
+                {recentProjects.map((p) => (
+                  <tr key={p.id} className={`border-b ${HAIRLINE} last:border-0 hover:bg-black/[0.02] transition-colors`}>
+                    <td className="pl-4 pr-3 py-2.5 min-w-0 max-w-0 w-full">
+                      <div className="font-medium text-mv-ink truncate">{p.name}</div>
+                      <div className="text-[11px] text-mv-ink-faint truncate">{p.client_name || 'Client'}</div>
+                    </td>
+                    <td className="px-3 py-2.5 text-[11px] text-mv-ink-faint whitespace-nowrap hidden sm:table-cell">
+                      {p.current_stage}
+                    </td>
+                    <td className="px-3 py-2.5 w-20 hidden md:table-cell">
+                      <div className="h-1 bg-black/[0.06] rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${p.health === 'Needs Review' ? 'bg-mv-red' : 'bg-mv-green'}`}
+                          style={{ width: `${p.progress_pct || 0}%` }}
+                        />
+                      </div>
+                    </td>
+                    <td className="pl-3 pr-4 py-2.5 text-right whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-mv-ink-soft">
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${p.health === 'Needs Review' ? 'bg-mv-red' : 'bg-mv-green'}`} />
+                        {p.health}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Pipeline -- monochrome, graduated intensity instead of 5 hues */}
+        <div className={`bg-white border ${HAIRLINE} rounded-lg p-4 self-start`}>
+          <h2 className="text-[13px] font-semibold text-mv-ink mb-0.5">Pipeline des leads</h2>
+          <p className="text-[11px] text-mv-ink-faint mb-4">Répartition par étape</p>
+          {loading ? (
+            <p className="text-xs text-mv-ink-faint py-6 text-center">Chargement…</p>
+          ) : leads.length === 0 ? (
+            <p className="text-xs text-mv-ink-faint py-6 text-center">Aucun lead pour le moment.</p>
+          ) : (
+            <div className="space-y-3">
+              {leadFunnelStages.map((s, i) => (
+                <div key={s.label}>
+                  <div className="flex items-center justify-between text-[11px] mb-1">
+                    <span className="font-medium text-mv-ink">{s.label}</span>
+                    <span className="font-medium text-mv-ink-faint" style={MONO}>{s.count}</span>
                   </div>
-                  <div className="w-32 shrink-0">
-                    <div className="h-1.5 bg-mv-cream-soft rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${p.health === 'Needs Review' ? 'bg-mv-red' : 'bg-mv-green'}`}
-                        style={{ width: `${p.progress_pct || 0}%` }}
-                      />
-                    </div>
+                  <div className="h-1.5 bg-black/[0.05] rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-mv-green"
+                      style={{
+                        width: `${(s.count / maxStageCount) * 100}%`,
+                        opacity: 0.35 + (i / (leadFunnelStages.length - 1)) * 0.65,
+                      }}
+                    />
                   </div>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                      p.health === 'Needs Review' ? 'bg-mv-red-bg text-mv-red' : 'bg-mv-green-tint text-mv-green'
-                    }`}
-                  >
-                    {p.health}
-                  </span>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <Link href="/leads" className="self-start block">
-          {leads.length === 0 ? (
-            <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm h-full flex items-center justify-center">
-              <p className="text-xs text-mv-ink-faint text-center">Aucun lead pour le moment.</p>
-            </div>
-          ) : (
-            <FunnelChart
-              stages={leadFunnelStages}
-              title="Pipeline des leads"
-              subtitle="Répartition par étape, cliquez pour voir le détail."
-            />
-          )}
-        </Link>
-
-        <div className="lg:col-span-2 self-start bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm flex flex-col">
-          <h2 className="text-lg font-bold text-mv-ink font-display mb-1">Revenu récurrent (MRR)</h2>
-          <p className="text-xs text-mv-ink-faint mb-6">Top clients par MRR mensuel, en dollars canadiens.</p>
-
+        {/* MRR -- dense table with an inline distribution gauge per row
+            instead of a multicolor bar chart. */}
+        <div className={`lg:col-span-2 bg-white border ${HAIRLINE} rounded-lg overflow-hidden self-start`}>
+          <div className={`px-4 py-3 border-b ${HAIRLINE}`}>
+            <h2 className="text-[13px] font-semibold text-mv-ink">Revenu récurrent (MRR)</h2>
+            <p className="text-[11px] text-mv-ink-faint mt-0.5">Top clients, en dollars canadiens</p>
+          </div>
           {loading ? (
             <p className="text-xs text-mv-ink-faint py-8 text-center">Chargement…</p>
           ) : topClientsByMrr.length === 0 ? (
             <p className="text-xs text-mv-ink-faint py-8 text-center">Aucun client actif pour le moment.</p>
           ) : (
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topClientsByMrr} layout="vertical" barSize={26} barCategoryGap="30%" margin={{ left: 8, right: 24 }}>
-                  <XAxis type="number" hide />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={110}
-                    tick={{ fontSize: 11, fill: '#717472', fontFamily: 'var(--font-mono)' }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    formatter={(value) => [moneyFmt(Number(value)), 'MRR']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #DDD9CA', fontFamily: 'var(--font-mono)' }}
-                  />
-                  <Bar dataKey="mrr" shape={DotBarShape}>
-                    {topClientsByMrr.map((_, i) => (
-                      <Cell key={i} fill={GREEN_SHADES[i % GREEN_SHADES.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <table className="w-full text-[13px] border-collapse">
+              <tbody>
+                {topClientsByMrr.map((c) => (
+                  <tr key={c.name} className={`border-b ${HAIRLINE} last:border-0 hover:bg-black/[0.02] transition-colors`}>
+                    <td className="pl-4 pr-3 py-2.5 font-medium text-mv-ink truncate max-w-[160px]">{c.name}</td>
+                    <td className="px-3 py-2.5 w-full">
+                      <div className="h-1.5 bg-black/[0.05] rounded-full overflow-hidden">
+                        <div className="h-full bg-mv-green rounded-full" style={{ width: `${(c.mrr / maxClientMrr) * 100}%` }} />
+                      </div>
+                    </td>
+                    <td className="pl-3 pr-4 py-2.5 text-right font-medium text-mv-ink whitespace-nowrap" style={MONO}>
+                      {moneyFmt(c.mrr)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
 
-        <OnboardingChecklist />
+        <div className="self-start">
+          <OnboardingChecklist />
+        </div>
       </div>
     </PageFadeIn>
   );

@@ -51,7 +51,7 @@ export default function PortalQuestionsPage() {
         <p className="text-xs text-mv-ink-faint mt-1">Écrivez votre message ci-dessous ; votre équipe Minerva y répondra directement ici.</p>
       </div>
 
-      <Card className="flex-1 flex flex-col overflow-hidden p-0">
+      <Card className="flex-1 flex flex-col overflow-hidden" contentClassName="p-0 flex-1 flex flex-col min-h-0">
         <div className="flex-1 overflow-y-auto p-5 space-y-3">
           {loading ? (
             <p className="text-xs text-mv-ink-faint text-center py-8">Chargement…</p>
@@ -99,7 +99,7 @@ export default function PortalQuestionsPage() {
           <div ref={bottomRef} />
         </div>
 
-        <form onSubmit={handleSend} className="border-t border-mv-border p-3 flex items-center gap-2">
+        <form onSubmit={handleSend} className="border-t border-mv-border p-3 pb-4 flex items-center gap-2">
           <input
             type="text"
             value={draft}

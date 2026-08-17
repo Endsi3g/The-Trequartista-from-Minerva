@@ -83,10 +83,10 @@ export default function AcademyPage() {
         </div>
 
         {/* Category pills -- visual, scannable navigation instead of a plain select */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 -mx-1 px-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
+            className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border ${
               selectedCategory === 'all'
                 ? 'bg-mv-green text-white border-mv-green shadow-mv-sm'
                 : 'bg-mv-cream-soft text-mv-ink-soft border-mv-border hover:border-mv-green/40 hover:text-mv-ink'
@@ -99,7 +99,7 @@ export default function AcademyPage() {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border whitespace-nowrap ${
+              className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer border whitespace-nowrap ${
                 selectedCategory === cat
                   ? 'bg-mv-green text-white border-mv-green shadow-mv-sm'
                   : 'bg-mv-cream-soft text-mv-ink-soft border-mv-border hover:border-mv-green/40 hover:text-mv-ink'

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -1455,7 +1455,7 @@ export async function deleteDocument(id: string): Promise<boolean> {
 // 18. CHAT D'ÉQUIPE — canaux par projet/client
 // ----------------------------------------------------
 export async function fetchTeamChatMessages(
-  channelType: 'project' | 'client',
+  channelType: 'project' | 'client' | 'member',
   channelId: string
 ): Promise<TeamChatMessage[]> {
   return withTimeout(
@@ -1489,14 +1489,23 @@ export async function fetchTeamChatMessages(
 }
 
 export async function sendTeamChatMessage(
-  channelType: 'project' | 'client',
+  channelType: 'project' | 'client' | 'member',
   channelId: string,
   senderId: string,
-  body: string
+  body: string,
+  attachment?: TeamChatAttachment | null
 ): Promise<TeamChatMessage | null> {
   const { data, error } = await getSupabase()
     .from('team_chat_messages')
-    .insert([{ channel_type: channelType, channel_id: channelId, sender_id: senderId, body }])
+    .insert([{
+      channel_type: channelType,
+      channel_id: channelId,
+      sender_id: senderId,
+      body: body || null,
+      attachment_url: attachment?.url || null,
+      attachment_type: attachment?.type || null,
+      attachment_name: attachment?.name || null,
+    }])
     .select()
     .single();
   if (error) {
@@ -1504,4 +1513,204 @@ export async function sendTeamChatMessage(
     return null;
   }
   return data as TeamChatMessage;
+}
+
+// Resolves the single, canonical DM channel between two team members,
+// creating it on first contact. user_a/user_b are stored sorted so the
+// pair always maps to one row regardless of who messages first (see the
+// team_chat_dm_channels_ordered check in the migration).
+export async function getOrCreateDmChannel(userIdA: string, userIdB: string): Promise<string | null> {
+  const [userA, userB] = [userIdA, userIdB].sort();
+  const supabase = getSupabase();
+  const { data: existing } = await supabase
+    .from('team_chat_dm_channels')
+    .select('id')
+    .eq('user_a', userA)
+    .eq('user_b', userB)
+    .maybeSingle();
+  if (existing) return existing.id;
+
+  const { data: created, error } = await supabase
+    .from('team_chat_dm_channels')
+    .insert([{ user_a: userA, user_b: userB }])
+    .select('id')
+    .single();
+  if (error || !created) {
+    console.error('[Supabase] Error creating DM channel:', error);
+    return null;
+  }
+  return created.id;
+}
+
+export async function fetchTeamMembers(excludeUserId?: string): Promise<TeamMemberSummary[]> {
+  return withTimeout(
+    (async () => {
+      let query = getSupabase()
+        .from('profiles')
+        .select('id, full_name, email, avatar_url')
+        .eq('approved', true)
+        .in('role', ['admin', 'member'])
+        .order('full_name', { ascending: true });
+      if (excludeUserId) query = query.neq('id', excludeUserId);
+      const { data, error } = await query;
+      if (error || !data) return [];
+      return data.map((m) => ({
+        id: m.id,
+        full_name: m.full_name || 'Membre',
+        email: m.email,
+        avatar_url: m.avatar_url,
+      })) as TeamMemberSummary[];
+    })(),
+    []
+  );
+}
+
+// Uploads a chat attachment (image, voice note, GIF, or generic file) to
+// the team-chat-media bucket and returns its public URL + inferred kind.
+export async function uploadTeamChatAttachment(
+  file: File | Blob,
+  channelType: string,
+  channelId: string,
+  fileName: string
+): Promise<TeamChatAttachment | null> {
+  const supabase = getSupabase();
+  const path = `${channelType}/${channelId}/${Date.now()}-${fileName}`;
+  const { error } = await supabase.storage.from('team-chat-media').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+  });
+  if (error) {
+    console.error('[Supabase] Error uploading chat attachment:', error);
+    return null;
+  }
+  const { data } = supabase.storage.from('team-chat-media').getPublicUrl(path);
+  const mime = file.type || '';
+  const type: TeamChatAttachment['type'] =
+    mime === 'image/gif' ? 'gif' : mime.startsWith('image/') ? 'image' : mime.startsWith('audio/') ? 'audio' : 'file';
+  return { url: data.publicUrl, type, name: fileName };
+}
+
+// ----------------------------------------------------
+// 19. CONTENU MINERVA — inspirations + vidéos propres à l'agence
+// ----------------------------------------------------
+export async function fetchMinervaContentCategories(): Promise<MinervaContentCategory[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('minerva_content_categories')
+        .select('id, name')
+        .order('name', { ascending: true });
+      if (error || !data) return [];
+      return data as MinervaContentCategory[];
+    })(),
+    []
+  );
+}
+
+export async function createMinervaContentCategory(name: string): Promise<MinervaContentCategory | null> {
+  const { data, error } = await getSupabase()
+    .from('minerva_content_categories')
+    .insert([{ name: name.trim() }])
+    .select('id, name')
+    .single();
+  if (error) {
+    console.error('[Supabase] Error creating Minerva content category:', error);
+    return null;
+  }
+  return data as MinervaContentCategory;
+}
+
+export async function fetchMinervaContentItems(kind?: 'inspiration' | 'own_video'): Promise<MinervaContentItem[]> {
+  return withTimeout(
+    (async () => {
+      const supabase = getSupabase();
+      let query = supabase
+        .from('minerva_content_items')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (kind) query = query.eq('kind', kind);
+      const { data, error } = await query;
+      if (error || !data) return [];
+
+      const categoryIds = Array.from(new Set(data.map((i) => i.category_id).filter(Boolean)));
+      const assigneeIds = Array.from(new Set(data.map((i) => i.assignee_id).filter(Boolean)));
+      const [{ data: categories }, { data: assignees }] = await Promise.all([
+        categoryIds.length
+          ? supabase.from('minerva_content_categories').select('id, name').in('id', categoryIds)
+          : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+        assigneeIds.length
+          ? supabase.from('profiles').select('id, full_name').in('id', assigneeIds)
+          : Promise.resolve({ data: [] as { id: string; full_name: string | null }[] }),
+      ]);
+      const categoryMap = new Map((categories || []).map((c) => [c.id, c.name]));
+      const assigneeMap = new Map((assignees || []).map((a) => [a.id, a.full_name]));
+
+      return data.map((row) => ({
+        ...row,
+        category_name: row.category_id ? categoryMap.get(row.category_id) : undefined,
+        assignee_name: row.assignee_id ? assigneeMap.get(row.assignee_id) || undefined : undefined,
+      })) as MinervaContentItem[];
+    })(),
+    []
+  );
+}
+
+export async function createMinervaContentItem(payload: {
+  kind: 'inspiration' | 'own_video';
+  title: string;
+  category_id?: string | null;
+  external_url?: string | null;
+  note?: string | null;
+  file_url?: string | null;
+  scheduled_date?: string | null;
+  assignee_id?: string | null;
+  created_by: string;
+}): Promise<MinervaContentItem | null> {
+  const { data, error } = await getSupabase()
+    .from('minerva_content_items')
+    .insert([payload])
+    .select('*')
+    .single();
+  if (error) {
+    console.error('[Supabase] Error creating Minerva content item:', error);
+    return null;
+  }
+  return data as MinervaContentItem;
+}
+
+export async function updateMinervaContentItem(id: string, patch: Partial<MinervaContentItem>): Promise<boolean> {
+  const { category_name, assignee_name, ...writable } = patch;
+  const { error } = await getSupabase().from('minerva_content_items').update(writable).eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error updating Minerva content item:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteMinervaContentItem(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('minerva_content_items').delete().eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error deleting Minerva content item:', error);
+    return false;
+  }
+  return true;
+}
+
+// Own-video files live in the existing team-documents bucket (public,
+// already has team write/read RLS) under minerva-content/ rather than a
+// brand new bucket -- one less manual dashboard step to deploy this.
+export async function uploadMinervaContentFile(file: File): Promise<string | null> {
+  const supabase = getSupabase();
+  const path = `minerva-content/${Date.now()}-${file.name}`;
+  const { error } = await supabase.storage.from('team-documents').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+  });
+  if (error) {
+    console.error('[Supabase] Error uploading Minerva content file:', error);
+    return null;
+  }
+  const { data } = supabase.storage.from('team-documents').getPublicUrl(path);
+  return data.publicUrl;
 }

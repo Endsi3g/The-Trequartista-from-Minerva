@@ -166,13 +166,29 @@ export interface Project {
 
 export interface TeamChatMessage {
   id: string;
-  channel_type: 'project' | 'client';
+  channel_type: 'project' | 'client' | 'member';
   channel_id: string;
   sender_id: string | null;
   sender_name?: string;
   sender_avatar?: string;
-  body: string;
+  body: string | null;
+  attachment_url?: string | null;
+  attachment_type?: 'image' | 'audio' | 'gif' | 'file' | null;
+  attachment_name?: string | null;
   created_at: string;
+}
+
+export interface TeamChatAttachment {
+  url: string;
+  type: 'image' | 'audio' | 'gif' | 'file';
+  name: string;
+}
+
+export interface TeamMemberSummary {
+  id: string;
+  full_name: string;
+  email: string;
+  avatar_url: string | null;
 }
 
 export interface TeamDocument {
@@ -263,6 +279,31 @@ export interface ContentPost {
   updated_at?: string;
 }
 
+// "Contenu Minerva" -- the agency's own social content (as opposed to
+// ContentPost, which is client deliverables). Two kinds share one row
+// shape: 'inspiration' (an external link + note) and 'own_video' (one of
+// our own files, optionally scheduled to post).
+export interface MinervaContentCategory {
+  id: string;
+  name: string;
+}
+
+export interface MinervaContentItem {
+  id: string;
+  kind: 'inspiration' | 'own_video';
+  title: string;
+  category_id: string | null;
+  category_name?: string;
+  external_url?: string | null;
+  note?: string | null;
+  file_url?: string | null;
+  scheduled_date?: string | null;
+  posted: boolean;
+  assignee_id?: string | null;
+  assignee_name?: string;
+  created_by?: string | null;
+  created_at: string;
+}
 
 export interface TeamOKR {
   id: string;

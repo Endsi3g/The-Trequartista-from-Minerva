@@ -137,11 +137,11 @@ export function TopbarActions() {
       <button
         id="topbar-search-btn"
         onClick={() => setIsSearchOpen(true)}
-        className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-mv-surface border border-mv-border text-xs text-mv-ink-soft hover:border-mv-green/40 hover:text-mv-ink transition-all cursor-pointer"
+        className="flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-mv-surface border border-mv-border text-xs text-mv-ink-soft hover:border-mv-green/50 hover:text-mv-ink hover:shadow-mv-sm transition-all cursor-pointer sm:min-w-[220px]"
       >
-        <Search className="w-3.5 h-3.5 text-mv-green" />
-        <span className="hidden sm:inline">Rechercher...</span>
-        <kbd className="hidden sm:inline px-1.5 py-0.5 rounded bg-mv-cream-soft border border-mv-border text-[10px] font-mono text-mv-ink-faint">
+        <Search className="w-3.5 h-3.5 text-mv-green shrink-0" />
+        <span className="hidden sm:inline flex-1 text-left">Rechercher...</span>
+        <kbd className="hidden sm:inline px-1.5 py-0.5 rounded bg-mv-cream-soft border border-mv-border text-[10px] font-mono font-bold text-mv-ink-faint shrink-0">
           ⌘K
         </kbd>
       </button>
