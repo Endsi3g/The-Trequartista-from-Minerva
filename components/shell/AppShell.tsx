@@ -38,7 +38,7 @@ function AppShellInner({ children }: AppShellProps) {
         <div className="flex-1 flex flex-col min-w-0">
           {/* Top Header -- solid background, no blur (a translucent/blurred
               header over scrolling content read as visually noisy). */}
-          <header className="h-16 px-4 md:px-6 bg-mv-surface border-b border-mv-border sticky top-0 z-20 flex items-center justify-between shrink-0">
+          <header className="h-14 px-4 md:px-6 bg-mv-surface border-b border-mv-border sticky top-0 z-20 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3 min-w-0">
               <SidebarTrigger />
               <div className="hidden sm:block min-w-0">

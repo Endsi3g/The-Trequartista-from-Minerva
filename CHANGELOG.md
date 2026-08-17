@@ -4,6 +4,17 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-17 (suite 3) — Optimisation visuelle & expérience utilisateur (Vue d'ensemble et en-têtes)
+
+Mise en application complète des corrections et améliorations de l'interface Vue d'ensemble (Overview) et du shell global :
+
+- **Alignement des en-têtes** : Hauteur uniformisée à 56px (`h-14`) entre le header de la barre latérale (`AppSidebar`) et la barre de navigation principale (`AppShell`), résolvant le décalage visuel ("Pas au même niveau").
+- **Salutation personnalisée** : Ajout d'une salutation simple et dédiée selon le moment de la journée (ex: `Bonjour, [Prénom] 👋` / `Bonsoir, [Prénom] 👋`) avec le prénom de l'utilisateur connecté.
+- **Optimisation du layout & comblement des espaces** : Augmentation du nombre d'éléments dans les tableaux Projets et MRR (jusqu'à 8), rééquilibrage de la colonne de droite et ajout d'une carte "Tâches en attente" pour combler les espaces vides verticaux.
+- **Connexion Onboarding** : Le bouton "Bien démarrer XX%" dans la sidebar fait désormais défiler la page et met en valeur le widget "Bien démarrer sur Minerva" sur le dashboard.
+
+---
+
 ## 2026-08-17 (suite) — Audit complet post-déploiement : middleware, permissions, notifications, trigger CRM
 
 Migrations `20260816000000`/`20260817000000`/`20260817000001` confirmées déployées et vérifiées en direct ; les 10 items de roadmap réels importés dans `minerva_roadmap_items`. Audit statique + navigateur (Chrome, session admin réelle établie sans mot de passe via un lien magique généré par l'API service-role) de l'app en entier, à la recherche de tout ce qui manque pour une app 100 % fonctionnelle.
