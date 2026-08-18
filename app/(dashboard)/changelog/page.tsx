@@ -12,6 +12,24 @@ import { PageFadeIn } from '@/components/ui/page-transition';
 
 const STATIC_ENTRIES: ChangelogEntry[] = [
   {
+    id: 'v2-3-0',
+    version: '2.3.0',
+    title: 'Linear Roadmaps, Éditeur Word-like & Studio Monolithique (v2.3.0)',
+    body: `Mise à niveau majeure intégrant la Roadmap des Jalons Client inspirée de Linear Roadmaps, un studio de création de réels monolithique en Single Viewport avec preview sticky 9:16 en direct, une refonte de l’Académie avec toolbar hiérarchique, un éditeur de documents collaboratif Word-like avec 3 modèles d’amorce, des états vides proactifs pour l'équipe (Admin vs Membre) et la persistance stricte des favoris.`,
+    included_items: [
+      'Roadmap des Jalons Client : Bandeau de synthèse 36px (0/4 complétés, date cible, statut temps, J-29), barre de progression 3px, DataTable Linear 36px et ligne de création inline (C/N).',
+      'Nouveau Reel Monolithique : Panneau Single Viewport 2 colonnes (65% formulaire / 35% preview live 9:16), micro-labels, inputs 32px, strip média 40px et soumission ⌘+Entrée.',
+      'Éditeur Documents Word-like : Barre d’outils complète (H1-H3, Gras, Italique, Barré, Listes, Tâches, Tableaux, Callouts), compteurs de mots live, exports Markdown & PDF et 3 modèles d’amorce.',
+      'Académie & Process : Toolbar hiérarchique avec recherche à gauche (w-64 h-8), onglets soulignés de 2px vert émeraude, compteurs non-tronqués et accordéon média 36px.',
+      'Page Équipe & Empty States : 4 états vides proactifs avec distinction Admin vs Membre, raccourci A puis M pour inviter et import CSV.',
+      'Sidebar & Layout Fluide : Persistance localStorage des favoris sans ré-injection forcée, masquage propre de la section et contraction mobile fluide.',
+    ],
+    image_url: '/changelog/overview-v2-2-0.png',
+    created_at: new Date().toISOString(),
+    created_by: 'system',
+    author_name: 'Minerva Core Team',
+  },
+  {
     id: 'v2-2-0',
     version: '2.2.0',
     title: 'Refonte Chirurgicale Linear & Superhuman (v2.2.0)',
