@@ -4,11 +4,13 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, FileText } from 'lucide-react';
-import { Card } from '@/components/ui/card';
 import { RealtimeMonaco } from '@/components/realtime-monaco';
 import { RealtimeAvatarStack } from '@/components/realtime-avatar-stack';
 import { fetchDocument, renameDocument } from '@/lib/services/supabase-data';
 import type { TeamDocument } from '@/lib/types';
+import { PageFadeIn } from '@/components/ui/page-transition';
+
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
 export default function DocumentEditorPage() {
   const params = useParams();
@@ -25,7 +27,7 @@ export default function DocumentEditorPage() {
     (async () => {
       const data = await fetchDocument(rawId);
       setDoc(data);
-      setTitle(data?.title || '');
+      setTitle(data?.title || 'Document sans titre');
       setLoading(false);
     })();
   }, [rawId]);
@@ -35,50 +37,66 @@ export default function DocumentEditorPage() {
     if (titleDebounce.current) clearTimeout(titleDebounce.current);
     titleDebounce.current = setTimeout(() => {
       if (rawId) renameDocument(rawId, value || 'Document sans titre');
-    }, 600);
+    }, 500);
   };
 
   if (loading) {
-    return <div className="py-16 text-center text-sm text-mv-ink-soft">Chargement…</div>;
+    return <div className="py-16 text-center text-xs text-zinc-400 font-mono">Chargement du document…</div>;
   }
 
   if (!doc) {
     return (
-      <div className="space-y-4">
-        <Link href="/documents" className="text-xs font-semibold text-mv-green hover:underline flex items-center gap-1.5 w-fit">
+      <PageFadeIn className="space-y-4 max-w-5xl mx-auto py-8">
+        <Link href="/documents" className="text-xs font-medium text-mv-green hover:underline flex items-center gap-1.5 w-fit">
           <ArrowLeft className="w-3.5 h-3.5" /> Retour aux documents
         </Link>
-        <Card className="py-16 text-center">
-          <p className="text-sm text-mv-ink-soft">Ce document est introuvable.</p>
-        </Card>
-      </div>
+        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-2">
+          <FileText className="w-8 h-8 text-zinc-300 mx-auto" />
+          <p className="text-sm font-semibold text-zinc-800">Document introuvable</p>
+          <p className="text-xs text-zinc-400">Ce document a peut-être été supprimé ou son identifiant est incorrect.</p>
+        </div>
+      </PageFadeIn>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4 pb-12">
-      <div className="flex items-center justify-between gap-4">
-        <Link href="/documents" className="text-xs font-semibold text-mv-green hover:underline flex items-center gap-1.5 w-fit shrink-0">
-          <ArrowLeft className="w-3.5 h-3.5" /> Retour aux documents
-        </Link>
-        <RealtimeAvatarStack roomName={`document-presence-${rawId}`} />
-      </div>
-
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center shrink-0">
-          <FileText className="w-5 h-5" />
+    <PageFadeIn className="max-w-6xl mx-auto space-y-3 pb-12">
+      {/* ── Compact Navigation & Presence Bar ── */}
+      <div className="bg-mv-surface border border-mv-border rounded-[6px] px-3.5 py-2 shadow-2xs flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <Link
+            href="/documents"
+            className="text-xs font-medium text-zinc-500 hover:text-zinc-900 transition-colors flex items-center gap-1 shrink-0"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Documents</span>
+          </Link>
+          <span className="text-zinc-300">/</span>
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="w-5 h-5 rounded-[3px] bg-zinc-100 border border-mv-border flex items-center justify-center text-zinc-900 shrink-0">
+              <FileText className="w-3 h-3" />
+            </div>
+            <input
+              value={title}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              placeholder="Document sans titre"
+              className="text-[13px] font-semibold text-zinc-900 bg-transparent border-none outline-none focus:ring-0 placeholder:text-zinc-400 truncate w-full"
+            />
+          </div>
         </div>
-        <input
-          value={title}
-          onChange={(e) => handleTitleChange(e.target.value)}
-          placeholder="Document sans titre"
-          className="flex-1 text-xl font-extrabold text-mv-ink font-display bg-transparent border-none outline-none focus:ring-0 placeholder-mv-ink-faint"
-        />
+
+        <div className="flex items-center gap-2.5 shrink-0">
+          <span className="text-[10px] font-mono text-zinc-400 hidden sm:inline" style={MONO}>
+            Réf: {(rawId || doc.id).slice(0, 8)}
+          </span>
+          <RealtimeAvatarStack roomName={`document-presence-${rawId || doc.id}`} />
+        </div>
       </div>
 
-      <div className="rounded-2xl overflow-hidden border border-mv-border shadow-mv-sm">
-        <RealtimeMonaco channel={`document-${rawId}`} language="markdown" height={640} persistence awareness />
+      {/* ── Monaco Collaborative Editor Container ── */}
+      <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
+        <RealtimeMonaco channel={`document-${rawId}`} language="markdown" height={680} persistence awareness />
       </div>
-    </div>
+    </PageFadeIn>
   );
 }
