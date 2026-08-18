@@ -12,6 +12,24 @@ import { PageFadeIn } from '@/components/ui/page-transition';
 
 const STATIC_ENTRIES: ChangelogEntry[] = [
   {
+    id: 'v2-4-2',
+    version: '2.4.2',
+    title: 'Envois d’Emails (Resend / Gmail), Audit Fuite de Marge & Minerva-Flow (v2.4.2)',
+    body: `Intégration d’un double moteur d’emailing (API Resend & Gmail Direct) déclenché automatiquement lors de la complétion des jalons et pour la prospection, ainsi que le déploiement du module Restauration complet : Audit Public de Fuite de Marge, Démo interactive Minerva-Flow à 0 % de commission et SOP d’Acquisition dans l’Académie.`,
+    included_items: [
+      '⚡ Double Moteur d’Emailing : Envoi d’emails transactionnels HTML élégants via l’API Resend (/api/emails/send) et génération de liens Gmail Compose en 1 clic pour l’envoi personnalisé.',
+      'Notification de Jalon Complété : Déclencheur avec prévisualisation du message, choix du destinataire et boutons d’envoi direct [ 🚀 Resend ] et [ ✉️ Gmail ] sur la Roadmap et la vue dédiée du jalon.',
+      'Audit Public Fuite de Marge Restauration : Calculateur instantané basé sur les données publiques (Prix sur place vs Uber Eats / DoorDash, 30% commission, volume de commandes) sans friction de données.',
+      'Démo Interactive Minerva-Flow (/minerva-flow) : Prototype de commande directe 0 % commission avec 10 plats digitalisés, calcul d’économies en direct et protocole test 5-min en cuisine.',
+      'SOP & Stratégie d’Acquisition dans l’Académie : Guide complet sur les 4 failles critiques des restaurateurs et les contre-pieds d’offre (Friction zéro, Démo pré-configurée, Zéro risque rush, Passerelle trafic agence).',
+      'Intégration /audits/new : Commutateur segmenté permettant de basculer instantanément entre l’audit standard de transcription et l’audit restauration.',
+    ],
+    image_url: '/changelog/minerva-flow-v2-4-2.png',
+    created_at: new Date().toISOString(),
+    created_by: 'system',
+    author_name: 'Minerva Core Team',
+  },
+  {
     id: 'v2-4-1',
     version: '2.4.1',
     title: 'Flow Temps Réel d’Avancement, Tâches & Approbations Client (v2.4.1)',

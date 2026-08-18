@@ -20,6 +20,8 @@ import {
   Share2,
   Check,
   Edit3,
+  Mail,
+  Send,
 } from 'lucide-react';
 import {
   fetchProjects,
@@ -29,6 +31,7 @@ import {
 } from '@/lib/services/supabase-data';
 import type { Project, ProjectMilestone, TeamMemberSummary } from '@/lib/types';
 import { useToast } from '@/components/providers/ToastProvider';
+import { MilestoneEmailModal } from '@/components/projects/MilestoneEmailModal';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { cn } from '@/lib/utils';
 
@@ -51,6 +54,9 @@ export default function DedicatedMilestonePage() {
   const [milestone, setMilestone] = useState<ProjectMilestone | null>(null);
   const [team, setTeam] = useState<TeamMemberSummary[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Email Notification Modal state
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
 
   // Editable fields
   const [title, setTitle] = useState('');
@@ -164,6 +170,14 @@ export default function DedicatedMilestonePage() {
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Retour Roadmap</span>
           </Link>
+
+          <button
+            onClick={() => setEmailModalOpen(true)}
+            className="h-7 px-2.5 text-xs font-medium border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-md transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+          >
+            <Mail className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Notifier client</span>
+          </button>
 
           <button
             onClick={handleSaveMilestone}
@@ -383,6 +397,14 @@ export default function DedicatedMilestonePage() {
           </div>
         </div>
       </div>
+
+      {/* ── 5. Milestone Email Notification Modal ── */}
+      <MilestoneEmailModal
+        isOpen={emailModalOpen}
+        onClose={() => setEmailModalOpen(false)}
+        milestone={milestone}
+        clientName={project?.client_name || 'Client'}
+      />
     </PageFadeIn>
   );
 }

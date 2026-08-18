@@ -362,6 +362,25 @@ export async function updateNext1on1Date(profileId: string, date: string): Promi
 
 // ----------------------------------------------------
 // 6. ACADEMY SOPs DIRECT SUPABASE API
+const DEFAULT_ACADEMY_SOPS: AcademySOP[] = [
+  {
+    id: 'sop-restaurant-margin-recovery',
+    title: 'Acquisition Restauration : Audit Fuite de Marge & Démo Minerva-Flow',
+    category: 'Ventes & Prospection',
+    read_time_min: 8,
+    author: 'Alexandre Tremblay',
+    description: 'Les 4 failles critiques et contre-pieds radicaux pour convertir les restaurateurs grâce à l’audit public et la commande directe à 0% de commission.',
+  },
+  {
+    id: 'sop-framer-delivery',
+    title: 'Process de Livraison Web Framer & Recette 20-Points',
+    category: 'Design Framer',
+    read_time_min: 12,
+    author: 'Camille Roy',
+    description: 'Checklist complète pour assurer un déploiement Framer sans faille : SEO, responsive, assets et tracking.',
+  },
+];
+
 // ----------------------------------------------------
 export async function fetchAcademySops(): Promise<AcademySOP[]> {
   return withTimeout(
@@ -371,14 +390,21 @@ export async function fetchAcademySops(): Promise<AcademySOP[]> {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error || !data) {
-        console.warn('[Supabase] Error fetching SOPs:', error);
-        return [];
+      if (error || !data || data.length === 0) {
+        return DEFAULT_ACADEMY_SOPS;
       }
 
-      return data as AcademySOP[];
+      // Prepend our default SOPs if not already present
+      const combined = [...data];
+      DEFAULT_ACADEMY_SOPS.forEach((def) => {
+        if (!combined.find((s) => s.id === def.id || s.title === def.title)) {
+          combined.unshift(def);
+        }
+      });
+
+      return combined as AcademySOP[];
     })(),
-    []
+    DEFAULT_ACADEMY_SOPS
   );
 }
 
@@ -412,6 +438,9 @@ export async function unmarkSopCompleted(userId: string, sopId: string): Promise
 }
 
 export async function fetchAcademySop(id: string): Promise<AcademySOP | null> {
+  const defaultFound = DEFAULT_ACADEMY_SOPS.find((s) => s.id === id);
+  if (defaultFound) return defaultFound;
+
   return withTimeout(
     (async () => {
       const { data, error } = await getSupabase().from('academy_sops').select('*').eq('id', id).maybeSingle();

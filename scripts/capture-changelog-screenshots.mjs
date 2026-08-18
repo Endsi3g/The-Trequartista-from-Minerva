@@ -96,6 +96,17 @@ async function main() {
     console.error('Error capturing Portal Tasks:', err);
   }
 
+  // 8. Minerva-Flow Restaurant Direct Ordering Demo
+  console.log('Capturing Minerva-Flow (/minerva-flow)...');
+  try {
+    await page.goto(`${BASE_URL}/minerva-flow`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.waitForTimeout(2000);
+    await page.screenshot({ path: path.join(outputDir, 'minerva-flow-v2-4-2.png'), fullPage: false });
+    console.log('✓ Minerva-Flow captured: public/changelog/minerva-flow-v2-4-2.png');
+  } catch (err) {
+    console.error('Error capturing Minerva-Flow:', err);
+  }
+
   await browser.close();
   console.log('All screenshots captured successfully!');
 }

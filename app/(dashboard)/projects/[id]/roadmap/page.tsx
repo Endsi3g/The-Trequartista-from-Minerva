@@ -18,6 +18,8 @@ import {
   ExternalLink,
   Zap,
   Check,
+  Mail,
+  Send,
 } from 'lucide-react';
 import {
   fetchProjects,
@@ -30,6 +32,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { Project, ProjectMilestone } from '@/lib/types';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
+import { MilestoneEmailModal } from '@/components/projects/MilestoneEmailModal';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { cn } from '@/lib/utils';
 
@@ -116,6 +119,7 @@ export default function ProjectRoadmapPage() {
   const [milestones, setMilestones] = useState<ProjectMilestone[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
+  const [emailMilestone, setEmailMilestone] = useState<ProjectMilestone | null>(null);
 
   // Inline creation states
   const [inlineOpen, setInlineOpen] = useState(false);
@@ -508,7 +512,18 @@ export default function ProjectRoadmapPage() {
                       </td>
 
                       {/* Actions */}
-                      <td className="pr-3.5 pl-2 py-1 text-right whitespace-nowrap space-x-2">
+                      <td className="pr-3.5 pl-2 py-1 text-right whitespace-nowrap space-x-1.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEmailMilestone(m);
+                          }}
+                          className="h-6 px-1.5 text-[10.5px] font-medium border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          title="Notifier le client par email"
+                        >
+                          <Mail className="w-3 h-3 text-emerald-600" />
+                          <span className="hidden sm:inline">Notifier</span>
+                        </button>
                         <button
                           onClick={(e) => handleDelete(m, e)}
                           className="text-zinc-400 hover:text-rose-600 p-1 transition-colors opacity-0 group-hover:opacity-100"
@@ -610,6 +625,14 @@ export default function ProjectRoadmapPage() {
           </table>
         </div>
       </div>
+
+      {/* ── 5. Milestone Email Notification Modal ── */}
+      <MilestoneEmailModal
+        isOpen={!!emailMilestone}
+        onClose={() => setEmailMilestone(null)}
+        milestone={emailMilestone}
+        clientName={project?.client_name || 'Client'}
+      />
     </PageFadeIn>
   );
 }

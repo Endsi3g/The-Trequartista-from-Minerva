@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { UserAvatar } from '@/components/ui/user-avatar';
-import { ArrowLeft, Building2, FileText } from 'lucide-react';
+import { ArrowLeft, Building2, FileText, Sparkles, Utensils } from 'lucide-react';
 import { createAudit, updateAudit, fetchClients } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
+import { RestaurantMarginAuditCard } from '@/components/audits/RestaurantMarginAuditCard';
 import { createClient } from '@/lib/supabase/client';
 import type { Client } from '@/lib/types';
 
@@ -25,6 +26,7 @@ export default function NewAuditPage() {
   const [prospectName, setProspectName] = useState('');
   const [clientId, setClientId] = useState('');
   const [transcript, setTranscript] = useState('');
+  const [activeAuditType, setActiveAuditType] = useState<'transcript' | 'restaurant'>('transcript');
 
   useEffect(() => {
     fetchClients().then(setClients);
@@ -76,13 +78,46 @@ export default function NewAuditPage() {
         <ArrowLeft className="w-3.5 h-3.5" /> Retour aux audits
       </Link>
 
-      <div>
-        <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">Nouvel Audit</h1>
-        <p className="text-sm text-mv-ink-soft mt-1">Démarre un audit IA à partir d&apos;un appel de diagnostic.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">Nouvel Audit</h1>
+          <p className="text-sm text-mv-ink-soft mt-1">Sélectionnez le modèle d'audit ou lancez un diagnostic de fuite de marge.</p>
+        </div>
+
+        {/* Audit Type Segmented Switcher */}
+        <div className="inline-flex p-1 bg-zinc-100 border border-zinc-200 rounded-lg text-xs font-medium shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveAuditType('transcript')}
+            className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${
+              activeAuditType === 'transcript'
+                ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                : 'text-zinc-500 hover:text-zinc-900'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5 text-zinc-600" />
+            <span>Audit Standard (Transcription)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveAuditType('restaurant')}
+            className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${
+              activeAuditType === 'restaurant'
+                ? 'bg-white text-emerald-800 shadow-2xs font-semibold'
+                : 'text-zinc-500 hover:text-zinc-900'
+            }`}
+          >
+            <Utensils className="w-3.5 h-3.5 text-amber-600" />
+            <span>Audit Restauration & Marge</span>
+          </button>
+        </div>
       </div>
 
-      <form onSubmit={handleCreate} className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
-        <div className="space-y-6">
+      {activeAuditType === 'restaurant' ? (
+        <RestaurantMarginAuditCard />
+      ) : (
+        <form onSubmit={handleCreate} className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
+          <div className="space-y-6">
           <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm space-y-4">
             <SectionLabel>Prospect</SectionLabel>
             <div>
@@ -164,6 +199,7 @@ export default function NewAuditPage() {
           </div>
         </div>
       </form>
+      )}
     </div>
   );
 }
