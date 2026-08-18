@@ -8,7 +8,9 @@ async function main() {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  console.log('Launching browser to capture changelog screenshots...');
+  const BASE_URL = process.env.BASE_URL || 'https://minerva-trequista.vercel.app';
+  console.log(`Launching browser to capture changelog screenshots from ${BASE_URL}...`);
+
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
@@ -20,45 +22,67 @@ async function main() {
   // 1. Overview Page
   console.log('Capturing Overview (/overview)...');
   try {
-    await page.goto('http://localhost:3000/overview', { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/overview`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
-    await page.screenshot({ path: path.join(outputDir, 'overview-v2-2-0.png'), fullPage: false });
-    console.log('✓ Overview captured: public/changelog/overview-v2-2-0.png');
+    await page.screenshot({ path: path.join(outputDir, 'overview-v2-4-0.png'), fullPage: false });
+    console.log('✓ Overview captured: public/changelog/overview-v2-4-0.png');
   } catch (err) {
     console.error('Error capturing Overview:', err);
   }
 
-  // 2. Team Chat Page
-  console.log('Capturing Team Chat (/chat)...');
+  // 2. Roadmap Page
+  console.log('Capturing Roadmap (/projects)...');
   try {
-    await page.goto('http://localhost:3000/chat', { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/projects`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
-    await page.screenshot({ path: path.join(outputDir, 'chat-v2-2-0.png'), fullPage: false });
-    console.log('✓ Team Chat captured: public/changelog/chat-v2-2-0.png');
+    await page.screenshot({ path: path.join(outputDir, 'roadmap-v2-4-0.png'), fullPage: false });
+    console.log('✓ Roadmap captured: public/changelog/roadmap-v2-4-0.png');
   } catch (err) {
-    console.error('Error capturing Chat:', err);
+    console.error('Error capturing Roadmap:', err);
   }
 
-  // 3. Social Reels Studio & Contenu Minerva (/content-planner)
-  console.log('Capturing Content Planner (/content-planner)...');
+  // 3. Academy Page
+  console.log('Capturing Academy (/academy)...');
   try {
-    await page.goto('http://localhost:3000/content-planner', { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/academy`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
-    await page.screenshot({ path: path.join(outputDir, 'content-v2-2-0.png'), fullPage: false });
-    console.log('✓ Content Planner captured: public/changelog/content-v2-2-0.png');
+    await page.screenshot({ path: path.join(outputDir, 'academy-v2-4-0.png'), fullPage: false });
+    console.log('✓ Academy captured: public/changelog/academy-v2-4-0.png');
   } catch (err) {
-    console.error('Error capturing Content Planner:', err);
+    console.error('Error capturing Academy:', err);
   }
 
-  // 4. ROI Tracker
-  console.log('Capturing ROI Tracker (/clients/1/roi-tracker)...');
+  // 4. Documents Page
+  console.log('Capturing Documents (/documents)...');
   try {
-    await page.goto('http://localhost:3000/clients/client-toitures-beauchemin/roi-tracker', { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${BASE_URL}/documents`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
-    await page.screenshot({ path: path.join(outputDir, 'roi-v2-2-0.png'), fullPage: false });
-    console.log('✓ ROI Tracker captured: public/changelog/roi-v2-2-0.png');
+    await page.screenshot({ path: path.join(outputDir, 'documents-v2-4-0.png'), fullPage: false });
+    console.log('✓ Documents captured: public/changelog/documents-v2-4-0.png');
   } catch (err) {
-    console.error('Error capturing ROI Tracker:', err);
+    console.error('Error capturing Documents:', err);
+  }
+
+  // 5. Minerva Content Studio
+  console.log('Capturing Content Studio (/content-planner)...');
+  try {
+    await page.goto(`${BASE_URL}/content-planner`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.waitForTimeout(2000);
+    await page.screenshot({ path: path.join(outputDir, 'content-v2-4-0.png'), fullPage: false });
+    console.log('✓ Content Studio captured: public/changelog/content-v2-4-0.png');
+  } catch (err) {
+    console.error('Error capturing Content Studio:', err);
+  }
+
+  // 6. Client Portal
+  console.log('Capturing Client Portal (/portal)...');
+  try {
+    await page.goto(`${BASE_URL}/portal`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.waitForTimeout(2000);
+    await page.screenshot({ path: path.join(outputDir, 'portal-v2-4-0.png'), fullPage: false });
+    console.log('✓ Portal captured: public/changelog/portal-v2-4-0.png');
+  } catch (err) {
+    console.error('Error capturing Portal:', err);
   }
 
   await browser.close();

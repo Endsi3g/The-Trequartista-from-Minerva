@@ -25,7 +25,7 @@ const STATIC_ENTRIES: ChangelogEntry[] = [
       'Portail Client Ultra-Dense : Refonte de /portal/join (carte 360px, alerte de connexion inline) et de /portal (top nav 40px, ruban 4-KPIs, graphique 140px et chat direct).',
       'Messagerie & Fiabilité : Optimisations temps réel avec envoi optimiste instantané et validation stricte des identifiants.',
     ],
-    image_url: '/changelog/overview-v2-2-0.png',
+    image_url: '/changelog/overview-v2-4-0.png',
     created_at: new Date().toISOString(),
     created_by: 'system',
     author_name: 'Minerva Core Team',
