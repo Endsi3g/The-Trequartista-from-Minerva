@@ -41,51 +41,41 @@ async function main() {
     console.error('Error capturing Roadmap:', err);
   }
 
-  // 3. Academy Page
-  console.log('Capturing Academy (/academy)...');
+  // 3. Academy Cockpit (v2.4.3)
+  console.log('Capturing Academy Cockpit (/academy)...');
   try {
     await page.goto(`${BASE_URL}/academy`, { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(2500);
+    await page.screenshot({ path: path.join(outputDir, 'academy-v2-4-3.png'), fullPage: false });
     await page.screenshot({ path: path.join(outputDir, 'academy-v2-4-0.png'), fullPage: false });
-    console.log('✓ Academy captured: public/changelog/academy-v2-4-0.png');
+    console.log('✓ Academy Cockpit captured: public/changelog/academy-v2-4-3.png');
   } catch (err) {
     console.error('Error capturing Academy:', err);
   }
 
-  // 4. Documents Page
-  console.log('Capturing Documents (/documents)...');
+  // 4. SOP Master Anti-Friction Detail (v2.4.3)
+  console.log('Capturing SOP Master Anti-Friction (/academy/sop-anti-friction-master)...');
   try {
-    await page.goto(`${BASE_URL}/documents`, { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: path.join(outputDir, 'documents-v2-4-0.png'), fullPage: false });
-    console.log('✓ Documents captured: public/changelog/documents-v2-4-0.png');
+    await page.goto(`${BASE_URL}/academy/sop-anti-friction-master`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.waitForTimeout(2500);
+    await page.screenshot({ path: path.join(outputDir, 'sop-anti-friction-v2-4-3.png'), fullPage: false });
+    console.log('✓ SOP Master Anti-Friction captured: public/changelog/sop-anti-friction-v2-4-3.png');
   } catch (err) {
-    console.error('Error capturing Documents:', err);
+    console.error('Error capturing SOP Anti-Friction:', err);
   }
 
-  // 5. Minerva Content Studio
-  console.log('Capturing Content Studio (/content-planner)...');
+  // 5. Minerva-Flow Restaurant Direct Ordering Demo
+  console.log('Capturing Minerva-Flow (/minerva-flow)...');
   try {
-    await page.goto(`${BASE_URL}/content-planner`, { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: path.join(outputDir, 'content-v2-4-0.png'), fullPage: false });
-    console.log('✓ Content Studio captured: public/changelog/content-v2-4-0.png');
+    await page.goto(`${BASE_URL}/minerva-flow`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForTimeout(3000);
+    await page.screenshot({ path: path.join(outputDir, 'minerva-flow-v2-4-2.png'), fullPage: false });
+    console.log('✓ Minerva-Flow captured: public/changelog/minerva-flow-v2-4-2.png');
   } catch (err) {
-    console.error('Error capturing Content Studio:', err);
+    console.error('Error capturing Minerva-Flow:', err);
   }
 
-  // 6. Client Portal Overview
-  console.log('Capturing Client Portal (/portal)...');
-  try {
-    await page.goto(`${BASE_URL}/portal`, { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: path.join(outputDir, 'portal-v2-4-0.png'), fullPage: false });
-    console.log('✓ Portal captured: public/changelog/portal-v2-4-0.png');
-  } catch (err) {
-    console.error('Error capturing Portal:', err);
-  }
-
-  // 7. Client Portal Tasks & Deliverables
+  // 6. Client Portal Tasks & Deliverables
   console.log('Capturing Client Portal Tasks (/portal/tasks)...');
   try {
     await page.goto(`${BASE_URL}/portal/tasks`, { waitUntil: 'networkidle', timeout: 30000 });
@@ -96,15 +86,15 @@ async function main() {
     console.error('Error capturing Portal Tasks:', err);
   }
 
-  // 8. Minerva-Flow Restaurant Direct Ordering Demo
-  console.log('Capturing Minerva-Flow (/minerva-flow)...');
+  // 7. In-App Changelog Page
+  console.log('Capturing In-App Changelog (/changelog)...');
   try {
-    await page.goto(`${BASE_URL}/minerva-flow`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await page.waitForTimeout(3000);
-    await page.screenshot({ path: path.join(outputDir, 'minerva-flow-v2-4-2.png'), fullPage: false });
-    console.log('✓ Minerva-Flow captured: public/changelog/minerva-flow-v2-4-2.png');
+    await page.goto(`${BASE_URL}/changelog`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.waitForTimeout(2000);
+    await page.screenshot({ path: path.join(outputDir, 'changelog-v2-4-3.png'), fullPage: false });
+    console.log('✓ In-App Changelog captured: public/changelog/changelog-v2-4-3.png');
   } catch (err) {
-    console.error('Error capturing Minerva-Flow:', err);
+    console.error('Error capturing Changelog:', err);
   }
 
   await browser.close();

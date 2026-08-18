@@ -24,7 +24,7 @@ const STATIC_ENTRIES: ChangelogEntry[] = [
       'Module de Co-Pilotage Mensuel ($300-$500/mo) : Composant de suivi de la récurrence agence sur les fiches clients avec checklist de la session 1h, historique des revues et planification de la prochaine séance.',
       'Détail des SOPs Enrichi : Rendu Markdown complet, actions contextuelles 1-clic (+ Créer doc prospect, Liens directs vers démos) et checklists interactives de contrôle qualité.',
     ],
-    image_url: '/changelog/academy-v2-4-0.png',
+    image_url: '/changelog/academy-v2-4-3.png',
     created_at: new Date().toISOString(),
     created_by: 'system',
     author_name: 'Minerva Core Team',
