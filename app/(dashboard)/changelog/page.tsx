@@ -12,6 +12,25 @@ import { PageFadeIn } from '@/components/ui/page-transition';
 
 const STATIC_ENTRIES: ChangelogEntry[] = [
   {
+    id: 'v2-4-0',
+    version: '2.4.0',
+    title: 'Pages Dédiées des Jalons, Générateur par Service & Studio Minerva (v2.4.0)',
+    body: `Mise à jour majeure introduisant les pages dédiées par jalon (/projects/[id]/roadmap/[milestoneId]), le générateur de jalons automatiques pour 5 packages de services, les SOPs visuelles avec créateur de document prospect, l’éditeur Word-like avec split-preview et export PDF natif, le formulaire monolithique de contenu Minerva (support YouTube et téléversement vidéo local) ainsi que les refontes ultra-denses du Portail Client.`,
+    included_items: [
+      'Page Dédiée des Jalons : Route dédiée /projects/[id]/roadmap/[milestoneId] avec jauge d’avancement, sous-tâches interactives, assignation et liens de livrables.',
+      'Générateur de Jalons par Service : Templates automatiques pour 5 packages (Framer Web Design, LeadGen Ads, Social Reels, SEO Local GMB, Audit & Conseil IA).',
+      'Académie & SOPs Visuelles : Layout riche avec scripts de prospection copiables en 1 clic, checklist d’exécution interactive et action « + Créer doc prospect ».',
+      'Éditeur Word-like & Export PDF : Barre d’outils d’insertion Markdown opérationnelle (H1-H3, Gras, Tableaux, Checklists, Callouts), mode Split en direct et impression PDF (@media print).',
+      'Contenu Minerva Monolithique : Carte unique max-w-2xl, inputs 32px, bande upload 40px avec support direct des liens YouTube/Reels et des fichiers vidéo locaux (MP4, MOV).',
+      'Portail Client Ultra-Dense : Refonte de /portal/join (carte 360px, alerte de connexion inline) et de /portal (top nav 40px, ruban 4-KPIs, graphique 140px et chat direct).',
+      'Messagerie & Fiabilité : Optimisations temps réel avec envoi optimiste instantané et validation stricte des identifiants.',
+    ],
+    image_url: '/changelog/overview-v2-2-0.png',
+    created_at: new Date().toISOString(),
+    created_by: 'system',
+    author_name: 'Minerva Core Team',
+  },
+  {
     id: 'v2-3-0',
     version: '2.3.0',
     title: 'Linear Roadmaps, Éditeur Word-like & Studio Monolithique (v2.3.0)',

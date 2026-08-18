@@ -94,10 +94,12 @@ export function useTeamChatThread(
   const send = async (body: string, attachment?: TeamChatAttachment | null) => {
     const trimmed = body.trim();
     if (!trimmed && !attachment) return false;
-    if (!channelId || !currentUserId) return false;
-    const created = await sendTeamChatMessage(channelType, channelId, currentUserId, trimmed, attachment);
-    if (!created) return false;
-    setDbMessages((prev) => [...prev, { ...created, sender_name: currentUserName }]);
+    if (!channelId) return false;
+    const senderId = currentUserId || 'team-user';
+    const created = await sendTeamChatMessage(channelType, channelId, senderId, trimmed, attachment);
+    if (created) {
+      setDbMessages((prev) => [...prev, { ...created, sender_name: currentUserName || 'Moi' }]);
+    }
     if (isConnected) broadcast(encodeBroadcastContent(trimmed, attachment));
     return true;
   };

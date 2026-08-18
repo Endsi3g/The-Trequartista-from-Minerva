@@ -1,16 +1,31 @@
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { AlertCircle, CheckCircle2, ShieldCheck, ArrowRight, Lock, Mail, User } from 'lucide-react';
-import { LogoMark } from '@/components/shell/Logo';
+import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import {
+  AlertCircle,
+  CheckCircle2,
+  ShieldCheck,
+  ArrowRight,
+  Lock,
+  Mail,
+  User,
+  Eye,
+  EyeOff,
+  Sparkles,
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { fetchInviteByToken, redeemClientInvite } from '@/lib/services/supabase-data';
-import { Button } from '@/components/ui/button';
+import { PageFadeIn } from '@/components/ui/page-transition';
+import { cn } from '@/lib/utils';
+
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
 function JoinForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token') || '';
+  const router = useRouter();
 
   const [clientName, setClientName] = useState('');
   const [checking, setChecking] = useState(true);
@@ -19,8 +34,10 @@ function JoinForm() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -43,162 +60,190 @@ function JoinForm() {
     e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
+    setIsAlreadyRegistered(false);
 
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-      options: { data: { full_name: fullName, role: 'client' } },
-    });
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: { data: { full_name: fullName, role: 'client' } },
+      });
 
-    if (error || !data.user) {
-      setErrorMsg(error?.message || 'Erreur de création de compte.');
+      if (error) {
+        if (error.message.toLowerCase().includes('already registered') || error.message.toLowerCase().includes('existe déjà')) {
+          setIsAlreadyRegistered(true);
+          setErrorMsg('Compte déjà existant');
+        } else {
+          setErrorMsg(error.message);
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        await redeemClientInvite(token, data.user.id);
+        router.push('/portal');
+      }
+    } catch {
+      setErrorMsg('Une erreur inattendue est survenue.');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const clientId = await redeemClientInvite(token, data.user.id);
-
-    // Explicitly enforce role 'client' in profiles
-    if (data.user.id) {
-      await supabase.from('profiles').update({
-        role: 'client',
-        client_id: clientId,
-        full_name: fullName,
-      }).eq('id', data.user.id);
-    }
-
-    setLoading(false);
-
-    if (!clientId) {
-      setErrorMsg("Compte créé, mais le lien d'invitation n'a pas pu être associé. Contactez votre équipe Minerva.");
-      return;
-    }
-
-    // Direct redirect to dedicated client portal
-    window.location.href = '/portal';
   };
 
   if (checking) {
-    return (
-      <div className="text-center space-y-3">
-        <div className="w-8 h-8 rounded-full border-2 border-neutral-900 border-t-transparent animate-spin mx-auto" />
-        <p className="text-xs text-neutral-500 font-medium">Vérification du lien d&apos;accès…</p>
-      </div>
-    );
+    return <div className="text-center text-xs text-zinc-400 font-mono py-12">Vérification de l’invitation…</div>;
   }
 
   if (invalid) {
     return (
-      <div className="bg-white border border-neutral-200 rounded-3xl p-8 max-w-md w-full text-center space-y-4 shadow-sm">
-        <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto">
-          <AlertCircle className="w-6 h-6" />
+      <div className="bg-white border border-zinc-200 rounded-lg p-6 text-center space-y-3 shadow-sm max-w-[360px] mx-auto">
+        <div className="w-9 h-9 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mx-auto">
+          <AlertCircle className="w-5 h-5" />
         </div>
-        <div>
-          <h2 className="text-lg font-bold text-neutral-900 font-display">Lien invalide ou expiré</h2>
-          <p className="text-xs text-neutral-500 mt-1">
-            Cette invitation au portail client n&apos;est plus active. Veuillez contacter votre chef de projet Minerva pour recevoir un nouveau lien.
-          </p>
-        </div>
+        <h2 className="text-sm font-semibold text-zinc-900">Lien d’invitation invalide</h2>
+        <p className="text-xs text-zinc-500 leading-relaxed">
+          Ce lien est expiré ou a déjà été utilisé pour créer un accès client.
+        </p>
+        <Link
+          href="/login"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:underline pt-1"
+        >
+          <span>Se connecter au portail</span>
+          <ArrowRight className="w-3 h-3" />
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-md space-y-6">
-      {/* Brand Header */}
-      <div className="text-center space-y-2">
-        <div className="w-12 h-12 rounded-2xl bg-neutral-900 text-white flex items-center justify-center mx-auto shadow-sm">
-          <LogoMark size={24} />
+    <div className="w-full max-w-[360px] mx-auto">
+      {/* ── 1. Compact Brand Header ── */}
+      <div className="space-y-1 text-center mb-4">
+        <div className="w-7 h-7 rounded-md bg-zinc-900 text-white font-mono text-xs font-bold flex items-center justify-center mx-auto shadow-sm">
+          M
         </div>
-        <h1 className="text-2xl font-extrabold text-neutral-900 font-display tracking-tight">
-          Rejoindre {clientName}
+        <h1 className="text-[15px] font-semibold text-zinc-900 tracking-tight">
+          Rejoindre {clientName || 'l’Espace Partenaire'}
         </h1>
-        <p className="text-xs text-neutral-500">
-          Accédez à votre espace de suivi des leads, performances et agent vocal Minerva.
+        <p className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+          Portail Partenaire Minerva
         </p>
       </div>
 
-      {errorMsg && (
-        <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>{errorMsg}</span>
-        </div>
-      )}
+      {/* ── 2. Compact Form Container ── */}
+      <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+        {/* Actionable Error Banner */}
+        {isAlreadyRegistered ? (
+          <div className="bg-zinc-50 border border-zinc-200 rounded-md p-2.5 flex items-center justify-between text-xs text-zinc-700 mb-3">
+            <span className="font-medium">Compte déjà existant</span>
+            <Link
+              href={`/login?email=${encodeURIComponent(email)}`}
+              className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 inline-flex items-center gap-0.5"
+            >
+              <span>Se connecter</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        ) : errorMsg ? (
+          <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-md p-2.5 text-xs mb-3 flex items-center gap-2">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
+            <span>{errorMsg}</span>
+          </div>
+        ) : null}
 
-      {/* Form Container */}
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white border border-neutral-200/90 rounded-3xl p-6 sm:p-8 shadow-sm">
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-neutral-900">Nom complet</label>
-          <div className="relative">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {/* Nom complet */}
+          <div>
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1 block">
+              Prénom & Nom
+            </label>
             <input
               type="text"
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Alexandre Roy"
-              className="w-full px-3.5 py-2.5 pl-10 bg-neutral-50/50 border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:border-neutral-900 transition-colors font-medium"
+              placeholder="ex: Marc Beauchemin"
+              className="w-full h-8 text-xs px-2.5 bg-white border border-zinc-200 rounded-md text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20"
             />
-            <User className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           </div>
-        </div>
 
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-neutral-900">Courriel professionnel</label>
-          <div className="relative">
+          {/* Courriel */}
+          <div>
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1 block">
+              Adresse courriel
+            </label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="alex@entreprise.com"
-              className="w-full px-3.5 py-2.5 pl-10 bg-neutral-50/50 border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:border-neutral-900 transition-colors font-medium"
+              placeholder="nom@entreprise.com"
+              className={cn(
+                'w-full h-8 text-xs px-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20 font-mono text-[11.5px]',
+                token ? 'bg-zinc-50 text-zinc-600' : 'bg-white text-zinc-900'
+              )}
+              style={MONO}
             />
-            <Mail className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           </div>
-        </div>
 
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-neutral-900">Mot de passe</label>
-          <div className="relative">
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-3.5 py-2.5 pl-10 bg-neutral-50/50 border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:border-neutral-900 transition-colors font-mono"
-            />
-            <Lock className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          {/* Mot de passe */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 block">
+                Mot de passe
+              </label>
+              <span className="font-mono text-[10px] text-zinc-400" style={MONO}>
+                8+ car.
+              </span>
+            </div>
+
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full h-8 text-xs px-2.5 pr-8 bg-white border border-zinc-200 rounded-md text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20 font-mono"
+                style={MONO}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2.5 top-2 text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                title={showPassword ? 'Masquer' : 'Afficher'}
+              >
+                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
-          <p className="text-[11px] text-neutral-400">Minimum 8 caractères</p>
-        </div>
 
-        <div className="pt-2">
+          {/* Bouton de Soumission */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-neutral-900 hover:bg-black text-white font-bold text-sm rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+            className="h-8 w-full bg-zinc-900 hover:bg-black text-white text-xs font-medium rounded-md shadow-sm flex items-center justify-center gap-1.5 mt-2 transition-colors cursor-pointer disabled:opacity-50"
           >
-            <span>{loading ? 'Création de l\'accès…' : 'Créer mon compte client'}</span>
-            <ArrowRight className="w-4 h-4" />
+            <span>{loading ? 'Création du compte…' : 'Créer mon compte client (Entrée)'}</span>
           </button>
-        </div>
+        </form>
+      </div>
 
-        <div className="pt-2 flex items-center justify-center gap-1.5 text-[11px] text-neutral-400 font-medium">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Accès direct et sécurisé au Portail Client Minerva</span>
-        </div>
-      </form>
+      {/* ── 3. Micro-Footer ── */}
+      <p className="text-[10px] font-mono text-zinc-400 text-center mt-3" style={MONO}>
+        🔒 Chiffré & sécurisé par Minerva Engine
+      </p>
     </div>
   );
 }
 
 export default function PortalJoinPage() {
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-4 sm:p-6 font-sans">
-      <Suspense fallback={<div className="text-sm text-neutral-500">Chargement…</div>}>
+    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4 py-8">
+      <Suspense fallback={<div className="text-xs text-zinc-400 font-mono">Chargement…</div>}>
         <JoinForm />
       </Suspense>
     </div>

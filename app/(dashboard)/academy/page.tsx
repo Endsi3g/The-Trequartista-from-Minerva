@@ -20,7 +20,7 @@ import {
   X,
   Sparkles,
 } from 'lucide-react';
-import { fetchAcademySops } from '@/lib/services/supabase-data';
+import { fetchAcademySops, addDocument } from '@/lib/services/supabase-data';
 import type { AcademySOP } from '@/lib/types';
 import { StorageBrowser } from '@/components/storage/StorageBrowser';
 import { PageFadeIn } from '@/components/ui/page-transition';
@@ -134,6 +134,18 @@ export default function AcademyPage() {
               <span>Liste</span>
             </button>
           </div>
+
+          <button
+            onClick={async () => {
+              const doc = await addDocument('Brief Prospect — Nouveau Client', null);
+              if (doc) router.push(`/documents/${doc.id}`);
+            }}
+            className="h-7 px-2.5 rounded-[4px] border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-[11.5px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
+            title="Créer un document de prospection vierge"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+            <span>+ Brief Prospect</span>
+          </button>
 
           {can('publish_academy_sop') && (
             <Link
