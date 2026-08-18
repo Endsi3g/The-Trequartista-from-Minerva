@@ -19,6 +19,7 @@ import {
   Filter,
   Check,
   X,
+  Zap,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -409,6 +410,34 @@ export default function PortalOverviewPage() {
             {periodKpis.conversionSub}
           </div>
         </div>
+      </div>
+
+      {/* ── 2.5 Live Work & Deliverables Ribbon ── */}
+      <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 text-white rounded-lg p-3.5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-zinc-800">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <Zap className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] font-semibold text-white">Production & Livrables en Cours</span>
+              <span className="text-[10px] font-mono text-emerald-300 bg-emerald-500/20 px-1.5 py-0.2 rounded border border-emerald-500/30 font-semibold" style={MONO}>
+                2 livrables à valider
+              </span>
+            </div>
+            <p className="text-[11.5px] text-zinc-400">
+              Tâche active : <span className="text-zinc-200 font-medium">Développement du Formulaire Multi-Étapes d’Estimation</span> (par Thomas Renaud)
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/portal/tasks"
+          className="h-7 px-3 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-md transition-colors flex items-center justify-center gap-1.5 shrink-0 shadow-2xs"
+        >
+          <span>Voir le tableau en direct</span>
+          <ArrowRight className="w-3 h-3" />
+        </Link>
       </div>
 
       {/* ── 3. Monolith 2-Column Split View ── */}

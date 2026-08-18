@@ -74,7 +74,7 @@ async function main() {
     console.error('Error capturing Content Studio:', err);
   }
 
-  // 6. Client Portal
+  // 6. Client Portal Overview
   console.log('Capturing Client Portal (/portal)...');
   try {
     await page.goto(`${BASE_URL}/portal`, { waitUntil: 'networkidle', timeout: 30000 });
@@ -83,6 +83,17 @@ async function main() {
     console.log('✓ Portal captured: public/changelog/portal-v2-4-0.png');
   } catch (err) {
     console.error('Error capturing Portal:', err);
+  }
+
+  // 7. Client Portal Tasks & Deliverables
+  console.log('Capturing Client Portal Tasks (/portal/tasks)...');
+  try {
+    await page.goto(`${BASE_URL}/portal/tasks`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.waitForTimeout(2000);
+    await page.screenshot({ path: path.join(outputDir, 'portal-tasks-v2-4-0.png'), fullPage: false });
+    console.log('✓ Portal Tasks captured: public/changelog/portal-tasks-v2-4-0.png');
+  } catch (err) {
+    console.error('Error capturing Portal Tasks:', err);
   }
 
   await browser.close();

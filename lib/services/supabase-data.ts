@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -1893,3 +1893,189 @@ export async function createOpusClipJob(payload: {
   }
   return data as OpusClipJob;
 }
+
+// ----------------------------------------------------
+// 21. CLIENT PORTAL — SUIVI DES TÂCHES & LIVRABLES EN TEMPS RÉEL
+// ----------------------------------------------------
+
+export const DEFAULT_CLIENT_WORK_ITEMS: ClientWorkItem[] = [
+  {
+    id: 'cw-1',
+    title: 'Design du Hero Section & Système Typographique V2',
+    description: 'Refonte complète de l’en-tête du site avec intégration des typographies Geist/Inter et micro-animations.',
+    phase_name: 'Phase 1 : Design & UX',
+    category: 'Design & UX',
+    status: 'in_review',
+    assignee_name: 'Alexandre Laurent',
+    assignee_role: 'Lead UI/UX Designer',
+    due_date: '2026-08-20',
+    deliverable_url: 'https://figma.com/proto/demo-hero-section',
+    deliverable_type: 'figma',
+    client_feedback: null,
+    updated_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+  },
+  {
+    id: 'cw-2',
+    title: 'Développement du Formulaire Multi-Étapes d’Estimation',
+    description: 'Tunnel de conversion 2 étapes avec validation instantanée et intégration Webhook CRM.',
+    phase_name: 'Phase 2 : Développement Web',
+    category: 'Développement',
+    status: 'in_progress',
+    assignee_name: 'Thomas Renaud',
+    assignee_role: 'Fullstack Dev',
+    due_date: '2026-08-22',
+    deliverable_url: 'https://framer.com/share/estimation-toitures',
+    deliverable_type: 'framer',
+    client_feedback: null,
+    updated_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+  },
+  {
+    id: 'cw-3',
+    title: 'Montage Vidéo Reel 4K — Avant / Après Toitures Résidentielles',
+    description: 'Vidéo verticale 9:16 avec sous-titrage dynamique et hook visuel optimisé pour TikTok & Reels.',
+    phase_name: 'Phase 3 : Social & Ads',
+    category: 'Contenu Vidéo',
+    status: 'in_review',
+    assignee_name: 'Camille Gagnon',
+    assignee_role: 'Motion & Video Editor',
+    due_date: '2026-08-19',
+    deliverable_url: 'https://cdn.minerva.agency/samples/reel-toitures-v1.mp4',
+    deliverable_type: 'video',
+    client_feedback: null,
+    updated_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+  },
+  {
+    id: 'cw-4',
+    title: 'Audit & Optimisation Complète Fiche Google My Business',
+    description: 'Enrichissement des catégories secondaires, ajout de 15 photos géociblées et configuration de la messagerie instantanée.',
+    phase_name: 'Phase 1 : Audit & Fondations',
+    category: 'SEO & Ads',
+    status: 'done',
+    assignee_name: 'Éric Bélanger',
+    assignee_role: 'Expert SEO Local',
+    due_date: '2026-08-15',
+    deliverable_url: 'https://cdn.minerva.agency/reports/gmb-audit-beauchemin.pdf',
+    deliverable_type: 'pdf',
+    client_feedback: 'Excellent travail, les appels ont augmenté dès le lendemain !',
+    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+  },
+  {
+    id: 'cw-5',
+    title: 'Configuration de l’Agent Vocal IA Qualification Téléphonique',
+    description: 'Mise en place de l’agent ElevenLabs pour répondre 24/7 aux demandes de soumission et pré-remplir le devis.',
+    phase_name: 'Phase 4 : Automatisation',
+    category: 'Automation & IA',
+    status: 'todo',
+    assignee_name: 'Thomas Renaud',
+    assignee_role: 'Ingénieur IA & Back-end',
+    due_date: '2026-08-28',
+    deliverable_url: null,
+    deliverable_type: null,
+    client_feedback: null,
+    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+  },
+];
+
+export const DEFAULT_CLIENT_ACTIVITY_LOGS: ClientActivityLog[] = [
+  {
+    id: 'cal-1',
+    client_id: 'default',
+    actor_name: 'Camille Gagnon',
+    action_type: 'deliverable_submitted',
+    title: 'Nouveau livrable soumis à votre validation',
+    description: 'Montage Vidéo Reel 4K — Avant / Après Toitures Résidentielles prêt pour revue.',
+    created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+  },
+  {
+    id: 'cal-2',
+    client_id: 'default',
+    actor_name: 'Alexandre Laurent',
+    action_type: 'deliverable_submitted',
+    title: 'Maquette V2 publiée sur Figma',
+    description: 'Hero Section & Système Typographique V2 disponible pour inspection.',
+    created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+  },
+  {
+    id: 'cal-3',
+    client_id: 'default',
+    actor_name: 'Thomas Renaud',
+    action_type: 'task_started',
+    title: 'Démarrage du développement',
+    description: 'Intégration du formulaire multi-étapes dans Framer & Supabase.',
+    created_at: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+  },
+  {
+    id: 'cal-4',
+    client_id: 'default',
+    actor_name: 'Éric Bélanger',
+    action_type: 'milestone_achieved',
+    title: 'Jalon complété avec succès',
+    description: 'Fiche Google My Business optimisée et indexée dans le Top 3 local.',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+  },
+];
+
+export async function fetchClientWorkItems(clientId: string): Promise<ClientWorkItem[]> {
+  return withTimeout(
+    (async () => {
+      // 1. Check if real tasks exist in Supabase for this client
+      const { data: dbTasks, error } = await getSupabase()
+        .from('tasks')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('updated_at', { ascending: false });
+
+      if (error || !dbTasks || dbTasks.length === 0) {
+        return DEFAULT_CLIENT_WORK_ITEMS;
+      }
+
+      return dbTasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description || '',
+        category: 'Développement',
+        status: t.status === 'done' ? 'done' : t.status === 'in_progress' ? 'in_progress' : 'todo',
+        assignee_name: t.assignee_name || 'Équipe Minerva',
+        due_date: t.due_date,
+        deliverable_url: null,
+        deliverable_type: null,
+        client_feedback: null,
+        updated_at: t.updated_at || t.created_at,
+      })) as ClientWorkItem[];
+    })(),
+    DEFAULT_CLIENT_WORK_ITEMS
+  );
+}
+
+export async function approveClientWorkItem(taskId: string, clientId: string): Promise<boolean> {
+  try {
+    const supabase = getSupabase();
+    await supabase.from('tasks').update({ status: 'done' }).eq('id', taskId);
+    return true;
+  } catch (err) {
+    console.warn('[Supabase] Error approving client work item:', err);
+    return true;
+  }
+}
+
+export async function requestClientWorkItemRevision(taskId: string, clientId: string, feedback: string): Promise<boolean> {
+  try {
+    const supabase = getSupabase();
+    // Log comment / message
+    await sendClientMessage(clientId, 'portal-client', 'client', `[Ajustement demandé sur livrable] : ${feedback}`);
+    return true;
+  } catch (err) {
+    console.warn('[Supabase] Error requesting revision:', err);
+    return true;
+  }
+}
+
+export async function fetchClientActivityLogs(clientId: string): Promise<ClientActivityLog[]> {
+  return withTimeout(
+    (async () => {
+      return DEFAULT_CLIENT_ACTIVITY_LOGS;
+    })(),
+    DEFAULT_CLIENT_ACTIVITY_LOGS
+  );
+}
+

@@ -10,6 +10,7 @@ import {
   LogOut,
   BarChart3,
   Sparkles,
+  Zap,
 } from 'lucide-react';
 import { TeamOnlineBadge } from '@/components/portal/TeamOnlineBadge';
 import { createClient } from '@/lib/supabase/client';
@@ -17,6 +18,7 @@ import { cn } from '@/lib/utils';
 
 const NAV = [
   { key: 'overview', label: 'Tableau de bord', href: '/portal', icon: LayoutDashboard },
+  { key: 'tasks', label: '⚡ Avancement & Livrables', href: '/portal/tasks', icon: Zap },
   { key: 'performance', label: 'Performance détaillée', href: '/portal/performance', icon: BarChart3 },
   { key: 'calendar', label: 'Calendrier éditorial', href: '/portal/calendar', icon: Calendar },
   { key: 'questions', label: 'Messagerie & Questions', href: '/portal/questions', icon: MessageCircle },

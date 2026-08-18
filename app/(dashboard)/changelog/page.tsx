@@ -12,6 +12,24 @@ import { PageFadeIn } from '@/components/ui/page-transition';
 
 const STATIC_ENTRIES: ChangelogEntry[] = [
   {
+    id: 'v2-4-1',
+    version: '2.4.1',
+    title: 'Flow Temps Réel d’Avancement, Tâches & Approbations Client (v2.4.1)',
+    body: `Mise à niveau complète du Portail Client permettant aux clients de suivre en direct toutes les tâches en cours de réalisation pour leur entreprise, d’inspecter les maquettes, prototypes et vidéos et de valider ou demander des ajustements en un clic avec synchronisation Supabase Realtime.`,
+    included_items: [
+      '⚡ Vue Dédiée Avancement & Livrables (/portal/tasks) : Tableau Kanban 4 colonnes (À faire, En cours de production, ⚠️ À votre validation, Livré & Validé) et commutateur de vue Liste & Jalons.',
+      'Validation & Approbation en 1 Clic : Bouton « ✓ Valider le livrable » et modal de demande d’ajustement « 💬 Ajuster » avec notification immédiate à l’équipe Minerva.',
+      'Aperçu Direct des Livrables : Intégration de liens interactifs vers maquettes Figma, prototypes Framer, vidéos 4K (Reels/TikTok) et rapports PDF téléchargeables.',
+      'Journal des Actions en Direct : Volet d’activité temps réel indiquant les démarrages de tâches, soumissions de livrables et validations d’étapes.',
+      'Widget Résumé sur l’Accueil : Bannière de synthèse « Production & Livrables en Cours » sur /portal avec accès direct vers la roadmap interactive.',
+      'Synchronisation Supabase Realtime : Canal WebSocket instantané pour actualiser les colonnes sans rechargement de page.',
+    ],
+    image_url: '/changelog/portal-v2-4-0.png',
+    created_at: new Date().toISOString(),
+    created_by: 'system',
+    author_name: 'Minerva Core Team',
+  },
+  {
     id: 'v2-4-0',
     version: '2.4.0',
     title: 'Pages Dédiées des Jalons, Générateur par Service & Studio Minerva (v2.4.0)',

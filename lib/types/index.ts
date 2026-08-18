@@ -93,6 +93,32 @@ export interface TaskComment {
   created_at: string;
 }
 
+export interface ClientWorkItem {
+  id: string;
+  title: string;
+  description: string | null;
+  phase_name?: string;
+  category: 'Design & UX' | 'Développement' | 'SEO & Ads' | 'Contenu Vidéo' | 'Automation & IA';
+  status: 'todo' | 'in_progress' | 'in_review' | 'done';
+  assignee_name: string;
+  assignee_role?: string;
+  due_date: string | null;
+  deliverable_url?: string | null;
+  deliverable_type?: 'figma' | 'framer' | 'video' | 'pdf' | 'document' | null;
+  client_feedback?: string | null;
+  updated_at: string;
+}
+
+export interface ClientActivityLog {
+  id: string;
+  client_id: string;
+  actor_name: string;
+  action_type: 'task_started' | 'deliverable_submitted' | 'task_completed' | 'revision_requested' | 'milestone_achieved';
+  title: string;
+  description: string;
+  created_at: string;
+}
+
 export interface TeamInvite {
   id: string;
   token: string;
