@@ -4,6 +4,30 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-18 (v2.4.3) — Système Anti-Friction (4 Piliers), Académie Redessinée, Studio de Scripting Cas Client 60s & Co-Pilotage ($300-$500/mo)
+
+Mise en production du Framework Directeur Anti-Friction « Donner d’abord, demander ensuite » et de l’ensemble des outils opérationnels pour simplifier le travail de l'équipe sur les 4 piliers :
+
+- **SOP Fondatrice Anti-Friction (sop-anti-friction-master)** :
+  - Framework complet intégrant la neutralisation des 4 failles critiques pour chaque pilier (Flow, Reach, Agence Sur Mesure, Mes Inspirations).
+  - Détail des règles d'exécution terrain, de la boucle d'offre unifiée et de la matrice de priorité S1/M1.
+- **Académie Cockpit & Navigation Compacte (/academy)** :
+  - Carte Héro dark-mode en haut de l'Académie avec raccourcis directs vers les 4 piliers.
+  - Pinned Essential SOPs affichées en premier.
+  - Bouton interactif compact `[ ▾ Afficher les autres guides et SOPs ]` pour désencombrer l'écran.
+  - Barre de filtres de catégories compacte avec pills défilables et sélecteur dropdown réactif.
+  - Raccourci clavier de recherche globale (`/`).
+- **Studio de Scripting Cas Client 60s (Mes Inspirations)** :
+  - Générateur interactif de scripts vidéo Build-in-Public (Hook chiffré, Contexte, Démo Minerva, Résultat, CTA Pilier unique).
+  - Copie 1-clic et passerelle directe vers le Content Planner.
+- **Module de Co-Pilotage Mensuel ($300-$500/mo)** :
+  - Suivi de la récurrence mensuelle agence sur les fiches clients (`/clients/[id]`).
+  - Checklist protocolaire de la session 1h, historique des revues mensuelles et planification de la prochaine séance.
+- **Détails des SOPs Enrichis (/academy/[id])** :
+  - Rendu Markdown complet, actions contextuelles 1-clic (+ Créer doc prospect, Liens directs vers démos) et checklists interactives de contrôle qualité.
+
+---
+
 ## 2026-08-17 (v2.2.0) — Refonte Totale Haute Densité Linear & Superhuman sur l'Ensemble des 8 Modules
 
 Déploiement de la version majeure **v2.2.0** apportant une refonte chirurgicale de l'expérience utilisateur et de la densité visuelle selon les standards de craft de **Linear** et **Superhuman** :

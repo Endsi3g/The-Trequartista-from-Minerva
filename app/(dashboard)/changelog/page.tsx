@@ -12,6 +12,24 @@ import { PageFadeIn } from '@/components/ui/page-transition';
 
 const STATIC_ENTRIES: ChangelogEntry[] = [
   {
+    id: 'v2-4-3',
+    version: '2.4.3',
+    title: 'Système Anti-Friction (4 Piliers), Académie Redessinée & Studio de Scripting Cas Client (v2.4.3)',
+    body: `Mise en production du Framework Directeur Anti-Friction « Donner d’abord, demander ensuite » couvrant les 4 piliers de l'agence (Flow, Reach, Agence Sur Mesure, Mes Inspirations). Refonte ergonomique de l'Académie avec Carte Héro Fondatrice, SOPs Essentielles en tête, bascule compacte « Voir plus », filtres de catégories ultra-navigables, Studio de Scripting Cas Client 60s et module de Co-Pilotage Mensuel ($300-$500/mo).`,
+    included_items: [
+      '⚡ SOP Fondatrice Anti-Friction : Framework complet intégrant la neutralisation des 4 failles critiques pour chaque pilier, les règles d’exécution terrain, la boucle d’offre unifiée et la matrice de priorité S1/M1.',
+      'Académie Cockpit & Navigation Compacte : Carte Héro dark-mode en haut de l’Académie avec raccourcis directs vers les 4 piliers, barre de recherche avec focus clavier (/) et filtre de catégories en pills défilables avec dropdown compact.',
+      'SOPs Essentielles & Bascule « Voir Plus » : Affichage prioritaire des guides clés de l’agence avec bouton interactif [ ▾ Afficher les autres guides ] pour désencombrer l’écran au quotidien.',
+      'Studio de Scripting Cas Client 60s (Mes Inspirations) : Générateur instantané de scripts vidéo Build-in-Public (Hook chiffré, Storyline 60s, CTA pilier) avec copie 1-clic et passerelle directe vers le Content Planner.',
+      'Module de Co-Pilotage Mensuel ($300-$500/mo) : Composant de suivi de la récurrence agence sur les fiches clients avec checklist de la session 1h, historique des revues et planification de la prochaine séance.',
+      'Détail des SOPs Enrichi : Rendu Markdown complet, actions contextuelles 1-clic (+ Créer doc prospect, Liens directs vers démos) et checklists interactives de contrôle qualité.',
+    ],
+    image_url: '/changelog/academy-v2-4-0.png',
+    created_at: new Date().toISOString(),
+    created_by: 'system',
+    author_name: 'Minerva Core Team',
+  },
+  {
     id: 'v2-4-2',
     version: '2.4.2',
     title: 'Envois d’Emails (Resend / Gmail), Audit Fuite de Marge & Minerva-Flow (v2.4.2)',

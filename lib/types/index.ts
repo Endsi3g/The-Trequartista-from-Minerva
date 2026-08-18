@@ -390,11 +390,16 @@ export interface AcademySOP {
     | 'Outils & Systèmes'
     | 'Ventes & Prospection'
     | 'Gestion de compte'
-    | 'Support & QA';
+    | 'Support & QA'
+    | 'Stratégie & Offre';
   read_time_min: number;
   author: string;
   video_url?: string;
   description: string;
+  is_featured?: boolean;
+  is_essential?: boolean;
+  content_markdown?: string;
+  pillar?: 'flow' | 'reach' | 'agency' | 'inspirations' | 'transversal';
 }
 
 // ── Integrations ─────────────────────────────────────────────────────────────

@@ -44,6 +44,7 @@ import { useCurrentUser } from '@/hooks/use-current-user';
 import { useClientChatThread } from '@/hooks/use-client-chat-thread';
 import { Client, Lead, Project, ClientPaymentLink, Task, ContentPost } from '@/lib/types';
 import { UserAvatar } from '@/components/ui/user-avatar';
+import { CoPilotageTracker } from '@/components/clients/CoPilotageTracker';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 
 const HEALTH_BADGE: Record<Client['health_status'], 'blue' | 'amber' | 'green'> = {
@@ -490,6 +491,9 @@ export default function ClientDetailPage() {
           </div>
         )}
       </Card>
+
+      {/* Co-Pilotage Mensuel & Suivi de Valeur ($300-$500/mo) */}
+      <CoPilotageTracker clientId={client.id} clientName={client.name} initialMrr={client.mrr} />
 
       {/* Projects */}
       <Card

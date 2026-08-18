@@ -361,15 +361,357 @@ export async function updateNext1on1Date(profileId: string, date: string): Promi
 }
 
 // ----------------------------------------------------
-// 6. ACADEMY SOPs DIRECT SUPABASE API
 const DEFAULT_ACADEMY_SOPS: AcademySOP[] = [
   {
+    id: 'sop-anti-friction-master',
+    title: 'Système Anti-Friction : Architecture d’Offre Complète (4 Piliers)',
+    category: 'Stratégie & Offre',
+    read_time_min: 15,
+    author: 'Direction Minerva',
+    description: 'Framework stratégique directeur "Donner d’abord, demander ensuite" appliqué aux 4 piliers : Minerva Flow, Minerva Reach, Agence Sur Mesure et Mes Inspirations.',
+    is_featured: true,
+    is_essential: true,
+    pillar: 'transversal',
+    content_markdown: `# MINERVA — SYSTÈME ANTI-FRICTION : ARCHITECTURE D'OFFRE COMPLÈTE
+
+> Framework dérivé de l'analyse "avocat du diable" sur l'offre d'appel restaurateurs.  
+> Appliqué à chaque pilier de l'agence : Flow, Reach, Agence Sur Mesure, Mes Inspirations.
+
+---
+
+## PRINCIPE DIRECTEUR
+
+Chaque pilier partage le même défaut structurel par défaut : **il demande avant de donner**. Le prospect doit fournir ses chiffres, son temps, sa confiance — avant d'avoir reçu une seule preuve de valeur. Ce framework inverse systématiquement l'ordre : **donner d'abord, demander ensuite**.
+
+Les 4 failles s'appliquent à chaque pilier différemment, mais le remède est toujours le même :  
+→ Réduire l'effort du prospect à zéro sur le premier contact  
+→ Livrer la moitié du travail avant qu'il ait dit oui  
+→ Neutraliser le risque opérationnel dans l'offre elle-même  
+→ Rendre la passerelle vers le niveau suivant évidente et naturelle
+
+---
+
+## PILIER 1 — MINERVA FLOW (SaaS Restos & Cafés)
+
+### Faille #1 — Friction de la donnée
+- **Le piège :** Demander relevés Uber Eats, exports de caisse, ou coûts de staff avant de montrer quoi que ce soit.  
+- **Correction :** Audit public proactif. Prix menu sur Google Maps / site web vs prix majorés sur UberEats. Volume estimé à partir des avis Google (fourchette basse, assumée transparemment). Livraison : vidéo 60 secondes personnalisée avec chiffre précis.  
+- **Message :** *« On a regardé votre menu sur Uber Eats. Sur votre [plat signature], vous perdez environ X$ par commande. On a simulé ça en une minute — voici le lien. »*
+
+### Faille #2 — Rapport qui prend la poussière
+- **Le piège :** Envoyer un beau PDF d'audit que le proprio regarde une fois et range.  
+- **Correction :** Avec l'audit, envoyer un lien vers son menu **déjà pré-configuré en démo** sur Minerva Flow (5 plats, interface réelle, rien de public). Pas un livrable — une démo vivante. Il voit son restaurant dans l'outil avant d'avoir signé quoi que ce soit.  
+- **Précaution :** Framer comme une démo, pas comme un acte unilatéral. *« On a pris 5 minutes pour recréer vos plats signature dans l'interface — c'est juste pour que vous visualisiez. Rien n'est en ligne. »*
+
+### Faille #3 — Peur du bug pendant le rush
+- **Le piège :** Positionner Minerva Flow comme remplacement du système existant. Le proprio imagine son samedi soir en chaos.  
+- **Correction :** Canal parallèle exclusivement pour clients fidèles/emporter. Protocole test de 5 minutes avec l'équipe présente. Inclure dans l'offre : une fiche plastifiée d'une page pour le comptoir + option d'un briefing d'équipe de 15 min (en personne ou vidéo) avant le premier service.  
+- **Message :** *« On branche une commande test sur votre imprimante actuelle. Si ça prend plus de 5 minutes ou que votre équipe hésite — vous ne lancez rien. »*
+
+### Faille #4 — Pas de passerelle naturelle vers l'agence
+- **Le piège :** Résoudre le problème de commission → le client est content → aucune raison de payer plus.  
+- **Correction :** Repositionner l'upsell agence en **rétention, pas acquisition**. *« Minerva Flow vous économise 30% par commande. Maintenant : comment on fait pour que vos clients Uber commandent directement chez vous la prochaine fois ? »* Les clients existent déjà. Il s'agit de les récupérer — pas d'en trouver de nouveaux. C'est une conversation infiniment plus facile.  
+- **Upsell naturel :** Optimisation fiche Google Business + QR codes sur emballages + campagne SMS clients existants.
+
+### Règles d'exécution spécifiques — Flow
+- **Timing de contact :** Mardi ou mercredi, 14h30–16h. Jamais vendredi soir, jamais lundi matin.
+- **Canal :** Visite physique pour les indépendants (Plateau, Villeray, Rosemont). Instagram DM en backup.
+- **Preuve sociale :** Toujours un nom local. *« On travaille déjà avec X café dans Rosemont. »* Aucune référence nationale générique.
+- **Staff :** Le vrai bloquant n'est pas le proprio — c'est la caissière ou le cuisinier. L'offre inclut un protocole d'onboarding équipe dès le jour 1.
+
+---
+
+## PILIER 2 — MINERVA REACH (Prospection Automatisée Québec)
+
+### Faille #1 — Friction de la donnée
+- **Le piège :** Demander l'accès au CRM, une liste de prospects, ou les critères de ciblage avant de commencer.  
+- **Correction :** Construire la première liste **pour eux** depuis des sources publiques (LinkedIn, Google Maps, Pages Jaunes, Sites sectoriels QC) avant le premier appel. Livrer une liste de 50 prospects qualifiés avec contexte (taille, secteur, signal d'achat récent) comme pré-cadeau de la conversation.  
+- **Message :** *« Avant qu'on se parle, on a identifié 50 entreprises à Montréal qui correspondent exactement à votre ICP et qui ont un signal d'achat actif. Voici la liste — c'est notre façon de vous montrer comment on travaille. »*
+
+### Faille #2 — Rapport qui prend la poussière
+- **Le piège :** Livrer une liste de prospects → le client la regarde → personne ne prospecte.  
+- **Correction :** Ne jamais livrer une liste seule. La liste est toujours accompagnée de **messages déjà rédigés et prêts à envoyer**, adaptés à chaque segment. Idéalement : les 10 premiers messages sont envoyés dans la semaine du lancement, avant même que le client ait eu le temps de procrastiner.  
+- **Règle :** Le livrable de Minerva Reach n'est jamais une liste — c'est des **réponses reçues**.
+
+### Faille #3 — Peur du spam et de la réputation
+- **Le piège :** L'entrepreneur craint que ses contacts LinkedIn soient bombardés de messages automatiques et que sa réputation en prenne un coup.  
+- **Correction :** Démarrer avec un batch de 10 messages 100% manuels et personnalisés, soumis à validation avant envoi. Le client approuve le ton, le contenu et les cibles. L'automatisation ne démarre qu'après que les premiers retours prouvent que le message fonctionne.  
+- **Message :** *« Les 10 premiers messages, on les rédige ensemble et vous les validez un par un. On n'envoie rien en automatique avant que vous ayez vu que ça convertit. »*
+
+### Faille #4 — Reach génère des leads que personne ne close
+- **Le piège :** Minerva Reach amène des conversations → le client ne sait pas quoi répondre → les leads refroidissent.  
+- **Correction :** Inclure dans l'offre Reach un **playbook de réponse** (3–5 scripts de follow-up par type de réponse reçue) + une session mensuelle de 30 min pour affiner les angles selon les retours terrain.  
+- **Passerelle naturelle :** Reach génère des leads qualifiés → l'agence Sur Mesure peut prendre en charge la conversion si le client n'a pas la bande passante pour closer.
+
+### Règles d'exécution spécifiques — Reach
+- **ICP de Reach :** Entrepreneurs et PME Québec, pas les grands comptes. Le message doit sonner local, pas corporate.
+- **Ton des messages :** Jamais de « Je me permets de vous contacter… » — opener direct sur un pain point observé publiquement (offre d'emploi récente, avis Google négatif, expansion récente).
+- **Volume :** Commencer par 20–30 envois/semaine, pas 200. La qualité de la réponse prime sur le volume brut.
+- **Mesure :** KPI principal = taux de réponse positive (pas taux d'ouverture). Tout le reste est vanity metric.
+
+---
+
+## PILIER 3 — AGENCE SUR MESURE (Implémentations Personnalisées)
+
+### Faille #1 — Friction de la donnée
+- **Le piège :** Demander un brief complet, un accès aux outils, et une réunion de discovery de 2 heures avant de montrer quoi que ce soit.  
+- **Correction :** Remplacer la réunion de discovery par un **audit de surface en 30 minutes** basé sur ce qui est visible publiquement (site web, réseaux, Google, outils déclarés). Arriver avec des observations déjà formulées plutôt que des questions à remplir.  
+- **Message :** *« Avant qu'on se parle, on a passé 30 minutes sur votre setup actuel. On a identifié 3 endroits où vous perdez du temps ou de l'argent. On veut vous les montrer — pas vous vendre quelque chose. »*
+
+### Faille #2 — Le spec document que personne n'implémente
+- **Le piège :** Phase de discovery longue → document de spécifications → devis → validation → début des travaux 3 semaines plus tard. Le client a perdu confiance ou d'intérêt.  
+- **Correction :** **Semaine 1 = prototype fonctionnel, pas un document.** Même petit, même incomplet — quelque chose qui marche et qu'ils peuvent toucher. La confiance s'établit sur le concret, pas sur les promesses.  
+- **Règle :** Ne jamais livrer un document avant un artefact. Le document documente ce qui existe, pas ce qui va exister.
+
+### Faille #3 — Peur de la dépendance et de la complexité
+- **Le piège :** Le client (CEO, entrepreneur) craint que la solution soit trop complexe, qu'elle nécessite un développeur permanent pour la maintenir, ou qu'il ne comprenne jamais comment ça marche.  
+- **Correction :** Construire avec les outils qu'il utilise déjà quand c'est possible (Notion, Google Sheets, Make/n8n, Supabase). Documenter chaque livrable avec une vidéo Loom de 5 minutes max. Inclure dans tout contrat un "mode solo" : une section du livrable qu'il peut modifier lui-même sans toucher au reste.  
+- **Message :** *« On construit pour que vous soyez autonome. Si on disparaît demain, vous ne perdez pas l'outil. »*
+
+### Faille #4 — Build one-shot sans récurrence
+- **Le piège :** Livrer un projet custom → encaisser → plus de relation. Aucune raison de revenir.  
+- **Correction :** Intégrer dans tout projet sur mesure un **module de suivi mensuel léger** : 1 heure/mois de revue des métriques, ajustements mineurs, et identification des prochains leviers. Tarif : 300–500$/mois. Ce n'est pas du support — c'est du co-pilotage.  
+- **Passerelle naturelle :** Agence Sur Mesure → abonnement Minerva Flow si le client est dans la restauration, ou recommandation Reach si le client a besoin d'acquisition.
+
+### Règles d'exécution spécifiques — Agence
+- **Cibler des entrepreneurs déjà convaincus de la technologie**, pas ceux qu'il faut convaincre en premier. Aller chercher les early adopters, pas le marché de masse.
+- **Prix :** Ne jamais donner un prix avant d'avoir montré un prototype. Le prototype justifie le prix.
+- **Preuve :** Un cas client documenté publiquement (avec leur accord) vaut 10 témoignages anonymes. Viser à documenter chaque projet sur Mes Inspirations.
+
+---
+
+## PILIER 4 — MES INSPIRATIONS (Marque Média & Contenu)
+
+### Faille #1 — Friction pour accéder à la valeur
+- **Le piège :** Mettre du contenu premium derrière un formulaire, une newsletter, ou un compte à créer avant que l'audience ait vu la valeur.  
+- **Correction :** Valeur totale en accès libre d'abord. Le CTA arrive à la fin, pas au début. L'audience doit avoir reçu quelque chose d'utile avant qu'on lui demande une action.  
+- **Règle :** Chaque vidéo / post / contenu doit pouvoir être consommé entièrement sans friction. La conversion est une couche au-dessus, pas une barrière d'entrée.
+
+### Faille #2 — Contenu qui génère des vues mais pas de clients
+- **Le piège :** Créer du contenu inspirationnel ou éducatif sans lien clair avec un produit ou une offre concrète.  
+- **Correction :** Chaque pièce de contenu est associée à **un seul CTA lié à un pilier précis** (Flow, Reach, ou Agence). Pas de CTA générique « suivez-moi ». Le contenu documente le chemin — l'offre capture ceux qui veulent aller plus vite.  
+- **Format prioritaire :** Documenter les cas clients en temps réel. *« Voici comment on a branché Minerva Flow dans ce café de Rosemont — et ce qu'ils ont économisé en 30 jours. »* C'est à la fois du contenu, de la preuve sociale, et de la prospection indirecte.
+
+### Faille #3 — L'audience perçoit la vente comme de la trahison
+- **Le piège :** Construire une audience sur du contenu inspirationnel, puis pitcher un produit → sentiment de manipulation, perte de confiance.  
+- **Correction :** **Vendre dès le début, ouvertement.** Mes Inspirations est une marque média *et* la vitrine de Minerva. Ce n'est pas un secret. L'audience qui suit sait qu'on construit une entreprise — c'est précisément ce qui est intéressant à suivre. La transparence sur l'intention commerciale construit plus de confiance que de la cacher.  
+- **Cadre :** *Build in public* — montrer les chiffres, les échecs, les décisions, les clients. Pas de performance de succès.
+
+### Faille #4 — Le média ne se connecte pas aux autres piliers
+- **Le piège :** Mes Inspirations grandit en silo — belle audience, mais zéro synchro avec Flow, Reach ou l'Agence.  
+- **Correction :** Mes Inspirations est le **moteur de preuve sociale** pour les 3 autres piliers. Chaque client Flow signé = une vidéo de cas client. Chaque projet Agence livré = un before/after documenté. Chaque campagne Reach réussie = un breakdown chiffré. Le contenu n'est pas séparé du business — il **est** le business visible.
+
+### Règles d'exécution spécifiques — Mes Inspirations
+- **Format court prioritaire :** Shorts / Reels de 60–90 secondes sur un insight précis. Un insight = une vidéo. Pas de compilations.
+- **Hook :** Toujours partir d'un chiffre ou d'une situation concrète, jamais d'un concept. *« Ce café perdait 1 400$/mois sans le savoir »* bat *« Voici pourquoi les restos doivent se digitaliser »*.
+- **Fréquence :** 2 pièces de contenu par semaine minimum. La régularité bat la perfection.
+- **Distribution :** YouTube Shorts en premier (SEO long terme), repurposé sur Instagram Reels et LinkedIn.
+
+---
+
+## LA BOUCLE D'OFFRE UNIFIÉE — COMMENT LES PILIERS S'ENCHAÎNENT
+
+\`\`\`
+MES INSPIRATIONS
+(Contenu — génère confiance + preuve sociale)
+         ↓ attire leads froids
+MINERVA REACH
+(Prospection — identifie + contacte les leads chauds)
+         ↓ qualifie et génère des RDV
+MINERVA FLOW
+(SaaS — premier produit, entrée de gamme, preuve de valeur rapide)
+         ↓ crée le besoin de trafic + systèmes
+AGENCE SUR MESURE
+(Implémentation — upsell naturel pour ceux qui veulent aller plus loin)
+         ↓ génère des cas clients documentés
+MES INSPIRATIONS
+(Le cycle recommence avec des preuves réelles)
+\`\`\`
+
+**La règle d'or :** Aucun pilier ne se vend seul. Chaque pilier alimente le suivant. Le contenu sans produit est du bruit. Le produit sans contenu est invisible. L'agence sans cas clients est indifférenciée.
+
+---
+
+## RÈGLES TRANSVERSALES — APPLICABLES À TOUS LES PILIERS
+
+| Règle | Application concrète |
+|---|---|
+| **Donner avant de demander** | Audit, démo, prototype, liste — toujours en premier |
+| **Estimer = transparence sur la méthode** | Jamais un chiffre sans expliquer comment il a été calculé |
+| **Preuve locale avant preuve générique** | Un nom à Montréal vaut 10 références nationales |
+| **Staff / équipe inclus dans l'offre** | L'onboarding de l'équipe du client fait partie du livrable |
+| **Timing de contact** | Mardi–mercredi 14h30–16h pour les restos. Matin pour les entrepreneurs. |
+| **Upsell = rétention, pas acquisition** | Toujours partir des clients existants du prospect, pas de la croissance |
+| **Documenter chaque cas client** | Chaque client signé = contenu Mes Inspirations potentiel |
+| **Risque inversé systématique** | Chaque offre inclut une porte de sortie claire si ça ne fonctionne pas |
+
+---
+
+## MATRICE DE PRIORITÉ D'EXÉCUTION
+
+| Pilier | Action #1 (semaine 1) | Action #2 (mois 1) | Indicateur de succès |
+|---|---|---|---|
+| **Flow** | 3 audits publics proactifs envoyés | 1 test opérationnel branché | 1 client payant actif |
+| **Reach** | Liste de 50 prospects construite | 10 messages validés + envoyés | 3 réponses positives |
+| **Agence** | 1 audit de surface livré sans rendez-vous | Prototype J+7 présenté | 1 contrat signé |
+| **Mes Inspirations** | 2 vidéos courtes publiées | 1 cas client documenté | 100 vues organiques / vidéo |
+`,
+  },
+  {
     id: 'sop-restaurant-margin-recovery',
-    title: 'Acquisition Restauration : Audit Fuite de Marge & Démo Minerva-Flow',
+    title: 'Pilier 1 (Flow) : Acquisition Restauration & Démo Directe 0% Commission',
     category: 'Ventes & Prospection',
     read_time_min: 8,
-    author: 'Alexandre Tremblay',
+    author: 'Direction Minerva',
     description: 'Les 4 failles critiques et contre-pieds radicaux pour convertir les restaurateurs grâce à l’audit public et la commande directe à 0% de commission.',
+    is_essential: true,
+    pillar: 'flow',
+    content_markdown: `## Pilier 1 — Minerva Flow (SaaS Restos & Cafés)
+
+### Principe Fondamental
+Réduire l'effort du restaurateur à zéro en utilisant des données 100% publiques pour calculer ses pertes Uber Eats / DoorDash, puis lui livrer son menu pré-configuré dans une démo vivante à 0% de commission.
+
+---
+
+### Les 4 Failles & Contre-Pieds Radicaux
+
+#### 1. Faille #1 : La Friction de la Donnée
+- **Le piège :** Demander relevés Uber Eats, exports de caisse, ou coûts de staff avant de montrer quoi que ce soit.
+- **Correction :** Audit public proactif. Prix menu sur Google Maps / site web vs prix majorés sur UberEats. Volume estimé à partir des avis Google. Livraison en vidéo 60 secondes avec chiffre précis.
+- **Opener de prospection :** *« On a regardé votre menu sur Uber Eats. Sur votre [plat signature], vous perdez environ X$ par commande. On a simulé ça en une minute — voici le lien. »*
+
+#### 2. Faille #2 : Le Rapport qui Prend la Poussière
+- **Le piège :** Envoyer un PDF d'audit statique.
+- **Correction :** Livrer un lien vers son menu déjà configuré en démo sur Minerva Flow (5 plats réels). Il visualise son restaurant avant d'avoir signé quoi que ce soit.
+- **Précaution :** *« On a pris 5 minutes pour recréer vos plats signature dans l'interface — c'est juste pour que vous visualisiez. Rien n'est en ligne. »*
+
+#### 3. Faille #3 : La Peur du Bug pendant le Coup de Feu
+- **Le piège :** Positionner l'outil comme remplacement du POS en place.
+- **Correction :** Canal parallèle pour clients fidèles / emporter. Protocole test 5 minutes en cuisine sur imprimante thermique avec fiche plastifiée au comptoir.
+
+#### 4. Faille #4 : L'Absence de Passerelle vers l'Agence
+- **Le piège :** Résoudre la commission puis arrêter la relation.
+- **Correction :** Upsell axé rétention : SEO Local Google Maps, QR codes sur emballages et campagnes SMS clients existants.
+
+---
+
+### Règles d'Exécution & Timing
+- **Timing :** Mardi ou mercredi, 14h30–16h (creux de service).
+- **Canal :** Visite physique dans les quartiers cibles (Plateau, Villeray, Rosemont, Mile-End) avec DM Instagram en appui.
+- **Staff inclus :** Fiche comptoir plastifiée 1 page + briefing 15 min de l'équipe avant le premier service.`,
+  },
+  {
+    id: 'sop-minerva-reach-playbook',
+    title: 'Pilier 2 (Reach) : Prospection 50 Leads QC & Playbook de Réponses',
+    category: 'Ventes & Prospection',
+    read_time_min: 9,
+    author: 'Direction Minerva',
+    description: 'Méthodologie pour pré-qualifier 50 prospects locaux avec signaux d’achat, validation manuelle des 10 premiers messages et scripts de closing.',
+    is_essential: true,
+    pillar: 'reach',
+    content_markdown: `## Pilier 2 — Minerva Reach (Prospection Automatisée Québec)
+
+### Principe Fondamental
+Ne jamais demander d'accès CRM ou de listes de contacts au prospect. Minerva construit la première liste de 50 prospects qualifiés avec contexte d'achat visible publiquement comme cadeau préalable à la conversation.
+
+---
+
+### Les 4 Failles & Contre-Pieds Radicaux
+
+#### 1. Faille #1 : Friction de la Donnée
+- **Correction :** Construire la liste de 50 prospects qualifiés depuis LinkedIn, Google Maps, Registre des entreprises du Québec et sites sectoriels avant le premier appel.
+- **Message :** *« Avant qu'on se parle, on a identifié 50 entreprises à Montréal qui correspondent exactement à votre ICP et qui ont un signal d'achat actif. Voici la liste — c'est notre façon de vous montrer comment on travaille. »*
+
+#### 2. Faille #2 : Rapport qui Prend la Poussière
+- **Règle :** Le livrable de Minerva Reach n'est jamais une liste — c'est des **réponses reçues**.
+- **Correction :** Accompagner la liste de messages personnalisés déjà rédigés et envoyer les 10 premiers dans la semaine de lancement.
+
+#### 3. Faille #3 : Peur du Spam et de la Réputation
+- **Correction :** Batch initial de 10 messages 100% manuels et personnalisés, soumis à validation par le client avant tout envoi.
+
+#### 4. Faille #4 : Leads Chauds Non Closés
+- **Correction :** Fournir le Playbook de réponses (scripts par type d'objection) et organiser une session mensuelle de 30 min d'ajustement des angles.
+
+---
+
+### Règles d'Exécution Reach
+- **ICP :** PME et entrepreneurs du Québec (ton direct, local, pas de jargon corporatif creux).
+- **Volume initial :** 20–30 prises de contact / semaine.
+- **KPI principal :** Taux de réponse positive.`,
+  },
+  {
+    id: 'sop-agence-prototype-j7',
+    title: 'Pilier 3 (Agence) : Audit Surface 30-Min, Prototype J+7 & Mode Solo',
+    category: 'Gestion de compte',
+    read_time_min: 10,
+    author: 'Direction Minerva',
+    description: 'Processus d’implémentation sur mesure sans cahier des charges interminable : prototype concret dès la semaine 1 et suivi mensuel $300-$500/mois.',
+    is_essential: true,
+    pillar: 'agency',
+    content_markdown: `## Pilier 3 — Agence Sur Mesure (Implémentations Personnalisées)
+
+### Principe Fondamental
+Remplacer les réunions de discovery interminables de 2 heures par un audit de surface public en 30 minutes, suivi d'un prototype fonctionnel livrable dès la semaine 1 (J+7) pour bâtir la confiance sur du concret.
+
+---
+
+### Les 4 Failles & Contre-Pieds Radicaux
+
+#### 1. Faille #1 : Friction de la Donnée
+- **Correction :** Audit de surface en 30 minutes basé sur ce qui est public (site, outils déclarés, parcours utilisateur). Arriver avec 3 points de friction déjà documentés.
+- **Message :** *« Avant qu'on se parle, on a passé 30 minutes sur votre setup actuel. On a identifié 3 endroits où vous perdez du temps ou de l'argent. On veut vous les montrer — pas vous vendre quelque chose. »*
+
+#### 2. Faille #2 : Le Document de Spécifications que Personne ne Lit
+- **Règle :** Semaine 1 = prototype fonctionnel, pas un document. Ne jamais livrer un PDF avant un artefact manipulable.
+
+#### 3. Faille #3 : Peur de la Dépendance Technique
+- **Correction :** Construire sur la stack existante du client quand possible. Livrer une vidéo Loom de 5 min et un "Mode Solo" garantissant son autonomie complète en cas d'arrêt.
+
+#### 4. Faille #4 : Le Projet One-Shot sans Récurrence
+- **Correction :** Co-pilotage mensuel léger (1h/mois d'analyse des métriques et ajustements) facturé 300–500$/mois.
+
+---
+
+### Règles d'Exécution Agence
+- **Cible :** Entrepreneurs déjà convaincus de l'efficacité technologique (early adopters).
+- **Prix :** Le prototype justifie le prix ; ne jamais annoncer de devis avant d'avoir montré l'artefact.`,
+  },
+  {
+    id: 'sop-mes-inspirations-media',
+    title: 'Pilier 4 (Média) : Production Vidéo Cas Clients 60s & CTA Piliers',
+    category: 'Campagnes Ads',
+    read_time_min: 7,
+    author: 'Direction Minerva',
+    description: 'Framework de scripting Build-in-Public : hooks chiffrés réels, documentation des victoires clients et conversion naturelle vers Flow/Reach/Agence.',
+    is_essential: true,
+    pillar: 'inspirations',
+    content_markdown: `## Pilier 4 — Mes Inspirations (Marque Média & Contenu)
+
+### Principe Fondamental
+Mes Inspirations est le moteur de preuve sociale pour les 3 autres piliers de Minerva. Chaque client signé ou délivré est documenté en temps réel (Build in Public) avec des chiffres réels pour alimenter le flywheel d'acquisition.
+
+---
+
+### Les 4 Failles & Contre-Pieds Radicaux
+
+#### 1. Faille #1 : Friction d'Accès à la Valeur
+- **Règle :** Valeur totale en accès libre sans barrière. Le CTA arrive à la fin de la vidéo.
+
+#### 2. Faille #2 : Vues sans Conversion
+- **Correction :** Chaque vidéo a un unique CTA relié directement à un pilier (Flow, Reach, ou Agence).
+
+#### 3. Faille #3 : Sentiment de Vente Déguisée
+- **Correction :** Vendre dès le départ avec une transparence totale sur le parcours d'entreprise (Build in Public).
+
+#### 4. Faille #4 : Média Déconnecté du Business
+- **Correction :** 1 client Flow = 1 vidéo cas client. 1 projet Agence = 1 avant/après chiffré.
+
+---
+
+### Format & Production
+- **Durée :** 60 à 90 secondes (1 insight = 1 vidéo).
+- **Hook :** Toujours basé sur un chiffre concret (*« Ce café perdait 1 400$/mois sans le savoir... »*).
+- **Distribution :** YouTube Shorts en priorité (référencement long terme) puis déclinaison Reels & LinkedIn.`,
   },
   {
     id: 'sop-framer-delivery',
@@ -378,6 +720,8 @@ const DEFAULT_ACADEMY_SOPS: AcademySOP[] = [
     read_time_min: 12,
     author: 'Camille Roy',
     description: 'Checklist complète pour assurer un déploiement Framer sans faille : SEO, responsive, assets et tracking.',
+    is_essential: true,
+    pillar: 'agency',
   },
 ];
 

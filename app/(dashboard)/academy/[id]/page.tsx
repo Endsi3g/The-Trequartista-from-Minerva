@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -17,8 +17,13 @@ import {
   ListChecks,
   AlertTriangle,
   Lightbulb,
-  Info,
   ChevronRight,
+  UtensilsCrossed,
+  Target,
+  Building2,
+  Film,
+  Zap,
+  ExternalLink,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -34,6 +39,7 @@ import {
 import type { AcademySOP } from '@/lib/types';
 import { useToast } from '@/components/providers/ToastProvider';
 import { PageFadeIn } from '@/components/ui/page-transition';
+import { CaseStudyScriptStudio } from '@/components/academy/CaseStudyScriptStudio';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -131,15 +137,44 @@ export default function SopDetailPage() {
     );
   }
 
-  const sampleOutreachScript = `Bonjour [Prénom],\n\nJ’ai analysé le site web de [Entreprise] et votre tunnel d'acquisition actuel. J'ai remarqué 3 leviers majeurs pour doubler vos demandes de devis qualifiées sans augmenter votre budget pub :\n\n1. Optimisation du temps de chargement et passage en architecture Framer native\n2. Système de rappel instantané sur appel manqué (Missed-Call Text-Back)\n3. Automatisation des formulaires de capture avec routage direct vers votre agenda\n\nSeriez-vous ouvert à un audit vidéo de 3 minutes sans engagement cette semaine ?\n\nBien à vous,\n[Votre Prénom] — Minerva`;
+  const isMasterSop = sop.id === 'sop-anti-friction-master';
+  const isPillar1 = sop.id === 'sop-restaurant-margin-recovery';
+  const isPillar2 = sop.id === 'sop-minerva-reach-playbook';
+  const isPillar3 = sop.id === 'sop-agence-prototype-j7';
+  const isPillar4 = sop.id === 'sop-mes-inspirations-media';
+
+  const sampleOutreachScript = isPillar1
+    ? `Bonjour [Prénom du Proprio],\n\nOn a analysé le menu de [Nom du Restaurant] sur Uber Eats. Sur votre [Plat Signature], vous perdez environ [X] $ par commande en commissions invisibles (estimé à ~[Perte Mensuelle] $/mois).\n\nOn a pris 5 minutes pour recréer vos 5 plats signature dans une interface de commande directe Minerva Flow à 0% de commission — c'est juste pour que vous visualisiez :\n👉 [Lien Démo Personnalisé]\n\nOn a un protocole test de 5 minutes sur imprimante sans risque. Seriez-vous dispo mardi ou mercredi entre 14h30 et 16h pour un café rapide ?\n\nBien à vous,\n[Votre Prénom] — Minerva`
+    : isPillar2
+    ? `Bonjour [Prénom],\n\nAvant qu'on se parle, on a identifié 50 entreprises à Montréal qui correspondent exactement à votre profil client idéal et qui ont un signal d'achat actif cette semaine :\n👉 [Lien Liste 50 Leads Qualifiés]\n\nC'est notre façon de vous montrer concrètement comment travaille Minerva Reach, sans demander d'accès à vos outils.\n\nSeriez-vous ouvert à échanger 10 minutes cette semaine ?\n\nBien à vous,\n[Votre Prénom] — Minerva`
+    : `Bonjour [Prénom],\n\nJ’ai analysé le site web de [Entreprise] et votre setup actuel. J'ai identifié 3 endroits où vous perdez du temps ou des devis qualifiés :\n\n1. Optimisation du temps de chargement et passage en architecture Framer native\n2. Système de rappel instantané sur appel manqué (Missed-Call Text-Back)\n3. Automatisation des formulaires de capture avec routage direct vers votre agenda\n\nPas de devis ou de long cahier des charges : on vous livre un prototype fonctionnel dès la Semaine 1 (J+7) pour tester en réel.\n\nSeriez-vous ouvert à un audit vidéo de 3 minutes sans engagement cette semaine ?\n\nBien à vous,\n[Votre Prénom] — Minerva`;
+
+  const checklistItems = isMasterSop
+    ? [
+        'Flow : 3 audits publics proactifs envoyés avec vidéo 60s et démo 0% commission',
+        'Flow : 1 protocole test 5-minutes branché en cuisine sur imprimante thermique',
+        'Reach : Liste de 50 prospects locaux construite avec signaux d’achat publics',
+        'Reach : 10 premiers messages rédigés, validés manuellement et envoyés',
+        'Agence : 1 audit de surface 30-min livré sans rendez-vous préalable',
+        'Agence : Prototype fonctionnel J+7 présenté et mode solo documenté',
+        'Mes Inspirations : 2 vidéos courtes publiées (60-90s) avec chiffre réel en hook',
+        'Mes Inspirations : 1 cas client documenté en vidéo avec CTA lié au pilier pertinent',
+      ]
+    : [
+        'Vérifier les prérequis et configurations avant de lancer la prospection',
+        'Personnaliser le template avec les données publiques spécifiques du prospect',
+        'Créer la fiche prospect dans /documents et planifier la date de relance (J+3)',
+        'Enregistrer les notes de qualification et de closing dans le CRM Minerva',
+      ];
 
   return (
     <PageFadeIn className="space-y-4 max-w-4xl mx-auto pb-16">
       {/* ── 1. Top Contextual Breadcrumb & Actions Bar ── */}
       <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium truncate min-w-0">
-          <Link href="/academy" className="hover:text-zinc-900 transition-colors">
-            Académie
+          <Link href="/academy" className="hover:text-zinc-900 transition-colors flex items-center gap-1">
+            <ArrowLeft className="w-3 h-3 text-zinc-400" />
+            <span>Académie</span>
           </Link>
           <ChevronRight className="w-3 h-3 text-zinc-400 shrink-0" />
           <span className="text-zinc-600 truncate">{sop.category}</span>
@@ -181,6 +216,11 @@ export default function SopDetailPage() {
             <span className="bg-zinc-100 text-zinc-700 text-[10.5px] font-semibold px-2.5 py-0.5 rounded border border-zinc-200/60">
               {sop.category}
             </span>
+            {(sop.is_featured || isMasterSop) && (
+              <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-200 uppercase tracking-wider">
+                FONDATRICE
+              </span>
+            )}
             <span className="text-[11px] font-mono text-zinc-400 flex items-center gap-1" style={MONO}>
               <Clock className="w-3 h-3 text-zinc-400" />
               <span>{sop.read_time_min || 5} min de lecture</span>
@@ -202,6 +242,53 @@ export default function SopDetailPage() {
             {sop.description}
           </p>
         )}
+
+        {/* Quick Action Buttons for Pillars */}
+        <div className="pt-2 flex items-center gap-2 flex-wrap text-xs">
+          {(isMasterSop || isPillar1) && (
+            <Link
+              href="/minerva-flow"
+              className="px-2.5 py-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <UtensilsCrossed className="w-3 h-3 text-amber-600" />
+              <span>Ouvrir Démo Minerva-Flow (0%)</span>
+              <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+            </Link>
+          )}
+
+          {(isMasterSop || isPillar1) && (
+            <Link
+              href="/audits/new"
+              className="px-2.5 py-1 rounded bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200 font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Zap className="w-3 h-3 text-zinc-600" />
+              <span>Calculateur Audit Fuite de Marge</span>
+              <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+            </Link>
+          )}
+
+          {(isMasterSop || isPillar2) && (
+            <Link
+              href="/leads"
+              className="px-2.5 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200/80 font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Target className="w-3 h-3 text-blue-600" />
+              <span>Ouvrir CRM Leads (Reach QC)</span>
+              <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+            </Link>
+          )}
+
+          {(isMasterSop || isPillar3) && (
+            <Link
+              href="/projects"
+              className="px-2.5 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Building2 className="w-3 h-3 text-emerald-600" />
+              <span>Projets & Prototypes J+7</span>
+              <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* ── 3. Embedded Video Player (if present) ── */}
@@ -219,16 +306,17 @@ export default function SopDetailPage() {
       <div className="bg-mv-surface border border-mv-border rounded-[6px] p-6 shadow-2xs space-y-6">
         <div className="prose prose-zinc prose-sm max-w-none text-xs sm:text-[13px] leading-relaxed text-zinc-700">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {`## Guide Opératoire & Méthodologie\n\n${sop.description || 'Consultez les étapes ci-dessous pour exécuter ce processus avec l’équipe.'}\n\n### 1. Analyse Préliminaire\n- Évaluer la maturité digitale du prospect et identifier les points de friction.\n- Vérifier la configuration des outils internes avant toute prise de contact.\n\n### 2. Exécution & Personnalisation\n- Utiliser le script de prospection ci-dessous en adaptant les 3 points clés.\n- Documenter chaque interaction dans l'espace client pour un suivi fluide.`}
+            {sop.content_markdown ||
+              `## Guide Opératoire & Méthodologie\n\n${sop.description || 'Consultez les étapes ci-dessous pour exécuter ce processus avec l’équipe.'}\n\n### 1. Analyse Préliminaire\n- Évaluer la maturité digitale du prospect et identifier les points de friction.\n- Vérifier la configuration des outils internes avant toute prise de contact.\n\n### 2. Exécution & Personnalisation\n- Utiliser le script de prospection ci-dessous en adaptant les 3 points clés.\n- Documenter chaque interaction dans l'espace client pour un suivi fluide.`}
           </ReactMarkdown>
         </div>
 
-        {/* Actionable Outreach Script Callout */}
+        {/* ── 5. Actionable Outreach Script Callout ── */}
         <div className="bg-zinc-50 border border-zinc-200 rounded-[6px] p-4 space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-900">
               <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
-              <span>Modèle de Script de Prospection / Outreach</span>
+              <span>Modèle de Script de Prospection / Outreach Réel</span>
             </div>
             <button
               onClick={() => handleCopyOutreachScript(sampleOutreachScript)}
@@ -244,20 +332,33 @@ export default function SopDetailPage() {
           </pre>
         </div>
 
-        {/* Step-by-step Interactive Action Checklist */}
+        {/* ── 6. Studio de Scripting Cas Client 60s (Mes Inspirations) ── */}
+        {(isMasterSop || isPillar4) && (
+          <div className="pt-2">
+            <CaseStudyScriptStudio
+              defaultClientName={isPillar1 ? 'Café Rosemont' : isPillar3 ? 'Toitures Beauchemin' : 'Client Partenaire'}
+              defaultPillar={isPillar1 ? 'flow' : isPillar2 ? 'reach' : 'agency'}
+            />
+          </div>
+        )}
+
+        {/* ── 7. Step-by-step Interactive Action Checklist ── */}
         <div className="bg-emerald-50/40 border border-emerald-200/80 rounded-[6px] p-4 space-y-3">
-          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-900">
-            <ListChecks className="w-4 h-4 text-emerald-700" />
-            <span>Checklist d’Exécution & Contrôle Qualité</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-900">
+              <ListChecks className="w-4 h-4 text-emerald-700" />
+              <span>Checklist d’Exécution & Contrôle Qualité ({Object.values(checkedSteps).filter(Boolean).length}/{checklistItems.length})</span>
+            </div>
+            {Object.values(checkedSteps).filter(Boolean).length === checklistItems.length && (
+              <span className="text-[11px] text-emerald-800 font-bold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Prêt pour exécution</span>
+              </span>
+            )}
           </div>
 
           <div className="space-y-2 text-xs text-zinc-700">
-            {[
-              'Vérifier les prérequis et configurations avant de lancer la prospection',
-              'Personnaliser le template avec les données spécifiques du prospect',
-              'Créer la fiche prospect dans /documents et planifier la date de relance (J+3)',
-              'Enregistrer les notes de qualification dans le CRM Minerva',
-            ].map((step, idx) => (
+            {checklistItems.map((step, idx) => (
               <label
                 key={idx}
                 className="flex items-start gap-2.5 p-2 rounded bg-white border border-emerald-100 cursor-pointer hover:bg-emerald-50/60 transition-colors"
@@ -270,7 +371,7 @@ export default function SopDetailPage() {
                   }
                   className="w-3.5 h-3.5 mt-0.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer"
                 />
-                <span className={cn('font-medium', checkedSteps[`step-${idx}`] && 'line-through text-zinc-400')}>
+                <span className={cn('font-medium leading-relaxed', checkedSteps[`step-${idx}`] && 'line-through text-zinc-400')}>
                   {step}
                 </span>
               </label>
