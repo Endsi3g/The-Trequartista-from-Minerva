@@ -219,13 +219,28 @@ export function AppSidebar() {
   // CLAUDE.md's Sidebar section).
   const [selectedWorkspace, setSelectedWorkspace] = useState('Minerva Agency');
 
-  // Session-only favorites, exactly like Flow's own implementation
-  // ("in-memory, session only -- no localStorage").
-  const [favoriteKeys, setFavoriteKeys] = useState<string[]>(['tasks', 'clients', 'projects']);
+  // Persisted favorites in localStorage so user preferences remain across sessions,
+  // and removing all favorites is strictly respected (never re-injects defaults).
+  const [favoriteKeys, setFavoriteKeys] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = localStorage.getItem('minerva_favorite_nav_keys');
+      return saved !== null ? JSON.parse(saved) : ['tasks', 'clients', 'projects'];
+    } catch {
+      return ['tasks', 'clients', 'projects'];
+    }
+  });
+
   const toggleFavorite = (key: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setFavoriteKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+    setFavoriteKeys((prev) => {
+      const next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
+      try {
+        localStorage.setItem('minerva_favorite_nav_keys', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   };
 
   // "Principal" -- daily-use, personal-scope items

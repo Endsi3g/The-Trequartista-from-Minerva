@@ -1,10 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 import {
   Search,
   Plus,
@@ -22,12 +20,21 @@ import {
   Briefcase,
   Award,
   Sparkles,
+  UserPlus,
+  Upload,
+  Calendar,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useToast } from '@/components/providers/ToastProvider';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { UserAvatar } from '@/components/ui/user-avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
 interface TeamMember {
   id: string;
@@ -42,7 +49,7 @@ interface TeamMember {
 const VIEW_TABS = [
   { key: 'employees', label: 'Employés', icon: Users },
   { key: 'departments', label: 'Départements', icon: Building },
-  { key: 'positions', label: 'Postes', icon: Briefcase },
+  { key: 'positions', label: 'Postes & Rôles', icon: Briefcase },
   { key: 'performance', label: 'Évaluations de performance', icon: Award },
 ] as const;
 
@@ -66,6 +73,7 @@ function getDepartmentStyle(dept: string | null) {
 }
 
 export default function TeamPage() {
+  const router = useRouter();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -100,43 +108,50 @@ export default function TeamPage() {
     loadTeam();
   }, []);
 
-  const filteredMembers = useMemo(() => {
-    let list = members;
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      list = list.filter(
-        (m) =>
-          m.full_name?.toLowerCase().includes(q) ||
-          m.email?.toLowerCase().includes(q) ||
-          m.department?.toLowerCase().includes(q) ||
-          m.role?.toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [members, query]);
+  // Keyboard shortcut: 'A' then 'M' or 'I' to invite
+  useEffect(() => {
+    let keyBuffer = '';
+    let timer: NodeJS.Timeout;
 
-  const allVisibleSelected = filteredMembers.length > 0 && filteredMembers.every((m) => selected.has(m.id));
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
 
-  const toggleAll = () => {
-    setSelected((prev) => {
-      if (allVisibleSelected) {
-        const next = new Set(prev);
-        filteredMembers.forEach((m) => next.delete(m.id));
-        return next;
+      keyBuffer += e.key.toLowerCase();
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        keyBuffer = '';
+      }, 800);
+
+      if (keyBuffer.includes('am') || e.key.toLowerCase() === 'i') {
+        if (isAdmin) {
+          e.preventDefault();
+          router.push('/team/invite');
+        }
       }
-      const next = new Set(prev);
-      filteredMembers.forEach((m) => next.add(m.id));
-      return next;
-    });
-  };
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(timer);
+    };
+  }, [isAdmin, router]);
 
-  const toggleOne = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const handleRoleChange = async (member: TeamMember, newRole: 'admin' | 'member') => {
+    if (!isAdmin) return;
+    setChangingRoleId(member.id);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', member.id);
+      if (error) throw error;
+      setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, role: newRole } : m)));
+      toastSuccess('Rôle modifié', `${member.full_name || 'Le membre'} est maintenant ${newRole === 'admin' ? 'Administrateur' : 'Membre'}.`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      toastError('Erreur', msg);
+    } finally {
+      setChangingRoleId(null);
+    }
   };
 
   const toggleExpand = (id: string) => {
@@ -148,346 +163,420 @@ export default function TeamPage() {
     });
   };
 
-  const handleExportSelected = () => {
-    const rows = members.filter((m) => selected.has(m.id));
-    const headers = ['ID', 'Nom', 'Courriel', 'Département', 'Rôle', 'Statut', 'Date d\'embauche'];
-    const csvRows = rows.map((m, idx) => [
-      `"EMP${String(idx + 1).padStart(3, '0')}"`,
-      `"${m.full_name || ''}"`,
-      m.email || '',
-      `"${m.department || 'Général'}"`,
-      m.role,
-      'Actif',
-      new Date(m.created_at).toLocaleDateString('fr-CA'),
-    ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...csvRows.map((r) => r.join(','))].join('\n');
-    const link = document.createElement('a');
-    link.setAttribute('href', encodeURI(csvContent));
-    link.setAttribute('download', `membres-minerva-${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const filteredMembers = useMemo(() => {
+    const q = query.toLowerCase().trim();
+    if (!q) return members;
+    return members.filter(
+      (m) =>
+        m.full_name?.toLowerCase().includes(q) ||
+        m.email?.toLowerCase().includes(q) ||
+        m.department?.toLowerCase().includes(q) ||
+        m.role.toLowerCase().includes(q)
+    );
+  }, [members, query]);
 
-  const handleRoleChange = async (member: TeamMember, newRole: 'admin' | 'member') => {
-    if (newRole === member.role) return;
-    setChangingRoleId(member.id);
-    try {
-      const supabase = createClient();
-      const { error } = await supabase.from('profiles').update({ role: newRole, updated_at: new Date().toISOString() }).eq('id', member.id);
-      if (error) {
-        toastError('Erreur', "Impossible de modifier le rôle.");
-        return;
-      }
-      setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, role: newRole } : m)));
-      toastSuccess('Rôle mis à jour', `${member.full_name || member.email} est maintenant ${newRole === 'admin' ? 'admin' : 'membre'}.`);
-    } finally {
-      setChangingRoleId(null);
-      setOpenMenuId(null);
+  const toggleAll = () => {
+    if (selected.size === filteredMembers.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filteredMembers.map((m) => m.id)));
     }
   };
 
+  const toggleOne = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleExportSelected = () => {
+    const selectedList = members.filter((m) => selected.has(m.id));
+    const header = 'ID,Nom,Email,Rôle,Département,Date\n';
+    const rows = selectedList
+      .map((m, idx) => `EMP${String(idx + 1).padStart(3, '0')},"${m.full_name || ''}","${m.email || ''}",${m.role},"${m.department || ''}",${m.created_at}`)
+      .join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `equipe-selection-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toastSuccess('Export CSV', `${selectedList.length} membre(s) exporté(s).`);
+  };
+
   return (
-    <PageFadeIn className="space-y-6">
-      {/* Workspace Members Header (Inspiration v1 + v2) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs text-mv-ink-faint mb-1">
-            <span>Accueil</span>
-            <span>&gt;</span>
-            <span className="font-semibold text-mv-ink">Gestion de l&apos;équipe & RH</span>
+    <PageFadeIn className="space-y-4 max-w-7xl mx-auto pb-16">
+      {/* ── 1. Compact Header Bar ── */}
+      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-6 h-6 rounded-[4px] bg-zinc-100 border border-mv-border flex items-center justify-center text-zinc-900 shrink-0">
+            <Users className="w-3.5 h-3.5" />
           </div>
-          <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
-            Membres de l&apos;espace de travail
-          </h1>
-          <p className="text-xs sm:text-sm text-mv-ink-soft mt-1">
-            Ajoutez des coéquipiers pour collaborer ensemble sur vos projets et gérez leurs niveaux d&apos;accès.{' '}
-            <Link href="/help" className="text-mv-green hover:underline font-semibold">
-              Guide des permissions d&apos;équipe
-            </Link>
-          </p>
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-[15px] font-semibold text-mv-ink tracking-tight truncate">
+              Membres & Organisation
+            </h1>
+            <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+              ({members.length} collaborateur{members.length > 1 ? 's' : ''})
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+        {/* Right Controls */}
+        <div className="flex items-center gap-2 shrink-0">
           {isAdmin && (
-            <Link href="/team/workload">
-              <Button variant="outline" size="sm" icon={<Gauge className="w-4 h-4" />}>
-                Charge de travail
-              </Button>
+            <Link
+              href="/team/workload"
+              className="h-7 px-2.5 text-xs font-medium border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-md transition-colors flex items-center gap-1.5 shadow-2xs"
+            >
+              <Gauge className="w-3.5 h-3.5 text-zinc-500" />
+              <span>Charge de travail</span>
             </Link>
           )}
+
           {isAdmin && (
-            <Link href="/team/invite">
-              <Button variant="primary" size="sm" icon={<Plus className="w-4 h-4" />} className="bg-mv-ink hover:bg-black text-white">
-                Inviter un membre
-              </Button>
+            <Link
+              href="/team/invite"
+              className="h-7 px-2.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors flex items-center gap-1.5 shadow-2xs"
+              title="Inviter un membre (Raccourci: A puis M)"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Inviter un membre</span>
+              <kbd className="hidden sm:inline text-[9px] bg-white/20 px-1 py-0.2 rounded font-mono">A then M</kbd>
             </Link>
           )}
         </div>
       </div>
 
-      {/* Notion-style Database Section */}
-      <Card className="p-0 overflow-hidden border border-mv-border shadow-mv-sm">
-        {/* Database Controls Header */}
-        <div className="p-4 sm:p-5 border-b border-mv-border bg-mv-surface flex flex-col md:flex-row md:items-center justify-between gap-4">
-          {/* Notion Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-            {VIEW_TABS.map((tab) => {
-              const Icon = tab.icon;
-              const active = activeTab === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                    active
-                      ? 'bg-mv-cream-soft text-mv-ink border border-mv-border shadow-mv-sm font-bold'
-                      : 'text-mv-ink-soft hover:text-mv-ink hover:bg-mv-cream-soft/50'
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 ${active ? 'text-mv-green' : 'opacity-70'}`} />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Search & Show Changes Switch */}
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="relative w-full sm:w-64">
-              <Search className="w-3.5 h-3.5 text-mv-ink-faint absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Rechercher..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
-              />
-            </div>
-
-            <label className="flex items-center gap-2 text-xs text-mv-ink-soft select-none cursor-pointer whitespace-nowrap">
-              <span className="hidden sm:inline text-[11px] font-semibold">Afficher changements</span>
-              <input
-                type="checkbox"
-                checked={showChanges}
-                onChange={(e) => setShowChanges(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-mv-green/30 cursor-pointer"
-              />
-            </label>
-          </div>
+      {/* ── 2. View Tabs & Filter Toolbar ── */}
+      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-2.5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+        {/* Navigation Tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+          {VIEW_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={cn(
+                  'px-2.5 py-1 text-xs font-medium transition-all cursor-pointer rounded-[4px] flex items-center gap-1.5 whitespace-nowrap',
+                  active
+                    ? 'bg-zinc-100 text-zinc-900 font-semibold shadow-2xs'
+                    : 'text-zinc-500 hover:text-zinc-900 hover:bg-black/[0.02]'
+                )}
+              >
+                <Icon className={cn('w-3.5 h-3.5', active ? 'text-emerald-700' : 'text-zinc-400')} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Count & Bulk Actions */}
-        <div className="px-5 py-2.5 bg-mv-cream-soft/40 border-b border-mv-border/60 flex items-center justify-between text-xs text-mv-ink-soft">
-          <span className="font-semibold text-[11px]">
-            {loading ? 'Chargement...' : `${filteredMembers.length} membre${filteredMembers.length > 1 ? 's' : ''}`}
-          </span>
-          {selected.size > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-mv-green">{selected.size} sélectionné(s)</span>
+        {/* Right Search Input */}
+        {activeTab === 'employees' && (
+          <div className="relative shrink-0 w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5 pointer-events-none" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filtrer les collaborateurs... (/)"
+              className="w-full h-8 pl-8 pr-2.5 text-[11.5px] rounded-[4px] border border-mv-border bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-mv-green transition-colors"
+            />
+            {query && (
               <button
-                onClick={handleExportSelected}
-                className="px-2.5 py-1 rounded-md bg-mv-surface border border-mv-border text-xs font-semibold text-mv-ink hover:text-mv-green transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-              >
-                <Download className="w-3 h-3" /> Exporter CSV
-              </button>
-              <button
-                onClick={() => setSelected(new Set())}
-                className="p-1 text-mv-ink-faint hover:text-mv-ink"
+                onClick={() => setQuery('')}
+                className="absolute right-2 top-2 text-zinc-400 hover:text-zinc-700"
               >
                 <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── 3. Tab Contents with Admin vs Member Proactive Empty States ── */}
+      {activeTab === 'employees' ? (
+        <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
+          {/* Bulk Actions Bar */}
+          {selected.size > 0 && (
+            <div className="px-3.5 py-2 bg-emerald-50/60 border-b border-emerald-200 flex items-center justify-between text-xs">
+              <span className="font-semibold text-emerald-800">{selected.size} collaborateur(s) sélectionné(s)</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportSelected}
+                  className="h-6 px-2 rounded bg-white border border-emerald-300 text-xs font-medium text-emerald-800 hover:bg-emerald-50 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <Download className="w-3 h-3" />
+                  <span>Exporter CSV</span>
+                </button>
+                <button
+                  onClick={() => setSelected(new Set())}
+                  className="p-1 text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {loading ? (
+            <p className="text-xs text-zinc-400 text-center py-12 font-mono">Chargement des membres…</p>
+          ) : filteredMembers.length === 0 ? (
+            /* ── Proactive Empty State : Membres de l'équipe ── */
+            <div className="p-12 text-center space-y-3">
+              <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-900">
+                  {isAdmin ? 'Aucun membre invité dans l’espace de travail.' : 'Aucun collaborateur trouvé.'}
+                </h3>
+                <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
+                  {isAdmin
+                    ? 'Ajoutez vos collaborateurs pour leur assigner des projets Framer, des leads et des accès SOPs.'
+                    : 'Seuls les administrateurs peuvent inviter des membres dans l’espace Minerva.'}
+                </p>
+              </div>
+
+              {isAdmin && (
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <Link
+                    href="/team/invite"
+                    className="h-8 px-3.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition-colors flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>Inviter un membre de l’équipe</span>
+                    <kbd className="text-[9px] bg-white/20 px-1 py-0.2 rounded font-mono">A then M</kbd>
+                  </Link>
+                  <Link
+                    href="/team/invite"
+                    className="h-8 px-3 rounded-md border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-medium transition-colors flex items-center gap-1.5"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-zinc-500" />
+                    <span>Importer une liste CSV</span>
+                  </Link>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto no-scrollbar">
+              <table className="w-full text-[12px] border-collapse min-w-[720px]">
+                <thead>
+                  <tr className="h-7 bg-black/[0.02] border-b border-mv-border text-[10.5px] font-medium uppercase tracking-wider text-zinc-400">
+                    <th className="pl-3.5 pr-2 w-8">
+                      <input
+                        type="checkbox"
+                        checked={selected.size === filteredMembers.length && filteredMembers.length > 0}
+                        onChange={toggleAll}
+                        className="w-3.5 h-3.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer"
+                      />
+                    </th>
+                    <th className="px-2 text-left font-medium">Identifiant</th>
+                    <th className="px-2 text-left font-medium">Département</th>
+                    <th className="px-2 text-left font-medium">Courriel</th>
+                    <th className="px-2 text-left font-medium">Prénom & Nom</th>
+                    <th className="px-2 text-left font-medium">Rôle</th>
+                    <th className="pr-3.5 pl-2 text-right font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {filteredMembers.map((member, idx) => {
+                    const empId = `EMP${String(idx + 1).padStart(3, '0')}`;
+                    const dept = member.department || (member.role === 'admin' ? 'Tech & IA' : 'Operations');
+                    const deptStyle = getDepartmentStyle(dept);
+                    const isExpanded = expandedRows.has(member.id);
+
+                    return (
+                      <React.Fragment key={member.id}>
+                        <tr className="h-9 hover:bg-black/[0.02] transition-colors group">
+                          <td className="pl-3.5 pr-2 py-1">
+                            <input
+                              type="checkbox"
+                              checked={selected.has(member.id)}
+                              onChange={() => toggleOne(member.id)}
+                              className="w-3.5 h-3.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer"
+                            />
+                          </td>
+
+                          <td className="px-2 py-1 font-mono text-[11px] text-zinc-500" style={MONO}>
+                            <button
+                              onClick={() => toggleExpand(member.id)}
+                              className="inline-flex items-center gap-1 hover:text-emerald-700 transition-colors cursor-pointer font-bold"
+                            >
+                              {isExpanded ? <ChevronDown className="w-3 h-3 text-zinc-400" /> : <ChevronRight className="w-3 h-3 text-zinc-400" />}
+                              <span>{empId}</span>
+                            </button>
+                          </td>
+
+                          <td className="px-2 py-1">
+                            <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-bold border', deptStyle.bg, deptStyle.text)}>
+                              <span className={cn('w-1.5 h-1.5 rounded-full', deptStyle.dot)} />
+                              {dept}
+                            </span>
+                          </td>
+
+                          <td className="px-2 py-1 font-mono text-[11px] text-zinc-500" style={MONO}>
+                            {member.email}
+                          </td>
+
+                          <td className="px-2 py-1">
+                            <div className="flex items-center gap-2">
+                              <UserAvatar src={member.avatar_url} name={member.full_name} email={member.email} size="xs" shape="circle" />
+                              <span className="font-semibold text-zinc-900 text-xs">
+                                {member.full_name || 'Collaborateur Minerva'}
+                              </span>
+                            </div>
+                          </td>
+
+                          <td className="px-2 py-1">
+                            {isAdmin ? (
+                              <select
+                                value={member.role}
+                                disabled={changingRoleId === member.id}
+                                onChange={(e) => handleRoleChange(member, e.target.value as 'admin' | 'member')}
+                                className="h-6 px-2 rounded bg-white border border-zinc-200 text-xs font-semibold text-zinc-800 focus:outline-none focus:border-emerald-600 cursor-pointer"
+                              >
+                                <option value="admin">Administrateur</option>
+                                <option value="member">Membre</option>
+                              </select>
+                            ) : (
+                              <span className="text-[11px] font-medium text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded">
+                                {member.role === 'admin' ? 'Administrateur' : 'Membre'}
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="pr-3.5 pl-2 py-1 text-right">
+                            <Link
+                              href={`/team/${member.id}/performance`}
+                              className="text-xs font-medium text-emerald-700 hover:underline inline-flex items-center gap-1"
+                            >
+                              <span>Fiche 1-on-1</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </Link>
+                          </td>
+                        </tr>
+
+                        {isExpanded && (
+                          <tr className="bg-zinc-50/50 border-b border-zinc-100">
+                            <td colSpan={7} className="py-2.5 px-8 text-xs text-zinc-600">
+                              <div className="flex items-center justify-between gap-4 flex-wrap">
+                                <div>
+                                  <span className="text-[10px] uppercase text-zinc-400 font-mono" style={MONO}>Date d’arrivée : </span>
+                                  <strong className="text-zinc-800">
+                                    {new Date(member.created_at).toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                  </strong>
+                                </div>
+                                <div>
+                                  <span className="text-[10px] uppercase text-zinc-400 font-mono" style={MONO}>Poste : </span>
+                                  <strong className="text-zinc-800">{member.role === 'admin' ? 'Direction & IA' : 'Spécialiste Delivery'}</strong>
+                                </div>
+                                <Link href={`/team/${member.id}/performance`} className="text-xs font-semibold text-emerald-700 hover:underline">
+                                  Voir les revues de performance →
+                                </Link>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : activeTab === 'departments' ? (
+        /* ── Proactive Empty State : Départements ── */
+        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3 shadow-2xs">
+          <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
+            <Building className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-zinc-900">
+              {isAdmin ? 'Aucun département configuré.' : 'Aucun département disponible.'}
+            </h3>
+            <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
+              {isAdmin
+                ? 'Structurez votre agence (ex: Design Framer, Growth & Prospection, IA & Systèmes).'
+                : 'Les départements de l’agence seront affichés ici dès leur configuration par un administrateur.'}
+            </p>
+          </div>
+          {isAdmin && (
+            <div className="pt-2">
+              <button
+                onClick={() => toastSuccess('Création de département', 'Module de création ouvert.')}
+                className="h-8 px-3.5 rounded-md border border-zinc-200 hover:bg-zinc-50 text-zinc-800 text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                <span>+ Créer un département</span>
               </button>
             </div>
           )}
         </div>
-
-        {/* Main Table */}
-        {loading ? (
-          <div className="p-8 space-y-3">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-12 bg-mv-cream-soft rounded-lg animate-pulse" />
-            ))}
+      ) : activeTab === 'positions' ? (
+        /* ── Proactive Empty State : Postes & Rôles ── */
+        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3 shadow-2xs">
+          <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
+            <Briefcase className="w-5 h-5" />
           </div>
-        ) : filteredMembers.length === 0 ? (
-          <div className="p-12 text-center text-xs text-mv-ink-soft">
-            Aucun membre ne correspond à votre recherche.
+          <div>
+            <h3 className="text-sm font-semibold text-zinc-900">
+              {isAdmin ? 'Définissez les postes clés de l’agence.' : 'Aucun poste configuré.'}
+            </h3>
+            <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
+              {isAdmin
+                ? 'Associez les descriptions de postes et grilles de commissions directement aux SOPs de l’Académie.'
+                : 'Les fiches de postes et grilles associées apparaîtront ici.'}
+            </p>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-mv-border text-mv-ink-soft uppercase text-[10px] font-extrabold tracking-wider bg-mv-cream-soft/20">
-                  <th className="py-3 pl-5 pr-2 w-8">
-                    <input
-                      type="checkbox"
-                      checked={allVisibleSelected}
-                      onChange={toggleAll}
-                      className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-mv-green/30 cursor-pointer"
-                    />
-                  </th>
-                  <th className="py-3 px-3">Employé</th>
-                  <th className="py-3 px-3">Département</th>
-                  <th className="py-3 px-3">Courriel</th>
-                  <th className="py-3 px-3">Statut d&apos;emploi</th>
-                  <th className="py-3 px-3">Prénom & Nom</th>
-                  <th className="py-3 px-3">Rôle</th>
-                  <th className="py-3 pr-5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-mv-border/60">
-                {filteredMembers.map((member, idx) => {
-                  const empId = `EMP${String(idx + 1).padStart(3, '0')}`;
-                  const dept = member.department || (member.role === 'admin' ? 'Tech & IA' : 'Operations');
-                  const deptStyle = getDepartmentStyle(dept);
-                  const isExpanded = expandedRows.has(member.id);
-
-                  return (
-                    <React.Fragment key={member.id}>
-                      <tr className={`transition-colors ${selected.has(member.id) ? 'bg-mv-green-tint/30' : 'hover:bg-mv-cream-soft/40'}`}>
-                        <td className="py-3 pl-5 pr-2">
-                          <input
-                            type="checkbox"
-                            checked={selected.has(member.id)}
-                            onChange={() => toggleOne(member.id)}
-                            className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-mv-green/30 cursor-pointer"
-                          />
-                        </td>
-
-                        {/* EMP ID with collapse arrow */}
-                        <td className="py-3 px-3">
-                          <button
-                            onClick={() => toggleExpand(member.id)}
-                            className="inline-flex items-center gap-1 font-mono font-bold text-mv-ink hover:text-mv-green transition-colors cursor-pointer"
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="w-3.5 h-3.5 text-mv-ink-faint" />
-                            ) : (
-                              <ChevronRight className="w-3.5 h-3.5 text-mv-ink-faint" />
-                            )}
-                            <span>{empId}</span>
-                          </button>
-                        </td>
-
-                        {/* Department colored pill */}
-                        <td className="py-3 px-3">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${deptStyle.bg} ${deptStyle.text}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${deptStyle.dot}`} />
-                            {dept}
-                          </span>
-                        </td>
-
-                        {/* Email */}
-                        <td className="py-3 px-3">
-                          <span className="font-mono text-mv-ink-soft text-[11px] truncate block max-w-[180px]">
-                            {member.email}
-                          </span>
-                        </td>
-
-                        {/* Employment status */}
-                        <td className="py-3 px-3">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
-                            <Check className="w-3 h-3 text-emerald-600" />
-                            Actif
-                          </span>
-                        </td>
-
-                        {/* First Name & Avatar */}
-                        <td className="py-3 px-3">
-                          <div className="flex items-center gap-2.5">
-                            <UserAvatar
-                              src={member.avatar_url}
-                              name={member.full_name}
-                              email={member.email}
-                              size="sm"
-                              shape="circle"
-                            />
-                            <span className="font-bold text-mv-ink text-xs">
-                              {member.full_name || 'Membre Minerva'}
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* Role */}
-                        <td className="py-3 px-3">
-                          {isAdmin ? (
-                            <select
-                              value={member.role}
-                              disabled={changingRoleId === member.id}
-                              onChange={(e) => handleRoleChange(member, e.target.value as 'admin' | 'member')}
-                              className="px-2.5 py-1 rounded-lg bg-mv-cream-soft border border-mv-border text-xs font-bold text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer disabled:opacity-50"
-                            >
-                              <option value="admin">Propriétaire / Admin</option>
-                              <option value="member">Éditeur / Membre</option>
-                            </select>
-                          ) : (
-                            <Badge variant={member.role === 'admin' ? 'green' : 'neutral'}>
-                              {member.role === 'admin' ? 'Admin' : 'Membre'}
-                            </Badge>
-                          )}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="py-3 pr-5 text-right">
-                          <div className="relative inline-block">
-                            <button
-                              onClick={() => setOpenMenuId(openMenuId === member.id ? null : member.id)}
-                              className="p-1.5 rounded-lg text-mv-ink-faint hover:bg-mv-cream-soft hover:text-mv-ink transition-colors cursor-pointer"
-                            >
-                              <MoreHorizontal className="w-4 h-4" />
-                            </button>
-                            {openMenuId === member.id && (
-                              <>
-                                <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
-                                <div className="absolute right-0 top-full mt-1 w-44 bg-mv-surface border border-mv-border rounded-xl shadow-mv-lg py-1 z-50 text-left">
-                                  <Link
-                                    href={`/team/${member.id}/performance`}
-                                    onClick={() => setOpenMenuId(null)}
-                                    className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-mv-ink hover:bg-mv-cream-soft transition-colors"
-                                  >
-                                    <ExternalLink className="w-3.5 h-3.5 text-mv-green" /> Fiche 1-on-1
-                                  </Link>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-
-                      {/* Expanded row details (Notion DB sub-row) */}
-                      {isExpanded && (
-                        <tr className="bg-mv-cream-soft/30 border-b border-mv-border/60">
-                          <td colSpan={8} className="py-3 px-8 text-xs text-mv-ink-soft">
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                              <div>
-                                <span className="text-[10px] font-bold uppercase text-mv-ink-faint block">Date d&apos;arrivée</span>
-                                <span className="font-semibold text-mv-ink">
-                                  {new Date(member.created_at).toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-[10px] font-bold uppercase text-mv-ink-faint block">Poste de référence</span>
-                                <span className="font-semibold text-mv-ink">{member.role === 'admin' ? 'Direction & Stratégie IA' : 'Spécialiste Opérations'}</span>
-                              </div>
-                              <div className="flex items-center justify-end">
-                                <Link
-                                  href={`/team/${member.id}/performance`}
-                                  className="text-xs font-bold text-mv-green hover:underline inline-flex items-center gap-1"
-                                >
-                                  Voir performance 1-on-1 &gt;
-                                </Link>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+          {isAdmin && (
+            <div className="pt-2">
+              <button
+                onClick={() => toastSuccess('Ajout de poste', 'Formulaire de poste ouvert.')}
+                className="h-8 px-3.5 rounded-md border border-zinc-200 hover:bg-zinc-50 text-zinc-800 text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                <span>+ Ajouter un poste</span>
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ── Proactive Empty State : Évaluations de Performances ── */
+        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3 shadow-2xs">
+          <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
+            <Award className="w-5 h-5" />
           </div>
-        )}
-      </Card>
+          <div>
+            <h3 className="text-sm font-semibold text-zinc-900">
+              {isAdmin ? 'Aucune évaluation de performance planifiée.' : 'Aucune revue enregistrée.'}
+            </h3>
+            <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
+              {isAdmin
+                ? 'Configurez les revues mensuelles ou trimestrielles sur l’atteinte des KPIs et des livrables.'
+                : 'Vos bilans et points d’étape 1-on-1 apparaîtront dans cet espace.'}
+            </p>
+          </div>
+          {isAdmin && (
+            <div className="pt-2">
+              <button
+                onClick={() => toastSuccess('Revue de performance', 'Planification d’une revue initiée.')}
+                className="h-8 px-3.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition-colors inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Planifier une revue de performance</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </PageFadeIn>
   );
 }

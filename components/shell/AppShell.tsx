@@ -52,7 +52,7 @@ function AppShellInner({ children }: AppShellProps) {
               available, so collapsing it actually gives pages more room
               instead of just growing empty margins. Scrolls on its own so
               the sidebar footer never gets pushed off-screen by a tall page. */}
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 w-full">
+          <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 w-full min-w-0 transition-all duration-200 ease-in-out">
             {children}
           </main>
         </div>
