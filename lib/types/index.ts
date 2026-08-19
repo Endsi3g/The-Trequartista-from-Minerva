@@ -393,7 +393,8 @@ export interface AcademySOP {
     | 'Ventes & Prospection'
     | 'Gestion de compte'
     | 'Support & QA'
-    | 'Stratégie & Offre';
+    | 'Stratégie & Offre'
+    | 'Stratégie & Vision';
   read_time_min: number;
   author: string;
   video_url?: string;

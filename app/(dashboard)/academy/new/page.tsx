@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, GraduationCap, User as UserIcon, Clock, ShieldAlert } from 'lucide-react';
@@ -27,6 +29,7 @@ export default function NewSopPage() {
   const [author, setAuthor] = useState('');
   const [readTime, setReadTime] = useState(5);
   const [description, setDescription] = useState('');
+  const [contentMarkdown, setContentMarkdown] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -40,6 +43,7 @@ export default function NewSopPage() {
       read_time_min: Number(readTime),
       author,
       description,
+      content_markdown: contentMarkdown.trim() || undefined,
       video_url: videoUrl || undefined,
     });
 
@@ -109,6 +113,8 @@ export default function NewSopPage() {
                   <option value="Workflows IA">Workflows IA</option>
                   <option value="Campagnes Ads">Campagnes Ads</option>
                   <option value="Loi 25 & Compliance">Loi 25 &amp; Compliance</option>
+                  <option value="Stratégie & Offre">Stratégie &amp; Offre</option>
+                  <option value="Stratégie & Vision">Stratégie &amp; Vision</option>
                 </select>
               </div>
               <div>
@@ -146,14 +152,28 @@ export default function NewSopPage() {
           </div>
 
           <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm space-y-3">
-            <SectionLabel>Description &amp; étapes</SectionLabel>
+            <SectionLabel>Résumé (carte de l&apos;académie)</SectionLabel>
             <textarea
-              rows={10}
+              rows={3}
               required
-              placeholder="Collez ou saisissez la description détaillée et les consignes…"
+              placeholder="Une ou deux phrases résumant cette SOP, affichées sur la carte de la bibliothèque…"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full rounded-xl bg-mv-cream-soft border border-mv-border p-3.5 text-sm text-mv-ink leading-relaxed focus:outline-none focus:border-mv-green transition-colors resize-y"
+            />
+          </div>
+
+          <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm space-y-3">
+            <SectionLabel>Contenu détaillé (Markdown)</SectionLabel>
+            <p className="text-[11px] text-mv-ink-faint -mt-1">
+              Le corps complet de la SOP, tel qu&apos;il apparaîtra sur sa page — titres <code>##</code>, listes, tableaux et gras sont supportés.
+            </p>
+            <textarea
+              rows={14}
+              placeholder={'## Étape 1\n\nDétaillez la procédure ici…'}
+              value={contentMarkdown}
+              onChange={(e) => setContentMarkdown(e.target.value)}
+              className="w-full rounded-xl bg-mv-cream-soft border border-mv-border p-3.5 text-sm text-mv-ink font-mono leading-relaxed focus:outline-none focus:border-mv-green transition-colors resize-y"
             />
           </div>
 
@@ -188,6 +208,15 @@ export default function NewSopPage() {
           <p className="text-[11px] text-mv-ink-faint leading-relaxed">
             Voici comment cette SOP apparaîtra dans la bibliothèque de l&apos;académie une fois créée.
           </p>
+
+          {contentMarkdown.trim() && (
+            <div className="pt-3 border-t border-mv-border space-y-2">
+              <span className="text-[10.5px] font-extrabold text-mv-ink-soft uppercase tracking-widest">Aperçu du contenu</span>
+              <div className="prose prose-zinc prose-sm max-w-none text-xs leading-relaxed text-mv-ink-soft max-h-72 overflow-y-auto">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{contentMarkdown}</ReactMarkdown>
+              </div>
+            </div>
+          )}
         </div>
       </form>
     </div>
