@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { KanbanBoard } from '@/components/crm/KanbanBoard';
 import { PageFadeIn } from '@/components/ui/page-transition';
+import { TabTransition } from '@/components/ui/tab-transition';
 import {
   Search,
   Kanban,
@@ -322,6 +323,7 @@ function LeadsCrmContent() {
       </div>
 
       {/* ── 4. Main CRM Board / Table View ── */}
+      <TabTransition tabKey={viewMode}>
       {viewMode === 'kanban' ? (
         <KanbanBoard
           leads={filteredLeads}
@@ -399,6 +401,7 @@ function LeadsCrmContent() {
           </table>
         </div>
       )}
+      </TabTransition>
 
       {/* ── 5. Floating Bottom Batch Actions Bar ── */}
       {selectedIds.size > 0 && (

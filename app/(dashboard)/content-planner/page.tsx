@@ -33,6 +33,7 @@ import {
 import { useToast } from '@/components/providers/ToastProvider';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { PaginatedColumn } from '@/components/ui/paginated-column';
+import { TabTransition } from '@/components/ui/tab-transition';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -306,16 +307,17 @@ export default function ContentPlannerPage() {
           </div>
           <div className="flex items-center gap-3 text-[10.5px] text-zinc-500 font-mono shrink-0" style={MONO}>
             <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-mv-green" /> Instagram ({totalPosts > 0 ? Math.round((instaPosts / totalPosts) * 100) : 100}%)
+              <span className="w-1.5 h-1.5 rounded-full bg-mv-green" /> Instagram ({totalPosts > 0 ? Math.round((instaPosts / totalPosts) * 100) : 0}%)
             </span>
             <span className="flex items-center gap-1 text-zinc-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" /> TikTok (0%)
+              <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" /> TikTok ({totalPosts > 0 ? Math.round((tiktokPosts / totalPosts) * 100) : 0}%)
             </span>
           </div>
         </div>
       </div>
 
       {/* ── 3. Main Views (Calendar / Kanban / Storage / Minerva) ── */}
+      <TabTransition tabKey={viewMode}>
       {viewMode === 'calendar' ? (
         <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
           {/* Calendar Month Header & Controls */}
@@ -618,6 +620,7 @@ export default function ContentPlannerPage() {
           )}
         </div>
       )}
+      </TabTransition>
     </PageFadeIn>
   );
 }
