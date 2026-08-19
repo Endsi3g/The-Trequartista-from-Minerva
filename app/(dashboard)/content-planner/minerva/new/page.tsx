@@ -326,8 +326,8 @@ export default function NewMinervaContentPage() {
           </span>
 
           <div className="flex items-center gap-2 ml-auto">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/content-planner">Annuler (Échap)</Link>
+            <Button type="button" variant="ghost" size="sm" onClick={() => router.push('/content-planner')}>
+              Annuler (Échap)
             </Button>
             <Button
               type="button"
