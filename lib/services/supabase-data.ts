@@ -2179,13 +2179,25 @@ export async function createMinervaContentItem(payload: {
   external_url?: string | null;
   note?: string | null;
   file_url?: string | null;
+  platform?: string | null;
+  format?: string | null;
   scheduled_date?: string | null;
   assignee_id?: string | null;
   created_by: string;
 }): Promise<MinervaContentItem | null> {
+  // platform/format live behind a pending migration (20260819000000) --
+  // only send them when actually filled in, same pattern as addClient's
+  // pending-columns guard, so creating content keeps working before that
+  // migration is deployed.
+  const { platform, format, ...rest } = payload;
+  const insertPayload = {
+    ...rest,
+    ...(platform ? { platform } : {}),
+    ...(format ? { format } : {}),
+  };
   const { data, error } = await getSupabase()
     .from('minerva_content_items')
-    .insert([payload])
+    .insert([insertPayload])
     .select('*')
     .single();
   if (error) {

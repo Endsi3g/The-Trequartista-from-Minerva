@@ -103,7 +103,7 @@ export default function ContentPlannerPage() {
 
   // Compute Platform Distribution & Status metrics
   const totalPosts = posts.length;
-  const instaPosts = posts.filter((p) => (p.platform || '').toLowerCase().includes('instagram') || true).length;
+  const instaPosts = posts.filter((p) => (p.platform || '').toLowerCase().includes('instagram')).length;
   const tiktokPosts = posts.filter((p) => (p.platform || '').toLowerCase().includes('tiktok')).length;
   const ytPosts = posts.filter((p) => (p.platform || '').toLowerCase().includes('youtube')).length;
 
