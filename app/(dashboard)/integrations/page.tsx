@@ -288,10 +288,10 @@ export default function IntegrationsPage() {
                       <div className="flex items-center gap-2">
                         <span className="font-extrabold text-sm text-mv-ink font-display">{app.name}</span>
                         {isConnected && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          <Badge variant="green" className="text-[10px] py-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-mv-green" />
                             Connecté
-                          </span>
+                          </Badge>
                         )}
                       </div>
                       <p className="text-xs text-mv-ink-soft mt-0.5 line-clamp-1">{app.description}</p>

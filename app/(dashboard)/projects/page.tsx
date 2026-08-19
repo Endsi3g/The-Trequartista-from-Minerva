@@ -17,6 +17,7 @@ import {
 import { fetchProjects } from '@/lib/services/supabase-data';
 import type { Project } from '@/lib/types';
 import { PageFadeIn } from '@/components/ui/page-transition';
+import { PaginatedColumn } from '@/components/ui/paginated-column';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -300,57 +301,55 @@ export default function ProjectsPage() {
             return (
               <div
                 key={stage}
-                className="bg-zinc-50/70 border border-mv-border rounded-[6px] flex flex-col min-h-[400px] overflow-hidden"
+                className="bg-mv-cream-soft/60 border border-mv-border rounded-lg flex flex-col min-h-[400px] overflow-hidden"
               >
-                <div className="p-2.5 border-b border-mv-border bg-white flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-900 truncate">
+                <div className="p-2.5 border-b border-mv-border bg-mv-surface flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-mv-ink truncate">
                     {stage}
                   </span>
-                  <span className="text-[10px] font-mono text-zinc-500 bg-zinc-100 px-1.5 py-0.2 rounded" style={MONO}>
+                  <span className="text-[10px] font-mono text-mv-ink-soft bg-mv-cream-soft px-1.5 py-0.2 rounded" style={MONO}>
                     {stageProjects.length}
                   </span>
                 </div>
 
                 <div className="p-2 space-y-2 flex-1 overflow-y-auto">
-                  {stageProjects.map((p) => (
-                    <div
-                      key={p.id}
-                      onClick={() => router.push(`/projects/${p.id}/roadmap`)}
-                      className="border border-mv-border bg-white hover:border-zinc-300 rounded-[5px] p-2.5 shadow-2xs transition-all cursor-pointer group space-y-2"
-                    >
-                      <div className="flex items-start justify-between gap-1">
-                        <div>
-                          <div className="font-semibold text-[12px] text-zinc-900 group-hover:text-mv-green transition-colors">
-                            {p.name}
+                  <PaginatedColumn
+                    items={stageProjects}
+                    getKey={(p) => p.id}
+                    emptyLabel="Vide"
+                    renderItem={(p) => (
+                      <div
+                        onClick={() => router.push(`/projects/${p.id}/roadmap`)}
+                        className="border border-mv-border bg-mv-surface hover:border-mv-green/40 rounded-md p-2.5 shadow-2xs transition-all cursor-pointer group space-y-2"
+                      >
+                        <div className="flex items-start justify-between gap-1">
+                          <div>
+                            <div className="font-semibold text-[12px] text-mv-ink group-hover:text-mv-green transition-colors">
+                              {p.name}
+                            </div>
+                            <div className="text-[10.5px] text-mv-ink-faint font-medium truncate">{p.client_name}</div>
                           </div>
-                          <div className="text-[10.5px] text-zinc-400 font-medium truncate">{p.client_name}</div>
+                          <span className="text-[10px] font-mono text-mv-green font-semibold" style={MONO}>
+                            {p.progress_pct}%
+                          </span>
                         </div>
-                        <span className="text-[10px] font-mono text-mv-green font-semibold" style={MONO}>
-                          {p.progress_pct}%
-                        </span>
-                      </div>
 
-                      <div className="flex items-center justify-between pt-1 border-t border-mv-border/60 text-[10.5px]">
-                        <span className="text-zinc-500 font-mono" style={MONO}>
-                          {p.due_date ? new Date(p.due_date).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' }) : '—'}
-                        </span>
-                        <Link
-                          href={`/projects/${p.id}/launch-check`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-mv-green font-semibold hover:underline flex items-center gap-0.5"
-                        >
-                          <span>Check</span>
-                          <ArrowRight className="w-2.5 h-2.5" />
-                        </Link>
+                        <div className="flex items-center justify-between pt-1 border-t border-mv-border/60 text-[10.5px]">
+                          <span className="text-mv-ink-soft font-mono" style={MONO}>
+                            {p.due_date ? new Date(p.due_date).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' }) : '—'}
+                          </span>
+                          <Link
+                            href={`/projects/${p.id}/launch-check`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-mv-green font-semibold hover:underline flex items-center gap-0.5"
+                          >
+                            <span>Check</span>
+                            <ArrowRight className="w-2.5 h-2.5" />
+                          </Link>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-
-                  {stageProjects.length === 0 && (
-                    <div className="h-20 border border-dashed border-zinc-200 rounded-[4px] flex items-center justify-center text-[10.5px] text-zinc-400">
-                      Vide
-                    </div>
-                  )}
+                    )}
+                  />
                 </div>
               </div>
             );
