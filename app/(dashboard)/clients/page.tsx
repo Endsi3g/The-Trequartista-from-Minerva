@@ -266,9 +266,18 @@ export default function ClientsPage() {
         {loading ? (
           <p className="text-xs text-zinc-400 text-center py-10 font-mono">Chargement des clients…</p>
         ) : visibleClients.length === 0 ? (
-          <div className="py-10 text-center space-y-1">
-            <p className="text-xs font-semibold text-zinc-700">Aucun client trouvé</p>
-            <p className="text-[11px] text-zinc-400">Modifiez vos critères de recherche ou ajoutez un nouveau client.</p>
+          <div className="py-10 text-center space-y-3">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-zinc-700">Aucun client trouvé</p>
+              <p className="text-[11px] text-zinc-400">Modifiez vos critères de recherche ou ajoutez un nouveau client.</p>
+            </div>
+            <Link
+              href="/clients/new"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mv-green hover:bg-mv-green/90 text-white text-[11.5px] font-bold transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Ajouter un client</span>
+            </Link>
           </div>
         ) : (
           <table className="w-full text-[12.5px] border-collapse">

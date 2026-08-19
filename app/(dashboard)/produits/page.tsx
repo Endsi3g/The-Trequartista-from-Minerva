@@ -193,7 +193,13 @@ export default function ProduitsMinervaPage() {
       {loading ? (
         <div className="py-12 text-center text-xs text-mv-ink-soft">Chargement…</div>
       ) : items.length === 0 ? (
-        <EmptyState icon={Rocket} title="Aucun item de roadmap" description="Ajoute le premier jalon produit ci-dessus." />
+        <EmptyState
+          icon={Rocket}
+          title="Aucun item de roadmap"
+          description="Ajoute le premier jalon produit pour suivre l'avancement de Reach, Flow, OS et les initiatives à venir."
+          actionLabel="Nouvel item"
+          onAction={() => setShowAddForm(true)}
+        />
       ) : (
         <div className="space-y-6">
           {Object.entries(grouped).map(([productName, productItems]) => (
