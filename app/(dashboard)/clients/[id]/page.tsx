@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -73,6 +73,7 @@ const TASK_STATUS_BADGE: Record<Task['status'], 'neutral' | 'amber' | 'green'> =
 
 export default function ClientDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const clientId = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
   const [client, setClient] = useState<Client | null>(null);
@@ -505,7 +506,13 @@ export default function ClientDetailPage() {
         }
       >
         {projects.length === 0 ? (
-          <EmptyState icon={FolderKanban} title="Aucun projet" description="Aucun projet n'est encore associé à ce client." />
+          <EmptyState
+            icon={FolderKanban}
+            title="Aucun projet"
+            description="Aucun projet n'est encore associé à ce client."
+            actionLabel="Créer un projet"
+            onAction={() => router.push('/projects/new')}
+          />
         ) : (
           <div className="space-y-2">
             {projects.map((p) => (
@@ -538,7 +545,13 @@ export default function ClientDetailPage() {
           }
         >
           {leads.length === 0 ? (
-            <EmptyState icon={Target} title="Aucun lead" description="Aucun lead n'est encore lié à ce client." />
+            <EmptyState
+              icon={Target}
+              title="Aucun lead"
+              description="Aucun lead n'est encore lié à ce client."
+              actionLabel="Créer un lead"
+              onAction={() => router.push('/leads/new')}
+            />
           ) : (
             <div className="space-y-2">
               {leads.map((lead) => (
@@ -569,7 +582,13 @@ export default function ClientDetailPage() {
           }
         >
           {tasks.length === 0 ? (
-            <EmptyState icon={CheckSquare} title="Aucune tâche" description="Aucune tâche n'est encore liée à ce client." />
+            <EmptyState
+              icon={CheckSquare}
+              title="Aucune tâche"
+              description="Aucune tâche n'est encore liée à ce client."
+              actionLabel="Créer une tâche"
+              onAction={() => router.push('/tasks/new')}
+            />
           ) : (
             <div className="space-y-2">
               {tasks.map((task) => (
@@ -636,7 +655,13 @@ export default function ClientDetailPage() {
           }
         >
           {contentPosts.length === 0 ? (
-            <EmptyState icon={Film} title="Aucun contenu" description="Aucune publication n'est encore associée à ce client." />
+            <EmptyState
+              icon={Film}
+              title="Aucun contenu"
+              description="Aucune publication n'est encore associée à ce client."
+              actionLabel="Planifier un réel"
+              onAction={() => router.push('/content-planner/new')}
+            />
           ) : (
             <div className="space-y-2">
               {contentPosts.map((post) => (

@@ -8,9 +8,11 @@ import { cn } from '@/lib/utils';
 interface VideoUploadFieldProps {
   value: string;
   onChange: (url: string) => void;
+  bucket?: string;
+  folder?: string;
 }
 
-export function VideoUploadField({ value, onChange }: VideoUploadFieldProps) {
+export function VideoUploadField({ value, onChange, bucket = 'client-assets', folder = 'reels' }: VideoUploadFieldProps) {
   const [mode, setMode] = useState<'upload' | 'link'>('upload');
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -19,13 +21,13 @@ export function VideoUploadField({ value, onChange }: VideoUploadFieldProps) {
     setUploading(true);
     try {
       const supabase = createClient();
-      const filePath = `reels/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-      const { error } = await supabase.storage.from('client-assets').upload(filePath, file, {
+      const filePath = `${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+      const { error } = await supabase.storage.from(bucket).upload(filePath, file, {
         cacheControl: '3600',
         upsert: true,
       });
       if (!error) {
-        const { data } = supabase.storage.from('client-assets').getPublicUrl(filePath);
+        const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
         onChange(data.publicUrl);
       }
     } finally {

@@ -286,8 +286,8 @@ export interface ContentPost {
   client_id: string;
   client_name: string;
   title: string;
-  format: 'Reel 60s' | 'Carrousel IG' | 'Post LinkedIn' | 'Story';
-  platform?: 'Instagram' | 'TikTok' | 'YouTube Shorts' | 'LinkedIn';
+  format: 'Reel 30s' | 'Reel 60s' | 'Reel 90s' | 'Carrousel' | 'Carrousel IG' | 'Post LinkedIn' | 'Story';
+  platform?: 'Instagram' | 'TikTok' | 'YouTube' | 'YouTube Shorts' | 'LinkedIn' | 'Facebook';
   scheduled_date: string;
   status: 'Idéation' | 'Rédigé' | 'Enregistré' | 'Publié';
   thumbnail_url: string;
@@ -323,6 +323,8 @@ export interface MinervaContentItem {
   external_url?: string | null;
   note?: string | null;
   file_url?: string | null;
+  platform?: string | null;
+  format?: string | null;
   scheduled_date?: string | null;
   posted: boolean;
   assignee_id?: string | null;
@@ -391,7 +393,8 @@ export interface AcademySOP {
     | 'Ventes & Prospection'
     | 'Gestion de compte'
     | 'Support & QA'
-    | 'Stratégie & Offre';
+    | 'Stratégie & Offre'
+    | 'Stratégie & Vision';
   read_time_min: number;
   author: string;
   video_url?: string;

@@ -8,7 +8,6 @@ import {
   FolderKanban,
   Trash2,
   MessageSquare,
-  Paperclip,
   MoreHorizontal,
   Search,
   CheckCircle2,
@@ -20,6 +19,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Task } from '@/lib/types';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { UserAvatar } from '@/components/ui/user-avatar';
+import { PaginatedColumn } from '@/components/ui/paginated-column';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 
 const STATUS_COLUMNS = [
@@ -216,21 +216,17 @@ export default function TasksPage() {
 
                 {/* Task Cards List */}
                 <div className="space-y-3 min-h-[120px]">
-                  {colTasks.length === 0 ? (
-                    <div className="py-8 text-center text-xs text-mv-ink-faint border border-dashed border-mv-border rounded-xl bg-mv-surface/40">
-                      Aucune tâche dans cette colonne
-                    </div>
-                  ) : (
-                    colTasks.map((task) => {
+                  <PaginatedColumn
+                    items={colTasks}
+                    getKey={(task) => task.id}
+                    emptyLabel="Aucune tâche dans cette colonne"
+                    renderItem={(task) => {
                       const totalSub = task.subitems_total || 0;
                       const doneSub = task.subitems_done || 0;
                       const hasSubitems = totalSub > 0;
 
                       return (
-                        <div
-                          key={task.id}
-                          className="bg-mv-surface border border-mv-border rounded-xl p-4 shadow-mv-sm space-y-3 hover:border-mv-ink-faint transition-all group"
-                        >
+                        <div className="bg-mv-surface border border-mv-border rounded-xl p-4 shadow-mv-sm space-y-3 hover:border-mv-ink-faint transition-all group">
                           {/* Date & Action */}
                           <div className="flex items-center justify-between text-xs text-mv-ink-faint font-medium">
                             {task.due_date ? (
@@ -281,22 +277,13 @@ export default function TasksPage() {
                           )}
 
                           {/* Segmented Subtask Progress Bar (Audrey Lay reference) */}
-                          {hasSubitems ? (
-                            renderSegmentedProgress(doneSub, totalSub)
-                          ) : (
-                            <div className="pt-0.5">
-                              {renderSegmentedProgress(col.key === 'done' ? 3 : col.key === 'in_progress' ? 1 : 0, 3)}
-                            </div>
-                          )}
+                          {hasSubitems && renderSegmentedProgress(doneSub, totalSub)}
 
                           {/* Bottom Footer: Counters + Avatar Stack */}
                           <div className="flex items-center justify-between pt-2 border-t border-mv-border/60 text-xs text-mv-ink-faint">
                             <div className="flex items-center gap-3">
                               <span className="flex items-center gap-1 text-[11px] hover:text-mv-ink transition-colors">
-                                <MessageSquare className="w-3.5 h-3.5" /> {task.comments_count || 2}
-                              </span>
-                              <span className="flex items-center gap-1 text-[11px] hover:text-mv-ink transition-colors">
-                                <Paperclip className="w-3.5 h-3.5" /> 1
+                                <MessageSquare className="w-3.5 h-3.5" /> {task.comments_count || 0}
                               </span>
                             </div>
 
@@ -331,8 +318,8 @@ export default function TasksPage() {
                           </div>
                         </div>
                       );
-                    })
-                  )}
+                    }}
+                  />
                 </div>
               </div>
             );

@@ -121,7 +121,7 @@ export default function HelpPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
           <Link
-            href="/academy"
+            href="/chat"
             className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-mv-surface border border-mv-border text-xs font-bold text-mv-ink hover:border-mv-green/50 hover:shadow-mv-sm transition-all cursor-pointer"
           >
             <MessageSquare className="w-4 h-4 text-mv-green" />

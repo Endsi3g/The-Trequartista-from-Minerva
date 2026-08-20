@@ -299,10 +299,20 @@ export default function DocumentsPage() {
       {loading ? (
         <p className="text-xs text-zinc-400 text-center py-12 font-mono">Chargement des documents…</p>
       ) : filteredDocuments.length === 0 ? (
-        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-2">
+        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3">
           <FileText className="w-8 h-8 text-zinc-300 mx-auto" />
-          <p className="text-xs font-semibold text-zinc-700">Aucun document trouvé</p>
-          <p className="text-[11px] text-zinc-400">Cliquez sur l’un des modèles d’amorce ci-dessus ou appuyez sur « C » pour rédiger.</p>
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-zinc-700">Aucun document trouvé</p>
+            <p className="text-[11px] text-zinc-400">Cliquez sur l’un des modèles d’amorce ci-dessus ou appuyez sur « C » pour rédiger.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleCreate()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mv-green hover:bg-mv-green/90 text-white text-[11.5px] font-bold transition-colors cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Nouveau document</span>
+          </button>
         </div>
       ) : viewMode === 'list' ? (
         /* ── 36px DataTable View (Linear Docs Style) ── */

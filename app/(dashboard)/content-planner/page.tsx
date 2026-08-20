@@ -32,6 +32,8 @@ import {
 } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
 import { PageFadeIn } from '@/components/ui/page-transition';
+import { PaginatedColumn } from '@/components/ui/paginated-column';
+import { TabTransition } from '@/components/ui/tab-transition';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -103,7 +105,7 @@ export default function ContentPlannerPage() {
 
   // Compute Platform Distribution & Status metrics
   const totalPosts = posts.length;
-  const instaPosts = posts.filter((p) => (p.platform || '').toLowerCase().includes('instagram') || true).length;
+  const instaPosts = posts.filter((p) => (p.platform || '').toLowerCase().includes('instagram')).length;
   const tiktokPosts = posts.filter((p) => (p.platform || '').toLowerCase().includes('tiktok')).length;
   const ytPosts = posts.filter((p) => (p.platform || '').toLowerCase().includes('youtube')).length;
 
@@ -305,16 +307,17 @@ export default function ContentPlannerPage() {
           </div>
           <div className="flex items-center gap-3 text-[10.5px] text-zinc-500 font-mono shrink-0" style={MONO}>
             <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-mv-green" /> Instagram ({totalPosts > 0 ? Math.round((instaPosts / totalPosts) * 100) : 100}%)
+              <span className="w-1.5 h-1.5 rounded-full bg-mv-green" /> Instagram ({totalPosts > 0 ? Math.round((instaPosts / totalPosts) * 100) : 0}%)
             </span>
             <span className="flex items-center gap-1 text-zinc-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" /> TikTok (0%)
+              <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" /> TikTok ({totalPosts > 0 ? Math.round((tiktokPosts / totalPosts) * 100) : 0}%)
             </span>
           </div>
         </div>
       </div>
 
       {/* ── 3. Main Views (Calendar / Kanban / Storage / Minerva) ── */}
+      <TabTransition tabKey={viewMode}>
       {viewMode === 'calendar' ? (
         <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
           {/* Calendar Month Header & Controls */}
@@ -461,43 +464,41 @@ export default function ContentPlannerPage() {
                 </div>
 
                 <div className="p-2.5 space-y-3 flex-1 overflow-y-auto">
-                  {stagePosts.map((post) => (
-                    <div
-                      key={post.id}
-                      draggable
-                      onDragStart={(e) => {
-                        setDraggedPostId(post.id);
-                        e.dataTransfer.setData('text/plain', post.id);
-                      }}
-                      className="border border-mv-border bg-white rounded-[6px] p-2.5 shadow-2xs space-y-2 cursor-grab group"
-                    >
-                      {/* Video Player Preview if URL exists */}
-                      {post.video_url ? (
-                        <div className="rounded-[4px] overflow-hidden border border-black/10">
-                          <VideoAssetPlayer src={post.video_url} title={post.title} initialAspectRatio="16:9" />
-                        </div>
-                      ) : (
-                        <div className="h-20 bg-zinc-100 rounded-[4px] flex items-center justify-center text-zinc-400">
-                          <Film className="w-5 h-5 opacity-40" />
-                        </div>
-                      )}
+                  <PaginatedColumn
+                    items={stagePosts}
+                    getKey={(post) => post.id}
+                    emptyLabel="Vide"
+                    renderItem={(post) => (
+                      <div
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggedPostId(post.id);
+                          e.dataTransfer.setData('text/plain', post.id);
+                        }}
+                        className="border border-mv-border bg-white rounded-[6px] p-2.5 shadow-2xs space-y-2 cursor-grab group"
+                      >
+                        {/* Video Player Preview if URL exists */}
+                        {post.video_url ? (
+                          <div className="rounded-[4px] overflow-hidden border border-black/10">
+                            <VideoAssetPlayer src={post.video_url} title={post.title} initialAspectRatio="16:9" />
+                          </div>
+                        ) : (
+                          <div className="h-20 bg-zinc-100 rounded-[4px] flex items-center justify-center text-zinc-400">
+                            <Film className="w-5 h-5 opacity-40" />
+                          </div>
+                        )}
 
-                      <div>
-                        <div className="font-semibold text-xs text-zinc-900 group-hover:text-mv-green transition-colors">
-                          <Link href={`/content-planner/${post.id}`}>{post.title}</Link>
-                        </div>
-                        <div className="text-[10.5px] text-zinc-400 font-mono mt-0.5" style={MONO}>
-                          {post.client_name} · {new Date(post.scheduled_date).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })}
+                        <div>
+                          <div className="font-semibold text-xs text-zinc-900 group-hover:text-mv-green transition-colors">
+                            <Link href={`/content-planner/${post.id}`}>{post.title}</Link>
+                          </div>
+                          <div className="text-[10.5px] text-zinc-400 font-mono mt-0.5" style={MONO}>
+                            {post.client_name} · {new Date(post.scheduled_date).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-
-                  {stagePosts.length === 0 && (
-                    <div className="h-20 border border-dashed border-zinc-200 rounded-[4px] flex items-center justify-center text-[10.5px] text-zinc-400">
-                      Vide
-                    </div>
-                  )}
+                    )}
+                  />
                 </div>
               </div>
             );
@@ -619,6 +620,7 @@ export default function ContentPlannerPage() {
           )}
         </div>
       )}
+      </TabTransition>
     </PageFadeIn>
   );
 }

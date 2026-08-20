@@ -305,10 +305,13 @@ export default function SopDetailPage() {
       {/* ── 4. Main Markdown Content & Visual Callouts ── */}
       <div className="bg-mv-surface border border-mv-border rounded-[6px] p-6 shadow-2xs space-y-6">
         <div className="prose prose-zinc prose-sm max-w-none text-xs sm:text-[13px] leading-relaxed text-zinc-700">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {sop.content_markdown ||
-              `## Guide Opératoire & Méthodologie\n\n${sop.description || 'Consultez les étapes ci-dessous pour exécuter ce processus avec l’équipe.'}\n\n### 1. Analyse Préliminaire\n- Évaluer la maturité digitale du prospect et identifier les points de friction.\n- Vérifier la configuration des outils internes avant toute prise de contact.\n\n### 2. Exécution & Personnalisation\n- Utiliser le script de prospection ci-dessous en adaptant les 3 points clés.\n- Documenter chaque interaction dans l'espace client pour un suivi fluide.`}
-          </ReactMarkdown>
+          {sop.content_markdown ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{sop.content_markdown}</ReactMarkdown>
+          ) : sop.description ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{sop.description}</ReactMarkdown>
+          ) : (
+            <p className="text-zinc-400 italic">Aucun contenu détaillé pour cette SOP pour le moment.</p>
+          )}
         </div>
 
         {/* ── 5. Actionable Outreach Script Callout ── */}

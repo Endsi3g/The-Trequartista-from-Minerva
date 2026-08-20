@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Mail, Calendar } from 'lucide-react';
+import { Mail, Calendar, ChevronDown, Phone, StickyNote } from 'lucide-react';
 import type { Lead, LeadStage } from '@/lib/types';
 import { updateLeadStatus } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
+import { PaginatedColumn } from '@/components/ui/paginated-column';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -35,6 +36,7 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
   const { toastError, toastSuccess } = useToast();
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
 
   const getStageForLead = (lead: Lead): LeadStage => {
     if (lead.stage) return lead.stage;
@@ -100,27 +102,27 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, col.id)}
             className={cn(
-              'bg-zinc-50/70 border border-mv-border rounded-[6px] flex flex-col min-h-[460px] transition-all overflow-hidden',
-              isDragTarget && 'border-mv-green ring-1 ring-mv-green/30 bg-emerald-50/20'
+              'bg-mv-cream-soft/60 border border-mv-border rounded-lg flex flex-col min-h-[460px] transition-all overflow-hidden',
+              isDragTarget && 'border-mv-green ring-1 ring-mv-green/30 bg-mv-green-tint/30'
             )}
           >
             {/* Top 2px Progress Accent Bar */}
             <div
-              className={cn('h-0.5 w-full', col.id === 'perdu' ? 'bg-rose-400' : 'bg-mv-green')}
+              className={cn('h-0.5 w-full', col.id === 'perdu' ? 'bg-mv-red' : 'bg-mv-green')}
               style={{ opacity: col.barOpacity }}
             />
 
             {/* Column Header (Dense Single-line Title + Subtitle) */}
-            <div className="p-2.5 border-b border-mv-border/80 bg-white">
+            <div className="p-2.5 border-b border-mv-border/80 bg-mv-surface">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-900 truncate">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-mv-ink truncate">
                   {col.title}
                 </span>
-                <span className="text-[11px] font-mono font-medium text-zinc-500 bg-zinc-100 px-1.5 py-0.2 rounded" style={MONO}>
+                <span className="text-[11px] font-mono font-medium text-mv-ink-soft bg-mv-cream-soft px-1.5 py-0.2 rounded" style={MONO}>
                   {colLeads.length}
                 </span>
               </div>
-              <div className="text-[10px] font-mono text-zinc-400 mt-0.5 truncate" style={MONO}>
+              <div className="text-[10px] font-mono text-mv-ink-faint mt-0.5 truncate" style={MONO}>
                 {colMrr > 0 ? `${colMrr.toLocaleString('fr-CA')} $/mo` : ''}
                 {colMrr > 0 && colTotalEst > 0 ? ' · ' : ''}
                 {colTotalEst > 0 ? `Est. ${colTotalEst.toLocaleString('fr-CA')} $` : colMrr === 0 ? '0 $ MRR' : ''}
@@ -129,67 +131,106 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
 
             {/* Column Cards Container */}
             <div className="p-2 space-y-2 flex-1 overflow-y-auto">
-              {colLeads.map((lead) => {
-                const isDragging = draggedLeadId === lead.id;
-                const isMeetingBooked =
-                  lead.status === 'RDV Fixé' ||
-                  lead.service_requested?.toLowerCase().includes('meeting') ||
-                  lead.contact_name.toLowerCase().includes('saint cinnamon') ||
-                  (lead.notes && lead.notes.some((n) => (n.text || '').toLowerCase().includes('rdv')));
-                const dealVal = (lead.mrr_value ? `${lead.mrr_value} $/mo` : null) || (lead.one_time_value ? `${lead.one_time_value} $` : null);
+              <PaginatedColumn
+                items={colLeads}
+                getKey={(lead) => lead.id}
+                emptyLabel="Vide"
+                renderItem={(lead) => {
+                  const isDragging = draggedLeadId === lead.id;
+                  const isExpanded = expandedLeadId === lead.id;
+                  const isMeetingBooked =
+                    lead.status === 'RDV Fixé' ||
+                    lead.service_requested?.toLowerCase().includes('meeting') ||
+                    (lead.notes && lead.notes.some((n) => (n.text || '').toLowerCase().includes('rdv')));
+                  const dealVal = (lead.mrr_value ? `${lead.mrr_value} $/mo` : null) || (lead.one_time_value ? `${lead.one_time_value} $` : null);
 
-                return (
-                  <div
-                    key={lead.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, lead.id)}
-                    onClick={() => onSelectLead(lead)}
-                    className={cn(
-                      'border border-mv-border/90 bg-white hover:border-zinc-300 rounded-[5px] p-2.5 shadow-2xs transition-all cursor-pointer hover:shadow-xs group space-y-1.5',
-                      isDragging && 'opacity-40 scale-95'
-                    )}
-                  >
-                    {/* Line 1: Lead Name & Sector Tag */}
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="font-semibold text-[12px] text-zinc-900 truncate group-hover:text-mv-green transition-colors">
-                        {lead.company_name || lead.contact_name}
-                      </span>
-                      {lead.service_requested && (
-                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9.5px] font-medium bg-zinc-100 text-zinc-600 shrink-0 truncate max-w-[80px]">
-                          {lead.service_requested}
+                  return (
+                    <div
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, lead.id)}
+                      onClick={() => onSelectLead(lead)}
+                      className={cn(
+                        'border border-mv-border/90 bg-mv-surface hover:border-mv-green/40 rounded-md p-2.5 shadow-2xs transition-all cursor-pointer hover:shadow-xs group space-y-1.5',
+                        isDragging && 'opacity-40 scale-95'
+                      )}
+                    >
+                      {/* Line 1: Lead Name & Sector Tag */}
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="font-semibold text-[12px] text-mv-ink truncate group-hover:text-mv-green transition-colors">
+                          {lead.company_name || lead.contact_name}
                         </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {lead.service_requested && (
+                            <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9.5px] font-medium bg-mv-cream-soft text-mv-ink-soft truncate max-w-[80px]">
+                              {lead.service_requested}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedLeadId(isExpanded ? null : lead.id);
+                            }}
+                            className="text-mv-ink-faint hover:text-mv-green transition-colors cursor-pointer"
+                            title={isExpanded ? 'Réduire' : 'Aperçu rapide'}
+                          >
+                            <ChevronDown className={cn('w-3 h-3 transition-transform', isExpanded && 'rotate-180 text-mv-green')} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Line 2: Meeting Alert (if booked) */}
+                      {isMeetingBooked && (
+                        <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-mv-amber-bg text-mv-amber border border-mv-amber/30 text-[9.5px] font-medium">
+                          <Calendar className="w-2.5 h-2.5 shrink-0" />
+                          <span>Meeting booké</span>
+                        </div>
+                      )}
+
+                      {/* Line 3: Email & Opportunity Amount */}
+                      <div className="flex items-center justify-between gap-1 text-[10.5px] pt-0.5">
+                        <div className="flex items-center gap-1 text-mv-ink-faint font-mono truncate min-w-0" style={MONO}>
+                          <Mail className="w-2.5 h-2.5 shrink-0" />
+                          <span className="truncate">{lead.contact_email || lead.contact_phone || '—'}</span>
+                        </div>
+                        {dealVal && (
+                          <span className="font-mono font-semibold text-mv-ink shrink-0 text-[10.5px]" style={MONO}>
+                            {dealVal}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Inline Quick-Preview (expand-in-place, no modal) */}
+                      {isExpanded && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="pt-1.5 mt-1.5 border-t border-mv-border/80 space-y-1 text-[10.5px] text-mv-ink-soft"
+                        >
+                          {lead.contact_phone && (
+                            <div className="flex items-center gap-1.5">
+                              <Phone className="w-2.5 h-2.5 shrink-0 text-mv-ink-faint" />
+                              <span className="font-mono" style={MONO}>{lead.contact_phone}</span>
+                            </div>
+                          )}
+                          {lead.notes && lead.notes.length > 0 && (
+                            <div className="flex items-start gap-1.5">
+                              <StickyNote className="w-2.5 h-2.5 shrink-0 text-mv-ink-faint mt-0.5" />
+                              <span className="line-clamp-2">{lead.notes[lead.notes.length - 1]?.text}</span>
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => onSelectLead(lead)}
+                            className="text-mv-green font-semibold hover:underline"
+                          >
+                            Voir la fiche complète →
+                          </button>
+                        </div>
                       )}
                     </div>
-
-                    {/* Line 2: Meeting Alert (if booked) */}
-                    {isMeetingBooked && (
-                      <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] bg-amber-50 text-amber-800 border border-amber-200/60 text-[9.5px] font-medium">
-                        <Calendar className="w-2.5 h-2.5 text-amber-600 shrink-0" />
-                        <span>Meeting booké</span>
-                      </div>
-                    )}
-
-                    {/* Line 3: Email & Opportunity Amount */}
-                    <div className="flex items-center justify-between gap-1 text-[10.5px] pt-0.5">
-                      <div className="flex items-center gap-1 text-zinc-400 font-mono truncate min-w-0" style={MONO}>
-                        <Mail className="w-2.5 h-2.5 shrink-0 text-zinc-400" />
-                        <span className="truncate">{lead.contact_email || lead.contact_phone || '—'}</span>
-                      </div>
-                      {dealVal && (
-                        <span className="font-mono font-semibold text-zinc-900 shrink-0 text-[10.5px]" style={MONO}>
-                          {dealVal}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {colLeads.length === 0 && (
-                <div className="h-20 border border-dashed border-zinc-200/70 rounded-[4px] flex items-center justify-center text-[10.5px] text-zinc-400">
-                  Vide
-                </div>
-              )}
+                  );
+                }}
+              />
             </div>
           </div>
         );

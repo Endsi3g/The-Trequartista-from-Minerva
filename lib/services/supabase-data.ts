@@ -723,6 +723,127 @@ Mes Inspirations est le moteur de preuve sociale pour les 3 autres piliers de Mi
     is_essential: true,
     pillar: 'agency',
   },
+  {
+    id: 'sop-minerva-agence-studio-produit',
+    title: 'Minerva — Agence & Studio Produit : Vue d’Ensemble Stratégique',
+    category: 'Stratégie & Vision',
+    read_time_min: 10,
+    author: 'Direction Minerva',
+    description: 'Écosystème, structure juridique, offre signature restaurants, stratégie marketing, roadmap 12 mois, KPIs, projections financières et gestion des risques de Minerva.',
+    is_essential: true,
+    content_markdown: `## Minerva — Agence & Studio Produit
+
+> 🏢 **Montréal, Québec** — Une compagnie hybride qui combine design, systèmes d'automatisation IA et logicielles sur mesure pour les entrepreneurs et les restaurants.
+
+---
+
+## 🌐 Écosystème Minerva
+
+Minerva fonctionne comme une **marque parapluie** (« umbrella brand ») articulée autour de quatre piliers :
+
+### 🏢 Minerva (Agence)
+L'entité principale — design, conseil stratégique, sites web Framer, intégration de systèmes.
+
+### 🧠 Minerva OS
+Le noyau technique propriétaire — systèmes de gestion, automatisation et tableaux de bord propulsés par l'IA.
+
+### 📡 Minerva Reach
+Solution de prospection automatisée spécialisée pour le Québec — tout le cycle de prospection dans une seule app.
+
+### 🌊 Minerva Flow
+Cockpit de gestion pour restaurants et cafés — opérations, fournisseurs, inventaire, employés, revenus.
+
+---
+
+## ⚖️ Structure juridique
+
+- **Forme :** Entreprise individuelle enregistrée au Québec (NEQ)
+- **Siège :** Montréal, Québec, Canada
+- **Fiscalité :** Inscription TPS et TVQ selon le seuil de chiffre d'affaires
+- **Propriété intellectuelle :** Minerva conserve la propriété exclusive du code source et des architectures. Les clients bénéficient d'une licence d'exploitation pour leurs plateformes.
+
+---
+
+## 💼 Offre signature — Restaurants & Cafés
+
+**Clientèle cible :** cafés indépendants de niche, restaurants haut de gamme, chaînes locales du Grand Montréal.
+
+| Composante | Description |
+| --- | --- |
+| **Plateforme Web Framer** | Design sur mesure : accueil, menu dynamique, réservations, galerie, identité |
+| **Intégration Minerva OS** | Tableaux de bord, gestion des avis, suivi analytique |
+| **Pipeline de contenu** | Création et planification de Reels, Stories, Carrousels automatisés |
+| **Accompagnement** | Revues mensuelles et optimisations continues |
+
+---
+
+## 📣 Stratégie marketing
+
+### Canaux prioritaires
+
+| Canal | Orientation | Fréquence |
+| --- | --- | --- |
+| **Instagram** | Univers visuel Restauration + Éducation Growth/Finance | 1–2/semaine |
+| **YouTube / TikTok** | Contenus de fond et capsules sur l'IA, le code, les systèmes | Flux continu |
+| **LinkedIn** | Crédibilité B2B, génération de leads décideurs | Hebdomadaire |
+
+### Stratégie d'acquisition B2B (Restaurants)
+
+1. **Criblage :** fichier de 200 profils ICP qualifiés localement
+2. **Campagnes directes :** vagues de prospection téléphonique et emails personnalisés
+3. **Démos :** prototypes Framer interactifs avant signature
+4. **Phase pilote :** 1–2 clients initiaux à conditions préférentielles pour études de cas
+
+---
+
+## 📈 Roadmap stratégique (12 mois)
+
+| Phase | Période | Priorités |
+| --- | --- | --- |
+| **1. Fondations** | Juillet–Août | Enregistrement légal, charte graphique, vitrine Framer, calendrier éditorial |
+| **2. Conquête locale** | Septembre–Novembre | Prospection restaurants, signatures pilotes, déploiement systèmes |
+| **3. Lancement SaaS** | Novembre–Février | Spécifications Reach & HelloAdvice, versions V1, bêta test |
+| **4. Passage à l'échelle** | Mars–Juin | Stabilisation rétention, accélération budgets publicitaires, croissance MRR |
+
+---
+
+## 🎯 KPI prioritaires (Année 1)
+
+| Indicateur | Cible |
+| --- | --- |
+| **Contrats restaurants actifs** | 3 |
+| **MRR global** | En croissance continue |
+| **Utilisateurs actifs mensuels (apps)** | Suivi mensuel |
+| **Rétention 30/60/90 jours** | Taux cible à définir |
+
+---
+
+## 📊 Projections financières (Année 1 — scénario intermédiaire)
+
+| Unité d'affaires | Hypothèses | Revenus estimés |
+| --- | --- | --- |
+| Services Restaurants (Setup) | 3 contrats × 3 000 $ | 9 000 $ |
+| Services Restaurants (Récurrent) | 3 abonnements × 250 $/mois | 9 000 $ |
+| HelloAdvice SaaS | 100–150 abonnés (~12 $ ARPU) | 14 000 $ – 21 000 $ |
+| Minerva Reach SaaS | 50–100 abonnés (~25 $ ARPU) | 15 000 $ – 30 000 $ |
+| **TOTAL** | | **38 000 $ – 48 000 $** |
+
+---
+
+## ⚠️ Gestion des risques
+
+| Risque | Mitigation |
+| --- | --- |
+| **Disponibilité opérationnelle** | Priorisation stricte des livrables essentiels, automatisation maximale |
+| **Inertie du marché SaaS** | Lancement MVP pour collecter données et ajuster l'offre rapidement |
+| **Conformité réglementaire** | Audit comptable et conseil juridique dès les premiers paliers de revenus |
+
+---
+
+### Voir aussi dans l'Académie
+- [Pilier 4 — Mes Inspirations (Marque Média & Contenu)](/academy/sop-mes-inspirations-media)
+- [Produits Minerva (roadmap)](/produits)`,
+  },
 ];
 
 // ----------------------------------------------------
@@ -2179,13 +2300,25 @@ export async function createMinervaContentItem(payload: {
   external_url?: string | null;
   note?: string | null;
   file_url?: string | null;
+  platform?: string | null;
+  format?: string | null;
   scheduled_date?: string | null;
   assignee_id?: string | null;
   created_by: string;
 }): Promise<MinervaContentItem | null> {
+  // platform/format live behind a pending migration (20260819000000) --
+  // only send them when actually filled in, same pattern as addClient's
+  // pending-columns guard, so creating content keeps working before that
+  // migration is deployed.
+  const { platform, format, ...rest } = payload;
+  const insertPayload = {
+    ...rest,
+    ...(platform ? { platform } : {}),
+    ...(format ? { format } : {}),
+  };
   const { data, error } = await getSupabase()
     .from('minerva_content_items')
-    .insert([payload])
+    .insert([insertPayload])
     .select('*')
     .single();
   if (error) {
