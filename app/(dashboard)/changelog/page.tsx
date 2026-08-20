@@ -166,8 +166,11 @@ export default function ChangelogPage() {
       try {
         const data = await fetchChangelogEntries();
         if (data && data.length > 0) {
-          // Merge database entries with latest v2.2.0 showcase
-          const combined = [STATIC_ENTRIES[0], ...data.filter((d) => d.version !== '2.2.0')];
+          // Live entries are always newer than the static v2.4.3 bridge
+          // entry (STATIC_ENTRIES predates the in-app changelog going
+          // live) -- they sort first, with the static entry kept last as
+          // historical continuity rather than forced to the top.
+          const combined = [...data.filter((d) => d.version !== '2.2.0'), STATIC_ENTRIES[0]];
           setEntries(combined);
           setActiveId(combined[0].id);
         } else {

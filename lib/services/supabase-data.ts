@@ -1689,12 +1689,21 @@ export async function addChangelogEntry(entry: {
   included_items?: string[];
   created_by: string;
 }): Promise<ChangelogEntry | null> {
-  const { data, error } = await getSupabase().from('changelog_entries').insert([entry]).select().single();
+  // The table's actual author column is `author_id` (matches the FK
+  // fetchChangelogEntries()'s `author:profiles(full_name)` embed relies on)
+  // -- `created_by` is this function's public param name, mapped at the
+  // boundary rather than renamed throughout the app.
+  const { created_by, ...rest } = entry;
+  const { data, error } = await getSupabase()
+    .from('changelog_entries')
+    .insert([{ ...rest, author_id: created_by }])
+    .select()
+    .single();
   if (error) {
     console.error('[Supabase] Error adding changelog entry:', error);
     return null;
   }
-  return data as ChangelogEntry;
+  return { ...data, created_by } as ChangelogEntry;
 }
 
 // ── 18. Acquisition: Intake Leads ───────────────────────────────────────────
