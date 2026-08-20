@@ -660,10 +660,21 @@ export interface VoiceCall {
   caller_name: string | null;
   caller_phone: string | null;
   duration_seconds: number | null;
+  recording_url: string | null;
   status: 'completed' | 'abandoned' | 'failed';
   transcript: VoiceCallTranscriptLine[] | null;
   outcome: string | null;
   intake_lead_id: string | null;
   created_at: string;
+}
+
+export interface VoiceAgentConfig {
+  id: string;
+  voice_id: string | null;
+  system_prompt: string | null;
+  auto_trigger_enabled: boolean;
+  auto_trigger_delay_seconds: number;
+  updated_by: string | null;
+  updated_at: string;
 }
 

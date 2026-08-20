@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { ShieldCheck } from 'lucide-react';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -180,24 +181,24 @@ export default function NotificationsSettingsPage() {
           Compte
         </h2>
         <Card className="p-0 overflow-hidden border border-mv-border shadow-mv-sm divide-y divide-mv-border/60">
-          <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
+          <div className="p-4 sm:p-5 flex items-start gap-3">
+            <ShieldCheck className="w-4 h-4 text-mv-green shrink-0 mt-0.5" />
             <div className="space-y-0.5">
               <div className="text-sm font-bold text-mv-ink">Alertes de sécurité</div>
               <p className="text-xs text-mv-ink-soft">
                 Alertes critiques concernant la sécurité de votre compte — toujours activées, non désactivables.
               </p>
             </div>
-            <Switch checked disabled onCheckedChange={() => {}} />
           </div>
 
-          <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
+          <div className="p-4 sm:p-5 flex items-start gap-3">
+            <ShieldCheck className="w-4 h-4 text-mv-green shrink-0 mt-0.5" />
             <div className="space-y-0.5">
               <div className="text-sm font-bold text-mv-ink">Mises à jour de facturation</div>
               <p className="text-xs text-mv-ink-soft">
                 Notifications concernant les paiements et factures Stripe — toujours activées, non désactivables.
               </p>
             </div>
-            <Switch checked disabled onCheckedChange={() => {}} />
           </div>
         </Card>
       </div>

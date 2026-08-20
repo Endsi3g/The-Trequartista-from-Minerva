@@ -83,7 +83,10 @@ function NavLink({
         href={item.href}
         onClick={onNavigate}
         className={cn(
-          'flex flex-1 min-w-0 h-7 items-center gap-2 rounded-[4px] px-2 text-[12.5px] font-medium transition-all duration-150',
+          'flex flex-1 min-w-0 h-7 items-center gap-2 rounded-[4px] pl-2 text-[12.5px] font-medium transition-all duration-150',
+          // Reserve room on the right for the absolutely-positioned favorite star below,
+          // so it never overlaps the isNew dot / count badge instead of sitting on top of them.
+          onToggleFavorite ? 'pr-6' : 'pr-2',
           active
             ? 'bg-mv-green text-white font-semibold shadow-xs'
             : 'text-mv-ink-soft hover:bg-black/[0.05] hover:text-mv-ink'

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -556,6 +556,117 @@ MES INSPIRATIONS
 | **Agence** | 1 audit de surface livré sans rendez-vous | Prototype J+7 présenté | 1 contrat signé |
 | **Mes Inspirations** | 2 vidéos courtes publiées | 1 cas client documenté | 100 vues organiques / vidéo |
 `,
+  },
+  {
+    id: 'sop-minerva-flow-dossier-produit',
+    title: 'Minerva Flow : Dossier Produit, Vision & Offre Pilote',
+    category: 'Outils & Systèmes',
+    read_time_min: 10,
+    author: 'Direction Minerva',
+    description: 'Spécification complète du produit Minerva Flow — ICP, fonctionnalités clés, roadmap, business model et offre pilote (90 jours).',
+    is_essential: true,
+    pillar: 'flow',
+    content_markdown: `# Minerva Flow — Dossier Produit, Vision & Offre Pilote
+
+## 🌊 Concept en 1 phrase
+Minerva Flow est un système de gestion complet pour permettre aux restaurants et cafés de gérer l'ensemble de leurs opérations quotidiennes dans un seul endroit moderne : simple, visuel et performant.
+
+---
+
+## 🎯 Problème résolu
+Les restaurants & cafés utilisent souvent de nombreux outils fragmentés, complexes ou peu adaptés à la réalité de leur métier. Flow centralise tout dans un seul espace conçu pour leur réalité.
+
+---
+
+## 👤 ICP (Ideal Customer Profile)
+- **Restaurants** (service aux tables, comptoir, rapide)
+- **Cafés & Bistrots**
+- **Restaurants-cafés**
+- **Établissements alimentaires** qui veulent mieux gérer leurs opérations quotidiennes
+
+---
+
+## ⚡ Key Features (Fonctionnalités clés)
+- [x] **Saisie des revenus par journée** (chiffre d'affaires en temps réel)
+- [x] **Gestion des dépenses & coûts opérationnels**
+- [x] **Suivi des marges commerciales & rentabilité**
+- [x] **Gestion de l'inventaire & stocks**
+- [x] **Gestion des employés & horaires**
+- [x] **Rapports et graphiques visuels**
+- [x] **Multi-enseignes & multi-points de vente**
+- [x] **Accès offre sur mesure**
+- [ ] **Commande directe à partir de système d'un QR code**
+
+---
+
+## 🎨 Expérience utilisateur (UX/UI)
+- **Interface très fluide et navigable**
+- **Graphiques clairs et visuels**
+- **Rapports simples à comprendre** sans jargon technique
+- **Informations faciles à lire** même pour un utilisateur non technicien
+- **Produit pensé pour être partageable en équipe** en invitant d'autres membres utilisateurs
+
+---
+
+## 🚀 Différenciation & Positionnement
+- **Focus net :** Se concentrer réellement et uniquement sur la réalité spécifique des restaurants et cafés.
+- **Approche visuelle et ergonomique :** Une grande spécialité moderne, pas un générique POS vieillot.
+- **Idée stratégique :** Flow doit devenir un produit qui se markete par sa propre qualité — assez fort, beau et fluide pour que les utilisateurs aient envie de le recommander à d'autres restos.
+
+---
+
+## 🗺️ Roadmap (Feuille de route)
+
+### 0–3 mois (Phase Terrain & Feedback)
+- Faire tester l'application à des restaurants et cafés pilotes
+- Obtenir du feedback réel du terrain
+- Perfectionner le produit jusqu'à ce qu'il soit parfaitement adapté aux coups de feu en cuisine
+
+### 3–12 mois (Consolidation & Valeur)
+- Renforcer les fonctions les plus utiles
+- Stabiliser l'expérience et les intégrations
+- Améliorer la valeur commerciale du produit
+
+### 1–3 ans (Échelle & Référence)
+- Faire de Flow une référence dans sa niche
+- Développer un produit assez fort pour se recommander presque par lui-même
+- Créer une solution à la fois operational, visuelle et stratégique
+
+---
+
+## 💼 Business Model (Modèle Économique)
+- **Paiement sur abonnement** (SaaS = mensuel)
+- **Tarification accessible** selon le restaurant (minimum et maximum)
+- **Flexibilité** selon le besoin, la taille ou le niveau de personnalisation
+
+---
+
+## 📣 Go-to-Market (Stratégie d'Acquisition)
+- Démarrage direct auprès des restaurants — boucle de recommandation / bouche-à-oreille
+- Qualité du produit comme moteur principal d'acquisition
+- Preuve sociale forte : restaurants mis en valeur + expérience réelle
+- Démonstrations directes des fonctionnalités clés
+
+---
+
+## 🎁 Offre Pilote (90 jours) — Premiers clients
+
+**Objectif de la phase d'embarquement :** 3 à 5 restaurants et cafés pilotes pour valider le produit et générer les premières études de cas.
+
+| Élément | Détail |
+| :--- | :--- |
+| **Prix** | **0 $** (gratuit pendant 90 jours) |
+| **Engagement** | Retour d'expérience complet et étude de cas (1 à 2 heures de feedback / semaine) |
+| **Places disponibles** | 3 à 5 places maximum |
+| **Garantie** | Si la valeur n'est pas au rendez-vous après 90 jours, aucun frais, jamais. |
+
+---
+
+### 📝 Mises à jour & Notes d'exécution
+- **Mise à jour (15 juillet 2026) :** Le module de commande directe (paiement sur place, sans commission) est à l'essai en mode *Connect-ready* — non pas pour tout remplacer dans l'ancien système, mais pour tester à l'essai sans risque.
+- **Positionnement du pilote :** Générateur de meilleure rentabilité + Combiner l'expérience de menu + Commande directe (seulement sur place, 0% commission).
+- ⚠️ **Principe "Non pas tout changer" :** Le système est un canal complémentaire, pas un POS total à remplacer immédiatement. Au moment d'imprimer la commande sur place ou via QR code, rien ne saute.
+- **Session d'essai (24 juillet 2026) :** Flow — 150/150 remplis, en cas réels et automatisés (parcours complet, numérotation, bag de préparation) avant mise en service réelle.`,
   },
   {
     id: 'sop-restaurant-margin-recovery',
@@ -1651,6 +1762,42 @@ export async function fetchVoiceCalls(limit = 100): Promise<VoiceCall[]> {
   );
 }
 
+// Single-row, agency-wide config (voice/prompt/auto-trigger) -- created
+// lazily on first save rather than seeded by migration, so a fresh
+// environment has an honest "non configuré" state instead of a fake default.
+export async function fetchVoiceAgentConfig(): Promise<VoiceAgentConfig | null> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('voice_agent_config')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error || !data) return null;
+      return data as VoiceAgentConfig;
+    })(),
+    null
+  );
+}
+
+export async function saveVoiceAgentConfig(
+  input: Partial<Pick<VoiceAgentConfig, 'voice_id' | 'system_prompt' | 'auto_trigger_enabled' | 'auto_trigger_delay_seconds'>>,
+  existingId: string | null,
+  updatedBy: string
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const payload = { ...input, updated_by: updatedBy, updated_at: new Date().toISOString() };
+  const { error } = existingId
+    ? await supabase.from('voice_agent_config').update(payload).eq('id', existingId)
+    : await supabase.from('voice_agent_config').insert(payload);
+  if (error) {
+    console.error('[Supabase] Error saving voice agent config:', error);
+    return false;
+  }
+  return true;
+}
+
 export async function fetchAuditWithFindings(id: string): Promise<AuditWithFindings | null> {
   const supabase = getSupabase();
   const [
@@ -1858,18 +2005,31 @@ export async function fetchAcquisitionFunnelStats(): Promise<AcquisitionFunnelSt
 export async function fetchAppPermissions(): Promise<Record<string, boolean>> {
   return withTimeout(
     (async () => {
-      const { data, error } = await getSupabase().from('app_permissions').select('permission_key, member_allowed');
+      const { data, error } = await getSupabase().from('app_permissions').select('permission, enabled');
       if (error || !data) return {};
-      return Object.fromEntries(data.map((row) => [row.permission_key, row.member_allowed]));
+      // A permission reads as "on" if any member profile currently has it enabled
+      // — the page's own copy frames this as a collective member-tier toggle, and
+      // setAppPermission() below fans a toggle out to every member profile.
+      const result: Record<string, boolean> = {};
+      for (const row of data as { permission: string; enabled: boolean }[]) {
+        if (row.enabled || !(row.permission in result)) result[row.permission] = row.enabled;
+      }
+      return result;
     })(),
     {}
   );
 }
 
-export async function setAppPermission(key: string, allowed: boolean, updatedBy: string): Promise<boolean> {
-  const { error } = await getSupabase()
-    .from('app_permissions')
-    .upsert({ permission_key: key, member_allowed: allowed, updated_by: updatedBy, updated_at: new Date().toISOString() });
+export async function setAppPermission(key: string, allowed: boolean): Promise<boolean> {
+  const supabase = getSupabase();
+  const { data: members, error: membersError } = await supabase.from('profiles').select('id').eq('role', 'member');
+  if (membersError) {
+    console.error('[Supabase] Error fetching member profiles for permission update:', membersError);
+    return false;
+  }
+  if (!members || members.length === 0) return true;
+  const rows = members.map((m) => ({ profile_id: m.id, permission: key, enabled: allowed }));
+  const { error } = await supabase.from('app_permissions').upsert(rows, { onConflict: 'profile_id,permission' });
   if (error) {
     console.error('[Supabase] Error updating app permission:', error);
     return false;
@@ -1880,6 +2040,42 @@ export async function setAppPermission(key: string, allowed: boolean, updatedBy:
 // ----------------------------------------------------
 // 16. PRODUITS MINERVA — ROADMAP INTERNE (admin-only)
 // ----------------------------------------------------
+const DEFAULT_ROADMAP_ITEMS: MinervaRoadmapItem[] = [
+  {
+    id: 'roadmap-flow-0-3m',
+    title: 'Pilote 90 jours : Tests terrain restos & cafés, feedback réel et ajustements',
+    product: 'Minerva Flow',
+    item_type: 'Milestone',
+    status: 'In Progress',
+    impact: 'High',
+    start_date: '2026-08-01',
+    end_date: '2026-11-01',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'roadmap-flow-3-12m',
+    title: 'Consolidation : Stabilisation du produit, fonctions clés & valeur commerciale',
+    product: 'Minerva Flow',
+    item_type: 'Launch',
+    status: 'Planned',
+    impact: 'High',
+    start_date: '2026-11-01',
+    end_date: '2027-08-01',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'roadmap-flow-1-3y',
+    title: 'Référence Niche : Expansion produit viral autonome & solution stratégique',
+    product: 'Minerva Flow',
+    item_type: 'Experiment',
+    status: 'Planned',
+    impact: 'High',
+    start_date: '2027-08-01',
+    end_date: '2029-08-01',
+    created_at: new Date().toISOString(),
+  },
+];
+
 export async function fetchMinervaRoadmap(): Promise<MinervaRoadmapItem[]> {
   return withTimeout(
     (async () => {
@@ -1887,10 +2083,10 @@ export async function fetchMinervaRoadmap(): Promise<MinervaRoadmapItem[]> {
         .from('minerva_roadmap_items')
         .select('*')
         .order('start_date', { ascending: true });
-      if (error || !data) return [];
+      if (error || !data || data.length === 0) return DEFAULT_ROADMAP_ITEMS;
       return data as MinervaRoadmapItem[];
     })(),
-    []
+    DEFAULT_ROADMAP_ITEMS
   );
 }
 
@@ -1936,13 +2132,27 @@ export async function deleteMinervaRoadmapItem(id: string): Promise<boolean> {
 const DOCS_STORAGE_KEY = 'minerva-team-documents-cache';
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const DEFAULT_DOCUMENTS: TeamDocument[] = [
+  {
+    id: 'doc-minerva-flow-dossier-produit',
+    title: 'Minerva Flow — Dossier Produit, Vision & Offre Pilote',
+    created_by: null,
+    created_at: new Date('2026-08-20T12:00:00.000Z').toISOString(),
+    updated_at: new Date('2026-08-20T15:00:00.000Z').toISOString(),
+  },
+];
+
 function getLocalDocs(): TeamDocument[] {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined') return DEFAULT_DOCUMENTS;
   try {
     const raw = localStorage.getItem(DOCS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return DEFAULT_DOCUMENTS;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_DOCUMENTS;
+    const hasFlowDoc = parsed.some((d: TeamDocument) => d.id === 'doc-minerva-flow-dossier-produit');
+    return hasFlowDoc ? parsed : [...DEFAULT_DOCUMENTS, ...parsed];
   } catch {
-    return [];
+    return DEFAULT_DOCUMENTS;
   }
 }
 

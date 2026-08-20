@@ -4,6 +4,23 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-20 (v2.5.0) — Agent Vocal IA de-faké & branché, corrections de dérive de schéma
+
+- **Agent Vocal IA (/voice-agent)** :
+  - Suppression de toutes les données factices (badge "Agent en ligne", capacité, latence, pic d'appels, console de test WebRTC animée) — remplacées par un état honnête "configuré" / "non configuré" et le vrai widget de conversation ElevenLabs.
+  - Configuration (voix, prompt système, déclenchement automatique) désormais persistée en base plutôt que perdue au rafraîchissement.
+  - Déclenchement automatique d'un appel de qualification à la conversion d'un lead (miroir du suivi SMS 5 minutes existant), désactivé par défaut.
+  - Nouvel onglet Génération vocale (texte → audio, sauvegardé dans Storage) en préparation de l'usage contenu.
+- **Corrections de dérive de schéma** (bugs préexistants, plusieurs écritures échouaient silencieusement) :
+  - `voice_calls` : colonnes manquantes ajoutées, policy RLS de lecture ajoutée (aucune n'existait — les appels ne s'affichaient jamais côté équipe).
+  - `intake_leads` : la contrainte de statut ne correspondait à aucune valeur réellement écrite par le formulaire de qualification — corrigée, avec les colonnes de suivi SMS/vocal manquantes ajoutées.
+  - `app_permissions` : les fonctions de lecture/écriture ciblaient des colonnes inexistantes — corrigées pour matcher le schéma réel.
+- **Sidebar** : le point "Nouveau" et l'étoile favori qui se superposaient sur certains onglets (Agent Vocal IA, Documents, Chat d'équipe) sont maintenant visuellement séparés.
+- **Chargement** : nouvelle bibliothèque de skeletons (formes réelles, sans effet shimmer sauf sur le texte), remplace deux composants morts non utilisés.
+- **Notifications** : les deux interrupteurs "Alertes de sécurité" / "Facturation" qui ne faisaient jamais rien remplacés par une mention informative honnête.
+
+---
+
 ## 2026-08-18 (v2.4.3) — Système Anti-Friction (4 Piliers), Académie Redessinée, Studio de Scripting Cas Client 60s & Co-Pilotage ($300-$500/mo)
 
 Mise en production du Framework Directeur Anti-Friction « Donner d’abord, demander ensuite » et de l’ensemble des outils opérationnels pour simplifier le travail de l'équipe sur les 4 piliers :

@@ -71,6 +71,108 @@ export default function DocumentEditorPage() {
       const cached = typeof window !== 'undefined' ? localStorage.getItem(cacheKey) : null;
       if (cached) {
         setContent(cached);
+      } else if (rawId === 'doc-minerva-flow-dossier-produit') {
+        setContent(`# Minerva Flow — Dossier Produit, Vision & Offre Pilote
+
+## 🌊 Concept en 1 phrase
+Minerva Flow est un système de gestion complet pour permettre aux restaurants et cafés de gérer l'ensemble de leurs opérations quotidiennes dans un seul endroit moderne : simple, visuel et performant.
+
+---
+
+## 🎯 Problème résolu
+Les restaurants & cafés utilisent souvent de nombreux outils fragmentés, complexes ou peu adaptés à la réalité de leur métier. Flow centralise tout dans un seul espace conçu pour leur réalité.
+
+---
+
+## 👤 ICP (Ideal Customer Profile)
+- **Restaurants** (service aux tables, comptoir, rapide)
+- **Cafés & Bistrots**
+- **Restaurants-cafés**
+- **Établissements alimentaires** qui veulent mieux gérer leurs opérations quotidiennes
+
+---
+
+## ⚡ Key Features (Fonctionnalités clés)
+- [x] **Saisie des revenus par journée** (chiffre d'affaires en temps réel)
+- [x] **Gestion des dépenses & coûts opérationnels**
+- [x] **Suivi des marges commerciales & rentabilité**
+- [x] **Gestion de l'inventaire & stocks**
+- [x] **Gestion des employés & horaires**
+- [x] **Rapports et graphiques visuels**
+- [x] **Multi-enseignes & multi-points de vente**
+- [x] **Accès offre sur mesure**
+- [ ] **Commande directe à partir de système d'un QR code**
+
+---
+
+## 🎨 Expérience utilisateur (UX/UI)
+- **Interface très fluide et navigable**
+- **Graphiques clairs et visuels**
+- **Rapports simples à comprendre** sans jargon technique
+- **Informations faciles à lire** même pour un utilisateur non technicien
+- **Produit pensé pour être partageable en équipe** en invitant d'autres membres utilisateurs
+
+---
+
+## 🚀 Différenciation & Positionnement
+- **Focus net :** Se concentrer réellement et uniquement sur la réalité spécifique des restaurants et cafés.
+- **Approche visuelle et ergonomique :** Une grande spécialité moderne, pas un générique POS vieillot.
+- **Idée stratégique :** Flow doit devenir un produit qui se markete par sa propre qualité — assez fort, beau et fluide pour que les utilisateurs aient envie de le recommander à d'autres restos.
+
+---
+
+## 🗺️ Roadmap (Feuille de route)
+
+### 0–3 mois (Phase Terrain & Feedback)
+- Faire tester l'application à des restaurants et cafés pilotes
+- Obtenir du feedback réel du terrain
+- Perfectionner le produit jusqu'à ce qu'il soit parfaitement adapté aux coups de feu en cuisine
+
+### 3–12 mois (Consolidation & Valeur)
+- Renforcer les fonctions les plus utiles
+- Stabiliser l'expérience et les intégrations
+- Améliorer la valeur commerciale du produit
+
+### 1–3 ans (Échelle & Référence)
+- Faire de Flow une référence dans sa niche
+- Développer un produit assez fort pour se recommander presque par lui-même
+- Créer une solution à la fois opérationnelle, visuelle et stratégique
+
+---
+
+## 💼 Business Model (Modèle Économique)
+- **Paiement sur abonnement** (SaaS = mensuel)
+- **Tarification accessible** selon le restaurant (minimum et maximum)
+- **Flexibilité** selon le besoin, la taille ou le niveau de personnalisation
+
+---
+
+## 📣 Go-to-Market (Stratégie d'Acquisition)
+- Démarrage direct auprès des restaurants — boucle de recommandation / bouche-à-oreille
+- Qualité du produit comme moteur principal d'acquisition
+- Preuve sociale forte : restaurants mis en valeur + expérience réelle
+- Démonstrations directes des fonctionnalités clés
+
+---
+
+## 🎁 Offre Pilote (90 jours) — Premiers clients
+
+**Objectif de la phase d'embarquement :** 3 à 5 restaurants et cafés pilotes pour valider le produit et générer les premières études de cas.
+
+| Élément | Détail |
+| :--- | :--- |
+| **Prix** | **0 $** (gratuit pendant 90 jours) |
+| **Engagement** | Retour d'expérience complet et étude de cas (1 à 2 heures de feedback / semaine) |
+| **Places disponibles** | 3 à 5 places maximum |
+| **Garantie** | Si la valeur n'est pas au rendez-vous après 90 jours, aucun frais, jamais. |
+
+---
+
+### 📝 Mises à jour & Notes d'exécution
+- **Mise à jour (15 juillet 2026) :** Le module de commande directe (paiement sur place, sans commission) est à l'essai en mode *Connect-ready* — non pas pour tout remplacer dans l'ancien système, mais pour tester à l'essai sans risque.
+- **Positionnement du pilote :** Générateur de meilleure rentabilité + Combiner l'expérience de menu + Commande directe (seulement sur place, 0% commission).
+- ⚠️ **Principe "Non pas tout changer" :** Le système est un canal complémentaire, pas un POS total à remplacer immédiatement. Au moment d'imprimer la commande sur place ou via QR code, rien ne saute.
+- **Session d'essai (24 juillet 2026) :** Flow — 150/150 remplis, en cas réels et automatisés (parcours complet, numérotation, bag de préparation) avant mise en service réelle.`);
       } else {
         setContent(
           `# ${data?.title || 'Document'}\n\n*Document d'équipe rédigé sur Minerva*\n\n## 1. Objectifs & Contexte\n- Décrire ici les enjeux clés du projet ou du client.\n- Aligner les parties prenantes sur les livrables attendus.\n\n## 2. Plan d'Action & Livrables\n- [x] Cadrage initial et revue des spécifications\n- [ ] Intégration Framer et tests de responsive\n- [ ] Validation client et recette finale\n\n> [!NOTE]\n> Ce document est synchronisé en temps réel avec toute l'équipe.\n\n| Phase | Responsable | Statut |\n| :--- | :--- | :--- |\n| 01. UX/UI | Design | Validé |\n| 02. Build | Tech | En cours |\n| 03. QA | Delivery | À faire |\n`

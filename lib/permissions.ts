@@ -25,4 +25,9 @@ export const PERMISSION_CATALOG: PermissionDef[] = [
     label: 'Publier une SOP Académie',
     description: 'Autoriser les membres à créer de nouvelles procédures dans la bibliothèque Académie.',
   },
+  {
+    key: 'view_voice_agent',
+    label: 'Voir l’Agent Vocal IA',
+    description: 'Autoriser les membres à consulter le tableau de bord, la configuration et le journal des appels de l’agent vocal.',
+  },
 ];
