@@ -1689,21 +1689,24 @@ export async function addChangelogEntry(entry: {
   included_items?: string[];
   created_by: string;
 }): Promise<ChangelogEntry | null> {
-  // The table's actual author column is `author_id` (matches the FK
-  // fetchChangelogEntries()'s `author:profiles(full_name)` embed relies on)
-  // -- `created_by` is this function's public param name, mapped at the
-  // boundary rather than renamed throughout the app.
-  const { created_by, ...rest } = entry;
+  // The live table (confirmed via information_schema, differs from this
+  // repo's consolidated migration) has a required `description` column the
+  // app never populated -- every insert was failing on that alone. `body`
+  // is what the UI's "Description" field actually maps to and what
+  // rendering reads, so the same text goes to both. `created_by` and
+  // `author_id` both genuinely exist live; fill both rather than guess
+  // which one fetchChangelogEntries()'s author:profiles(...) embed needs.
+  const { created_by, body, ...rest } = entry;
   const { data, error } = await getSupabase()
     .from('changelog_entries')
-    .insert([{ ...rest, author_id: created_by }])
+    .insert([{ ...rest, body, description: body, created_by, author_id: created_by }])
     .select()
     .single();
   if (error) {
     console.error('[Supabase] Error adding changelog entry:', error);
     return null;
   }
-  return { ...data, created_by } as ChangelogEntry;
+  return data as ChangelogEntry;
 }
 
 // ── 18. Acquisition: Intake Leads ───────────────────────────────────────────

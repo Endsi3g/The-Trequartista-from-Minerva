@@ -1,9 +1,14 @@
 -- ============================================================================
 -- CHANGELOG_ENTRIES SCHEMA DRIFT FIX + v2.5.0 SEED
--- addChangelogEntry() (lib/services/supabase-data.ts) and /changelog/new
--- write `version` and `included_items` -- neither column exists on
--- changelog_entries, so every attempt to publish a new in-app entry has
--- been failing. Idempotent -- safe to run on both fresh and existing
+-- Confirmed live via information_schema.columns (2026-08-20): the real
+-- table already has `description` (NOT NULL, no default -- never populated
+-- by the app, every insert has been failing on this alone), `category`
+-- (enum, NOT NULL but defaults to 'fonctionnalite' so safe to omit), and a
+-- separate `created_by` column alongside `author_id` -- none of which match
+-- this repo's supabase/migrations/20260820000000_consolidated_schema.sql,
+-- which is evidently stale relative to what's actually live. `version` and
+-- `included_items` genuinely are missing live (confirmed the same way) and
+-- still need adding. Idempotent -- safe to run on both fresh and existing
 -- databases.
 -- ============================================================================
 
@@ -15,9 +20,10 @@ ALTER TABLE public.changelog_entries
 -- no live Supabase CLI/MCP access from this environment to publish it
 -- through the admin UI, and this UI was itself broken until the ALTER
 -- above landed.
-INSERT INTO public.changelog_entries (title, body, version, included_items)
+INSERT INTO public.changelog_entries (title, description, body, version, included_items)
 SELECT
     'Agent Vocal IA de-faké & branché, corrections de dérive de schéma',
+    'L''Agent Vocal IA (ElevenLabs) affiche maintenant un état réel au lieu de statistiques fabriquées, sa configuration est persistée, et un appel de qualification automatique optionnel se déclenche à la conversion d''un lead.',
     'L''Agent Vocal IA (ElevenLabs) affiche maintenant un état réel au lieu de statistiques fabriquées, et sa console de test utilise le vrai widget de conversation. Sa configuration (voix, prompt, déclenchement automatique) est désormais persistée, avec un nouvel appel de qualification automatique optionnel à la conversion d''un lead et un onglet de génération vocale pour le contenu. Plusieurs bugs de dérive de schéma préexistants (écritures silencieusement en échec sur voice_calls, intake_leads et app_permissions) ont aussi été corrigés au passage.',
     '2.5.0',
     ARRAY[
