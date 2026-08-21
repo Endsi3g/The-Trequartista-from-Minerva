@@ -6,7 +6,6 @@ import Link from 'next/link';
 import {
   ArrowLeft,
   Calendar,
-  ExternalLink,
   Eye,
   Heart,
   Hash,
@@ -19,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { VideoAssetPlayer } from '@/components/media/VideoAssetPlayer';
 import { VideoUploadField } from '@/components/media/VideoUploadField';
+import { LinkPreviewCard } from '@/components/content/LinkPreviewCard';
 import { fetchContentPost, updateContentPost } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
 import type { ContentPost } from '@/lib/types';
@@ -229,14 +229,9 @@ export default function ReelDetailPage() {
                   className="w-full bg-mv-cream-soft border border-mv-border rounded-lg px-2.5 py-2 text-[11px] font-mono focus:outline-none focus:border-mv-green"
                 />
                 {post.native_url && (
-                  <a
-                    href={post.native_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 flex items-center gap-1.5 text-mv-green font-semibold hover:underline"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" /> Voir dans l'app native
-                  </a>
+                  <div className="mt-2">
+                    <LinkPreviewCard url={post.native_url} />
+                  </div>
                 )}
               </div>
             </div>
