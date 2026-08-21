@@ -56,6 +56,23 @@ export interface ClientInvite {
   used_at: string | null;
 }
 
+export interface CustomRole {
+  id: string;
+  name: string;
+  description: string | null;
+  is_system: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomRolePermission {
+  id: string;
+  role_id: string;
+  module: string;
+  action: 'view' | 'create' | 'edit' | 'delete';
+}
+
 export interface Department {
   id: string;
   name: string;

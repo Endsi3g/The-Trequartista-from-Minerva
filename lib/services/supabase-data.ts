@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, HelpArticle, Contact, ContactNote, ProjectMilestone, ProjectAttachment, Department, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, HelpArticle, Contact, ContactNote, ProjectMilestone, ProjectAttachment, Department, CustomRole, CustomRolePermission, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -1742,6 +1742,112 @@ export async function deleteTaskSubitem(id: string): Promise<boolean> {
   const { error } = await getSupabase().from('task_subitems').delete().eq('id', id);
   if (error) {
     console.error('[Supabase] Error deleting task subitem:', error);
+    return false;
+  }
+  return true;
+}
+
+// ── 15b. Custom Roles ────────────────────────────────────────────────────────
+
+export async function fetchRoles(): Promise<CustomRole[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase().from('roles').select('*').order('name', { ascending: true });
+      if (error || !data) return [];
+      return data as CustomRole[];
+    })(),
+    []
+  );
+}
+
+export async function addRole(role: { name: string; description?: string | null; created_by: string }): Promise<CustomRole | null> {
+  const { data, error } = await getSupabase().from('roles').insert([role]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding role:', error);
+    return null;
+  }
+  return data as CustomRole;
+}
+
+export async function deleteRole(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('roles').delete().eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error deleting role:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function fetchCustomRolePermissions(roleId: string): Promise<CustomRolePermission[]> {
+  const { data, error } = await getSupabase().from('role_permissions').select('*').eq('role_id', roleId);
+  if (error || !data) return [];
+  return data as CustomRolePermission[];
+}
+
+// Replaces the full permission set for a role in one call (delete + insert)
+// so the checkbox grid can just send its current state.
+export async function setCustomRolePermissions(
+  roleId: string,
+  permissions: { module: string; action: CustomRolePermission['action'] }[]
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const { error: deleteError } = await supabase.from('role_permissions').delete().eq('role_id', roleId);
+  if (deleteError) {
+    console.error('[Supabase] Error clearing role permissions:', deleteError);
+    return false;
+  }
+  if (permissions.length === 0) return true;
+  const { error: insertError } = await supabase
+    .from('role_permissions')
+    .insert(permissions.map((p) => ({ role_id: roleId, module: p.module, action: p.action })));
+  if (insertError) {
+    console.error('[Supabase] Error saving role permissions:', insertError);
+    return false;
+  }
+  return true;
+}
+
+export async function assignCustomRole(profileId: string, roleId: string | null): Promise<boolean> {
+  const { error } = await getSupabase().from('profiles').update({ custom_role_id: roleId }).eq('id', profileId);
+  if (error) {
+    console.error('[Supabase] Error assigning role:', error);
+    return false;
+  }
+  return true;
+}
+
+// Translates a profile's assigned custom role's (module, action) grid into
+// the app_permissions rows member_can() actually reads, via
+// ROLE_MODULE_ACTIONS (lib/permissions.ts) -- only pairs with a real
+// mapping produce a write; the rest are captured in role_permissions for
+// a future enforcement point but don't yet grant anything live.
+export async function syncCustomRolePermissionsToAppPermissions(profileId: string): Promise<boolean> {
+  const supabase = getSupabase();
+  const { data: profile } = await supabase.from('profiles').select('custom_role_id').eq('id', profileId).maybeSingle();
+  const roleId = profile?.custom_role_id as string | null;
+
+  const { ROLE_MODULE_ACTIONS } = await import('@/lib/permissions');
+  const allPermissionKeys = new Set(
+    Object.values(ROLE_MODULE_ACTIONS).flatMap((actions) => Object.values(actions).filter(Boolean) as string[])
+  );
+
+  const grantedKeys = new Set<string>();
+  if (roleId) {
+    const perms = await fetchCustomRolePermissions(roleId);
+    for (const p of perms) {
+      const key = ROLE_MODULE_ACTIONS[p.module]?.[p.action];
+      if (key) grantedKeys.add(key);
+    }
+  }
+
+  const rows = Array.from(allPermissionKeys).map((key) => ({
+    profile_id: profileId,
+    permission: key,
+    enabled: grantedKeys.has(key),
+  }));
+  const { error } = await supabase.from('app_permissions').upsert(rows, { onConflict: 'profile_id,permission' });
+  if (error) {
+    console.error('[Supabase] Error syncing role permissions:', error);
     return false;
   }
   return true;

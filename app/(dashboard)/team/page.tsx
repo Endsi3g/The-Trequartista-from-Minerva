@@ -33,8 +33,20 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { fetchDepartments, addDepartment, deleteDepartment } from '@/lib/services/supabase-data';
-import type { Department } from '@/lib/types';
+import {
+  fetchDepartments,
+  addDepartment,
+  deleteDepartment,
+  fetchRoles,
+  addRole,
+  deleteRole,
+  fetchCustomRolePermissions,
+  setCustomRolePermissions,
+  assignCustomRole,
+  syncCustomRolePermissionsToAppPermissions,
+} from '@/lib/services/supabase-data';
+import type { Department, CustomRole, CustomRolePermission } from '@/lib/types';
+import { ROLE_MODULE_ACTIONS, ROLE_MODULE_LABELS } from '@/lib/permissions';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
@@ -46,6 +58,7 @@ interface TeamMember {
   department: string | null;
   avatar_url: string | null;
   created_at: string;
+  custom_role_id: string | null;
 }
 
 const VIEW_TABS = [
@@ -90,6 +103,13 @@ export default function TeamPage() {
   const [newDepartmentName, setNewDepartmentName] = useState('');
   const [newDepartmentColor, setNewDepartmentColor] = useState('Operations');
   const [performancePickerOpen, setPerformancePickerOpen] = useState(false);
+  const [roles, setRoles] = useState<CustomRole[]>([]);
+  const [addingRole, setAddingRole] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleDescription, setNewRoleDescription] = useState('');
+  const [expandedRoleId, setExpandedRoleId] = useState<string | null>(null);
+  const [rolePermissionsByRole, setCustomRolePermissionsByRole] = useState<Record<string, CustomRolePermission[]>>({});
+  const [savingRoleId, setSavingRoleId] = useState<string | null>(null);
 
   const { role: currentUserRole } = useCurrentUser();
   const isAdmin = currentUserRole === 'admin';
@@ -100,7 +120,7 @@ export default function TeamPage() {
       const supabase = createClient();
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, email, role, department, avatar_url, created_at')
+        .select('id, full_name, email, role, department, avatar_url, created_at, custom_role_id')
         .eq('approved', true)
         .order('created_at', { ascending: true });
       setMembers(data || []);
@@ -114,7 +134,83 @@ export default function TeamPage() {
   useEffect(() => {
     loadTeam();
     fetchDepartments().then(setDepartments);
+    fetchRoles().then(setRoles);
   }, []);
+
+  const handleAddRole = async () => {
+    if (!newRoleName.trim()) return;
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const role = await addRole({ name: newRoleName.trim(), description: newRoleDescription.trim() || null, created_by: user.id });
+    if (role) {
+      setRoles((prev) => [...prev, role].sort((a, b) => a.name.localeCompare(b.name)));
+      setNewRoleName('');
+      setNewRoleDescription('');
+      setAddingRole(false);
+      toastSuccess('Rôle créé', `« ${role.name} » est maintenant disponible.`);
+    } else {
+      toastError('Erreur', 'Impossible de créer ce rôle.');
+    }
+  };
+
+  const handleDeleteRole = async (role: CustomRole) => {
+    setRoles((prev) => prev.filter((r) => r.id !== role.id));
+    if (expandedRoleId === role.id) setExpandedRoleId(null);
+    const ok = await deleteRole(role.id);
+    if (!ok) {
+      toastError('Erreur', 'Impossible de supprimer ce rôle.');
+      setRoles((prev) => [...prev, role].sort((a, b) => a.name.localeCompare(b.name)));
+    }
+  };
+
+  const handleExpandRole = async (roleId: string) => {
+    if (expandedRoleId === roleId) {
+      setExpandedRoleId(null);
+      return;
+    }
+    setExpandedRoleId(roleId);
+    if (!rolePermissionsByRole[roleId]) {
+      const perms = await fetchCustomRolePermissions(roleId);
+      setCustomRolePermissionsByRole((prev) => ({ ...prev, [roleId]: perms }));
+    }
+  };
+
+  const togglePermission = (roleId: string, moduleKey: string, action: CustomRolePermission['action']) => {
+    setCustomRolePermissionsByRole((prev) => {
+      const current = prev[roleId] || [];
+      const has = current.some((p) => p.module === moduleKey && p.action === action);
+      const next = has
+        ? current.filter((p) => !(p.module === moduleKey && p.action === action))
+        : [...current, { id: `draft-${moduleKey}-${action}`, role_id: roleId, module: moduleKey, action }];
+      return { ...prev, [roleId]: next };
+    });
+  };
+
+  const handleSavePermissions = async (roleId: string) => {
+    setSavingRoleId(roleId);
+    const perms = rolePermissionsByRole[roleId] || [];
+    const ok = await setCustomRolePermissions(roleId, perms.map((p) => ({ module: p.module, action: p.action })));
+    if (ok) {
+      const affectedMembers = members.filter((m) => m.custom_role_id === roleId);
+      await Promise.all(affectedMembers.map((m) => syncCustomRolePermissionsToAppPermissions(m.id)));
+      toastSuccess('Permissions enregistrées', affectedMembers.length > 0 ? `${affectedMembers.length} membre(s) mis à jour.` : undefined);
+    } else {
+      toastError('Erreur', "Impossible d'enregistrer les permissions.");
+    }
+    setSavingRoleId(null);
+  };
+
+  const handleAssignRole = async (member: TeamMember, roleId: string | null) => {
+    setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, custom_role_id: roleId } : m)));
+    const ok = await assignCustomRole(member.id, roleId);
+    if (ok) {
+      await syncCustomRolePermissionsToAppPermissions(member.id);
+    } else {
+      toastError('Erreur', "Impossible d'assigner ce rôle.");
+      setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, custom_role_id: member.custom_role_id } : m)));
+    }
+  };
 
   const handleAddDepartment = async () => {
     if (!newDepartmentName.trim()) return;
@@ -632,30 +728,194 @@ export default function TeamPage() {
           )}
         </div>
       ) : activeTab === 'positions' ? (
-        /* ── Proactive Empty State : Postes & Rôles ── */
-        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3 shadow-2xs">
-          <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
-            <Briefcase className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-zinc-900">
-              {isAdmin ? 'Définissez les postes clés de l’agence.' : 'Aucun poste configuré.'}
-            </h3>
-            <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
-              {isAdmin
-                ? 'Associez les descriptions de postes et grilles de commissions directement aux SOPs de l’Académie.'
-                : 'Les fiches de postes et grilles associées apparaîtront ici.'}
-            </p>
-          </div>
-          {isAdmin && (
-            <div className="pt-2">
-              <button
-                onClick={() => toastSuccess('Ajout de poste', 'Formulaire de poste ouvert.')}
-                className="h-8 px-3.5 rounded-md border border-zinc-200 hover:bg-zinc-50 text-zinc-800 text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              >
-                <Plus className="w-3.5 h-3.5 text-emerald-600" />
-                <span>+ Ajouter un poste</span>
-              </button>
+        <div className="space-y-3">
+          {roles.length === 0 && !addingRole ? (
+            /* ── Empty State : Postes & Rôles ── */
+            <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3 shadow-2xs">
+              <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
+                <Briefcase className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-900">
+                  {isAdmin ? 'Définissez les rôles personnalisés de l’agence.' : 'Aucun rôle configuré.'}
+                </h3>
+                <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
+                  {isAdmin
+                    ? 'Créez un rôle, cochez ses permissions par module, puis assignez-le à des membres.'
+                    : 'Les rôles et permissions associées apparaîtront ici.'}
+                </p>
+              </div>
+              {isAdmin && (
+                <div className="pt-2">
+                  <button
+                    onClick={() => setAddingRole(true)}
+                    className="h-8 px-3.5 rounded-md border border-zinc-200 hover:bg-zinc-50 text-zinc-800 text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>+ Créer un rôle</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-mv-surface border border-mv-border rounded-[6px] shadow-2xs divide-y divide-mv-border">
+              {roles.map((role) => {
+                const isExpanded = expandedRoleId === role.id;
+                const perms = rolePermissionsByRole[role.id] || [];
+                const memberCount = members.filter((m) => m.custom_role_id === role.id).length;
+                return (
+                  <div key={role.id}>
+                    <button
+                      onClick={() => handleExpandRole(role.id)}
+                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-50 cursor-pointer text-left"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-zinc-400 shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-zinc-400 shrink-0" />}
+                        <span className="text-sm font-semibold text-zinc-900 truncate">{role.name}</span>
+                        {role.description && <span className="text-[11px] text-zinc-400 truncate hidden sm:inline">{role.description}</span>}
+                        <span className="text-[11px] text-zinc-400 font-mono shrink-0" style={MONO}>
+                          {memberCount} membre{memberCount > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      {isAdmin && (
+                        <span
+                          onClick={(e) => { e.stopPropagation(); handleDeleteRole(role); }}
+                          className="text-zinc-400 hover:text-red-600 transition-colors cursor-pointer p-1 shrink-0"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                    </button>
+
+                    {isExpanded && (
+                      <div className="px-4 pb-4 space-y-4 bg-zinc-50/60">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-2">Permissions</p>
+                          <div className="bg-white border border-zinc-200 rounded-md overflow-hidden">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="bg-zinc-50 border-b border-zinc-200 text-[10.5px] uppercase tracking-wider text-zinc-400">
+                                  <th className="text-left px-3 py-1.5 font-medium">Module</th>
+                                  {(['view', 'create', 'edit', 'delete'] as const).map((action) => (
+                                    <th key={action} className="text-center px-2 py-1.5 font-medium capitalize">{action}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {Object.entries(ROLE_MODULE_ACTIONS).map(([moduleKey, actions]) => (
+                                  <tr key={moduleKey} className="border-b border-zinc-100 last:border-0">
+                                    <td className="px-3 py-1.5 font-semibold text-zinc-800">{ROLE_MODULE_LABELS[moduleKey] || moduleKey}</td>
+                                    {(['view', 'create', 'edit', 'delete'] as const).map((action) => {
+                                      const supported = Boolean(actions[action]);
+                                      const checked = perms.some((p) => p.module === moduleKey && p.action === action);
+                                      return (
+                                        <td key={action} className="text-center px-2 py-1.5">
+                                          {supported ? (
+                                            <input
+                                              type="checkbox"
+                                              checked={checked}
+                                              disabled={!isAdmin}
+                                              onChange={() => togglePermission(role.id, moduleKey, action)}
+                                              className="w-3.5 h-3.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer disabled:cursor-default"
+                                            />
+                                          ) : (
+                                            <span className="text-zinc-300">—</span>
+                                          )}
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          {isAdmin && (
+                            <div className="flex justify-end mt-2">
+                              <button
+                                onClick={() => handleSavePermissions(role.id)}
+                                disabled={savingRoleId === role.id}
+                                className="h-7 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-medium cursor-pointer disabled:opacity-50"
+                              >
+                                {savingRoleId === role.id ? 'Enregistrement…' : 'Enregistrer les permissions'}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {isAdmin && (
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-2">Membres assignés</p>
+                            <div className="bg-white border border-zinc-200 rounded-md divide-y divide-zinc-100 max-h-48 overflow-y-auto">
+                              {members.filter((m) => m.role === 'member').map((m) => {
+                                const has = m.custom_role_id === role.id;
+                                return (
+                                  <label key={m.id} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-zinc-50">
+                                    <input
+                                      type="checkbox"
+                                      checked={has}
+                                      onChange={() => handleAssignRole(m, has ? null : role.id)}
+                                      className="w-3.5 h-3.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer"
+                                    />
+                                    <UserAvatar src={m.avatar_url} name={m.full_name || 'Membre'} size="xs" shape="circle" />
+                                    <span className="text-xs font-medium text-zinc-900">{m.full_name || 'Membre'}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {isAdmin && !addingRole && (
+                <div className="px-4 py-3">
+                  <button
+                    onClick={() => setAddingRole(true)}
+                    className="h-8 px-3.5 rounded-md border border-zinc-200 hover:bg-zinc-50 text-zinc-800 text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>+ Créer un rôle</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isAdmin && addingRole && (
+            <div className="bg-mv-surface border border-mv-border rounded-[6px] p-4 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input
+                type="text"
+                autoFocus
+                placeholder="Nom du rôle (ex: Responsable Prospection)"
+                value={newRoleName}
+                onChange={(e) => setNewRoleName(e.target.value)}
+                className="flex-1 h-8 px-3 text-xs rounded-md border border-zinc-200 focus:outline-none focus:border-emerald-600"
+              />
+              <input
+                type="text"
+                placeholder="Description (optionnel)"
+                value={newRoleDescription}
+                onChange={(e) => setNewRoleDescription(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddRole()}
+                className="flex-1 h-8 px-3 text-xs rounded-md border border-zinc-200 focus:outline-none focus:border-emerald-600"
+              />
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={() => { setAddingRole(false); setNewRoleName(''); setNewRoleDescription(''); }}
+                  className="h-8 px-3 rounded-md text-xs text-zinc-600 hover:bg-zinc-100 cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleAddRole}
+                  disabled={!newRoleName.trim()}
+                  className="h-8 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium cursor-pointer disabled:opacity-50"
+                >
+                  Créer
+                </button>
+              </div>
             </div>
           )}
         </div>
