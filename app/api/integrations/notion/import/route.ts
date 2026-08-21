@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/server/permissions';
 
 const NOTION_VERSION = '2022-06-28';
 
@@ -65,14 +66,9 @@ async function fetchPageContent(pageId: string, headers: Record<string, string>)
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-  }
-  const { data: profile } = await supabase.from('profiles').select('role, full_name').eq('id', user.id).maybeSingle();
-  if (profile?.role !== 'admin') {
-    return NextResponse.json({ error: 'Réservé aux administrateurs.' }, { status: 403 });
-  }
+  const guard = await requireAdmin(supabase);
+  if (guard.error) return guard.error;
+  const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', guard.user.id).maybeSingle();
 
   const { token, pages } = await req.json().catch(() => ({ token: null, pages: null }));
   if (!token || typeof token !== 'string' || !token.startsWith('secret_')) {

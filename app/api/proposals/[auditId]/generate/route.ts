@@ -6,20 +6,16 @@ import { fetchAuditWithFindings } from '@/lib/services/supabase-data';
 import { ProposalDocument } from '@/components/pdf/ProposalDocument';
 import { createSingleUseSchedulingLink } from '@/lib/services/calendly';
 import { sendTransactionalEmail } from '@/lib/services/brevo';
+import { requireAdmin } from '@/lib/server/permissions';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request, { params }: { params: Promise<{ auditId: string }> }) {
   const { auditId } = await params;
   const authed = await createServerClient();
-  const { data: { user } } = await authed.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-  }
-  const { data: profile } = await authed.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  if (profile?.role !== 'admin') {
-    return NextResponse.json({ error: 'Réservé aux administrateurs.' }, { status: 403 });
-  }
+  const guard = await requireAdmin(authed);
+  if (guard.error) return guard.error;
+  const { user } = guard;
 
   let recipientEmail: string | undefined;
   try {
