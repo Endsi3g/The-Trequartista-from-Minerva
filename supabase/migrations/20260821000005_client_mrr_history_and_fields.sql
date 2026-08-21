@@ -25,13 +25,16 @@ CREATE TABLE IF NOT EXISTS public.client_mrr_history (
 
 ALTER TABLE public.client_mrr_history ENABLE ROW LEVEL SECURITY;
 
--- Same gating as clients_select/edit_client_financials -- financial history
--- is agency-internal, not exposed to the client portal (no client_id_for()
--- clause, unlike clients_select itself).
+-- member_can() (used by the equivalent clients_select/edit_client_financials
+-- gating in the consolidated migration) is confirmed NOT to exist live --
+-- only is_admin() does (contacts_team/help_articles_admin_write deployed
+-- fine using it). Admin-only for now rather than guessing at a
+-- member-permission path that doesn't function; revisit once the custom
+-- roles/permissions system (chantier in progress) actually lands.
 DROP POLICY IF EXISTS "client_mrr_history_select" ON public.client_mrr_history;
 CREATE POLICY "client_mrr_history_select" ON public.client_mrr_history FOR SELECT TO authenticated
-    USING (public.is_admin(auth.uid()) OR public.member_can(auth.uid(), 'view_clients'));
+    USING (public.is_admin(auth.uid()));
 
 DROP POLICY IF EXISTS "client_mrr_history_insert" ON public.client_mrr_history;
 CREATE POLICY "client_mrr_history_insert" ON public.client_mrr_history FOR INSERT TO authenticated
-    WITH CHECK (public.is_admin(auth.uid()) OR public.member_can(auth.uid(), 'edit_client_financials'));
+    WITH CHECK (public.is_admin(auth.uid()));
