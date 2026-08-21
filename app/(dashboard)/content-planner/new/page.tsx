@@ -9,9 +9,9 @@ import { useToast } from '@/components/providers/ToastProvider';
 import type { ContentPost, Client } from '@/lib/types';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { VideoUploadField } from '@/components/media/VideoUploadField';
 import { ReelDistributionFields } from '@/components/content/ReelDistributionFields';
+import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
@@ -121,8 +121,8 @@ export default function NewReelPage() {
         <Card contentClassName="p-5 space-y-5">
           <div className="space-y-3">
             <div>
-              <label className="block text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-soft mb-1">
-                Titre du Réel / Contenu <span className="text-mv-red">*</span>
+              <label className="block text-[10px] font-medium uppercase tracking-wider text-zinc-500 mb-1">
+                Titre du Réel / Contenu
               </label>
               <div className="relative">
                 <Clapperboard className="w-3.5 h-3.5 text-mv-ink-faint absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -133,14 +133,14 @@ export default function NewReelPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ex: Reel 60s — Remplacement toiture commerciale & avant/après"
-                  className="w-full h-9 pl-9 pr-3 text-xs bg-mv-cream-soft border border-mv-border rounded-lg text-mv-ink focus:outline-none focus:border-mv-green placeholder:text-mv-ink-faint"
+                  className="w-full h-9 pl-9 pr-3 text-xs bg-mv-cream-soft border border-zinc-200 rounded-lg text-mv-ink focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20 placeholder:text-mv-ink-faint"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-soft mb-1">
-                Client Assigné <span className="text-mv-red">*</span>
+              <label className="block text-[10px] font-medium uppercase tracking-wider text-zinc-500 mb-1">
+                Client Assigné
               </label>
               <div className="relative">
                 <Building2 className="w-3.5 h-3.5 text-mv-ink-faint absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -148,7 +148,7 @@ export default function NewReelPage() {
                   required
                   value={clientId}
                   onChange={(e) => setClientId(e.target.value)}
-                  className="w-full h-9 pl-9 pr-3 text-xs bg-mv-cream-soft border border-mv-border rounded-lg text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
+                  className="w-full h-9 pl-9 pr-3 text-xs bg-mv-cream-soft border border-zinc-200 rounded-lg text-mv-ink focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20 cursor-pointer"
                 >
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -183,14 +183,14 @@ export default function NewReelPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-soft block">
+            <label className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 block">
               Fichier Vidéo / Ressource Média
             </label>
-            <VideoUploadField value={videoUrl} onChange={setVideoUrl} />
+            <VideoUploadField value={videoUrl} onChange={setVideoUrl} compact />
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-soft">
+            <label className="block text-[10px] font-medium uppercase tracking-wider text-zinc-500">
               Notes de Script & Accroche (Hook)
             </label>
             <textarea
@@ -198,17 +198,26 @@ export default function NewReelPage() {
               value={script}
               onChange={(e) => setScript(e.target.value)}
               placeholder="Accroche des 3 premières secondes, texte de description et appel à l'action (CTA)..."
-              className="w-full p-3 text-xs bg-mv-cream-soft border border-mv-border rounded-lg text-mv-ink focus:outline-none focus:border-mv-green leading-relaxed placeholder:text-mv-ink-faint"
+              className="w-full p-3 text-xs bg-mv-cream-soft border border-zinc-200 rounded-lg text-mv-ink focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20 leading-relaxed placeholder:text-mv-ink-faint"
             />
           </div>
 
           <div className="pt-1 flex items-center justify-end gap-2">
-            <Button type="button" variant="ghost" size="sm" onClick={() => router.push('/content-planner')}>
+            <button
+              type="button"
+              onClick={() => router.push('/content-planner')}
+              className="h-8 px-3 rounded-md text-xs text-zinc-600 hover:bg-zinc-100 transition-colors cursor-pointer"
+            >
               Annuler (Échap)
-            </Button>
-            <Button type="submit" size="sm" disabled={saving || !title.trim()} icon={<Check className="w-3.5 h-3.5" />}>
+            </button>
+            <button
+              type="submit"
+              disabled={saving || !title.trim()}
+              className="h-8 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium shadow-sm transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+            >
+              <Check className="w-3.5 h-3.5" />
               {saving ? 'Planification…' : 'Planifier le Réel (⌘ + Entrée)'}
-            </Button>
+            </button>
           </div>
         </Card>
 
@@ -232,34 +241,31 @@ export default function NewReelPage() {
               </div>
             </div>
 
-            <div className="bg-mv-cream-soft border border-mv-border rounded-lg p-2.5 text-[11px] font-mono space-y-1" style={MONO}>
-              <div className="flex items-center justify-between text-mv-ink-soft">
-                <span>Plateforme :</span>
-                <strong className="text-mv-ink">{platform}</strong>
-              </div>
-              <div className="flex items-center justify-between text-mv-ink-soft">
-                <span>Format :</span>
-                <strong className="text-mv-ink">{format}</strong>
-              </div>
-              <div className="flex items-center justify-between text-mv-ink-soft">
-                <span>Date prévue :</span>
-                <strong className="text-mv-ink">{date}</strong>
-              </div>
-              <div className="flex items-center justify-between text-mv-ink-soft">
-                <span>Fichier :</span>
-                <strong className={videoUrl ? 'text-mv-green' : 'text-mv-ink-faint'}>
-                  {videoUrl ? 'Prêt' : 'En attente'}
-                </strong>
-              </div>
+            <div className="grid grid-cols-[80px_1fr] text-[11px] font-mono gap-y-1 text-zinc-600 bg-mv-cream-soft border border-mv-border rounded-lg p-2.5" style={MONO}>
+              <span>Plateforme</span>
+              <strong className="text-mv-ink font-mono font-semibold">{platform}</strong>
+              <span>Format</span>
+              <strong className="text-mv-ink font-mono font-semibold">{format}</strong>
+              <span>Date prévue</span>
+              <strong className="text-mv-ink font-mono font-semibold">{date}</strong>
+              <span>Fichier</span>
+              <strong className={cn('font-mono font-semibold', videoUrl ? 'text-mv-green' : 'text-mv-ink-faint')}>
+                {videoUrl ? 'Prêt' : 'En attente'}
+              </strong>
             </div>
 
-            <div className="relative aspect-[9/16] max-h-48 w-full bg-mv-ink rounded-lg overflow-hidden flex flex-col justify-between p-2.5 text-white">
+            <div
+              className={cn(
+                'group relative w-full bg-zinc-900 border border-zinc-800 rounded-md overflow-hidden flex flex-col justify-between p-2.5 text-white transition-all duration-300',
+                videoUrl ? 'aspect-[9/16] max-h-64' : 'aspect-video hover:aspect-[9/16] hover:max-h-64'
+              )}
+            >
               <div className="flex items-center justify-between text-[10px] font-mono text-white/60" style={MONO}>
                 <span>9:16 Feed</span>
                 <Film className="w-3 h-3 text-white/60" />
               </div>
               <div className="text-center space-y-1">
-                <div className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 mx-auto flex items-center justify-center transition-colors">
+                <div className="w-8 h-8 rounded-full bg-white/10 group-hover:bg-white/20 mx-auto flex items-center justify-center transition-colors">
                   <Play className="w-3.5 h-3.5 text-white ml-0.5" />
                 </div>
                 <p className="text-[10px] font-medium text-white/80 truncate px-2">{title || 'Aperçu vidéo'}</p>

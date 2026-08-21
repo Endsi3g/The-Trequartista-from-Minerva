@@ -10,9 +10,10 @@ interface VideoUploadFieldProps {
   onChange: (url: string) => void;
   bucket?: string;
   folder?: string;
+  compact?: boolean;
 }
 
-export function VideoUploadField({ value, onChange, bucket = 'client-assets', folder = 'reels' }: VideoUploadFieldProps) {
+export function VideoUploadField({ value, onChange, bucket = 'client-assets', folder = 'reels', compact = false }: VideoUploadFieldProps) {
   const [mode, setMode] = useState<'upload' | 'link'>('upload');
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -74,18 +75,19 @@ export function VideoUploadField({ value, onChange, bucket = 'client-assets', fo
             if (file) uploadFile(file);
           }}
           className={cn(
-            'border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-2 transition-all cursor-pointer',
+            'border-2 border-dashed rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer',
+            compact ? 'py-2.5 flex-row gap-2' : 'p-6 flex-col',
             dragOver ? 'border-mv-green bg-mv-green-tint' : 'border-mv-border hover:border-mv-green/50 bg-mv-cream-soft/40'
           )}
         >
           {uploading ? (
-            <Loader2 className="w-6 h-6 text-mv-green animate-spin" />
+            <Loader2 className={cn('text-mv-green animate-spin', compact ? 'w-4 h-4' : 'w-6 h-6')} />
           ) : value ? (
-            <Check className="w-6 h-6 text-mv-green" />
+            <Check className={cn('text-mv-green', compact ? 'w-4 h-4' : 'w-6 h-6')} />
           ) : (
-            <UploadCloud className="w-6 h-6 text-mv-green" />
+            <UploadCloud className={cn('text-mv-green', compact ? 'w-4 h-4' : 'w-6 h-6')} />
           )}
-          <div className="text-xs font-bold text-mv-ink text-center">
+          <div className={cn('font-bold text-mv-ink text-center', compact ? 'text-[11px]' : 'text-xs')}>
             {uploading ? 'Envoi en cours…' : value ? 'Vidéo prête — glissez-en une autre pour remplacer' : 'Glissez-déposez une vidéo ou parcourez vos fichiers'}
           </div>
           <input
