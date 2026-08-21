@@ -40,6 +40,17 @@ export interface ClientInvite {
   used_at: string | null;
 }
 
+export interface HelpArticle {
+  id: string;
+  question: string;
+  answer: string;
+  category: string | null;
+  sort_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ChangelogEntry {
   id: string;
   title: string;

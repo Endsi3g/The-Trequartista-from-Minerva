@@ -5,11 +5,15 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Zap, ArrowRight, Send, ExternalLink, Check } from 'lucide-react';
+import { Search, Zap, Send, ExternalLink, Plug } from 'lucide-react';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { fetchClients } from '@/lib/services/supabase-data';
 import { PageFadeIn } from '@/components/ui/page-transition';
+import { SkeletonRows } from '@/components/ui/skeleton';
+import { AnimatedNumber } from '@/components/ui/animated-number';
+
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
 const LOGO_SLUG: Record<string, string> = {
   slack: 'slack',
@@ -190,16 +194,51 @@ export default function IntegrationsPage() {
     }
   };
 
+  const connectedCount = apps.filter((app) => statuses[app.slug]?.connected).length;
+
   return (
-    <PageFadeIn className="space-y-8 max-w-6xl mx-auto pb-12">
-      {/* Header (Shadcnblocks inspiration) */}
-      <div>
-        <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
-          Intégrations
-        </h1>
-        <p className="text-xs sm:text-sm text-mv-ink-soft mt-1">
-          Parcourez et connectez vos applications et services favoris.
-        </p>
+    <PageFadeIn className="space-y-4 max-w-6xl mx-auto pb-12">
+      {/* ── Compact Header Bar ── */}
+      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-6 h-6 rounded-[4px] bg-zinc-100 border border-mv-border flex items-center justify-center text-zinc-900 shrink-0">
+            <Plug className="w-3.5 h-3.5" />
+          </div>
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+            <h1 className="text-[15px] font-semibold text-mv-ink tracking-tight truncate">Intégrations</h1>
+            {!composioError && (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] bg-emerald-50/60 border border-emerald-200/60 text-[10.5px] font-medium text-emerald-800" style={MONO}>
+                <span className="w-1.5 h-1.5 rounded-full bg-mv-green" />
+                Composio actif
+              </span>
+            )}
+          </div>
+        </div>
+        <p className="text-xs text-mv-ink-soft">Parcourez et connectez vos applications et services favoris.</p>
+      </div>
+
+      {/* ── KPI Ribbon ── */}
+      <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
+        <div className="grid grid-cols-3 divide-x divide-mv-border">
+          <div className="px-3.5 py-2.5 h-16 flex flex-col justify-between hover:bg-black/[0.015] transition-colors">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">Disponibles</span>
+            <div className="text-[20px] font-semibold text-mv-ink tracking-tight leading-none" style={MONO}>
+              {loading ? '—' : <AnimatedNumber value={apps.length} />}
+            </div>
+          </div>
+          <div className="px-3.5 py-2.5 h-16 flex flex-col justify-between hover:bg-black/[0.015] transition-colors">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">Connectées</span>
+            <div className="text-[20px] font-semibold text-mv-green tracking-tight leading-none" style={MONO}>
+              {loading ? '—' : connectedCount}
+            </div>
+          </div>
+          <div className="px-3.5 py-2.5 h-16 flex flex-col justify-between hover:bg-black/[0.015] transition-colors">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">Catégories</span>
+            <div className="text-[20px] font-semibold text-mv-ink tracking-tight leading-none" style={MONO}>
+              {loading ? '—' : categories.length}
+            </div>
+          </div>
+        </div>
       </div>
 
       {composioError && (
@@ -262,11 +301,7 @@ export default function IntegrationsPage() {
         {/* Right Column: Cards List */}
         <div className="space-y-3">
           {loading ? (
-            <div className="space-y-3">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-20 bg-mv-surface border border-mv-border rounded-2xl animate-pulse" />
-              ))}
-            </div>
+            <SkeletonRows count={4} />
           ) : filteredApps.length === 0 ? (
             <Card className="py-12 text-center text-xs text-mv-ink-soft">
               Aucune intégration trouvée pour cette recherche.

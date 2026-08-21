@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -1662,6 +1662,47 @@ export async function deleteTaskSubitem(id: string): Promise<boolean> {
   const { error } = await getSupabase().from('task_subitems').delete().eq('id', id);
   if (error) {
     console.error('[Supabase] Error deleting task subitem:', error);
+    return false;
+  }
+  return true;
+}
+
+// ── 16b. Help / FAQ ──────────────────────────────────────────────────────────
+
+export async function fetchHelpArticles(): Promise<HelpArticle[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('help_articles')
+        .select('*')
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (error || !data) return [];
+      return data as HelpArticle[];
+    })(),
+    []
+  );
+}
+
+export async function addHelpArticle(article: {
+  question: string;
+  answer: string;
+  category?: string | null;
+  sort_order?: number;
+  created_by: string;
+}): Promise<HelpArticle | null> {
+  const { data, error } = await getSupabase().from('help_articles').insert([article]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding help article:', error);
+    return null;
+  }
+  return data as HelpArticle;
+}
+
+export async function deleteHelpArticle(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('help_articles').delete().eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error deleting help article:', error);
     return false;
   }
   return true;
