@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, HelpArticle, Contact, ContactNote, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, HelpArticle, Contact, ContactNote, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -39,14 +39,17 @@ export async function fetchClients(): Promise<Client[]> {
     (async () => {
       const { data, error } = await getSupabase()
         .from('clients')
-        .select('*')
+        .select('*, account_manager:profiles(full_name)')
         .order('created_at', { ascending: false });
 
       if (error || !data) {
         console.warn('[Supabase] Error fetching clients:', error);
         return [];
       }
-      return data as Client[];
+      return data.map((row: Record<string, unknown>) => ({
+        ...row,
+        account_manager_name: (row.account_manager as { full_name?: string } | null)?.full_name,
+      })) as Client[];
     })(),
     []
   );
@@ -85,6 +88,41 @@ export async function updateClient(
     return null;
   }
   return data as Client;
+}
+
+// ----------------------------------------------------
+// 1b. CLIENT MRR HISTORY
+// ----------------------------------------------------
+export async function fetchClientMrrHistory(clientId: string): Promise<ClientMrrHistoryEntry[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('client_mrr_history')
+        .select('*, author:profiles(full_name)')
+        .eq('client_id', clientId)
+        .order('recorded_at', { ascending: true });
+      if (error || !data) return [];
+      return data.map((row: Record<string, unknown>) => ({
+        ...row,
+        author_name: (row.author as { full_name?: string } | null)?.full_name,
+      })) as ClientMrrHistoryEntry[];
+    })(),
+    []
+  );
+}
+
+export async function logClientMrrChange(entry: {
+  client_id: string;
+  mrr: number;
+  note?: string | null;
+  created_by: string;
+}): Promise<boolean> {
+  const { error } = await getSupabase().from('client_mrr_history').insert([entry]);
+  if (error) {
+    console.error('[Supabase] Error logging MRR change:', error);
+    return false;
+  }
+  return true;
 }
 
 // ----------------------------------------------------

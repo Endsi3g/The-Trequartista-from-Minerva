@@ -37,12 +37,15 @@ import {
   fetchTasks,
   fetchContentPosts,
   updateClient,
+  fetchClientMrrHistory,
+  logClientMrrChange,
 } from '@/lib/services/supabase-data';
+import { AreaChart } from '@/components/charts/AreaChart';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useAppPermissions } from '@/components/providers/AppPermissionsProvider';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useClientChatThread } from '@/hooks/use-client-chat-thread';
-import { Client, Lead, Project, ClientPaymentLink, Task, ContentPost } from '@/lib/types';
+import { Client, Lead, Project, ClientPaymentLink, Task, ContentPost, ClientMrrHistoryEntry } from '@/lib/types';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { CoPilotageTracker } from '@/components/clients/CoPilotageTracker';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
@@ -82,6 +85,7 @@ export default function ClientDetailPage() {
   const [paymentLinks, setPaymentLinks] = useState<ClientPaymentLink[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [contentPosts, setContentPosts] = useState<ContentPost[]>([]);
+  const [mrrHistory, setMrrHistory] = useState<ClientMrrHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const { toastSuccess, toastError } = useToast();
@@ -145,12 +149,13 @@ export default function ClientDetailPage() {
       setContactEmail(targetClient.contact_email || '');
       setLogoUrl(targetClient.logo_url || '');
 
-      const [leadsData, projectsData, paymentLinksData, tasksData, postsData] = await Promise.all([
+      const [leadsData, projectsData, paymentLinksData, tasksData, postsData, mrrHistoryData] = await Promise.all([
         fetchLeads(targetClient.id),
         fetchProjects(),
         fetchClientPaymentLinks(),
         fetchTasks(),
         fetchContentPosts(),
+        fetchClientMrrHistory(targetClient.id),
       ]);
 
       setLeads(leadsData);
@@ -158,6 +163,7 @@ export default function ClientDetailPage() {
       setPaymentLinks(paymentLinksData.filter((l) => l.client_id === targetClient.id));
       setTasks(tasksData.filter((t) => t.client_id === targetClient.id));
       setContentPosts(postsData.filter((p) => p.client_id === targetClient.id));
+      setMrrHistory(mrrHistoryData);
       setLoading(false);
     }
     loadData();
@@ -196,15 +202,26 @@ export default function ClientDetailPage() {
   const handleSaveProfile = async () => {
     if (!client || !name.trim() || !industry.trim()) return;
     setSavingProfile(true);
+    const previousMrr = client.mrr;
+    const nextMrr = Number(mrr);
     const updated = await updateClient(client.id, {
       name: name.trim(),
       industry: industry.trim(),
       status,
-      mrr: Number(mrr),
+      mrr: nextMrr,
       contact_name: contactName.trim(),
       contact_email: contactEmail.trim(),
       logo_url: logoUrl,
     });
+    if (updated && nextMrr !== previousMrr && currentUserId) {
+      await logClientMrrChange({
+        client_id: client.id,
+        mrr: nextMrr,
+        note: `Mis à jour depuis la fiche client (${previousMrr.toLocaleString('fr-CA')} $ → ${nextMrr.toLocaleString('fr-CA')} $)`,
+        created_by: currentUserId,
+      });
+      setMrrHistory(await fetchClientMrrHistory(client.id));
+    }
     setSavingProfile(false);
     if (updated) {
       setClient(updated);
@@ -375,6 +392,38 @@ export default function ClientDetailPage() {
           </div>
         </Card>
       </div>
+
+      {/* MRR Evolution */}
+      <Card header={<h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">Évolution du MRR</h3>}>
+        {mrrHistory.length === 0 ? (
+          <p className="text-xs text-mv-ink-soft py-6 text-center">
+            Aucun historique de MRR pour le moment. Les changements faits sur cette fiche seront enregistrés ici.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            <AreaChart
+              data={mrrHistory.map((h) => ({
+                label: new Date(h.recorded_at).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' }),
+                value: h.mrr,
+              }))}
+              valuePrefix=""
+              valueSuffix=" $"
+              height={160}
+            />
+            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              {[...mrrHistory].reverse().map((h) => (
+                <div key={h.id} className="flex items-center justify-between text-xs border-t border-mv-border/60 pt-1.5 first:border-0 first:pt-0">
+                  <span className="text-mv-ink-soft">
+                    {new Date(h.recorded_at).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {h.author_name && ` · ${h.author_name}`}
+                  </span>
+                  <span className="font-mono font-bold text-mv-ink">{h.mrr.toLocaleString('fr-CA')} $</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
 
       {/* Coordonnées & réseaux */}
       <Card

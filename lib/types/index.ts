@@ -27,8 +27,24 @@ export interface Client {
   instagram_url?: string | null;
   facebook_url?: string | null;
   linkedin_url?: string | null;
+  address?: string | null;
+  contract_start_date?: string | null;
+  service_package?: string | null;
+  account_manager_id?: string | null;
+  account_manager_name?: string;
   created_at: string;
   current_focus?: string | null;
+}
+
+export interface ClientMrrHistoryEntry {
+  id: string;
+  client_id: string;
+  mrr: number;
+  note: string | null;
+  recorded_at: string;
+  created_by: string | null;
+  author_name?: string;
+  created_at: string;
 }
 
 export interface ClientInvite {
