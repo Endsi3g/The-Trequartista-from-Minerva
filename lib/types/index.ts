@@ -496,6 +496,40 @@ export interface TimeEntry {
   note?: string | null;
 }
 
+export interface Contact {
+  id: string;
+  full_name: string;
+  company: string | null;
+  role_title: string | null;
+  sector: string | null;
+  email: string | null;
+  phone: string | null;
+  linkedin_url: string | null;
+  instagram_url: string | null;
+  twitter_url: string | null;
+  facebook_url: string | null;
+  website_url: string | null;
+  met_at_event: string | null;
+  met_at_location: string | null;
+  met_at_date: string | null;
+  follow_up_date: string | null;
+  follow_up_note: string | null;
+  converted_to_lead_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContactNote {
+  id: string;
+  contact_id: string;
+  body: string;
+  channel: 'note' | 'sms' | 'email';
+  created_by: string | null;
+  author_name?: string;
+  created_at: string;
+}
+
 export type LeadStage = 'nouveau' | 'qualification' | 'proposition' | 'negociation' | 'gagne' | 'perdu';
 
 export interface Lead {

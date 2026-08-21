@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sendEmailServerSide } from '@/lib/services/email-service';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,50 +13,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const resendApiKey = process.env.RESEND_API_KEY;
-
-    if (resendApiKey) {
-      const fromAddress = process.env.RESEND_FROM_EMAIL || 'Minerva Agency <notifications@resend.dev>';
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${resendApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: fromAddress,
-          to: [to],
-          subject,
-          html: html || undefined,
-          text: text || undefined,
-        }),
-      });
-
-      const resData = await res.json();
-      if (!res.ok) {
-        console.error('[Resend API Error]', resData);
-        return NextResponse.json(
-          { success: false, error: resData.message || 'Erreur lors de l’envoi Resend' },
-          { status: res.status }
-        );
-      }
-
-      return NextResponse.json({ success: true, id: resData.id, provider: 'resend' });
+    const result = await sendEmailServerSide({ to, subject, html, text });
+    if (!result.success) {
+      return NextResponse.json(result, { status: result.error?.includes('non configuré') ? 503 : 502 });
     }
-
-    // High fidelity fallback when RESEND_API_KEY is not configured yet in environment
-    console.log(`[Email Dispatched Simulated] To: ${to} | Subject: "${subject}"`);
-    return NextResponse.json({
-      success: true,
-      id: `sim-${Date.now()}`,
-      provider: 'simulated_resend',
-      message: 'Email traité avec succès (mode simulation haute fidélité).',
-    });
-  } catch (err: any) {
+    return NextResponse.json({ ...result, provider: 'resend' });
+  } catch (err) {
     console.error('[Email Send API Exception]', err);
-    return NextResponse.json(
-      { success: false, error: err?.message || 'Erreur serveur interne' },
-      { status: 500 }
-    );
+    const message = err instanceof Error ? err.message : 'Erreur serveur interne';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
