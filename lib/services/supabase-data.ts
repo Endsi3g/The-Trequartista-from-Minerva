@@ -1573,6 +1573,15 @@ export async function updateTaskStatus(taskId: string, status: Task['status']): 
   return true;
 }
 
+export async function updateTaskPriority(taskId: string, priority: Task['priority']): Promise<boolean> {
+  const { error } = await getSupabase().from('tasks').update({ priority }).eq('id', taskId);
+  if (error) {
+    console.error('[Supabase] Error updating task priority:', error);
+    return false;
+  }
+  return true;
+}
+
 export async function deleteTask(taskId: string): Promise<boolean> {
   const { error } = await getSupabase().from('tasks').delete().eq('id', taskId);
   if (error) {

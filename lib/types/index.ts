@@ -67,6 +67,7 @@ export interface Task {
   assignee_avatar_url?: string | null;
   created_by: string | null;
   status: 'todo' | 'in_progress' | 'done';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date: string | null;
   created_at: string;
   updated_at: string;
