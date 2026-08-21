@@ -67,9 +67,12 @@ CREATE TABLE IF NOT EXISTS public.voice_agent_config (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- member_can() is confirmed NOT to exist live (deploy error while testing
+-- the client_mrr_history migration) -- admin-only until the custom
+-- roles/permissions system actually lands, same call as client_mrr_history.
 DROP POLICY IF EXISTS "voice_agent_config_select_team" ON public.voice_agent_config;
 CREATE POLICY "voice_agent_config_select_team" ON public.voice_agent_config FOR SELECT TO authenticated
-    USING (public.is_admin(auth.uid()) OR public.member_can(auth.uid(), 'view_voice_agent'));
+    USING (public.is_admin(auth.uid()));
 
 DROP POLICY IF EXISTS "voice_agent_config_admin_write" ON public.voice_agent_config;
 CREATE POLICY "voice_agent_config_admin_write" ON public.voice_agent_config FOR ALL TO authenticated
@@ -83,4 +86,4 @@ ALTER TABLE public.voice_agent_config ENABLE ROW LEVEL SECURITY;
 -- Only the service-role webhook needs to write here (bypasses RLS already).
 DROP POLICY IF EXISTS "voice_calls_select_team" ON public.voice_calls;
 CREATE POLICY "voice_calls_select_team" ON public.voice_calls FOR SELECT TO authenticated
-    USING (public.is_admin(auth.uid()) OR public.member_can(auth.uid(), 'view_voice_agent'));
+    USING (public.is_admin(auth.uid()));
