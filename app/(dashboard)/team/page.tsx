@@ -33,6 +33,8 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { fetchDepartments, addDepartment, deleteDepartment } from '@/lib/services/supabase-data';
+import type { Department } from '@/lib/types';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
@@ -83,6 +85,11 @@ export default function TeamPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [addingDepartment, setAddingDepartment] = useState(false);
+  const [newDepartmentName, setNewDepartmentName] = useState('');
+  const [newDepartmentColor, setNewDepartmentColor] = useState('Operations');
+  const [performancePickerOpen, setPerformancePickerOpen] = useState(false);
 
   const { role: currentUserRole } = useCurrentUser();
   const isAdmin = currentUserRole === 'admin';
@@ -106,7 +113,33 @@ export default function TeamPage() {
 
   useEffect(() => {
     loadTeam();
+    fetchDepartments().then(setDepartments);
   }, []);
+
+  const handleAddDepartment = async () => {
+    if (!newDepartmentName.trim()) return;
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const dept = await addDepartment({ name: newDepartmentName.trim(), color: newDepartmentColor, created_by: user.id });
+    if (dept) {
+      setDepartments((prev) => [...prev, dept].sort((a, b) => a.name.localeCompare(b.name)));
+      setNewDepartmentName('');
+      setAddingDepartment(false);
+      toastSuccess('Département créé', `« ${dept.name} » est maintenant disponible.`);
+    } else {
+      toastError('Erreur', 'Impossible de créer ce département.');
+    }
+  };
+
+  const handleDeleteDepartment = async (dept: Department) => {
+    setDepartments((prev) => prev.filter((d) => d.id !== dept.id));
+    const ok = await deleteDepartment(dept.id);
+    if (!ok) {
+      toastError('Erreur', 'Impossible de supprimer ce département.');
+      setDepartments((prev) => [...prev, dept].sort((a, b) => a.name.localeCompare(b.name)));
+    }
+  };
 
   // Keyboard shortcut: 'A' then 'M' or 'I' to invite
   useEffect(() => {
@@ -493,30 +526,108 @@ export default function TeamPage() {
           )}
         </div>
       ) : activeTab === 'departments' ? (
-        /* ── Proactive Empty State : Départements ── */
-        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3 shadow-2xs">
-          <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
-            <Building className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-zinc-900">
-              {isAdmin ? 'Aucun département configuré.' : 'Aucun département disponible.'}
-            </h3>
-            <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
-              {isAdmin
-                ? 'Structurez votre agence (ex: Design Framer, Growth & Prospection, IA & Systèmes).'
-                : 'Les départements de l’agence seront affichés ici dès leur configuration par un administrateur.'}
-            </p>
-          </div>
-          {isAdmin && (
-            <div className="pt-2">
-              <button
-                onClick={() => toastSuccess('Création de département', 'Module de création ouvert.')}
-                className="h-8 px-3.5 rounded-md border border-zinc-200 hover:bg-zinc-50 text-zinc-800 text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+        <div className="space-y-3">
+          {departments.length === 0 && !addingDepartment ? (
+            /* ── Empty State : Départements ── */
+            <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3 shadow-2xs">
+              <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
+                <Building className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-900">
+                  {isAdmin ? 'Aucun département configuré.' : 'Aucun département disponible.'}
+                </h3>
+                <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
+                  {isAdmin
+                    ? 'Structurez votre agence (ex: Design Framer, Growth & Prospection, IA & Systèmes).'
+                    : 'Les départements de l’agence seront affichés ici dès leur configuration par un administrateur.'}
+                </p>
+              </div>
+              {isAdmin && (
+                <div className="pt-2">
+                  <button
+                    onClick={() => setAddingDepartment(true)}
+                    className="h-8 px-3.5 rounded-md border border-zinc-200 hover:bg-zinc-50 text-zinc-800 text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>+ Créer un département</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-mv-surface border border-mv-border rounded-[6px] shadow-2xs divide-y divide-mv-border">
+              {departments.map((dept) => {
+                const memberCount = members.filter((m) => m.department === dept.name).length;
+                const style = getDepartmentStyle(dept.color);
+                return (
+                  <div key={dept.id} className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className={cn('w-2.5 h-2.5 rounded-full', style.dot)} />
+                      <span className="text-sm font-semibold text-zinc-900">{dept.name}</span>
+                      <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+                        {memberCount} membre{memberCount > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDeleteDepartment(dept)}
+                        className="text-zinc-400 hover:text-red-600 transition-colors cursor-pointer p-1"
+                        title="Supprimer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              {isAdmin && !addingDepartment && (
+                <div className="px-4 py-3">
+                  <button
+                    onClick={() => setAddingDepartment(true)}
+                    className="h-8 px-3.5 rounded-md border border-zinc-200 hover:bg-zinc-50 text-zinc-800 text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>+ Créer un département</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isAdmin && addingDepartment && (
+            <div className="bg-mv-surface border border-mv-border rounded-[6px] p-4 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input
+                type="text"
+                autoFocus
+                placeholder="Nom du département"
+                value={newDepartmentName}
+                onChange={(e) => setNewDepartmentName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddDepartment()}
+                className="flex-1 h-8 px-3 text-xs rounded-md border border-zinc-200 focus:outline-none focus:border-emerald-600"
+              />
+              <select
+                value={newDepartmentColor}
+                onChange={(e) => setNewDepartmentColor(e.target.value)}
+                className="h-8 px-2 text-xs rounded-md border border-zinc-200 focus:outline-none focus:border-emerald-600 cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5 text-emerald-600" />
-                <span>+ Créer un département</span>
-              </button>
+                {Object.keys(DEPARTMENT_COLORS).map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={() => { setAddingDepartment(false); setNewDepartmentName(''); }}
+                  className="h-8 px-3 rounded-md text-xs text-zinc-600 hover:bg-zinc-100 cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleAddDepartment}
+                  disabled={!newDepartmentName.trim()}
+                  className="h-8 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium cursor-pointer disabled:opacity-50"
+                >
+                  Créer
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -566,13 +677,37 @@ export default function TeamPage() {
           </div>
           {isAdmin && (
             <div className="pt-2">
-              <button
-                onClick={() => toastSuccess('Revue de performance', 'Planification d’une revue initiée.')}
-                className="h-8 px-3.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition-colors inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ Planifier une revue de performance</span>
-              </button>
+              {!performancePickerOpen ? (
+                <button
+                  onClick={() => setPerformancePickerOpen(true)}
+                  className="h-8 px-3.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition-colors inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Planifier une revue de performance</span>
+                </button>
+              ) : (
+                <div className="max-w-xs mx-auto text-left space-y-1.5">
+                  <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Choisir un membre</p>
+                  <div className="bg-white border border-zinc-200 rounded-md divide-y divide-zinc-100 max-h-56 overflow-y-auto">
+                    {members.map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => router.push(`/team/${m.id}/performance`)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-zinc-50 text-left cursor-pointer"
+                      >
+                        <UserAvatar src={m.avatar_url} name={m.full_name || 'Membre'} size="xs" shape="circle" />
+                        <span className="text-xs font-medium text-zinc-900">{m.full_name || 'Membre'}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setPerformancePickerOpen(false)}
+                    className="text-[11px] text-zinc-500 hover:text-zinc-800 cursor-pointer"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

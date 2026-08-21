@@ -56,6 +56,14 @@ export interface ClientInvite {
   used_at: string | null;
 }
 
+export interface Department {
+  id: string;
+  name: string;
+  color: string;
+  created_by: string | null;
+  created_at: string;
+}
+
 export interface HelpArticle {
   id: string;
   question: string;

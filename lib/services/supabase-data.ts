@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, HelpArticle, Contact, ContactNote, ProjectMilestone, ProjectAttachment, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, HelpArticle, Contact, ContactNote, ProjectMilestone, ProjectAttachment, Department, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -1742,6 +1742,37 @@ export async function deleteTaskSubitem(id: string): Promise<boolean> {
   const { error } = await getSupabase().from('task_subitems').delete().eq('id', id);
   if (error) {
     console.error('[Supabase] Error deleting task subitem:', error);
+    return false;
+  }
+  return true;
+}
+
+// ── 16a. Departments ─────────────────────────────────────────────────────────
+
+export async function fetchDepartments(): Promise<Department[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase().from('departments').select('*').order('name', { ascending: true });
+      if (error || !data) return [];
+      return data as Department[];
+    })(),
+    []
+  );
+}
+
+export async function addDepartment(department: { name: string; color: string; created_by: string }): Promise<Department | null> {
+  const { data, error } = await getSupabase().from('departments').insert([department]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding department:', error);
+    return null;
+  }
+  return data as Department;
+}
+
+export async function deleteDepartment(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('departments').delete().eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error deleting department:', error);
     return false;
   }
   return true;
