@@ -9,6 +9,7 @@ export interface CurrentUserState {
   email: string;
   avatarUrl: string;
   role: string;
+  workspace: 'prospection' | 'managing' | null;
   loading: boolean;
   refresh: () => void;
 }
@@ -28,6 +29,7 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
     email: '',
     avatarUrl: '',
     role: 'member',
+    workspace: null,
     loading: true,
   });
 
@@ -42,7 +44,7 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
     }
     const { data: profile } = await supabase
       .from('profiles')
-      .select('full_name, role, avatar_url')
+      .select('full_name, role, avatar_url, workspace')
       .eq('id', user.id)
       .maybeSingle();
     const fullName = profile?.full_name || user.user_metadata?.full_name || '';
@@ -54,6 +56,7 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
         profile?.avatar_url ||
         `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName || user.email || 'MV')}&backgroundColor=059669&fontColor=ffffff`,
       role: profile?.role || 'member',
+      workspace: (profile?.workspace as 'prospection' | 'managing' | null) || null,
       loading: false,
     });
   }, []);

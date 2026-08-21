@@ -16,6 +16,7 @@ import {
   ChevronDown,
   CheckSquare,
   CheckCircle2,
+  Check,
   Circle,
   Gauge,
   Sparkles,
@@ -23,7 +24,6 @@ import {
   FileText,
   PhoneCall,
   Building2,
-  Plus,
   Rocket,
   MessageSquare,
   Search as SearchIcon,
@@ -41,6 +41,7 @@ import { useRecentItems } from '@/hooks/use-recent-items';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useOnboardingChecklist } from '@/hooks/use-onboarding-checklist';
 import { LogoMark } from '@/components/shell/Logo';
+import { createClient } from '@/lib/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -214,14 +215,21 @@ export function AppSidebar() {
   const { collapsed, isMobile, mobileOpen, setMobileOpen, closeOnNavigate } = useSidebarState();
   const counts = useNavCounts();
   const recentItems = useRecentItems(4);
-  const { role } = useCurrentUser();
+  const { role, workspace, id: currentUserId, refresh: refreshCurrentUser } = useCurrentUser();
   const isAdmin = role === 'admin';
   const [searchOpen, setSearchOpen] = useState(false);
 
-  // Workspaces state for minimalist switcher (unchanged: no second real
-  // workspace exists yet for internal staff to switch into -- see
-  // CLAUDE.md's Sidebar section).
-  const [selectedWorkspace, setSelectedWorkspace] = useState('Minerva Agency');
+  // Espace de travail: a nav/dashboard *view filter*, not a permission
+  // boundary -- admins always see the unfiltered nav regardless of what's
+  // persisted, and an unassigned (NULL) member also sees everything rather
+  // than a broken partial state. Persists to profiles.workspace so the
+  // choice survives across sessions/devices.
+  const handleWorkspaceChange = async (next: 'prospection' | 'managing' | null) => {
+    if (!currentUserId) return;
+    const supabase = createClient();
+    await supabase.from('profiles').update({ workspace: next }).eq('id', currentUserId);
+    refreshCurrentUser();
+  };
 
   // Persisted favorites in localStorage so user preferences remain across sessions,
   // and removing all favorites is strictly respected (never re-injects defaults).
@@ -247,6 +255,23 @@ export function AppSidebar() {
     });
   };
 
+  // Espace de travail: items tagged here are hidden from members assigned
+  // to the *other* workspace. Admins and unassigned (workspace=NULL)
+  // members always see everything -- this is a focus/declutter filter, not
+  // a permission boundary (RLS is unaffected either way).
+  const WORKSPACE_TAG: Record<string, 'prospection' | 'managing'> = {
+    'voice-agent': 'prospection',
+    leads: 'prospection',
+    acquisition: 'prospection',
+    audits: 'prospection',
+    clients: 'managing',
+    workload: 'managing',
+  };
+  const visibleForWorkspace = (item: NavItem) => {
+    const tag = WORKSPACE_TAG[item.key];
+    return isAdmin || !workspace || !tag || tag === workspace;
+  };
+
   // "Principal" -- daily-use, personal-scope items
   const mainMenuItems: NavItem[] = [
     { key: 'overview', label: 'Accueil', href: '/overview', icon: LayoutDashboard },
@@ -254,14 +279,14 @@ export function AppSidebar() {
     { key: 'tasks', label: 'Tâches', href: '/tasks', icon: CheckSquare, count: counts.myTasks ?? undefined },
     { key: 'documents', label: 'Documents', href: '/documents', icon: FileText, isNew: true },
     { key: 'chat', label: 'Chat d\'équipe', href: '/chat', icon: MessageSquare, isNew: true },
-  ];
+  ].filter(visibleForWorkspace);
 
   // "CRM" -- the sales pipeline
   const crmItems: NavItem[] = [
     { key: 'contacts', label: 'Contacts', href: '/contacts', icon: Contact, isNew: true },
     { key: 'clients', label: 'Clients', href: '/clients', icon: Users },
     { key: 'leads', label: 'Leads', href: '/leads', icon: Target },
-  ];
+  ].filter(visibleForWorkspace);
 
   // "Livraison" -- client-facing production work
   const deliveryItems: NavItem[] = [
@@ -270,20 +295,28 @@ export function AppSidebar() {
     { key: 'academy', label: 'Académie', href: '/academy', icon: GraduationCap },
   ];
 
-  // "Équipe" -- people ops
+  // "Équipe" -- people ops. Workload is admin-only OR a Managing-workspace
+  // member (previously admin-only outright).
   const teamItems: NavItem[] = [
     { key: 'team', label: 'Équipe', href: '/team', icon: UsersRound },
-    ...(isAdmin ? [{ key: 'workload', label: 'Charge de travail', href: '/team/workload', icon: Gauge } as NavItem] : []),
+    ...(isAdmin || workspace === 'managing'
+      ? [{ key: 'workload', label: 'Charge de travail', href: '/team/workload', icon: Gauge } as NavItem]
+      : []),
   ];
 
-  // "Croissance" -- admin-only, top-of-funnel
-  const growthItems: NavItem[] = isAdmin
-    ? [
-        { key: 'acquisition', label: 'Acquisition', href: '/acquisition', icon: Sparkles },
-        { key: 'audits', label: 'Audits IA', href: '/audits', icon: ClipboardCheck },
-        { key: 'produits', label: 'Produits Minerva', href: '/produits', icon: Rocket },
-      ]
-    : [];
+  // "Croissance" -- admin-only, except Acquisition/Audits which a
+  // Prospection-workspace member also gets (Produits Minerva stays
+  // strictly admin-only, it's an internal roadmap tool not part of the
+  // prospection funnel).
+  const growthItems: NavItem[] = [
+    ...(isAdmin || workspace === 'prospection'
+      ? [
+          { key: 'acquisition', label: 'Acquisition', href: '/acquisition', icon: Sparkles } as NavItem,
+          { key: 'audits', label: 'Audits IA', href: '/audits', icon: ClipboardCheck } as NavItem,
+        ]
+      : []),
+    ...(isAdmin ? [{ key: 'produits', label: 'Produits Minerva', href: '/produits', icon: Rocket } as NavItem] : []),
+  ];
 
   const allNavItems = [...mainMenuItems, ...crmItems, ...deliveryItems, ...teamItems, ...growthItems];
   const favoriteItems = allNavItems.filter((item) => favoriteKeys.includes(item.key));
@@ -315,35 +348,39 @@ export function AppSidebar() {
         <div className="flex-1 min-w-0">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition-colors hover:bg-mv-ink/5 cursor-pointer">
+              <button
+                disabled={isAdmin}
+                className="flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition-colors hover:bg-mv-ink/5 cursor-pointer disabled:cursor-default disabled:hover:bg-transparent"
+              >
                 <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 overflow-hidden">
                   <LogoMark size={22} />
                 </div>
                 <span className="min-w-0 flex-1 truncate text-[13.5px] font-bold text-mv-ink font-display">
-                  {selectedWorkspace}
+                  {isAdmin ? 'Toutes les données' : workspace === 'prospection' ? 'Prospection' : workspace === 'managing' ? 'Managing' : 'Tous les espaces'}
                 </span>
-                <ChevronDown size={13} className="shrink-0 text-mv-ink-faint" />
+                {!isAdmin && <ChevronDown size={13} className="shrink-0 text-mv-ink-faint" />}
               </button>
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="start" className="w-56">
               <div className="px-2 py-1.5 text-[10px] font-bold uppercase text-mv-ink-faint">
-                Espaces de travail
+                Espace de travail
               </div>
-              <DropdownMenuItem onClick={() => setSelectedWorkspace('Minerva Agency')} className="text-xs font-semibold cursor-pointer">
-                <Building2 className="w-3.5 h-3.5 mr-2 text-mv-ink-soft" />
-                <span>Minerva Agency</span>
+              <DropdownMenuItem onClick={() => handleWorkspaceChange('prospection')} className="text-xs font-semibold cursor-pointer">
+                <Target className="w-3.5 h-3.5 mr-2 text-mv-ink-soft" />
+                <span>Prospection</span>
+                {workspace === 'prospection' && <Check className="w-3.5 h-3.5 ml-auto text-mv-green" />}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSelectedWorkspace('Minerva Voice AI')} className="text-xs font-semibold cursor-pointer">
-                <PhoneCall className="w-3.5 h-3.5 mr-2 text-mv-ink-soft" />
-                <span>Minerva Voice AI</span>
+              <DropdownMenuItem onClick={() => handleWorkspaceChange('managing')} className="text-xs font-semibold cursor-pointer">
+                <Gauge className="w-3.5 h-3.5 mr-2 text-mv-ink-soft" />
+                <span>Managing</span>
+                {workspace === 'managing' && <Check className="w-3.5 h-3.5 ml-auto text-mv-green" />}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/settings/billing" className="text-xs font-medium cursor-pointer">
-                  <Plus className="w-3.5 h-3.5 mr-2 text-mv-ink-faint" />
-                  <span>Créer un espace...</span>
-                </Link>
+              <DropdownMenuItem onClick={() => handleWorkspaceChange(null)} className="text-xs font-medium cursor-pointer">
+                <Building2 className="w-3.5 h-3.5 mr-2 text-mv-ink-faint" />
+                <span>Tous les espaces</span>
+                {!workspace && <Check className="w-3.5 h-3.5 ml-auto text-mv-green" />}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
