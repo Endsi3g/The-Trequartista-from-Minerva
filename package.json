@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "playwright test",
+    "changelog:screenshots": "node scripts/capture-changelog-screenshots.mjs",
     "deploy:supabase": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy-supabase.ps1"
   },
   "dependencies": {
