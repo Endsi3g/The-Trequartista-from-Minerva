@@ -216,6 +216,18 @@ export interface Project {
   progress_pct: number;
   due_date: string;
   assignees: string[];
+  budget_cad?: number | null;
+  client_visible?: boolean;
+}
+
+export interface ProjectAttachment {
+  id: string;
+  project_id: string;
+  name: string;
+  url: string;
+  file_type: string | null;
+  created_by: string | null;
+  created_at: string;
 }
 
 export interface TeamChatMessage {

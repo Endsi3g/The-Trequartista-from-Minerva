@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, HelpArticle, Contact, ContactNote, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, HelpArticle, Contact, ContactNote, ProjectMilestone, ProjectAttachment, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -183,6 +183,9 @@ export async function addProject(project: {
   current_stage: Project['current_stage'];
   health: Project['health'];
   due_date: string;
+  budget_cad?: number | null;
+  assignees?: string[];
+  client_visible?: boolean;
 }): Promise<Project | null> {
   const { data, error } = await getSupabase()
     .from('projects')
@@ -198,8 +201,47 @@ export async function addProject(project: {
   return {
     ...row,
     client_name: (row.client as { name?: string } | null)?.name || 'Client Minerva',
-    assignees: [],
+    assignees: (row.assignees as string[] | null) || [],
   } as unknown as Project;
+}
+
+export async function fetchProjectAttachments(projectId: string): Promise<ProjectAttachment[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('project_attachments')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+      if (error || !data) return [];
+      return data as ProjectAttachment[];
+    })(),
+    []
+  );
+}
+
+export async function addProjectAttachment(attachment: {
+  project_id: string;
+  name: string;
+  url: string;
+  file_type?: string | null;
+  created_by: string;
+}): Promise<ProjectAttachment | null> {
+  const { data, error } = await getSupabase().from('project_attachments').insert([attachment]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding project attachment:', error);
+    return null;
+  }
+  return data as ProjectAttachment;
+}
+
+export async function deleteProjectAttachment(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('project_attachments').delete().eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error deleting project attachment:', error);
+    return false;
+  }
+  return true;
 }
 
 export async function updateProjectStage(projectId: string, currentStage: Project['current_stage']): Promise<boolean> {
