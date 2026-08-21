@@ -1,13 +1,13 @@
 -- ============================================================================
 -- GRANT ADMIN: kbelceus776@gmail.com
--- Same pattern as the original founder bootstrap seed (allowed_emails +
--- direct profiles update). Idempotent -- safe to re-run.
+-- Direct profiles update only -- confirmed live (same pattern used
+-- successfully everywhere else this session, e.g. Team page's
+-- handleRoleChange). The allowed_emails table's live shape doesn't match
+-- this repo's consolidated migration (no `role` column live, per the
+-- actual deploy error), so that best-effort future-proofing step is
+-- dropped rather than guessed at further. Idempotent -- safe to re-run.
 -- ============================================================================
 
 UPDATE public.profiles
 SET role = 'admin', approved = TRUE
 WHERE email = 'kbelceus776@gmail.com';
-
-INSERT INTO public.allowed_emails (email, role, auto_approve, notes)
-VALUES ('kbelceus776@gmail.com', 'admin', TRUE, 'Admin complet accordé le 2026-08-21')
-ON CONFLICT (email) DO UPDATE SET role = 'admin', auto_approve = TRUE;
