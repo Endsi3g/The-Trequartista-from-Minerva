@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
+import { SkeletonCards } from '@/components/ui/skeleton';
 import { useToast } from '@/components/providers/ToastProvider';
 import { fetchDocuments, addDocument, deleteDocument } from '@/lib/services/supabase-data';
 import type { TeamDocument } from '@/lib/types';
@@ -297,7 +298,7 @@ export default function DocumentsPage() {
 
       {/* ── 4. Main Views: 36px DataTable vs Compact Cards Grid ── */}
       {loading ? (
-        <p className="text-xs text-zinc-400 text-center py-12 font-mono">Chargement des documents…</p>
+        <SkeletonCards count={6} />
       ) : filteredDocuments.length === 0 ? (
         <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3">
           <FileText className="w-8 h-8 text-zinc-300 mx-auto" />

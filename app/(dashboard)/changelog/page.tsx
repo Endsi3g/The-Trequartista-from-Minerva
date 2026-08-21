@@ -9,6 +9,7 @@ import { fetchChangelogEntries } from '@/lib/services/supabase-data';
 import type { ChangelogEntry } from '@/lib/types';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { PageFadeIn } from '@/components/ui/page-transition';
+import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 
 const STATIC_ENTRIES: ChangelogEntry[] = [
   {
@@ -246,9 +247,17 @@ export default function ChangelogPage() {
         </h2>
 
         {loading ? (
-          <div className="space-y-6">
+          <div className="space-y-12">
             {[1, 2].map((i) => (
-              <div key={i} className="h-64 bg-white border border-mv-border rounded-[6px] animate-pulse" />
+              <div key={i} className="space-y-3">
+                <SkeletonText className="w-24 h-2.5" />
+                <SkeletonText className="w-2/3 h-5" />
+                <Skeleton className="w-full h-40 rounded-[6px]" />
+                <div className="space-y-2 pt-1">
+                  <SkeletonText className="w-full" />
+                  <SkeletonText className="w-5/6" />
+                </div>
+              </div>
             ))}
           </div>
         ) : (

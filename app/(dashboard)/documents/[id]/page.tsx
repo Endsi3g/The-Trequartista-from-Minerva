@@ -37,6 +37,7 @@ import { fetchDocument, renameDocument } from '@/lib/services/supabase-data';
 import type { TeamDocument } from '@/lib/types';
 import { useToast } from '@/components/providers/ToastProvider';
 import { PageFadeIn } from '@/components/ui/page-transition';
+import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -250,7 +251,17 @@ Les restaurants & cafés utilisent souvent de nombreux outils fragmentés, compl
   };
 
   if (loading) {
-    return <div className="py-16 text-center text-xs text-zinc-400 font-mono">Chargement du document…</div>;
+    return (
+      <div className="max-w-3xl mx-auto space-y-4 py-6">
+        <SkeletonText className="w-1/2 h-6" />
+        <div className="space-y-2 pt-2">
+          <SkeletonText className="w-full" />
+          <SkeletonText className="w-full" />
+          <SkeletonText className="w-5/6" />
+        </div>
+        <Skeleton className="w-full h-64 rounded-2xl" />
+      </div>
+    );
   }
 
   if (!doc) {

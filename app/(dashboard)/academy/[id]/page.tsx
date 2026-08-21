@@ -29,6 +29,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { VideoAssetPlayer } from '@/components/media/VideoAssetPlayer';
 import { createClient } from '@/lib/supabase/client';
+import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 import {
   fetchAcademySop,
   fetchCompletedSopIds,
@@ -119,7 +120,18 @@ export default function SopDetailPage() {
   };
 
   if (loading) {
-    return <div className="py-16 text-center text-xs text-zinc-400 font-mono">Chargement du guide…</div>;
+    return (
+      <div className="max-w-3xl mx-auto space-y-4 py-6">
+        <SkeletonText className="w-32 h-2.5" />
+        <SkeletonText className="w-2/3 h-6" />
+        <Skeleton className="w-full h-48 rounded-2xl" />
+        <div className="space-y-2 pt-2">
+          <SkeletonText className="w-full" />
+          <SkeletonText className="w-full" />
+          <SkeletonText className="w-4/5" />
+        </div>
+      </div>
+    );
   }
 
   if (!sop) {
