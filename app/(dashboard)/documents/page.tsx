@@ -320,7 +320,7 @@ export default function DocumentsPage() {
                 className={cn(
                   'px-2.5 py-1 rounded-[4px] text-[11.5px] font-medium transition-colors cursor-pointer shrink-0 border',
                   isSelected
-                    ? 'bg-zinc-850 text-white border-zinc-850 shadow-2xs'
+                    ? 'bg-zinc-900 text-white border-zinc-900 shadow-2xs'
                     : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900'
                 )}
               >

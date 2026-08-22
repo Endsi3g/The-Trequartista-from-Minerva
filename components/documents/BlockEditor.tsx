@@ -425,7 +425,7 @@ export function BlockEditor({ blocks, onChange, readOnly = false, activeEditorNa
                     onKeyDown={(e) => handleKeyDown(e, index)}
                     onChange={(e) => handleInputChange(e, index)}
                     onFocus={() => setActiveBlockIndex(index)}
-                    className="w-full text-base font-semibold text-zinc-850 bg-transparent border-0 resize-none focus:outline-none focus:ring-0 placeholder:text-zinc-300"
+                    className="w-full text-base font-semibold text-zinc-900 bg-transparent border-0 resize-none focus:outline-none focus:ring-0 placeholder:text-zinc-300"
                   />
                 </div>
               )}

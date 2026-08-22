@@ -138,7 +138,7 @@ export function DocumentVersionHistory({
                     <div className="flex items-center gap-2">
                       <span
                         style={MONO}
-                        className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-zinc-850 text-white"
+                        className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-zinc-900 text-white"
                       >
                         v{ver.version_number}
                       </span>
