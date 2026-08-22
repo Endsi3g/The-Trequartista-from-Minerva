@@ -19,18 +19,7 @@ import { addContact } from '@/lib/services/supabase-data';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/providers/ToastProvider';
 import { cn } from '@/lib/utils';
-
-const SECTOR_OPTIONS = [
-  'Restauration & Café',
-  'Bâtiment & Rénovation',
-  'Immobilier',
-  'SaaS & Technologie',
-  'Santé & Bien-être',
-  'Commerce de détail',
-  'Services professionnels',
-  'Automobile',
-  'Autre',
-];
+import { SECTOR_OPTIONS } from '@/lib/constants/contacts';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 

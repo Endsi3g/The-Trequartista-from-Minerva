@@ -39,9 +39,11 @@ import type { Contact, ContactNote } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
+import { CONTACT_STATUS_OPTIONS, CONTACT_PREFERRED_METHOD_OPTIONS } from '@/lib/constants/contacts';
 
 const CHANNEL_LABEL: Record<ContactNote['channel'], string> = { note: 'Note', sms: 'SMS envoyé', email: 'Courriel envoyé' };
 const CHANNEL_VARIANT: Record<ContactNote['channel'], 'neutral' | 'blue' | 'purple'> = { note: 'neutral', sms: 'blue', email: 'purple' };
+const PREFERRED_METHOD_LABEL = Object.fromEntries(CONTACT_PREFERRED_METHOD_OPTIONS.map((o) => [o.value, o.label]));
 
 const SOCIAL_LINKS: Array<{ key: keyof Contact; icon: typeof Linkedin; label: string }> = [
   { key: 'linkedin_url', icon: Linkedin, label: 'LinkedIn' },
@@ -187,6 +189,12 @@ export default function ContactDetailPage() {
     setContact({ ...contact, follow_up_date: null, follow_up_note: null });
   };
 
+  const handleStatusChange = async (status: Contact['status']) => {
+    if (!contact) return;
+    setContact({ ...contact, status });
+    await updateContact(contact.id, { status });
+  };
+
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto space-y-4 py-6">
@@ -220,10 +228,13 @@ export default function ContactDetailPage() {
 
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3 min-w-0">
-          <UserAvatar name={contact.full_name} size="lg" shape="rounded" />
+          <UserAvatar src={contact.avatar_url} name={contact.full_name} size="lg" shape="rounded" />
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-extrabold text-mv-ink font-display truncate">{contact.full_name}</h1>
+              {contact.source === 'self_submitted' && (
+                <Badge variant="blue">Soumis via le lien public</Badge>
+              )}
               {contact.converted_to_lead_id && (
                 <Link href={`/leads/${contact.converted_to_lead_id}`}>
                   <Badge variant="green"><ArrowRightLeft className="w-3 h-3" /> Voir le lead</Badge>
@@ -239,6 +250,13 @@ export default function ContactDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <select
+            value={contact.status}
+            onChange={(e) => handleStatusChange(e.target.value as Contact['status'])}
+            className="h-8 px-2.5 text-xs font-semibold rounded-lg border border-mv-border bg-mv-cream-soft text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
+          >
+            {CONTACT_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
           {!contact.converted_to_lead_id && (
             <Button variant="secondary" size="sm" onClick={handleConvert} disabled={converting} icon={<ArrowRightLeft className="w-3.5 h-3.5" />}>
               {converting ? 'Conversion…' : 'Convertir en Lead'}
@@ -340,6 +358,37 @@ export default function ContactDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Réseautage -- answers from the public self-submission form */}
+      {(contact.how_can_i_help || contact.biggest_problem || contact.open_to_collaborate !== null || contact.preferred_contact_method) && (
+        <div className="bg-mv-surface border border-mv-border rounded-2xl p-4 space-y-3">
+          <h3 className="text-[11px] font-extrabold text-mv-ink-soft uppercase tracking-widest">Réseautage</h3>
+          {contact.how_can_i_help && (
+            <div>
+              <p className="text-[10.5px] font-bold text-mv-ink-faint uppercase tracking-wide">Comment l&apos;aider</p>
+              <p className="text-sm text-mv-ink whitespace-pre-wrap">{contact.how_can_i_help}</p>
+            </div>
+          )}
+          {contact.biggest_problem && (
+            <div>
+              <p className="text-[10.5px] font-bold text-mv-ink-faint uppercase tracking-wide">Plus gros problème</p>
+              <p className="text-sm text-mv-ink whitespace-pre-wrap">{contact.biggest_problem}</p>
+            </div>
+          )}
+          <div className="flex items-center gap-4 flex-wrap">
+            {contact.open_to_collaborate !== null && (
+              <Badge variant={contact.open_to_collaborate ? 'green' : 'neutral'}>
+                {contact.open_to_collaborate ? 'Ouvert à collaborer' : 'Pas ouvert à collaborer pour l’instant'}
+              </Badge>
+            )}
+            {contact.preferred_contact_method && (
+              <span className="text-xs text-mv-ink-soft">
+                Préfère être recontacté par : <strong className="text-mv-ink">{PREFERRED_METHOD_LABEL[contact.preferred_contact_method]}</strong>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Notes timeline */}
       <div className="bg-mv-surface border border-mv-border rounded-2xl p-4 space-y-4">

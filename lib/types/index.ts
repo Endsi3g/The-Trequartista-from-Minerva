@@ -626,6 +626,13 @@ export interface Contact {
   follow_up_date: string | null;
   follow_up_note: string | null;
   converted_to_lead_id: string | null;
+  avatar_url: string | null;
+  how_can_i_help: string | null;
+  biggest_problem: string | null;
+  open_to_collaborate: boolean | null;
+  preferred_contact_method: 'email' | 'reseaux_sociaux' | 'site_web' | 'autre' | null;
+  status: 'a_contacter' | 'rencontre_proposee' | 'entrevue_minerva' | 'collaboration_en_cours';
+  source: 'manual' | 'self_submitted';
   created_by: string | null;
   created_at: string;
   updated_at: string;

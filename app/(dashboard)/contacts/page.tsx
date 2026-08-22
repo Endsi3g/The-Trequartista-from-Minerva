@@ -6,9 +6,15 @@ import { Contact as ContactIcon, Search, Plus, AlertTriangle, Building2, ArrowRi
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { AnimatedNumber } from '@/components/ui/animated-number';
+import { Badge } from '@/components/ui/badge';
+import { UserAvatar } from '@/components/ui/user-avatar';
+import { ShareNetworkPanel } from '@/components/contacts/ShareNetworkPanel';
 import { fetchContacts } from '@/lib/services/supabase-data';
+import { CONTACT_STATUS_OPTIONS } from '@/lib/constants/contacts';
 import type { Contact } from '@/lib/types';
 import { cn } from '@/lib/utils';
+
+const STATUS_MAP = Object.fromEntries(CONTACT_STATUS_OPTIONS.map((o) => [o.value, o]));
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
@@ -55,13 +61,16 @@ export default function ContactsPage() {
           </div>
           <h1 className="text-[15px] font-semibold text-mv-ink tracking-tight truncate">Contacts</h1>
         </div>
-        <Link
-          href="/contacts/new"
-          className="h-7 px-3 rounded-[4px] bg-mv-green hover:bg-emerald-700 text-white text-[11.5px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Nouveau Contact</span>
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <ShareNetworkPanel />
+          <Link
+            href="/contacts/new"
+            className="h-7 px-3 rounded-[4px] bg-mv-green hover:bg-emerald-700 text-white text-[11.5px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Nouveau Contact</span>
+          </Link>
+        </div>
       </div>
 
       {/* ── KPI Ribbon ── */}
@@ -118,32 +127,42 @@ export default function ContactsPage() {
         <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs divide-y divide-mv-border">
           {filtered.map((contact) => {
             const dueSoon = isFollowUpDue(contact);
+            const statusInfo = STATUS_MAP[contact.status];
             return (
               <Link
                 key={contact.id}
                 href={`/contacts/${contact.id}`}
                 className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-black/[0.02] transition-colors"
               >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-mv-ink truncate">{contact.full_name}</span>
-                    {contact.converted_to_lead_id && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-mv-green bg-mv-green-tint px-1.5 py-0.5 rounded-full">
-                        <ArrowRightLeft className="w-2.5 h-2.5" /> Lead
-                      </span>
-                    )}
-                    {dueSoon && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-mv-red bg-mv-red-bg px-1.5 py-0.5 rounded-full">
-                        <AlertTriangle className="w-2.5 h-2.5" /> Rappel dû
-                      </span>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <UserAvatar src={contact.avatar_url} name={contact.full_name} size="sm" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-bold text-mv-ink truncate">{contact.full_name}</span>
+                      {statusInfo && <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>}
+                      {contact.source === 'self_submitted' && (
+                        <span className="inline-flex items-center text-[10px] font-semibold text-mv-blue bg-mv-blue-bg px-1.5 py-0.5 rounded-full">
+                          Auto-soumis
+                        </span>
+                      )}
+                      {contact.converted_to_lead_id && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-mv-green bg-mv-green-tint px-1.5 py-0.5 rounded-full">
+                          <ArrowRightLeft className="w-2.5 h-2.5" /> Lead
+                        </span>
+                      )}
+                      {dueSoon && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-mv-red bg-mv-red-bg px-1.5 py-0.5 rounded-full">
+                          <AlertTriangle className="w-2.5 h-2.5" /> Rappel dû
+                        </span>
+                      )}
+                    </div>
+                    {(contact.company || contact.role_title) && (
+                      <div className="text-[11.5px] text-mv-ink-soft flex items-center gap-1 mt-0.5 truncate">
+                        <Building2 className="w-3 h-3 shrink-0" />
+                        {[contact.role_title, contact.company].filter(Boolean).join(' · ')}
+                      </div>
                     )}
                   </div>
-                  {(contact.company || contact.role_title) && (
-                    <div className="text-[11.5px] text-mv-ink-soft flex items-center gap-1 mt-0.5 truncate">
-                      <Building2 className="w-3 h-3 shrink-0" />
-                      {[contact.role_title, contact.company].filter(Boolean).join(' · ')}
-                    </div>
-                  )}
                 </div>
                 <div className="text-[11px] text-mv-ink-faint font-mono shrink-0" style={MONO}>
                   {contact.email || contact.phone || '—'}

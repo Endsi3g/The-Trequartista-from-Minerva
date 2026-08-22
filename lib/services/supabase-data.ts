@@ -3371,10 +3371,23 @@ export async function fetchContact(id: string): Promise<Contact | null> {
   return data as Contact;
 }
 
+type OptionalContactFields = 'status' | 'source' | 'avatar_url' | 'how_can_i_help' | 'biggest_problem' | 'open_to_collaborate' | 'preferred_contact_method';
+
 export async function addContact(
-  contact: Omit<Contact, 'id' | 'created_at' | 'updated_at' | 'converted_to_lead_id'>
+  contact: Omit<Contact, 'id' | 'created_at' | 'updated_at' | 'converted_to_lead_id' | OptionalContactFields> &
+    Partial<Pick<Contact, OptionalContactFields>>
 ): Promise<Contact | null> {
-  const { data, error } = await getSupabase().from('contacts').insert([contact]).select().single();
+  const row = {
+    status: 'a_contacter' as const,
+    source: 'manual' as const,
+    avatar_url: null,
+    how_can_i_help: null,
+    biggest_problem: null,
+    open_to_collaborate: null,
+    preferred_contact_method: null,
+    ...contact,
+  };
+  const { data, error } = await getSupabase().from('contacts').insert([row]).select().single();
   if (error) {
     console.error('[Supabase] Error adding contact:', error);
     return null;
