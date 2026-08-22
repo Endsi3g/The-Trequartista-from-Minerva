@@ -283,7 +283,7 @@ export function AppSidebar() {
 
   // "CRM" -- the sales pipeline
   const crmItems: NavItem[] = [
-    { key: 'contacts', label: 'Contacts', href: '/contacts', icon: Contact, isNew: true },
+    { key: 'contacts', label: 'Réseau', href: '/contacts', icon: Contact, isNew: true },
     { key: 'clients', label: 'Clients', href: '/clients', icon: Users },
     { key: 'leads', label: 'Leads', href: '/leads', icon: Target },
   ].filter(visibleForWorkspace);
