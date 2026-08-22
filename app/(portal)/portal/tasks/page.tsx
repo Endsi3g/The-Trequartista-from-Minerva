@@ -54,6 +54,7 @@ const CATEGORIES: { id: CategoryFilter; label: string }[] = [
 export default function PortalTasksPage() {
   const [client, setClient] = useState<Client | null>(null);
   const [clientId, setClientId] = useState<string>('');
+  const [noClientLinked, setNoClientLinked] = useState(false);
   const [items, setItems] = useState<ClientWorkItem[]>([]);
   const [logs, setLogs] = useState<ClientActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,13 +84,16 @@ export default function PortalTasksPage() {
       }
 
       const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).maybeSingle();
-      const currentClientId = profile?.client_id || 'demo-client';
+      if (!profile?.client_id) {
+        setNoClientLinked(true);
+        setLoading(false);
+        return;
+      }
+      const currentClientId = profile.client_id;
       setClientId(currentClientId);
 
-      if (profile?.client_id) {
-        const { data: clientData } = await supabase.from('clients').select('*').eq('id', profile.client_id).maybeSingle();
-        setClient(clientData as Client);
-      }
+      const { data: clientData } = await supabase.from('clients').select('*').eq('id', currentClientId).maybeSingle();
+      setClient(clientData as Client);
 
       const [workItems, activityLogs] = await Promise.all([
         fetchClientWorkItems(currentClientId),
@@ -102,7 +106,9 @@ export default function PortalTasksPage() {
     })();
   }, []);
 
-  // Supabase Realtime channel subscription for instant status sync
+  // Supabase Realtime channel subscription for instant status sync -- both
+  // work items AND the activity feed, so the "Synchronisation temps réel
+  // active" badge below is actually true instead of decorative.
   useEffect(() => {
     if (!clientId) return;
     const supabase = createClient();
@@ -114,6 +120,14 @@ export default function PortalTasksPage() {
         async () => {
           const updated = await fetchClientWorkItems(clientId);
           setItems(updated);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'client_activity_log', filter: `client_id=eq.${clientId}` },
+        async () => {
+          const updated = await fetchClientActivityLogs(clientId);
+          setLogs(updated);
         }
       )
       .subscribe();
@@ -139,30 +153,25 @@ export default function PortalTasksPage() {
     return { total, done, inReview, inProgress, pct };
   }, [items]);
 
-  // Handle client approval
+  // Handle client approval -- optimistic on the work item itself (cheap to
+  // revert), but the activity log is only updated from the real DB row
+  // (via fetchClientActivityLogs / the realtime subscription above), never
+  // a locally-fabricated entry.
   const handleApprove = async (item: ClientWorkItem) => {
-    // Optimistic UI update
     setItems((prev) =>
       prev.map((it) => (it.id === item.id ? { ...it, status: 'done', client_feedback: 'Validé par le client' } : it))
     );
+
+    const ok = await approveClientWorkItem(item.id, clientId, item.title, client?.name || 'Client');
+    if (!ok) {
+      setItems((prev) => prev.map((it) => (it.id === item.id ? item : it)));
+      setActionNotice(`Erreur : « ${item.title} » n’a pas pu être validé. Réessayez.`);
+      setTimeout(() => setActionNotice(null), 4000);
+      return;
+    }
     setActionNotice(`Livrable « ${item.title} » validé avec succès.`);
     setTimeout(() => setActionNotice(null), 4000);
-
-    // Add log
-    setLogs((prev) => [
-      {
-        id: `cal-client-${Date.now()}`,
-        client_id: clientId,
-        actor_name: client?.name || 'Client',
-        action_type: 'task_completed',
-        title: 'Livrable validé par le client',
-        description: item.title,
-        created_at: new Date().toISOString(),
-      },
-      ...prev,
-    ]);
-
-    await approveClientWorkItem(item.id, clientId);
+    setLogs(await fetchClientActivityLogs(clientId));
   };
 
   // Handle revision request submission
@@ -171,35 +180,26 @@ export default function PortalTasksPage() {
     if (!revisionItem || !revisionFeedback.trim() || submittingRevision) return;
 
     const feedbackText = revisionFeedback.trim();
+    const targetItem = revisionItem;
     setSubmittingRevision(true);
 
-    // Optimistic UI update
     setItems((prev) =>
       prev.map((it) =>
-        it.id === revisionItem.id
+        it.id === targetItem.id
           ? { ...it, status: 'in_progress', client_feedback: feedbackText }
           : it
       )
     );
 
-    // Add activity log
-    setLogs((prev) => [
-      {
-        id: `cal-rev-${Date.now()}`,
-        client_id: clientId,
-        actor_name: client?.name || 'Client',
-        action_type: 'revision_requested',
-        title: 'Demande d’ajustement soumise',
-        description: `${revisionItem.title} : « ${feedbackText} »`,
-        created_at: new Date().toISOString(),
-      },
-      ...prev,
-    ]);
-
-    setActionNotice(`Ajustement transmis à l’équipe Minerva pour « ${revisionItem.title} ».`);
+    const ok = await requestClientWorkItemRevision(targetItem.id, clientId, feedbackText, targetItem.title, client?.name || 'Client');
+    if (ok) {
+      setActionNotice(`Ajustement transmis à l’équipe Minerva pour « ${targetItem.title} ».`);
+      setLogs(await fetchClientActivityLogs(clientId));
+    } else {
+      setItems((prev) => prev.map((it) => (it.id === targetItem.id ? targetItem : it)));
+      setActionNotice(`Erreur : l’ajustement n’a pas pu être transmis. Réessayez.`);
+    }
     setTimeout(() => setActionNotice(null), 4000);
-
-    await requestClientWorkItemRevision(revisionItem.id, clientId, feedbackText);
 
     setSubmittingRevision(false);
     setRevisionItem(null);
@@ -240,6 +240,16 @@ export default function PortalTasksPage() {
     return <div className="py-20 text-center text-xs text-zinc-400 font-mono">Chargement des livrables et tâches…</div>;
   }
 
+  if (noClientLinked) {
+    return (
+      <div className="py-20 text-center space-y-2">
+        <AlertCircle className="w-6 h-6 text-amber-500 mx-auto" />
+        <p className="text-sm font-semibold text-zinc-800">Aucun compte client associé</p>
+        <p className="text-xs text-zinc-500">Contactez votre équipe Minerva pour lier votre accès à votre dossier client.</p>
+      </div>
+    );
+  }
+
   return (
     <PageFadeIn className="space-y-4 pb-16">
       {/* ── 1. Header Context with Live Production Status ── */}
@@ -250,7 +260,7 @@ export default function PortalTasksPage() {
               Portail
             </Link>
             <span>/</span>
-            <span className="text-zinc-900 font-semibold">{client?.name || 'Toitures Beauchemin'}</span>
+            <span className="text-zinc-900 font-semibold">{client?.name || 'Votre entreprise'}</span>
             <span>/</span>
             <span className="text-emerald-700 font-semibold">⚡ Avancement & Livrables</span>
           </div>
@@ -295,6 +305,14 @@ export default function PortalTasksPage() {
           </div>
         </div>
       </div>
+
+      {items.length === 0 && (
+        <div className="bg-white border border-zinc-200 rounded-lg p-8 text-center space-y-1.5">
+          <FileText className="w-6 h-6 text-zinc-300 mx-auto" />
+          <p className="text-sm font-semibold text-zinc-700">Aucun travail en cours pour l’instant</p>
+          <p className="text-xs text-zinc-400">Les tâches liées à votre projet apparaîtront ici dès que l’équipe Minerva les aura créées.</p>
+        </div>
+      )}
 
       {/* Action Notification Toast */}
       {actionNotice && (
@@ -693,7 +711,10 @@ export default function PortalTasksPage() {
           </div>
 
           <div className="space-y-3 text-xs">
-            {logs.map((log) => (
+            {logs.length === 0 ? (
+              <p className="text-[11px] text-zinc-400 text-center py-4">Aucune activité pour l’instant.</p>
+            ) : (
+            logs.map((log) => (
               <div key={log.id} className="relative pl-3.5 border-l border-zinc-200 space-y-0.5">
                 <span
                   className={cn(
@@ -714,7 +735,8 @@ export default function PortalTasksPage() {
                 <div className="font-semibold text-zinc-900 text-[11.5px]">{log.title}</div>
                 <div className="text-[10.5px] text-zinc-500 leading-relaxed">{log.description}</div>
               </div>
-            ))}
+            ))
+            )}
           </div>
 
           <div className="pt-2 border-t border-zinc-100 text-center">

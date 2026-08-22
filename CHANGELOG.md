@@ -43,6 +43,19 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-21 (v2.9.0) — Portail client : suppression des données fictives sur /portal/tasks
+
+- **Trouvé en corrigeant le bug texte blanc** : `/portal/tasks` (le journal « Actions en direct » avec le badge « Synchronisation temps réel active ») retournait **systématiquement** un jeu de 5 tâches et 4 entrées d'activité entièrement fictives (faux noms d'employés, faux liens Figma/vidéo, fausse citation client) — même quand de vraies tâches existaient. `fetchClientActivityLogs()` ne faisait jamais de vraie requête.
+  - Nouvelle table réelle `client_activity_log` (RLS : équipe voit tout, client ne voit/n'écrit que son propre `client_id`), branchée en Realtime.
+  - `fetchClientWorkItems`/`fetchClientActivityLogs` retournent maintenant un tableau vide honnête plutôt que les données fictives — nouveaux états vides sur la page.
+  - `approveClientWorkItem`/`requestClientWorkItemRevision` avaient aussi un bug de « faux succès » (retournaient `true` même en cas d'erreur DB) — corrigé, avec vrai rollback optimiste côté UI en cas d'échec.
+  - Les changements de statut d'une tâche liée à un client (`updateTaskStatus`) écrivent maintenant une vraie entrée dans le journal du client.
+  - Suppression des identifiants factices `'demo-client'` / `'Toitures Beauchemin'` utilisés en repli quand aucun client n'était lié au compte — nouvel état honnête « Aucun compte client associé ».
+
+**Migration en attente de déploiement manuel** : `20260821000014_client_activity_log.sql`.
+
+---
+
 ## 2026-08-21 (v2.8.0) — Nouveau Panneau Admin (/admin)
 
 - **`/admin`** (admin-only, ajouté au dropdown du menu utilisateur à côté de Facturation/Permissions) :
