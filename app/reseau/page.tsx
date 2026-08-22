@@ -6,6 +6,8 @@ import { LogoMark } from '@/components/shell/Logo';
 import { SECTOR_OPTIONS, CONTACT_PREFERRED_METHOD_OPTIONS } from '@/lib/constants/contacts';
 import { cn } from '@/lib/utils';
 
+const PERSONAL_SITE_URL = 'https://kaelbelceus.framer.website/';
+
 const inputClass =
   'w-full px-3.5 py-2.5 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink placeholder:text-mv-ink-faint focus:outline-none focus:border-mv-green transition-colors';
 
@@ -87,6 +89,7 @@ export default function ReseauPage() {
         return;
       }
       setDone(true);
+      window.location.href = PERSONAL_SITE_URL;
     } catch {
       setErrorMsg('Erreur réseau. Réessayez.');
     } finally {
