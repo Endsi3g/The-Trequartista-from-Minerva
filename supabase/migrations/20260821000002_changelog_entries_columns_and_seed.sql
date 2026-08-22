@@ -1,20 +1,29 @@
 -- ============================================================================
 -- CHANGELOG_ENTRIES SCHEMA DRIFT FIX + v2.5.0 SEED
--- Confirmed live via information_schema.columns (2026-08-20): the real
--- table already has `description` (NOT NULL, no default -- never populated
--- by the app, every insert has been failing on this alone), `category`
--- (enum, NOT NULL but defaults to 'fonctionnalite' so safe to omit), and a
--- separate `created_by` column alongside `author_id` -- none of which match
--- this repo's supabase/migrations/20260820000000_consolidated_schema.sql,
--- which is evidently stale relative to what's actually live. `version` and
--- `included_items` genuinely are missing live (confirmed the same way) and
--- still need adding. Idempotent -- safe to run on both fresh and existing
--- databases.
+-- The "confirmed live via information_schema.columns (2026-08-20)" claim
+-- this comment used to make about `description`/`category`/`created_by`
+-- turned out to be wrong for at least `description` (2026-08-21 deploy
+-- error: "column \"description\" of relation \"changelog_entries\" does
+-- not exist") -- yet another instance of an earlier "confirmed live" check
+-- not holding up, so every column the app's addChangelogEntry() writes to
+-- is now defensively ensured here via ADD COLUMN IF NOT EXISTS rather than
+-- assumed. Idempotent -- safe to run on both fresh and existing databases.
 -- ============================================================================
 
 ALTER TABLE public.changelog_entries
+    ADD COLUMN IF NOT EXISTS title TEXT,
+    ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS body TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'fonctionnalite',
+    ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS author_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS image_url TEXT,
     ADD COLUMN IF NOT EXISTS version TEXT,
     ADD COLUMN IF NOT EXISTS included_items TEXT[] NOT NULL DEFAULT '{}'::text[];
+
+-- Backfill: any pre-existing rows written before `description` existed
+-- would otherwise sit with an empty description forever.
+UPDATE public.changelog_entries SET description = body WHERE (description IS NULL OR description = '') AND body IS NOT NULL AND body <> '';
 
 -- Seed the v2.5.0 entry (Voice AI de-fake + schema-drift fixes) directly --
 -- no live Supabase CLI/MCP access from this environment to publish it
