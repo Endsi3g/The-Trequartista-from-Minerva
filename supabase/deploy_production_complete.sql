@@ -10,25 +10,25 @@ SET role = 'admin', approved = TRUE
 WHERE email = 'kbelceus776@gmail.com';
 
 -- 2. FONCTIONS DE SÉCURITÉ DE BASE
-CREATE OR REPLACE FUNCTION public.is_admin(user_id UUID)
+CREATE OR REPLACE FUNCTION public.is_admin(uid UUID)
 RETURNS BOOLEAN AS $$
 BEGIN
     RETURN EXISTS (
         SELECT 1 FROM public.profiles
-        WHERE id = user_id AND role = 'admin'
+        WHERE id = uid AND role = 'admin'
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
-CREATE OR REPLACE FUNCTION public.member_can(user_id UUID, perm TEXT)
+CREATE OR REPLACE FUNCTION public.member_can(uid UUID, perm TEXT)
 RETURNS BOOLEAN AS $$
 BEGIN
-    IF public.is_admin(user_id) THEN
+    IF public.is_admin(uid) THEN
         RETURN TRUE;
     END IF;
     RETURN EXISTS (
         SELECT 1 FROM public.app_permissions
-        WHERE profile_id = user_id AND permission = perm AND enabled = TRUE
+        WHERE profile_id = uid AND permission = perm AND enabled = TRUE
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
