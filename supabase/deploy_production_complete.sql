@@ -20,15 +20,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
-CREATE OR REPLACE FUNCTION public.member_can(uid UUID, perm TEXT)
+CREATE OR REPLACE FUNCTION public.member_can(user_id UUID, perm TEXT)
 RETURNS BOOLEAN AS $$
 BEGIN
-    IF public.is_admin(uid) THEN
+    IF public.is_admin(user_id) THEN
         RETURN TRUE;
     END IF;
     RETURN EXISTS (
         SELECT 1 FROM public.app_permissions
-        WHERE profile_id = uid AND permission = perm AND enabled = TRUE
+        WHERE profile_id = user_id AND permission = perm AND enabled = TRUE
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
