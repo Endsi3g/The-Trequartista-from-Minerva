@@ -12,6 +12,7 @@ import {
   HelpCircle,
   CreditCard,
   ShieldCheck,
+  LayoutDashboard,
   LogOut,
   ChevronDown,
 } from 'lucide-react';
@@ -209,6 +210,13 @@ function MenuBody({
 
       {role === 'admin' && (
         <>
+          <DropdownMenuItem asChild onClick={onNavigate} className="h-7 px-2 rounded-[4px] cursor-pointer hover:bg-black/[0.04] focus:bg-black/[0.04]">
+            <Link href="/admin" className="flex items-center gap-2 text-mv-ink">
+              <LayoutDashboard size={13} className="shrink-0 text-mv-ink-soft" />
+              <span>Panneau Admin</span>
+            </Link>
+          </DropdownMenuItem>
+
           <DropdownMenuItem asChild onClick={onNavigate} className="h-7 px-2 rounded-[4px] cursor-pointer hover:bg-black/[0.04] focus:bg-black/[0.04]">
             <Link href="/settings/billing" className="flex items-center gap-2 text-mv-ink">
               <CreditCard size={13} className="shrink-0 text-mv-ink-soft" />

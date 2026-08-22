@@ -4,6 +4,73 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-21 (v2.10.0) — Optimisation Mobile & PWA (Navigation Tactile, Hors-Ligne & Haptique)
+
+- **Barre d'Onglets Inférieure Fixe (`MobileBottomNav`)** :
+  - Barre de navigation mobile tactile (`md:hidden`) avec accès rapide au pouce vers les 4 destinations clés : *Accueil*, *Leads*, *Tâches*, *Clients*, plus un bouton d'ouverture directe du *Menu* complet.
+  - Gestion des Safe Area insets (`env(safe-area-inset-bottom)`) pour les appareils iOS modernes sans bouton physique.
+- **Bannière d'Installation PWA Intelligente (`PwaInstallBanner`)** :
+  - Détection automatique de la plateforme : guide visuel pas à pas pour Safari iOS (*Partager > Sur l'écran d'accueil*) et déclencheur d'installation natif 1-clic pour Android et Chrome desktop.
+  - Dismissible avec mémorisation dans `localStorage` pour ne jamais harceler l'utilisateur.
+  - Raccourcis d'application PWA enrichis dans `manifest.json` (accès direct au CRM Leads, Tâches, et Répertoire Clients).
+- **Indicateur d'État Réseau & Résilience Hors-Ligne (`OfflineStatusIndicator`)** :
+  - Notification flottante non-bloquante lors d'une perte de connexion Internet (consultation en cache assurée par le Service Worker).
+  - Toast temporaire au rétablissement du réseau avec reprise de synchronisation.
+- **Retours Haptiques Tactiles (`lib/haptics.ts`)** :
+  - Vibrations discrètes et sécurisées via `navigator.vibrate` lors des interactions tactiles clés.
+
+---
+
+## 2026-08-21 (v2.9.0) — Refonte Totale Documents & Wiki Collaboratif Temps Réel (/documents)
+
+- **Éditeur en Blocs Haute Densité (`BlockEditor`)** :
+  - Édition interactive par blocs (Titres H1/H2/H3, Paragraphes, Checklists interactives, Listes à puces & numérotées, Encadrés Callouts Info/Tip/Alerte/Note, Citations, Blocs de code avec copie 1-clic, Tableaux éditables, Séparateurs).
+  - Menu contextuel Slash (`/`) pour insertion rapide de blocs, navigation clavier fluide et conversion Markdown en direct (`#`, `##`, `-`, `[]`, `>`).
+  - Commandes de bloc complètes : glisser/déplacer, dupliquer, supprimer, réordonner.
+- **5 Modèles d'Agence Minerva Clé en Main** (`AgencyTemplatesModal`) :
+  - *Dossier Produit & Vision* (ex: Minerva Flow), *Compte-Rendu de Réunion*, *Cahier des Charges & Delivery*, *SOP & Process Interne*, *Proposition Commerciale*.
+  - Modal avec prévisualisation complète du contenu avant instanciation.
+- **Persistance Supabase JSONB & Recherche Plein-Texte** :
+  - Colonnes `content_json` (JSONB) et `content_text` (texte extrait indexé pour la recherche).
+  - Migration `20260821000013_documents_wiki_rich_editor.sql`.
+- **Historique de Versions & Diffs (`DocumentVersionHistory`)** :
+  - Tiroir latéral de consultation des versions avec horodatage, auteur, et restauration 1-clic.
+  - Création de snapshots manuels à la volée.
+- **Organisation & Export Haute Densité** :
+  - Section documents épinglés / favoris (`is_pinned`), filtres de catégories par pilules (Linear style), liaison dynamique client et projet.
+  - Option de visibilité sécurisée sur le Portail Client (`is_shared_with_client`).
+  - Export Markdown (`.md`), impression / PDF soigné, et téléchargement groupé d'archives ZIP avec le vrai contenu des blocs.
+
+---
+
+## 2026-08-21 (v2.8.0) — Nouveau Panneau Admin (/admin)
+
+- **`/admin`** (admin-only, ajouté au dropdown du menu utilisateur à côté de Facturation/Permissions) :
+  - Ruban KPI réel : membres actifs, invitations actives, rôles personnalisés, clients.
+  - Recherche globale (clients, leads, projets, **membres**) — étend le pattern du ⌘K existant sans le modifier, pour ne jamais exposer la recherche de membres internes hors du contexte admin.
+  - Génération de liens d'invitation en masse (jusqu'à 10 à la fois, même rôle/rôle personnalisé/espace) — réutilise directement `createTeamInvite` de la Phase 6, pas de formulaire dupliqué.
+  - Gestion unifiée des invitations équipe **et** client portail dans une seule liste, avec statut calculé (Actif / Utilisé / Expiré-révoqué) et révocation.
+  - Grille de raccourcis vers Équipe, Inviter, Charge de travail, Permissions, Facturation, Acquisition, Produits Minerva, Nouveautés — aucune page dupliquée.
+
+---
+
+## 2026-08-21 (v2.7.0) — Refonte du flow d'invitation (rôle personnalisé & espace de travail)
+
+- **`/team/invite`** : redesign visuel (header compact, cartes denses — remplace l'ancien style `rounded-2xl`). Le lien collaborateur peut maintenant pré-assigner un **rôle personnalisé** (source `/team` → Postes & Rôles) et un **espace de travail** (Prospection / Managing / Aucun), en plus du rôle admin/membre existant qui reste seul garant des policies RLS réelles.
+- **`/team/join`** : affiche le rôle personnalisé et l'espace assignés avant la création de compte. À la fin, redirige directement vers le tableau de bord de l'espace assigné (`/leads` pour Prospection, `/tasks` pour Managing, `/overview` sinon) au lieu du sondage d'onboarding générique — le rôle/département/espace sont déjà connus via l'invitation.
+- `team_invites.workspace` (nouvelle colonne) + application immédiate de la synchronisation `app_permissions` si un rôle personnalisé est pré-assigné, dès la création du compte.
+
+---
+
+## 2026-08-21 (v2.6.0) — Serveur MCP (/api/mcp), sélection multiple & export ZIP sur Documents
+
+- **Serveur MCP (`/api/mcp`)** : nouveau point d'accès Model Context Protocol exposant 5 outils réels adossés à Supabase — `minerva_get_leads`, `minerva_get_kpi` (MRR total, valeur pipeline, clients actifs — pas de ROAS/CPL inventés, cette donnée n'existe pas encore réellement), `minerva_list_sops`, `minerva_get_clients`, `minerva_get_projects`. Compatible Claude Desktop, Claude Code, l'API Anthropic, et un Hermes Agent hébergé séparément.
+  - Authentification par jeton secret dédié par appelant (`MCP_SERVER_TOKEN` / `MCP_HERMES_TOKEN`), comparaison à temps constant, échec fermé si non configuré (aucun accès par défaut).
+  - Limitation de débit (60 req/min/IP) et journalisation de chaque appel d'outil dans `audit_logs`.
+- **Documents (`/documents`)** : sélection individuelle et « Tout sélectionner » (vues liste et grille), barre d'actions groupées flottante — téléchargement des documents sélectionnés en ZIP (contenu réel si déjà ouvert dans ce navigateur, sinon titre seul avec mention honnête) et partage par copie de liens.
+
+---
+
 ## 2026-08-20 (v2.5.0) — Agent Vocal IA de-faké & branché, corrections de dérive de schéma
 
 - **Agent Vocal IA (/voice-agent)** :

@@ -54,6 +54,8 @@ export interface ClientInvite {
   created_at: string;
   expires_at: string;
   used_at: string | null;
+  created_by?: string | null;
+  used_by?: string | null;
 }
 
 export interface CustomRole {
@@ -177,6 +179,8 @@ export interface TeamInvite {
   token: string;
   role: 'admin' | 'member';
   department: string | null;
+  custom_role_id: string | null;
+  workspace: 'prospection' | 'managing' | null;
   created_by: string | null;
   created_at: string;
   expires_at: string;
@@ -282,13 +286,67 @@ export interface TeamMemberSummary {
   avatar_url: string | null;
 }
 
+export type DocumentBlockType =
+  | 'paragraph'
+  | 'heading_1'
+  | 'heading_2'
+  | 'heading_3'
+  | 'bullet_list'
+  | 'numbered_list'
+  | 'todo_list'
+  | 'quote'
+  | 'callout'
+  | 'code_block'
+  | 'table'
+  | 'divider';
+
+export interface DocumentBlock {
+  id: string;
+  type: DocumentBlockType;
+  content: string;
+  checked?: boolean;
+  calloutType?: 'info' | 'warning' | 'tip' | 'note';
+  codeLanguage?: string;
+  tableData?: string[][];
+}
+
+export interface DocumentContentJson {
+  blocks: DocumentBlock[];
+}
+
+export interface DocumentVersion {
+  id: string;
+  document_id: string;
+  version_number: number;
+  title: string;
+  content_json: DocumentContentJson;
+  content_text: string;
+  created_by: string | null;
+  created_at: string;
+  creator_name?: string | null;
+  creator_avatar?: string | null;
+}
+
 export interface TeamDocument {
   id: string;
   title: string;
+  content_json?: DocumentContentJson | null;
+  content_text?: string | null;
+  category?: 'general' | 'product_brief' | 'meeting_notes' | 'spec' | 'sop' | 'proposal' | string;
+  is_pinned?: boolean;
+  is_shared_with_client?: boolean;
+  project_id?: string | null;
+  client_id?: string | null;
+  workspace?: 'prospection' | 'managing' | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  creator_name?: string | null;
+  creator_avatar?: string | null;
+  client_name?: string | null;
+  project_name?: string | null;
 }
+
 
 export interface MinervaRoadmapItem {
   id: string;

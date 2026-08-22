@@ -5,15 +5,26 @@ import { useSearchParams } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import { LogoMark } from '@/components/shell/Logo';
 import { createClient } from '@/lib/supabase/client';
-import { fetchTeamInviteByToken, redeemTeamInvite } from '@/lib/services/supabase-data';
+import { fetchTeamInviteByToken, redeemTeamInvite, fetchRoles } from '@/lib/services/supabase-data';
 
 const ROLE_LABELS: Record<string, string> = { admin: 'Admin', member: 'Membre' };
+const WORKSPACE_LABELS: Record<string, string> = { prospection: 'Prospection', managing: 'Managing' };
+
+// Where a freshly redeemed invite lands -- straight on the assigned
+// workspace's daily-driver page instead of the generic /onboarding wizard,
+// since role/department/workspace are already set by the invite itself.
+function workspaceHomeRoute(workspace: string | null): string {
+  if (workspace === 'prospection') return '/leads';
+  if (workspace === 'managing') return '/tasks';
+  return '/overview';
+}
 
 function JoinForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token') || '';
 
-  const [invite, setInvite] = useState<{ role: string; department: string | null } | null>(null);
+  const [invite, setInvite] = useState<{ role: string; department: string | null; custom_role_id: string | null; workspace: string | null } | null>(null);
+  const [customRoleName, setCustomRoleName] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
   const [invalid, setInvalid] = useState(false);
 
@@ -34,7 +45,11 @@ function JoinForm() {
       if (!inv) {
         setInvalid(true);
       } else {
-        setInvite({ role: inv.role, department: inv.department });
+        setInvite({ role: inv.role, department: inv.department, custom_role_id: inv.custom_role_id, workspace: inv.workspace });
+        if (inv.custom_role_id) {
+          const roles = await fetchRoles();
+          setCustomRoleName(roles.find((r) => r.id === inv.custom_role_id)?.name || null);
+        }
       }
       setChecking(false);
     })();
@@ -66,7 +81,7 @@ function JoinForm() {
       return;
     }
 
-    window.location.href = '/onboarding';
+    window.location.href = workspaceHomeRoute(invite?.workspace ?? null);
   };
 
   if (checking) {
@@ -91,7 +106,9 @@ function JoinForm() {
         </h1>
         <p className="text-xs text-mv-ink-soft">
           Rôle : <strong className="text-mv-ink">{ROLE_LABELS[invite.role] || invite.role}</strong>
+          {customRoleName && <> · <strong className="text-mv-ink">{customRoleName}</strong></>}
           {invite.department && <> · {invite.department}</>}
+          {invite.workspace && <> · Espace {WORKSPACE_LABELS[invite.workspace] || invite.workspace}</>}
         </p>
       </div>
 

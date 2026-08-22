@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, HelpArticle, Contact, ContactNote, ProjectMilestone, ProjectAttachment, Department, CustomRole, CustomRolePermission, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, HelpArticle, Contact, ContactNote, ProjectMilestone, ProjectAttachment, Department, CustomRole, CustomRolePermission, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -1332,6 +1332,35 @@ export async function createClientInvite(clientId: string, createdBy: string): P
   return data as ClientInvite;
 }
 
+export async function fetchClientInvites(): Promise<(ClientInvite & { client_name: string })[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('client_invites')
+        .select('*, client:clients(name)')
+        .order('created_at', { ascending: false });
+      if (error || !data) {
+        console.warn('[Supabase] Error fetching client invites:', error);
+        return [];
+      }
+      return data.map((row: any) => ({ ...row, client_name: row.client?.name || 'Client' }));
+    })(),
+    []
+  );
+}
+
+export async function revokeClientInvite(inviteId: string): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('client_invites')
+    .update({ expires_at: new Date().toISOString() })
+    .eq('id', inviteId);
+  if (error) {
+    console.error('[Supabase] Error revoking client invite:', error);
+    return false;
+  }
+  return true;
+}
+
 export async function fetchInviteByToken(token: string): Promise<(ClientInvite & { client_name: string }) | null> {
   const { data, error } = await getSupabase()
     .from('client_invites')
@@ -1475,12 +1504,14 @@ export async function deletePushSubscription(endpoint: string): Promise<void> {
 export async function createTeamInvite(
   role: 'admin' | 'member',
   department: string | null,
-  createdBy: string
+  createdBy: string,
+  customRoleId?: string | null,
+  workspace?: 'prospection' | 'managing' | null
 ): Promise<TeamInvite | null> {
   const token = Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => b.toString(16).padStart(2, '0')).join('');
   const { data, error } = await getSupabase()
     .from('team_invites')
-    .insert([{ token, role, department, created_by: createdBy }])
+    .insert([{ token, role, department, created_by: createdBy, custom_role_id: customRoleId || null, workspace: workspace || null }])
     .select()
     .single();
 
@@ -1528,6 +1559,8 @@ export async function redeemTeamInvite(token: string, userId: string): Promise<b
   const supabase = getSupabase();
   const profileUpdate: Record<string, unknown> = { role: invite.role };
   if (invite.department) profileUpdate.department = invite.department;
+  if (invite.custom_role_id) profileUpdate.custom_role_id = invite.custom_role_id;
+  if (invite.workspace) profileUpdate.workspace = invite.workspace;
 
   const [{ error: profileError }, { error: inviteError }] = await Promise.all([
     supabase.from('profiles').update(profileUpdate).eq('id', userId),
@@ -1538,6 +1571,14 @@ export async function redeemTeamInvite(token: string, userId: string): Promise<b
     console.error('[Supabase] Error redeeming team invite:', profileError || inviteError);
     return false;
   }
+
+  // Translate the pre-assigned custom role's permission grid into
+  // app_permissions right away -- mirrors the same sync call the Postes &
+  // Rôles tab makes after assigning a role to an existing member.
+  if (invite.custom_role_id) {
+    await syncCustomRolePermissionsToAppPermissions(userId);
+  }
+
   return true;
 }
 
@@ -2406,15 +2447,47 @@ export async function deleteMinervaRoadmapItem(id: string): Promise<boolean> {
 }
 
 // ----------------------------------------------------
-// 17. DOCUMENTS — équipe, édition collaborative temps réel
+// 17. DOCUMENTS & WIKI — équipe, édition collaborative temps réel
 // ----------------------------------------------------
 const DOCS_STORAGE_KEY = 'minerva-team-documents-cache';
+const DOCS_VERSIONS_KEY = 'minerva-team-doc-versions-cache';
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const DEFAULT_FLOW_BLOCKS: DocumentBlock[] = [
+  { id: 'b-1', type: 'heading_1', content: 'Minerva Flow — Dossier Produit, Vision & Offre Pilote' },
+  { id: 'b-2', type: 'callout', content: '🌊 **Concept en 1 phrase** : Minerva Flow est un système de gestion complet permettant aux restaurants et cafés de piloter l\'ensemble de leurs opérations quotidiennes dans un seul endroit moderne : simple, visuel et performant.', calloutType: 'info' },
+  { id: 'b-3', type: 'heading_2', content: '🎯 Problème résolu' },
+  { id: 'b-4', type: 'paragraph', content: 'Les restaurants & cafés montréalais utilisent souvent des outils fragmentés (POS vieillots, tableurs Excel perdus, fiches papier). Flow centralise la gestion financière, le suivi des marges et l\'organisation en salle dans un cockpit fluide.' },
+  { id: 'b-5', type: 'heading_2', content: '⚡ Fonctionnalités clés (Key Features)' },
+  { id: 'b-6', type: 'todo_list', content: 'Saisie des revenus par journée & chiffre d\'affaires temps réel', checked: true },
+  { id: 'b-7', type: 'todo_list', content: 'Gestion des dépenses & coûts opérationnels (food cost)', checked: true },
+  { id: 'b-8', type: 'todo_list', content: 'Suivi des marges commerciales & rentabilité brute', checked: true },
+  { id: 'b-9', type: 'todo_list', content: 'Gestion de l\'inventaire & alertes stocks bas', checked: true },
+  { id: 'b-10', type: 'todo_list', content: 'Gestion des employés & planning d\'équipe', checked: true },
+  { id: 'b-11', type: 'todo_list', content: 'Rapports visuels et export comptable 1-clic', checked: true },
+  { id: 'b-12', type: 'todo_list', content: 'Module Click-to-WhatsApp & QR Code sur table', checked: false },
+  { id: 'b-13', type: 'heading_2', content: '🎁 Offre Pilote (90 jours) — 3 à 5 établissements' },
+  { id: 'b-14', type: 'callout', content: '💡 **Garantie Pilote** : 0 $ pendant 90 jours en échange d\'un retour d\'expérience hebdomadaire structuré. Si la valeur n\'est pas au rendez-vous, aucun frais n\'est engagé.', calloutType: 'tip' },
+  { id: 'b-15', type: 'table', content: 'Offre Pilote', tableData: [
+    ['Critère', 'Engagement Pilote', 'Standard'],
+    ['Tarif', '0 $ (Gratuit 90j)', '149 $ - 299 $/mois'],
+    ['Support', 'Canal direct WhatsApp VIP', 'Email standard'],
+    ['Feedback requis', '1h par semaine', 'Optionnel']
+  ]},
+  { id: 'b-16', type: 'heading_2', content: '🗺️ Roadmap & Jalons' },
+  { id: 'b-17', type: 'paragraph', content: '1. Phase Terrain : Déploiement chez 5 restaurants pilotes de Rosemont & Mile End.\n2. Phase Consolidation : Automatisation des alertes de marge.\n3. Échelle : Référencement comme standard d\'exploitation pour cafés québécois.' }
+];
 
 const DEFAULT_DOCUMENTS: TeamDocument[] = [
   {
     id: 'doc-minerva-flow-dossier-produit',
     title: 'Minerva Flow — Dossier Produit, Vision & Offre Pilote',
+    category: 'product_brief',
+    is_pinned: true,
+    is_shared_with_client: false,
+    workspace: 'managing',
+    content_json: { blocks: DEFAULT_FLOW_BLOCKS },
+    content_text: 'Minerva Flow — Dossier Produit, Vision & Offre Pilote. Système de gestion complet pour restaurants et cafés.',
     created_by: null,
     created_at: new Date('2026-08-20T12:00:00.000Z').toISOString(),
     updated_at: new Date('2026-08-20T15:00:00.000Z').toISOString(),
@@ -2458,16 +2531,57 @@ export async function fetchDocuments(): Promise<TeamDocument[]> {
       try {
         const { data, error } = await getSupabase()
           .from('documents')
-          .select('*')
+          .select(`
+            *,
+            creator:created_by(full_name, avatar_url),
+            client:client_id(name),
+            project:project_id(name)
+          `)
+          .order('is_pinned', { ascending: false })
           .order('updated_at', { ascending: false });
 
         const localDocs = getLocalDocs();
         if (error || !data) {
+          // Fallback if table doesn't have join or is empty
+          const { data: simpleData } = await getSupabase()
+            .from('documents')
+            .select('*')
+            .order('updated_at', { ascending: false });
+          
+          if (simpleData && simpleData.length > 0) {
+            const formatted = simpleData.map((d: any) => ({
+              ...d,
+              is_pinned: !!d.is_pinned,
+              is_shared_with_client: !!d.is_shared_with_client,
+            })) as TeamDocument[];
+            const remoteIds = new Set(formatted.map((d) => d.id));
+            const missingLocal = localDocs.filter((d) => !remoteIds.has(d.id));
+            return [...formatted, ...missingLocal];
+          }
           return localDocs;
         }
 
-        const remoteDocs = data as TeamDocument[];
-        // Merge any local-only docs not in remote
+        const remoteDocs: TeamDocument[] = data.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          content_json: d.content_json || null,
+          content_text: d.content_text || null,
+          category: d.category || 'general',
+          is_pinned: !!d.is_pinned,
+          is_shared_with_client: !!d.is_shared_with_client,
+          project_id: d.project_id || null,
+          client_id: d.client_id || null,
+          workspace: d.workspace || null,
+          created_by: d.created_by || null,
+          created_at: d.created_at,
+          updated_at: d.updated_at,
+          creator_name: d.creator?.full_name || null,
+          creator_avatar: d.creator?.avatar_url || null,
+          client_name: d.client?.name || null,
+          project_name: d.project?.name || null,
+        }));
+
+        // Merge local-only docs
         const remoteIds = new Set(remoteDocs.map((d) => d.id));
         const missingLocal = localDocs.filter((d) => !remoteIds.has(d.id));
         return [...remoteDocs, ...missingLocal];
@@ -2483,9 +2597,37 @@ export async function fetchDocument(id: string): Promise<TeamDocument | null> {
   return withTimeout(
     (async () => {
       try {
-        const { data, error } = await getSupabase().from('documents').select('*').eq('id', id).maybeSingle();
+        const { data, error } = await getSupabase()
+          .from('documents')
+          .select(`
+            *,
+            creator:created_by(full_name, avatar_url),
+            client:client_id(name),
+            project:project_id(name)
+          `)
+          .eq('id', id)
+          .maybeSingle();
+
         if (!error && data) {
-          const doc = data as TeamDocument;
+          const doc: TeamDocument = {
+            id: data.id,
+            title: data.title,
+            content_json: data.content_json || null,
+            content_text: data.content_text || null,
+            category: data.category || 'general',
+            is_pinned: !!data.is_pinned,
+            is_shared_with_client: !!data.is_shared_with_client,
+            project_id: data.project_id || null,
+            client_id: data.client_id || null,
+            workspace: data.workspace || null,
+            created_by: data.created_by || null,
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+            creator_name: data.creator?.full_name || null,
+            creator_avatar: data.creator?.avatar_url || null,
+            client_name: data.client?.name || null,
+            project_name: data.project?.name || null,
+          };
           saveLocalDoc(doc);
           return doc;
         }
@@ -2497,16 +2639,35 @@ export async function fetchDocument(id: string): Promise<TeamDocument | null> {
   );
 }
 
-export async function addDocument(title: string, createdBy?: string | null): Promise<TeamDocument | null> {
+export async function addDocument(
+  title?: string,
+  createdBy?: string | null,
+  options?: {
+    category?: string;
+    workspace?: 'prospection' | 'managing' | null;
+    projectId?: string | null;
+    clientId?: string | null;
+    contentJson?: DocumentContentJson;
+    contentText?: string;
+    isPinned?: boolean;
+    isSharedWithClient?: boolean;
+  }
+): Promise<TeamDocument | null> {
   const cleanTitle = title?.trim() || 'Document sans titre';
   const isValidUuid = createdBy && UUID_REGEX.test(createdBy);
 
-  const payload: { title: string; created_by?: string | null } = {
+  const payload: Record<string, unknown> = {
     title: cleanTitle,
+    category: options?.category || 'general',
+    is_pinned: options?.isPinned || false,
+    is_shared_with_client: options?.isSharedWithClient || false,
   };
-  if (isValidUuid) {
-    payload.created_by = createdBy;
-  }
+  if (isValidUuid) payload.created_by = createdBy;
+  if (options?.workspace) payload.workspace = options.workspace;
+  if (options?.projectId) payload.project_id = options.projectId;
+  if (options?.clientId) payload.client_id = options.clientId;
+  if (options?.contentJson) payload.content_json = options.contentJson;
+  if (options?.contentText) payload.content_text = options.contentText;
 
   try {
     const { data, error } = await getSupabase()
@@ -2528,6 +2689,14 @@ export async function addDocument(title: string, createdBy?: string | null): Pro
   const localDoc: TeamDocument = {
     id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `doc-${Date.now()}`,
     title: cleanTitle,
+    category: options?.category || 'general',
+    is_pinned: options?.isPinned || false,
+    is_shared_with_client: options?.isSharedWithClient || false,
+    workspace: options?.workspace || null,
+    project_id: options?.projectId || null,
+    client_id: options?.clientId || null,
+    content_json: options?.contentJson || { blocks: [] },
+    content_text: options?.contentText || '',
     created_by: isValidUuid ? createdBy : null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -2536,29 +2705,190 @@ export async function addDocument(title: string, createdBy?: string | null): Pro
   return localDoc;
 }
 
-export async function renameDocument(id: string, title: string): Promise<boolean> {
-  const cleanTitle = title || 'Document sans titre';
+export async function saveDocumentContent(
+  id: string,
+  contentJson: DocumentContentJson,
+  contentText: string,
+  title?: string
+): Promise<boolean> {
   const local = getLocalDocs().find((d) => d.id === id);
   if (local) {
-    local.title = cleanTitle;
+    local.content_json = contentJson;
+    local.content_text = contentText;
+    if (title) local.title = title;
     local.updated_at = new Date().toISOString();
     saveLocalDoc(local);
   }
 
+  const updates: Record<string, unknown> = {
+    content_json: contentJson,
+    content_text: contentText,
+    updated_at: new Date().toISOString(),
+  };
+  if (title) updates.title = title;
+
   try {
-    const { error } = await getSupabase().from('documents').update({ title: cleanTitle }).eq('id', id);
+    const { error } = await getSupabase().from('documents').update(updates).eq('id', id);
     if (!error) return true;
   } catch {}
   return true;
 }
 
+export async function updateDocumentMeta(id: string, updates: Partial<TeamDocument>): Promise<boolean> {
+  const local = getLocalDocs().find((d) => d.id === id);
+  if (local) {
+    Object.assign(local, updates);
+    local.updated_at = new Date().toISOString();
+    saveLocalDoc(local);
+  }
+
+  try {
+    const dbPayload: Record<string, unknown> = { ...updates, updated_at: new Date().toISOString() };
+    delete dbPayload.id;
+    delete dbPayload.creator_name;
+    delete dbPayload.creator_avatar;
+    delete dbPayload.client_name;
+    delete dbPayload.project_name;
+
+    const { error } = await getSupabase().from('documents').update(dbPayload).eq('id', id);
+    if (!error) return true;
+  } catch {}
+  return true;
+}
+
+export async function togglePinDocument(id: string, isPinned: boolean): Promise<boolean> {
+  return updateDocumentMeta(id, { is_pinned: isPinned });
+}
+
+export async function renameDocument(id: string, title: string): Promise<boolean> {
+  const cleanTitle = title?.trim() || 'Document sans titre';
+  return updateDocumentMeta(id, { title: cleanTitle });
+}
+
 export async function deleteDocument(id: string): Promise<boolean> {
   removeLocalDoc(id);
   try {
+    await getSupabase().from('document_versions').delete().eq('document_id', id);
     await getSupabase().from('documents').delete().eq('id', id);
     await getSupabase().from('yjs_documents').delete().eq('room', id);
   } catch {}
   return true;
+}
+
+// ----------------------------------------------------
+// 17.1 HISTORIQUE DE VERSIONS DES DOCUMENTS
+// ----------------------------------------------------
+function getLocalDocVersions(documentId: string): DocumentVersion[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${DOCS_VERSIONS_KEY}-${documentId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalDocVersion(version: DocumentVersion) {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = getLocalDocVersions(version.document_id).filter((v) => v.id !== version.id);
+    list.unshift(version);
+    localStorage.setItem(`${DOCS_VERSIONS_KEY}-${version.document_id}`, JSON.stringify(list));
+  } catch {}
+}
+
+export async function fetchDocumentVersions(documentId: string): Promise<DocumentVersion[]> {
+  return withTimeout(
+    (async () => {
+      try {
+        const { data, error } = await getSupabase()
+          .from('document_versions')
+          .select(`
+            *,
+            creator:created_by(full_name, avatar_url)
+          `)
+          .eq('document_id', documentId)
+          .order('version_number', { ascending: false });
+
+        const local = getLocalDocVersions(documentId);
+        if (error || !data || data.length === 0) {
+          return local;
+        }
+
+        const remoteVersions: DocumentVersion[] = data.map((d: any) => ({
+          id: d.id,
+          document_id: d.document_id,
+          version_number: d.version_number,
+          title: d.title,
+          content_json: d.content_json || { blocks: [] },
+          content_text: d.content_text || '',
+          created_by: d.created_by,
+          created_at: d.created_at,
+          creator_name: d.creator?.full_name || null,
+          creator_avatar: d.creator?.avatar_url || null,
+        }));
+
+        const remoteIds = new Set(remoteVersions.map((v) => v.id));
+        const missingLocal = local.filter((v) => !remoteIds.has(v.id));
+        return [...remoteVersions, ...missingLocal];
+      } catch {
+        return getLocalDocVersions(documentId);
+      }
+    })(),
+    getLocalDocVersions(documentId)
+  );
+}
+
+export async function createDocumentVersion(
+  documentId: string,
+  title: string,
+  contentJson: DocumentContentJson,
+  contentText: string,
+  createdBy?: string | null
+): Promise<DocumentVersion | null> {
+  const existing = await fetchDocumentVersions(documentId);
+  const nextVersionNum = existing.length > 0 ? Math.max(...existing.map((v) => v.version_number)) + 1 : 1;
+  const isValidUuid = createdBy && UUID_REGEX.test(createdBy);
+
+  const payload: Record<string, unknown> = {
+    document_id: documentId,
+    version_number: nextVersionNum,
+    title: title || 'Version sauvegardée',
+    content_json: contentJson,
+    content_text: contentText,
+  };
+  if (isValidUuid) payload.created_by = createdBy;
+
+  try {
+    const { data, error } = await getSupabase()
+      .from('document_versions')
+      .insert([payload])
+      .select()
+      .single();
+
+    if (!error && data) {
+      const v = data as DocumentVersion;
+      saveLocalDocVersion(v);
+      return v;
+    }
+  } catch {}
+
+  const localVersion: DocumentVersion = {
+    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `ver-${Date.now()}`,
+    document_id: documentId,
+    version_number: nextVersionNum,
+    title: title || `Version ${nextVersionNum}`,
+    content_json: contentJson,
+    content_text: contentText,
+    created_by: isValidUuid ? createdBy : null,
+    created_at: new Date().toISOString(),
+  };
+  saveLocalDocVersion(localVersion);
+  return localVersion;
+}
+
+export async function restoreDocumentVersion(documentId: string, version: DocumentVersion): Promise<boolean> {
+  return saveDocumentContent(documentId, version.content_json, version.content_text, version.title);
 }
 
 // ----------------------------------------------------

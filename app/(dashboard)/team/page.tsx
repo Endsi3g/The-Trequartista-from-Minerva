@@ -115,6 +115,16 @@ export default function TeamPage() {
   const isAdmin = currentUserRole === 'admin';
   const { toastSuccess, toastError } = useToast();
 
+  // Lets external links (e.g. "Créer un rôle" on /team/invite) deep-link
+  // straight to a tab -- read once on mount, no next/navigation hook needed
+  // (avoids the Suspense-boundary requirement useSearchParams() carries).
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    if (tab && VIEW_TABS.some((t) => t.key === tab)) {
+      setActiveTab(tab as ViewTabKey);
+    }
+  }, []);
+
   const loadTeam = async () => {
     try {
       const supabase = createClient();
