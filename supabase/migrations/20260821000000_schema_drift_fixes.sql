@@ -19,9 +19,20 @@ ALTER TABLE public.voice_calls
     ADD COLUMN IF NOT EXISTS outcome TEXT,
     ADD COLUMN IF NOT EXISTS intake_lead_id UUID REFERENCES public.intake_leads(id) ON DELETE SET NULL;
 
+-- Live app_permissions has been confirmed NOT to have a profile_id column
+-- (2026-08-21 deploy error: "column \"profile_id\" named in key does not
+-- exist") despite the consolidated schema file declaring one -- another
+-- instance of that file not reliably reflecting live reality for
+-- pre-existing tables. Guarded on column existence too, not just the
+-- constraint name, so this silently no-ops instead of aborting the whole
+-- deploy script until the real column name is confirmed and this is
+-- corrected in a follow-up migration.
 DO $$
 BEGIN
-    IF NOT EXISTS (
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'app_permissions' AND column_name = 'profile_id'
+    ) AND NOT EXISTS (
         SELECT 1 FROM pg_constraint WHERE conname = 'app_permissions_profile_permission_key'
     ) THEN
         ALTER TABLE public.app_permissions
