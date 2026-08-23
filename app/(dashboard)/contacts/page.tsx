@@ -27,6 +27,7 @@ export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterMode, setFilterMode] = useState<'all' | 'due' | 'converted'>('all');
 
   useEffect(() => {
     (async () => {
@@ -36,20 +37,29 @@ export default function ContactsPage() {
     })();
   }, []);
 
+  const followUpsDue = contacts.filter(isFollowUpDue).length;
+  const convertedCount = contacts.filter((c) => c.converted_to_lead_id).length;
+
   const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return contacts;
+    let result = contacts;
+    if (filterMode === 'due') {
+      result = result.filter(isFollowUpDue);
+    } else if (filterMode === 'converted') {
+      result = result.filter((c) => Boolean(c.converted_to_lead_id));
+    }
+
+    if (!searchQuery.trim()) return result;
     const q = searchQuery.toLowerCase();
-    return contacts.filter(
+    return result.filter(
       (c) =>
         c.full_name.toLowerCase().includes(q) ||
         c.company?.toLowerCase().includes(q) ||
         c.sector?.toLowerCase().includes(q) ||
-        c.email?.toLowerCase().includes(q)
+        c.email?.toLowerCase().includes(q) ||
+        c.instagram_url?.toLowerCase().includes(q) ||
+        c.bio?.toLowerCase().includes(q)
     );
-  }, [contacts, searchQuery]);
-
-  const followUpsDue = contacts.filter(isFollowUpDue).length;
-  const convertedCount = contacts.filter((c) => c.converted_to_lead_id).length;
+  }, [contacts, searchQuery, filterMode]);
 
   return (
     <PageFadeIn className="space-y-4 max-w-6xl mx-auto pb-16">
@@ -59,7 +69,7 @@ export default function ContactsPage() {
           <div className="w-6 h-6 rounded-[4px] bg-zinc-100 border border-mv-border flex items-center justify-center text-zinc-900 shrink-0">
             <ContactIcon className="w-3.5 h-3.5" />
           </div>
-          <h1 className="text-[15px] font-semibold text-mv-ink tracking-tight truncate">Contacts</h1>
+          <h1 className="text-[15px] font-semibold text-mv-ink tracking-tight truncate">Contacts & Réseau</h1>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <ShareNetworkPanel />
@@ -76,37 +86,81 @@ export default function ContactsPage() {
       {/* ── KPI Ribbon ── */}
       <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
         <div className="grid grid-cols-3 divide-x divide-mv-border">
-          <div className="px-3.5 py-2.5 h-16 flex flex-col justify-between hover:bg-black/[0.015] transition-colors">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">Contacts</span>
+          <button
+            type="button"
+            onClick={() => setFilterMode('all')}
+            className={cn(
+              'px-3.5 py-2.5 h-16 flex flex-col justify-between text-left transition-colors cursor-pointer',
+              filterMode === 'all' ? 'bg-zinc-100/70 font-semibold' : 'hover:bg-black/[0.015]'
+            )}
+          >
+            <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">Tous les contacts</span>
             <div className="text-[20px] font-semibold text-mv-ink tracking-tight leading-none" style={MONO}>
               {loading ? '—' : <AnimatedNumber value={contacts.length} />}
             </div>
-          </div>
-          <div className="px-3.5 py-2.5 h-16 flex flex-col justify-between hover:bg-black/[0.015] transition-colors">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">Rappels dus</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterMode(filterMode === 'due' ? 'all' : 'due')}
+            className={cn(
+              'px-3.5 py-2.5 h-16 flex flex-col justify-between text-left transition-colors cursor-pointer',
+              filterMode === 'due' ? 'bg-red-50/70 font-semibold' : 'hover:bg-black/[0.015]'
+            )}
+          >
+            <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft flex items-center gap-1">
+              Rappels dus {followUpsDue > 0 && <span className="w-2 h-2 rounded-full bg-mv-red animate-pulse" />}
+            </span>
             <div className={cn('text-[20px] font-semibold tracking-tight leading-none', followUpsDue > 0 ? 'text-mv-red' : 'text-mv-ink')} style={MONO}>
               {loading ? '—' : followUpsDue}
             </div>
-          </div>
-          <div className="px-3.5 py-2.5 h-16 flex flex-col justify-between hover:bg-black/[0.015] transition-colors">
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterMode(filterMode === 'converted' ? 'all' : 'converted')}
+            className={cn(
+              'px-3.5 py-2.5 h-16 flex flex-col justify-between text-left transition-colors cursor-pointer',
+              filterMode === 'converted' ? 'bg-emerald-50/70 font-semibold' : 'hover:bg-black/[0.015]'
+            )}
+          >
             <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">Convertis en Lead</span>
             <div className="text-[20px] font-semibold text-mv-green tracking-tight leading-none" style={MONO}>
               {loading ? '—' : convertedCount}
             </div>
-          </div>
+          </button>
         </div>
       </div>
 
-      {/* ── Search Toolbar ── */}
-      <div className="relative max-w-sm">
-        <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2 top-2 pointer-events-none" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Rechercher un contact, une entreprise..."
-          className="w-full h-7 pl-7 pr-2 text-[11.5px] rounded-[4px] border border-mv-border bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-mv-green transition-colors"
-        />
+      {/* ── Search & Filter Toolbar ── */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="relative max-w-sm flex-1">
+          <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2 top-2 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Rechercher un contact, compte Instagram, bio..."
+            className="w-full h-7 pl-7 pr-2 text-[11.5px] rounded-[4px] border border-mv-border bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-mv-green transition-colors"
+          />
+        </div>
+        <div className="flex items-center gap-1.5 text-xs">
+          {(['all', 'due', 'converted'] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setFilterMode(mode)}
+              className={cn(
+                'px-2.5 py-1 rounded-[4px] text-[11px] font-medium transition-colors cursor-pointer',
+                filterMode === mode
+                  ? 'bg-zinc-900 text-white'
+                  : 'bg-mv-cream-soft border border-mv-border text-zinc-600 hover:bg-zinc-100'
+              )}
+            >
+              {mode === 'all' && 'Tous'}
+              {mode === 'due' && `À relancer (${followUpsDue})`}
+              {mode === 'converted' && `Convertis (${convertedCount})`}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── List ── */}

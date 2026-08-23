@@ -3371,7 +3371,7 @@ export async function fetchContact(id: string): Promise<Contact | null> {
   return data as Contact;
 }
 
-type OptionalContactFields = 'status' | 'source' | 'avatar_url' | 'how_can_i_help' | 'biggest_problem' | 'open_to_collaborate' | 'preferred_contact_method';
+type OptionalContactFields = 'status' | 'source' | 'avatar_url' | 'bio' | 'how_can_i_help' | 'biggest_problem' | 'open_to_collaborate' | 'preferred_contact_method';
 
 export async function addContact(
   contact: Omit<Contact, 'id' | 'created_at' | 'updated_at' | 'converted_to_lead_id' | OptionalContactFields> &
@@ -3381,6 +3381,7 @@ export async function addContact(
     status: 'a_contacter' as const,
     source: 'manual' as const,
     avatar_url: null,
+    bio: null,
     how_can_i_help: null,
     biggest_problem: null,
     open_to_collaborate: null,

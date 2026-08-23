@@ -27,6 +27,8 @@ const SubmitSchema = z
     met_at_location: z.string().trim().max(200).optional(),
     how_can_i_help: z.string().trim().max(2000).optional(),
     biggest_problem: z.string().trim().max(2000).optional(),
+    bio: z.string().trim().max(2000).optional(),
+    avatar_url_preset: z.string().trim().url().max(500).optional(),
     open_to_collaborate: z.enum(['true', 'false']).optional(),
     preferred_contact_method: z.enum(['email', 'reseaux_sociaux', 'site_web', 'autre']).optional(),
     hp_field: z.string().optional(), // honeypot -- must stay empty
@@ -62,6 +64,7 @@ export async function POST(req: Request) {
     'full_name', 'company', 'role_title', 'sector', 'email', 'phone',
     'linkedin_url', 'instagram_url', 'facebook_url', 'website_url',
     'met_at_event', 'met_at_location', 'how_can_i_help', 'biggest_problem',
+    'bio', 'avatar_url_preset',
     'open_to_collaborate', 'preferred_contact_method', 'hp_field',
   ]) {
     const value = form.get(key);
@@ -81,7 +84,7 @@ export async function POST(req: Request) {
 
   const supabase = getSupabase();
 
-  let avatarUrl: string | null = null;
+  let avatarUrl: string | null = data.avatar_url_preset || null;
   const photo = form.get('photo');
   if (photo instanceof File && photo.size > 0) {
     if (!photo.type.startsWith('image/')) {
@@ -120,6 +123,7 @@ export async function POST(req: Request) {
       met_at_event: nullIfEmpty(data.met_at_event),
       met_at_location: nullIfEmpty(data.met_at_location),
       met_at_date: today,
+      bio: nullIfEmpty(data.bio),
       how_can_i_help: nullIfEmpty(data.how_can_i_help),
       biggest_problem: nullIfEmpty(data.biggest_problem),
       open_to_collaborate: data.open_to_collaborate === undefined ? null : data.open_to_collaborate === 'true',

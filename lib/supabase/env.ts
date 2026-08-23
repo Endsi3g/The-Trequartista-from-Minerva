@@ -4,14 +4,14 @@
  * accidentally included during environment variable configuration.
  */
 export function getSupabaseEnv() {
-  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || '')
+  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://eobatkwbwcdsdqbemrma.supabase.co')
     .trim()
     .replace(/[\r\n]+/g, '');
 
   const anonKey = (
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    ''
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.placeholder'
   )
     .trim()
     .replace(/[\r\n]+/g, '');

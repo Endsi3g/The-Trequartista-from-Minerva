@@ -20,6 +20,12 @@ import {
   Check,
   X,
   Zap,
+  Mail,
+  Rocket,
+  Layers,
+  Bot,
+  Video,
+  Loader2,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -38,6 +44,7 @@ import {
 } from '@/lib/services/supabase-data';
 import type { Client, ClientRoiMetrics, Lead, ClientMessage } from '@/lib/types';
 import { PageFadeIn } from '@/components/ui/page-transition';
+import { useToast } from '@/components/providers/ToastProvider';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -115,6 +122,61 @@ export default function PortalOverviewPage() {
   const [messages, setMessages] = useState<ClientMessage[]>([]);
   const [userInput, setUserInput] = useState('');
   const [sending, setSending] = useState(false);
+
+  const { toastSuccess, toastError } = useToast();
+  const [sendingEmailSummary, setSendingEmailSummary] = useState(false);
+
+  const handleSendEmailSummary = async () => {
+    const recipientEmail = client?.contact_email;
+    if (!recipientEmail) {
+      toastError('Courriel manquant', 'Aucun courriel de contact n\'est configuré pour ce client.');
+      return;
+    }
+
+    setSendingEmailSummary(true);
+    try {
+      const res = await fetch('/api/emails/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: recipientEmail,
+          subject: `Suivi Station Pilote & Outils — ${client?.name || 'Votre Espace Minerva'}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #18181b; padding: 20px;">
+              <h2 style="color: #059669; margin-bottom: 8px;">Station Pilote & Déploiement des Outils</h2>
+              <p>Bonjour <strong>${client?.contact_name || 'partenaire'}</strong>,</p>
+              <p>Voici l'état d'avancement de votre station pilote et des produits déployés pour <strong>${client?.name || 'votre entreprise'}</strong> :</p>
+              
+              <div style="background: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px; margin: 16px 0;">
+                <h3 style="margin-top: 0; font-size: 14px; text-transform: uppercase; color: #71717a;">Phase actuelle : Phase 2 / 4 — Déploiement Outils & Création (65% complété)</h3>
+                <ul style="padding-left: 20px; line-height: 1.6; font-size: 13px;">
+                  <li><strong>Minerva Reach :</strong> Actif — ${periodKpis.leads} leads qualifiés générés (${selectedPeriod.toUpperCase()})</li>
+                  <li><strong>Minerva Flow :</strong> Actif — Relance automatique SMS & Courriels en &lt; 5 min</li>
+                  <li><strong>Station Créative & Contenu :</strong> 3/5 livrables validés en production</li>
+                  <li><strong>Minerva Voice Agent (Alex) :</strong> Configuré pour qualification 24/7</li>
+                </ul>
+              </div>
+
+              <p style="font-size: 13px; color: #71717a;">Accédez à votre portail pour suivre vos résultats en temps réel ou échanger avec votre équipe dédiée.</p>
+              <p>Cordialement,<br/><strong>L'équipe Minerva</strong></p>
+            </div>
+          `,
+          text: `Suivi Station Pilote pour ${client?.name || 'votre compte'} : Phase 2/4 (65% complété). ${periodKpis.leads} leads générés (${selectedPeriod.toUpperCase()}). Outils actifs : Reach, Flow, Station Créative, Voice Agent.`,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok && !data.success) {
+        toastError('Erreur d\'envoi', data.error || 'Impossible d\'envoyer le courriel.');
+      } else {
+        toastSuccess('Rapport envoyé !', `Le récapitulatif a été transmis à ${recipientEmail}.`);
+      }
+    } catch {
+      toastError('Erreur réseau', 'Impossible de contacter le service d\'envoi.');
+    } finally {
+      setSendingEmailSummary(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -438,6 +500,194 @@ export default function PortalOverviewPage() {
           <span>Voir le tableau en direct</span>
           <ArrowRight className="w-3 h-3" />
         </Link>
+      </div>
+
+      {/* ── 2.6 Statut du Pilote & Outils Déployés (Station Pilote & Suivi de Création) ── */}
+      <div className="bg-white border border-zinc-200 rounded-lg p-4 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-100 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-md bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
+              <Rocket className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-[14px] font-semibold text-zinc-900">
+                  Station Pilote & Outils Déployés
+                </h2>
+                <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded font-semibold" style={MONO}>
+                  Phase 2/4 · 65% complété
+                </span>
+              </div>
+              <p className="text-[11.5px] text-zinc-500">
+                Suivi de la création collective et état d&apos;avancement des outils connectés à votre écosystème
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSendEmailSummary}
+            disabled={sendingEmailSummary}
+            className="h-7 px-2.5 text-xs font-medium border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 rounded-md flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+          >
+            {sendingEmailSummary ? (
+              <Loader2 className="w-3 h-3 animate-spin text-emerald-600" />
+            ) : (
+              <Mail className="w-3 h-3 text-zinc-500" />
+            )}
+            <span>{sendingEmailSummary ? 'Envoi en cours…' : 'Envoyer le récapitulatif par courriel'}</span>
+          </button>
+        </div>
+
+        {/* Stepper horizontal des 4 jalons du pilote */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+          {[
+            {
+              step: '1',
+              title: 'Cadrage & Audit',
+              desc: 'Audit marché & stratégie',
+              status: 'done',
+              progress: '100%',
+            },
+            {
+              step: '2',
+              title: 'Station Pilote & Outils',
+              desc: 'Déploiement Reach & Flow',
+              status: 'current',
+              progress: '80%',
+            },
+            {
+              step: '3',
+              title: 'Création de Contenu',
+              desc: 'Reels, Vidéos & Formulaires',
+              status: 'current',
+              progress: '45%',
+            },
+            {
+              step: '4',
+              title: 'Optimisation & Scale',
+              desc: 'Passage à l’échelle ROI',
+              status: 'upcoming',
+              progress: '0%',
+            },
+          ].map((item) => (
+            <div
+              key={item.step}
+              className={cn(
+                'p-2.5 rounded-md border text-xs space-y-1',
+                item.status === 'done'
+                  ? 'bg-emerald-50/40 border-emerald-200/80 text-emerald-950'
+                  : item.status === 'current'
+                  ? 'bg-zinc-50/90 border-zinc-200 text-zinc-900 ring-1 ring-emerald-600/10'
+                  : 'bg-white border-zinc-100 text-zinc-400'
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400" style={MONO}>
+                  Étape {item.step}
+                </span>
+                <span
+                  className={cn(
+                    'text-[10px] font-mono font-semibold px-1 py-0.2 rounded',
+                    item.status === 'done'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : item.status === 'current'
+                      ? 'bg-zinc-200 text-zinc-800'
+                      : 'text-zinc-400'
+                  )}
+                  style={MONO}
+                >
+                  {item.progress}
+                </span>
+              </div>
+              <div className="font-semibold text-[12px] truncate">{item.title}</div>
+              <div className="text-[10.5px] text-zinc-500 truncate">{item.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Grille des 4 Outils / Produits Déployés */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+          {/* Outil 1: Minerva Reach */}
+          <div className="p-3 bg-zinc-50/70 border border-zinc-200/80 rounded-lg space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-zinc-900 flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-emerald-600" />
+                Minerva Reach
+              </span>
+              <span className="text-[9.5px] font-mono text-emerald-700 bg-emerald-100/60 border border-emerald-200 px-1 py-0.2 rounded font-bold" style={MONO}>
+                ● ACTIF
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-500 leading-tight">
+              Génération de leads multi-canaux (Formulaires & Google GMB)
+            </p>
+            <div className="text-[11px] font-mono text-zinc-700 bg-white p-1.5 rounded border border-zinc-100 flex items-center justify-between" style={MONO}>
+              <span className="text-zinc-400">Leads ({selectedPeriod.toUpperCase()}) :</span>
+              <span className="font-bold text-zinc-900">{periodKpis.leads} qualifiés</span>
+            </div>
+          </div>
+
+          {/* Outil 2: Minerva Flow */}
+          <div className="p-3 bg-zinc-50/70 border border-zinc-200/80 rounded-lg space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-zinc-900 flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                Minerva Flow
+              </span>
+              <span className="text-[9.5px] font-mono text-emerald-700 bg-emerald-100/60 border border-emerald-200 px-1 py-0.2 rounded font-bold" style={MONO}>
+                ● ACTIF
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-500 leading-tight">
+              Automatisation CRM, relances SMS instantanées & synchronisation
+            </p>
+            <div className="text-[11px] font-mono text-zinc-700 bg-white p-1.5 rounded border border-zinc-100 flex items-center justify-between" style={MONO}>
+              <span className="text-zinc-400">Temps relance :</span>
+              <span className="font-bold text-emerald-700">&lt; 5 minutes</span>
+            </div>
+          </div>
+
+          {/* Outil 3: Station Créative & Contenu */}
+          <div className="p-3 bg-zinc-50/70 border border-zinc-200/80 rounded-lg space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-zinc-900 flex items-center gap-1.5">
+                <Video className="w-3.5 h-3.5 text-blue-600" />
+                Station Créative
+              </span>
+              <span className="text-[9.5px] font-mono text-blue-700 bg-blue-100/60 border border-blue-200 px-1 py-0.2 rounded font-bold" style={MONO}>
+                ● EN COURS
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-500 leading-tight">
+              Production de Reels, vidéos d&apos;autorité et scripts de vente
+            </p>
+            <div className="text-[11px] font-mono text-zinc-700 bg-white p-1.5 rounded border border-zinc-100 flex items-center justify-between" style={MONO}>
+              <span className="text-zinc-400">Livrables :</span>
+              <span className="font-bold text-zinc-900">3 validés / 5</span>
+            </div>
+          </div>
+
+          {/* Outil 4: Minerva Voice Agent */}
+          <div className="p-3 bg-zinc-50/70 border border-zinc-200/80 rounded-lg space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-zinc-900 flex items-center gap-1.5">
+                <Bot className="w-3.5 h-3.5 text-purple-600" />
+                Minerva Voice Agent
+              </span>
+              <span className="text-[9.5px] font-mono text-purple-700 bg-purple-100/60 border border-purple-200 px-1 py-0.2 rounded font-bold" style={MONO}>
+                ● CONFIGURÉ
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-500 leading-tight">
+              Agent conversationnel vocal Alex pour qualification 24/7
+            </p>
+            <div className="text-[11px] font-mono text-zinc-700 bg-white p-1.5 rounded border border-zinc-100 flex items-center justify-between" style={MONO}>
+              <span className="text-zinc-400">Qualification :</span>
+              <span className="font-bold text-purple-700">Prêt (24/7)</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── 3. Monolith 2-Column Split View ── */}

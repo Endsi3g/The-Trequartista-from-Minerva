@@ -627,6 +627,7 @@ export interface Contact {
   follow_up_note: string | null;
   converted_to_lead_id: string | null;
   avatar_url: string | null;
+  bio: string | null;
   how_can_i_help: string | null;
   biggest_problem: string | null;
   open_to_collaborate: boolean | null;

@@ -13,6 +13,24 @@ import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 
 const STATIC_ENTRIES: ChangelogEntry[] = [
   {
+    id: 'v2-11-0',
+    version: '2.11.0',
+    title: 'Import Instagram Apify, Dossier Contact Haute Densité (MDS-01) & Station Pilote Portail Client (v2.11.0)',
+    body: `Mise en production d'une suite complète d'outils de prospection et de suivi client : intégration de l'acteur Apify pour l'import direct et la persistance des profils Instagram, refonte de la vue contact détaillée en dossier haute densité style Attio/Linear (MDS-01), nouvelle page d'édition dédiée avec synchronisation 1-clic, module de Station Pilote & Outils Déployés sur le Portail Client avec rapport par courriel et système de relances avec openers et notifications Web Push.`,
+    included_items: [
+      '⚡ Import Instagram Direct (Apify) : Récupération automatique du nom, bio et photo de profil depuis une URL ou handle Instagram (@handle) avec persistance permanente de l’image dans Supabase Storage (contact-photos) sur /contacts/new et /reseau.',
+      'Dossier Contact Haute Densité (MDS-01) : Refonte intégrale de /contacts/[id] en split-view monolithique 2 colonnes (Métadonnées & Réseautage 1/3 à gauche, Fil d’activité et prise de notes 2/3 à droite) avec bandeau d’actions rapides de 28px (Appel, SMS, Courriel, Réseaux).',
+      'Page Dédiée d’Édition (/contacts/[id]/edit) : Édition exhaustive des informations de contact avec bouton « ⚡ Actualiser depuis Instagram », formulaire complet et prévisualisation instantanée.',
+      'Système d’Opener & Rappels de Relance : Mise en avant de la note de relance (opener) avec bouton « Copier l’opener » et « Marquer comme contacté », combiné au cron quotidien /api/cron/contact-reminders pour les notifications Web Push.',
+      'Station Pilote & Outils Déployés (/portal) : Stepper horizontal des 4 étapes du pilote (Cadrage, Station Pilote, Création, Scale), catalogue des 4 outils actifs (Reach, Flow, Station Créative, Voice Agent) et bouton d’envoi de rapport par courriel en 1 clic.',
+      'Filtres & Télémétrie Réseau : Onglets de filtrage (« Tous », « À relancer », « Convertis ») et ruban KPI interactif sur /contacts.',
+    ],
+    image_url: '/changelog/contacts-v2-11-0.png',
+    created_at: new Date().toISOString(),
+    created_by: 'system',
+    author_name: 'Minerva Core Team',
+  },
+  {
     id: 'v2-4-3',
     version: '2.4.3',
     title: 'Système Anti-Friction (4 Piliers), Académie Redessinée & Studio de Scripting Cas Client (v2.4.3)',

@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
-  Briefcase,
   Mail,
   Phone,
   Globe,
@@ -22,11 +21,15 @@ import {
   MessageSquare,
   Loader2,
   ExternalLink,
+  Pencil,
+  Copy,
+  Check,
+  Building2,
+  FileText,
+  Sparkles,
+  MoreHorizontal,
+  Plus,
 } from 'lucide-react';
-import { UserAvatar } from '@/components/ui/user-avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { SkeletonText, Skeleton } from '@/components/ui/skeleton';
 import {
   fetchContact,
   fetchContactNotes,
@@ -40,14 +43,16 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { CONTACT_STATUS_OPTIONS, CONTACT_PREFERRED_METHOD_OPTIONS } from '@/lib/constants/contacts';
+import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const CHANNEL_LABEL: Record<ContactNote['channel'], string> = { note: 'Note', sms: 'SMS envoyé', email: 'Courriel envoyé' };
-const CHANNEL_VARIANT: Record<ContactNote['channel'], 'neutral' | 'blue' | 'purple'> = { note: 'neutral', sms: 'blue', email: 'purple' };
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
+
 const PREFERRED_METHOD_LABEL = Object.fromEntries(CONTACT_PREFERRED_METHOD_OPTIONS.map((o) => [o.value, o.label]));
 
-const SOCIAL_LINKS: Array<{ key: keyof Contact; icon: typeof Linkedin; label: string }> = [
-  { key: 'linkedin_url', icon: Linkedin, label: 'LinkedIn' },
+const SOCIAL_ACTIONS: Array<{ key: keyof Contact; icon: typeof Linkedin; label: string }> = [
   { key: 'instagram_url', icon: Instagram, label: 'Instagram' },
+  { key: 'linkedin_url', icon: Linkedin, label: 'LinkedIn' },
   { key: 'twitter_url', icon: Twitter, label: 'Twitter / X' },
   { key: 'facebook_url', icon: Facebook, label: 'Facebook' },
   { key: 'website_url', icon: Globe, label: 'Site web' },
@@ -78,6 +83,7 @@ export default function ContactDetailPage() {
   const [sendingEmail, setSendingEmail] = useState(false);
 
   const [converting, setConverting] = useState(false);
+  const [copiedOpener, setCopiedOpener] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -93,7 +99,22 @@ export default function ContactDetailPage() {
     createClient().auth.getUser().then(({ data }) => setUserId(data.user?.id || null));
   }, [load]);
 
-  const handleAddNote = async () => {
+  const handleCopyOpener = () => {
+    if (!contact?.follow_up_note) return;
+    navigator.clipboard.writeText(contact.follow_up_note);
+    setCopiedOpener(true);
+    toastSuccess('Opener copié !', 'Le message d\'accroche est dans le presse-papiers.');
+    setTimeout(() => setCopiedOpener(false), 2000);
+  };
+
+  const handleMarkContacted = async () => {
+    if (!contact) return;
+    await handleStatusChange('rencontre_proposee');
+    toastSuccess('Statut mis à jour', 'Le contact est maintenant noté comme « Rencontre proposée ».');
+  };
+
+  const handleAddNote = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!id || !userId || !noteBody.trim()) return;
     setSavingNote(true);
     const note = await addContactNote({ contact_id: id, body: noteBody.trim(), channel: 'note', created_by: userId });
@@ -101,6 +122,7 @@ export default function ContactDetailPage() {
     if (note) {
       setNoteBody('');
       setNotes((prev) => [note, ...prev]);
+      toastSuccess('Note ajoutée');
     } else {
       toastError('Erreur', "Impossible d'enregistrer la note.");
     }
@@ -183,245 +205,577 @@ export default function ContactDetailPage() {
     router.push('/contacts');
   };
 
-  const handleClearFollowUp = async () => {
+  const handleStatusChange = async (newStatus: Contact['status']) => {
     if (!contact) return;
-    await updateContact(contact.id, { follow_up_date: null, follow_up_note: null });
-    setContact({ ...contact, follow_up_date: null, follow_up_note: null });
+    setContact({ ...contact, status: newStatus });
+    await updateContact(contact.id, { status: newStatus });
   };
 
-  const handleStatusChange = async (status: Contact['status']) => {
-    if (!contact) return;
-    setContact({ ...contact, status });
-    await updateContact(contact.id, { status });
+  // Keyboard shortcut: ⌘+Enter to submit note
+  const handleNoteKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleAddNote();
+    }
   };
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto space-y-4 py-6">
-        <SkeletonText className="w-40 h-2.5" />
-        <div className="flex items-center gap-3">
-          <Skeleton className="w-14 h-14 rounded-2xl" />
-          <SkeletonText className="w-1/3 h-6" />
+      <div className="max-w-6xl mx-auto space-y-4 py-4">
+        <Skeleton className="h-6 w-36" />
+        <Skeleton className="h-14 w-full rounded-lg" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Skeleton className="h-96 rounded-lg" />
+          <Skeleton className="h-96 lg:col-span-2 rounded-lg" />
         </div>
-        <Skeleton className="w-full h-40 rounded-2xl" />
       </div>
     );
   }
 
   if (!contact) {
     return (
-      <div className="max-w-lg mx-auto py-16 text-center space-y-3">
-        <p className="text-sm font-bold text-mv-ink">Contact introuvable.</p>
-        <Link href="/contacts" className="text-xs text-mv-green hover:underline">Retour aux contacts</Link>
+      <div className="max-w-md mx-auto py-16 text-center space-y-3">
+        <p className="text-sm font-semibold text-zinc-900">Contact introuvable.</p>
+        <Link href="/contacts" className="text-xs text-emerald-600 hover:underline">
+          ← Retour aux contacts
+        </Link>
       </div>
     );
   }
 
-  const activeSocials = SOCIAL_LINKS.filter((s) => contact[s.key]);
+  const initials = contact.full_name.trim()
+    ? contact.full_name
+        .trim()
+        .split(/\s+/)
+        .map((p) => p[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+    : '?';
+
   const followUpDue = contact.follow_up_date && new Date(contact.follow_up_date).getTime() <= Date.now();
+  const daysUntilFollowUp = contact.follow_up_date
+    ? Math.round(
+        (new Date(contact.follow_up_date + 'T00:00:00').getTime() - new Date(new Date().toDateString()).getTime()) /
+          86400000
+      )
+    : null;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-16">
-      <Link href="/contacts" className="text-xs font-semibold text-mv-green hover:underline flex items-center gap-1.5 w-fit">
-        <ArrowLeft className="w-3.5 h-3.5" /> Retour aux contacts
-      </Link>
+    <div className="max-w-6xl mx-auto space-y-3.5 pb-16">
+      {/* ── 1. Top Strip & Compact Header ── */}
+      <div className="space-y-2">
+        <Link
+          href="/contacts"
+          className="text-xs text-zinc-500 hover:text-zinc-900 inline-flex items-center gap-1 transition-colors"
+        >
+          <ArrowLeft className="w-3 h-3" /> Réseau & Contacts
+        </Link>
 
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3 min-w-0">
-          <UserAvatar src={contact.avatar_url} name={contact.full_name} size="lg" shape="rounded" />
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-extrabold text-mv-ink font-display truncate">{contact.full_name}</h1>
-              {contact.source === 'self_submitted' && (
-                <Badge variant="blue">Soumis via le lien public</Badge>
-              )}
-              {contact.converted_to_lead_id && (
-                <Link href={`/leads/${contact.converted_to_lead_id}`}>
-                  <Badge variant="green"><ArrowRightLeft className="w-3 h-3" /> Voir le lead</Badge>
-                </Link>
-              )}
-            </div>
-            {(contact.role_title || contact.company) && (
-              <p className="text-xs text-mv-ink-soft flex items-center gap-1.5 mt-0.5">
-                <Briefcase className="w-3.5 h-3.5" />
-                {[contact.role_title, contact.company].filter(Boolean).join(' · ')}
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <select
-            value={contact.status}
-            onChange={(e) => handleStatusChange(e.target.value as Contact['status'])}
-            className="h-8 px-2.5 text-xs font-semibold rounded-lg border border-mv-border bg-mv-cream-soft text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
-          >
-            {CONTACT_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          {!contact.converted_to_lead_id && (
-            <Button variant="secondary" size="sm" onClick={handleConvert} disabled={converting} icon={<ArrowRightLeft className="w-3.5 h-3.5" />}>
-              {converting ? 'Conversion…' : 'Convertir en Lead'}
-            </Button>
-          )}
-          <button onClick={handleDelete} className="p-2 rounded-lg text-mv-ink-faint hover:text-mv-red hover:bg-mv-red-bg transition-colors cursor-pointer" title="Supprimer">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Quick actions */}
-      <div className="flex flex-wrap gap-2">
-        {contact.phone && (
-          <a href={`tel:${contact.phone}`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mv-cream-soft border border-mv-border text-xs font-bold text-mv-ink hover:border-mv-green/40 transition-colors">
-            <Phone className="w-3.5 h-3.5" /> Appeler
-          </a>
-        )}
-        {contact.email && (
-          <a href={`mailto:${contact.email}`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mv-cream-soft border border-mv-border text-xs font-bold text-mv-ink hover:border-mv-green/40 transition-colors">
-            <Mail className="w-3.5 h-3.5" /> Courriel (app externe)
-          </a>
-        )}
-        {contact.phone && (
-          <button onClick={() => setSmsOpen((v) => !v)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mv-green text-white text-xs font-bold hover:bg-mv-green-dark transition-colors cursor-pointer">
-            <MessageSquare className="w-3.5 h-3.5" /> Envoyer un SMS
-          </button>
-        )}
-        {contact.email && (
-          <button onClick={() => setEmailOpen((v) => !v)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mv-green text-white text-xs font-bold hover:bg-mv-green-dark transition-colors cursor-pointer">
-            <Send className="w-3.5 h-3.5" /> Envoyer un courriel
-          </button>
-        )}
-        {activeSocials.map(({ key, icon: Icon, label }) => (
-          <a
-            key={key}
-            href={contact[key] as string}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mv-cream-soft border border-mv-border text-xs font-bold text-mv-ink hover:border-mv-green/40 transition-colors"
-          >
-            <Icon className="w-3.5 h-3.5" /> {label} <ExternalLink className="w-3 h-3 text-mv-ink-faint" />
-          </a>
-        ))}
-      </div>
-
-      {smsOpen && (
-        <div className="bg-mv-surface border border-mv-border rounded-2xl p-4 space-y-3">
-          <label className="block text-xs font-bold text-mv-ink">Message SMS à {contact.phone}</label>
-          <textarea rows={3} value={smsMessage} onChange={(e) => setSmsMessage(e.target.value)} className="w-full rounded-xl bg-mv-cream-soft border border-mv-border p-3 text-sm text-mv-ink focus:outline-none focus:border-mv-green resize-none" />
-          <div className="flex justify-end gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setSmsOpen(false)}>Annuler</Button>
-            <Button variant="primary" size="sm" onClick={handleSendSms} disabled={sendingSms || !smsMessage.trim()} icon={sendingSms ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageSquare className="w-3.5 h-3.5" />}>
-              {sendingSms ? 'Envoi…' : 'Envoyer'}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {emailOpen && (
-        <div className="bg-mv-surface border border-mv-border rounded-2xl p-4 space-y-3">
-          <label className="block text-xs font-bold text-mv-ink">Courriel à {contact.email}</label>
-          <input type="text" placeholder="Objet" value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} className="w-full rounded-xl bg-mv-cream-soft border border-mv-border p-2.5 text-sm text-mv-ink focus:outline-none focus:border-mv-green" />
-          <textarea rows={4} placeholder="Message" value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} className="w-full rounded-xl bg-mv-cream-soft border border-mv-border p-3 text-sm text-mv-ink focus:outline-none focus:border-mv-green resize-none" />
-          <div className="flex justify-end gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setEmailOpen(false)}>Annuler</Button>
-            <Button variant="primary" size="sm" onClick={handleSendEmail} disabled={sendingEmail || !emailSubject.trim() || !emailMessage.trim()} icon={sendingEmail ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}>
-              {sendingEmail ? 'Envoi…' : 'Envoyer'}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Meeting context + follow-up */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {(contact.met_at_event || contact.met_at_location || contact.met_at_date) && (
-          <div className="bg-mv-surface border border-mv-border rounded-2xl p-4 space-y-2">
-            <h3 className="text-[11px] font-extrabold text-mv-ink-soft uppercase tracking-widest">Rencontré</h3>
-            {contact.met_at_event && <p className="text-sm text-mv-ink font-semibold">{contact.met_at_event}</p>}
-            <div className="flex items-center gap-3 text-xs text-mv-ink-soft">
-              {contact.met_at_location && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {contact.met_at_location}</span>}
-              {contact.met_at_date && <span className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" /> {new Date(contact.met_at_date + 'T00:00:00').toLocaleDateString('fr-CA', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
-            </div>
-          </div>
-        )}
-
-        {contact.follow_up_date && (
-          <div className={`border rounded-2xl p-4 space-y-2 ${followUpDue ? 'bg-mv-red-bg border-mv-red/30' : 'bg-mv-surface border-mv-border'}`}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-[11px] font-extrabold uppercase tracking-widest flex items-center gap-1.5 text-mv-ink-soft">
-                <Bell className="w-3.5 h-3.5" /> Rappel {followUpDue && '(dû)'}
-              </h3>
-              <button onClick={handleClearFollowUp} className="text-[10px] text-mv-ink-faint hover:text-mv-ink underline cursor-pointer">Effacer</button>
-            </div>
-            <p className="text-sm font-semibold text-mv-ink">
-              {new Date(contact.follow_up_date + 'T00:00:00').toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </p>
-            {contact.follow_up_note && <p className="text-xs text-mv-ink-soft">{contact.follow_up_note}</p>}
-          </div>
-        )}
-      </div>
-
-      {/* Réseautage -- answers from the public self-submission form */}
-      {(contact.how_can_i_help || contact.biggest_problem || contact.open_to_collaborate !== null || contact.preferred_contact_method) && (
-        <div className="bg-mv-surface border border-mv-border rounded-2xl p-4 space-y-3">
-          <h3 className="text-[11px] font-extrabold text-mv-ink-soft uppercase tracking-widest">Réseautage</h3>
-          {contact.how_can_i_help && (
-            <div>
-              <p className="text-[10.5px] font-bold text-mv-ink-faint uppercase tracking-wide">Comment l&apos;aider</p>
-              <p className="text-sm text-mv-ink whitespace-pre-wrap">{contact.how_can_i_help}</p>
-            </div>
-          )}
-          {contact.biggest_problem && (
-            <div>
-              <p className="text-[10.5px] font-bold text-mv-ink-faint uppercase tracking-wide">Plus gros problème</p>
-              <p className="text-sm text-mv-ink whitespace-pre-wrap">{contact.biggest_problem}</p>
-            </div>
-          )}
-          <div className="flex items-center gap-4 flex-wrap">
-            {contact.open_to_collaborate !== null && (
-              <Badge variant={contact.open_to_collaborate ? 'green' : 'neutral'}>
-                {contact.open_to_collaborate ? 'Ouvert à collaborer' : 'Pas ouvert à collaborer pour l’instant'}
-              </Badge>
-            )}
-            {contact.preferred_contact_method && (
-              <span className="text-xs text-mv-ink-soft">
-                Préfère être recontacté par : <strong className="text-mv-ink">{PREFERRED_METHOD_LABEL[contact.preferred_contact_method]}</strong>
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Notes timeline */}
-      <div className="bg-mv-surface border border-mv-border rounded-2xl p-4 space-y-4">
-        <h3 className="text-[11px] font-extrabold text-mv-ink-soft uppercase tracking-widest">Historique</h3>
-        <div className="flex gap-2">
-          <textarea
-            rows={2}
-            value={noteBody}
-            onChange={(e) => setNoteBody(e.target.value)}
-            placeholder="Ajouter une note (appel, rencontre, suivi…)"
-            className="flex-1 rounded-xl bg-mv-cream-soft border border-mv-border p-2.5 text-sm text-mv-ink focus:outline-none focus:border-mv-green resize-none"
-          />
-          <Button variant="primary" size="sm" onClick={handleAddNote} disabled={savingNote || !noteBody.trim()}>
-            {savingNote ? '…' : 'Ajouter'}
-          </Button>
-        </div>
-        {notes.length === 0 ? (
-          <p className="text-xs text-mv-ink-faint italic">Aucun historique pour le moment.</p>
-        ) : (
-          <div className="space-y-3">
-            {notes.map((note) => (
-              <div key={note.id} className="flex items-start gap-3 text-xs">
-                <Badge variant={CHANNEL_VARIANT[note.channel]} className="shrink-0 mt-0.5">{CHANNEL_LABEL[note.channel]}</Badge>
-                <div className="min-w-0 flex-1">
-                  <p className="text-mv-ink whitespace-pre-wrap">{note.body}</p>
-                  <p className="text-[10.5px] text-mv-ink-faint mt-1">
-                    {note.author_name || 'Équipe'} · {new Date(note.created_at).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
+        <div className="bg-white border border-zinc-200 rounded-lg p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Identité */}
+          <div className="flex items-center gap-3 min-w-0">
+            {contact.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={contact.avatar_url}
+                alt={contact.full_name}
+                className="w-8 h-8 rounded-md object-cover border border-zinc-200 shrink-0"
+              />
+            ) : (
+              <div
+                className="w-8 h-8 rounded-md bg-zinc-900 text-white font-mono text-xs font-semibold flex items-center justify-center shrink-0"
+                style={MONO}
+              >
+                {initials}
               </div>
-            ))}
+            )}
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-[18px] font-semibold text-zinc-900 tracking-tight truncate">
+                  {contact.full_name}
+                </h1>
+                {contact.source === 'self_submitted' && (
+                  <span className="text-[10px] font-mono text-zinc-600 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">
+                    Lien public
+                  </span>
+                )}
+                {contact.converted_to_lead_id && (
+                  <Link
+                    href={`/leads/${contact.converted_to_lead_id}`}
+                    className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-1 hover:bg-emerald-100 transition-colors"
+                  >
+                    <ArrowRightLeft className="w-2.5 h-2.5" /> Lead converti
+                  </Link>
+                )}
+              </div>
+              <div className="text-[12px] text-zinc-500 font-mono truncate" style={MONO}>
+                {[contact.role_title, contact.company].filter(Boolean).join(' · ') || 'Contact sans titre'}
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* Contrôles à droite */}
+          <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+            <Link
+              href={`/contacts/${contact.id}/edit`}
+              className="h-7 px-2.5 text-xs font-medium border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 rounded-md flex items-center gap-1.5 shadow-2xs transition-colors"
+            >
+              <Pencil className="w-3 h-3 text-zinc-400" />
+              <span>Modifier</span>
+            </Link>
+
+            <select
+              value={contact.status}
+              onChange={(e) => handleStatusChange(e.target.value as Contact['status'])}
+              className="h-7 px-2 text-xs font-medium border border-zinc-200 rounded-md bg-white text-zinc-800 focus:outline-none focus:border-emerald-600 cursor-pointer shadow-2xs"
+            >
+              {CONTACT_STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+
+            {!contact.converted_to_lead_id && (
+              <button
+                type="button"
+                onClick={handleConvert}
+                disabled={converting}
+                className="h-7 px-2.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>{converting ? 'Conversion…' : 'Convertir en Lead'}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="h-7 w-7 border border-zinc-200 bg-white hover:bg-red-50 hover:border-red-200 text-zinc-400 hover:text-red-600 rounded-md flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+              title="Supprimer ce contact"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Bandeau d'Actions Rapides Connecté (Quick Actions Bar) */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {contact.phone && (
+            <a
+              href={`tel:${contact.phone}`}
+              className="h-7 px-2.5 border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 text-xs font-medium rounded-md flex items-center gap-1.5 shadow-2xs transition-colors"
+            >
+              <Phone className="w-3 h-3 text-zinc-500" />
+              <span>Appeler</span>
+            </a>
+          )}
+          {contact.phone && (
+            <button
+              type="button"
+              onClick={() => {
+                setSmsOpen((v) => !v);
+                setEmailOpen(false);
+              }}
+              className={cn(
+                'h-7 px-2.5 border text-xs font-medium rounded-md flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer',
+                smsOpen
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                  : 'border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700'
+              )}
+            >
+              <MessageSquare className="w-3 h-3 text-zinc-500" />
+              <span>SMS</span>
+            </button>
+          )}
+          {contact.email && (
+            <button
+              type="button"
+              onClick={() => {
+                setEmailOpen((v) => !v);
+                setSmsOpen(false);
+              }}
+              className={cn(
+                'h-7 px-2.5 border text-xs font-medium rounded-md flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer',
+                emailOpen
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                  : 'border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700'
+              )}
+            >
+              <Mail className="w-3 h-3 text-zinc-500" />
+              <span>Courriel</span>
+            </button>
+          )}
+
+          {SOCIAL_ACTIONS.map(({ key, icon: Icon, label }) => {
+            const link = contact[key];
+            if (!link) return null;
+            return (
+              <a
+                key={key}
+                href={link as string}
+                target="_blank"
+                rel="noreferrer"
+                className="h-7 px-2.5 border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 text-xs font-medium rounded-md flex items-center gap-1.5 shadow-2xs transition-colors"
+              >
+                <Icon className="w-3 h-3 text-zinc-500" />
+                <span>{label}</span>
+                <ExternalLink className="w-2.5 h-2.5 text-zinc-400" />
+              </a>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── 2. Layout 2-Colonnes Monolithique (Split-View) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+        {/* ── COLONNE GAUCHE (1/3) : Fiche d'Informations & Réseautage ── */}
+        <div className="lg:col-span-1 border border-zinc-200 rounded-lg p-4 bg-white shadow-2xs space-y-4">
+          {/* Bio Instagram / Description */}
+          {contact.bio && (
+            <div className="text-xs text-zinc-700 bg-zinc-50/90 p-2.5 rounded-md border border-zinc-100 italic leading-relaxed">
+              « {contact.bio} »
+            </div>
+          )}
+
+          {/* Section Contexte de Rencontre & Coordonnées */}
+          <div className="space-y-2">
+            <h2 className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 border-b border-zinc-100 pb-1.5">
+              Contexte & Coordonnées
+            </h2>
+
+            <div className="grid grid-cols-[90px_1fr] text-xs gap-y-2 font-mono" style={MONO}>
+              <span className="text-zinc-400">Courriel</span>
+              <span className="text-zinc-800 truncate select-all">{contact.email || '—'}</span>
+
+              <span className="text-zinc-400">Téléphone</span>
+              <span className="text-zinc-800 truncate select-all">{contact.phone || '—'}</span>
+
+              <span className="text-zinc-400">Secteur</span>
+              <span className="text-zinc-800 truncate">{contact.sector || '—'}</span>
+
+              <span className="text-zinc-400">Événement</span>
+              <span className="text-zinc-800 truncate">{contact.met_at_event || '—'}</span>
+
+              <span className="text-zinc-400">Lieu</span>
+              <span className="text-zinc-800 truncate">{contact.met_at_location || '—'}</span>
+
+              <span className="text-zinc-400">Rencontré le</span>
+              <span className="text-zinc-800 truncate">
+                {contact.met_at_date
+                  ? new Date(contact.met_at_date + 'T00:00:00').toLocaleDateString('fr-CA', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                  : '—'}
+              </span>
+
+              <span className="text-zinc-400">Canal favori</span>
+              <span className="text-zinc-800 truncate">
+                {contact.preferred_contact_method
+                  ? PREFERRED_METHOD_LABEL[contact.preferred_contact_method]
+                  : '—'}
+              </span>
+
+              <span className="text-zinc-400">Statut collab</span>
+              <span className="text-zinc-800 truncate flex items-center gap-1.5">
+                {contact.open_to_collaborate === true ? (
+                  <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[10.5px] border border-emerald-200">
+                    ● Ouvert à collaborer
+                  </span>
+                ) : contact.open_to_collaborate === false ? (
+                  <span className="text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded text-[10.5px]">
+                    Non ouvert
+                  </span>
+                ) : (
+                  '—'
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* Section Opener & Rappel de Relance */}
+          {(contact.follow_up_note || contact.follow_up_date) && (
+            <div
+              className={cn(
+                'rounded-md p-3 border space-y-2',
+                followUpDue
+                  ? 'bg-amber-50/70 border-amber-200/80 text-amber-950'
+                  : 'bg-zinc-50/80 border-zinc-200 text-zinc-900'
+              )}
+            >
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1 font-mono">
+                  <Bell className="w-3 h-3 text-amber-600" />
+                  {followUpDue ? 'Rappel dû aujourd\'hui' : 'Rappel programmé'}
+                </span>
+                {contact.follow_up_date && (
+                  <span className="text-[10px] font-mono text-zinc-500" style={MONO}>
+                    {new Date(contact.follow_up_date + 'T00:00:00').toLocaleDateString('fr-CA', {
+                      day: 'numeric',
+                      month: 'short',
+                    })}{' '}
+                    ({daysUntilFollowUp !== null && daysUntilFollowUp >= 0 ? `J+${daysUntilFollowUp}` : 'dû'})
+                  </span>
+                )}
+              </div>
+
+              {contact.follow_up_note && (
+                <div className="bg-white border border-zinc-200/80 rounded p-2 text-xs font-mono text-zinc-800 whitespace-pre-wrap select-all">
+                  {contact.follow_up_note}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-1.5 pt-1">
+                {contact.follow_up_note && (
+                  <button
+                    type="button"
+                    onClick={handleCopyOpener}
+                    className="h-6 px-2 text-[11px] font-medium bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 rounded flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    {copiedOpener ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                    <span>{copiedOpener ? 'Copié' : 'Copier l\'opener'}</span>
+                  </button>
+                )}
+                {contact.status === 'a_contacter' && (
+                  <button
+                    type="button"
+                    onClick={handleMarkContacted}
+                    className="h-6 px-2 text-[11px] font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <Check className="w-3 h-3" />
+                    <span>Marquer contacté</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Section Besoins & Synergies (Questionnaire de Réseautage) */}
+          {(contact.how_can_i_help || contact.biggest_problem) && (
+            <div className="space-y-2.5 pt-2 border-t border-zinc-100">
+              <h2 className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                Besoins & Synergies
+              </h2>
+
+              {contact.how_can_i_help && (
+                <div className="space-y-1">
+                  <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">
+                    Comment l&apos;aider
+                  </span>
+                  <div className="text-xs text-zinc-700 bg-zinc-50 p-2 rounded border border-zinc-100 whitespace-pre-wrap">
+                    {contact.how_can_i_help}
+                  </div>
+                </div>
+              )}
+
+              {contact.biggest_problem && (
+                <div className="space-y-1">
+                  <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">
+                    Plus gros problème
+                  </span>
+                  <div className="text-xs text-zinc-700 bg-zinc-50 p-2 rounded border border-zinc-100 whitespace-pre-wrap">
+                    {contact.biggest_problem}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── COLONNE DROITE (2/3) : Timeline d'Activité & Prise de Notes ── */}
+        <div className="lg:col-span-2 border border-zinc-200 rounded-lg p-4 bg-white shadow-2xs flex flex-col min-h-[520px] space-y-3.5">
+          {/* Tiroir d'envoi SMS inline (conditionnel) */}
+          {smsOpen && (
+            <div className="bg-zinc-50 border border-zinc-200 rounded-md p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-zinc-800 flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                  Nouveau SMS à {contact.phone}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSmsOpen(false)}
+                  className="text-[11px] text-zinc-400 hover:text-zinc-700"
+                >
+                  Fermer
+                </button>
+              </div>
+              <textarea
+                rows={2}
+                value={smsMessage}
+                onChange={(e) => setSmsMessage(e.target.value)}
+                placeholder="Rédigez votre SMS…"
+                className="w-full text-xs bg-white border border-zinc-200 rounded-md p-2 text-zinc-900 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20 resize-none"
+              />
+              <div className="flex justify-end gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSmsOpen(false)}
+                  className="h-7 px-2.5 text-xs text-zinc-600 hover:bg-zinc-100 rounded-md transition-colors cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendSms}
+                  disabled={sendingSms || !smsMessage.trim()}
+                  className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-md shadow-2xs transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                >
+                  {sendingSms ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                  <span>{sendingSms ? 'Envoi…' : 'Envoyer SMS'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Tiroir d'envoi Courriel inline (conditionnel) */}
+          {emailOpen && (
+            <div className="bg-zinc-50 border border-zinc-200 rounded-md p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-zinc-800 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-emerald-600" />
+                  Nouveau Courriel à {contact.email}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setEmailOpen(false)}
+                  className="text-[11px] text-zinc-400 hover:text-zinc-700"
+                >
+                  Fermer
+                </button>
+              </div>
+              <input
+                type="text"
+                placeholder="Objet"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                className="w-full h-8 text-xs bg-white border border-zinc-200 rounded-md px-2.5 text-zinc-900 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20"
+              />
+              <textarea
+                rows={3}
+                placeholder="Corps du message…"
+                value={emailMessage}
+                onChange={(e) => setEmailMessage(e.target.value)}
+                className="w-full text-xs bg-white border border-zinc-200 rounded-md p-2 text-zinc-900 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20 resize-none"
+              />
+              <div className="flex justify-end gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setEmailOpen(false)}
+                  className="h-7 px-2.5 text-xs text-zinc-600 hover:bg-zinc-100 rounded-md transition-colors cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendEmail}
+                  disabled={sendingEmail || !emailSubject.trim() || !emailMessage.trim()}
+                  className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-md shadow-2xs transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                >
+                  {sendingEmail ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                  <span>{sendingEmail ? 'Envoi…' : 'Envoyer Courriel'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Saisie rapide de note de suivi (Top Input) */}
+          <form onSubmit={handleAddNote} className="space-y-2 border-b border-zinc-100 pb-3.5">
+            <div className="relative">
+              <textarea
+                rows={2}
+                value={noteBody}
+                onChange={(e) => setNoteBody(e.target.value)}
+                onKeyDown={handleNoteKeyDown}
+                placeholder="Ajouter une note de suivi (appel, rencontre, prochaine étape)…"
+                className="w-full px-3 py-2 text-xs bg-zinc-50 border border-zinc-200 rounded-md text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20 transition-all resize-none"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10.5px] text-zinc-400 font-mono" style={MONO}>
+                Raccourci : ⌘ + Entrée
+              </span>
+              <button
+                type="submit"
+                disabled={savingNote || !noteBody.trim()}
+                className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-md shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Plus className="w-3 h-3" />
+                <span>{savingNote ? 'Enregistrement…' : 'Ajouter (⌘ + Entrée)'}</span>
+              </button>
+            </div>
+          </form>
+
+          {/* Fil d'Activité Structuré (Activity Feed) */}
+          <div className="space-y-3 flex-1 flex flex-col">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                Fil d&apos;Activité ({notes.length})
+              </h2>
+            </div>
+
+            {notes.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center py-10 text-zinc-400">
+                <FileText className="w-6 h-6 mb-1 text-zinc-300 stroke-[1.5]" />
+                <p className="text-xs font-medium text-zinc-500">Aucune activité enregistrée</p>
+                <p className="text-[11px] text-zinc-400 mt-0.5">
+                  Utilisez le champ ci-dessus pour consigner un appel ou une note.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {notes.map((note) => {
+                  const isSms = note.channel === 'sms';
+                  const isEmail = note.channel === 'email';
+                  const Icon = isSms ? MessageSquare : isEmail ? Mail : FileText;
+                  const iconColor = isSms
+                    ? 'text-blue-600 bg-blue-50 border-blue-200'
+                    : isEmail
+                    ? 'text-purple-600 bg-purple-50 border-purple-200'
+                    : 'text-zinc-600 bg-zinc-100 border-zinc-200';
+
+                  return (
+                    <div
+                      key={note.id}
+                      className="p-3 bg-zinc-50/60 hover:bg-zinc-50 border border-zinc-200/80 rounded-md transition-colors space-y-1"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={cn(
+                              'w-5 h-5 rounded flex items-center justify-center border text-[10px]',
+                              iconColor
+                            )}
+                          >
+                            <Icon className="w-3 h-3" />
+                          </span>
+                          <span className="text-xs font-semibold text-zinc-800">
+                            {note.author_name || 'Équipe'}
+                          </span>
+                        </div>
+                        <span className="text-[10.5px] text-zinc-400 font-mono" style={MONO}>
+                          {new Date(note.created_at).toLocaleDateString('fr-CA', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-800 whitespace-pre-wrap leading-relaxed pl-6">
+                        {note.body}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

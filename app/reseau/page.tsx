@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Camera, Check, Handshake, Users2, Mic } from 'lucide-react';
+import { Camera, Check, Handshake, Users2, Mic, Sparkles, Loader2, Instagram } from 'lucide-react';
 import { LogoMark } from '@/components/shell/Logo';
 import { SECTOR_OPTIONS, CONTACT_PREFERRED_METHOD_OPTIONS } from '@/lib/constants/contacts';
 import { cn } from '@/lib/utils';
@@ -29,6 +29,8 @@ export default function ReseauPage() {
   const [phone, setPhone] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [avatarUrlPreset, setAvatarUrlPreset] = useState<string | null>(null);
+  const [bio, setBio] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
   const [facebookUrl, setFacebookUrl] = useState('');
@@ -42,6 +44,7 @@ export default function ReseauPage() {
   const [hpField, setHpField] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
+  const [fetchingIg, setFetchingIg] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
@@ -49,6 +52,46 @@ export default function ReseauPage() {
     const file = e.target.files?.[0] || null;
     setPhoto(file);
     setPhotoPreview(file ? URL.createObjectURL(file) : null);
+    setAvatarUrlPreset(null);
+  };
+
+  const handleFetchInstagram = async () => {
+    if (!instagramUrl.trim()) {
+      setErrorMsg('Veuillez renseigner votre compte Instagram.');
+      return;
+    }
+    setErrorMsg(null);
+    setFetchingIg(true);
+
+    try {
+      const res = await fetch('/api/instagram/fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: instagramUrl.trim() }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setErrorMsg(json.error || 'Impossible de récupérer votre profil Instagram.');
+        return;
+      }
+
+      const data = json.data;
+      if (data) {
+        if (!fullName.trim()) setFullName(data.fullName || data.username);
+        if (data.avatarUrl) {
+          setPhotoPreview(data.avatarUrl);
+          setAvatarUrlPreset(data.avatarUrl);
+        }
+        if (data.biography && !bio.trim()) setBio(data.biography);
+        if (data.websiteUrl && !websiteUrl.trim()) setWebsiteUrl(data.websiteUrl);
+        setInstagramUrl(`https://instagram.com/${data.username}`);
+      }
+    } catch {
+      setErrorMsg('Erreur de connexion au service d\'import Instagram.');
+    } finally {
+      setFetchingIg(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,6 +118,8 @@ export default function ReseauPage() {
     form.set('met_at_location', metAtLocation.trim());
     form.set('how_can_i_help', howCanIHelp.trim());
     form.set('biggest_problem', biggestProblem.trim());
+    if (bio.trim()) form.set('bio', bio.trim());
+    if (avatarUrlPreset) form.set('avatar_url_preset', avatarUrlPreset);
     if (openToCollaborate) form.set('open_to_collaborate', openToCollaborate);
     if (preferredContactMethod) form.set('preferred_contact_method', preferredContactMethod);
     form.set('hp_field', hpField);
@@ -199,6 +244,16 @@ export default function ReseauPage() {
                 {SECTOR_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
+            <div>
+              <FieldLabel optional>Biographie / Présentation</FieldLabel>
+              <textarea
+                rows={2}
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Quelques mots sur vous ou votre projet…"
+                className={cn(inputClass, 'resize-none')}
+              />
+            </div>
           </div>
 
           {/* Coordonnées */}
@@ -214,14 +269,47 @@ export default function ReseauPage() {
           </div>
           <p className="text-[10.5px] text-mv-ink-faint -mt-2">Au moins un des deux est requis.</p>
 
-          {/* Réseaux sociaux */}
-          <div>
-            <FieldLabel optional>Réseaux sociaux</FieldLabel>
-            <div className="grid grid-cols-2 gap-2">
+          {/* Réseaux sociaux & Import Instagram */}
+          <div className="space-y-3">
+            <FieldLabel optional>Réseaux sociaux & Web</FieldLabel>
+
+            {/* Pré-remplissage Instagram */}
+            <div className="p-3 bg-mv-cream-soft border border-mv-border rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-mv-ink flex items-center gap-1.5">
+                  <Instagram className="w-3.5 h-3.5 text-pink-600" />
+                  Compte Instagram
+                </span>
+                <button
+                  type="button"
+                  onClick={handleFetchInstagram}
+                  disabled={fetchingIg || !instagramUrl.trim()}
+                  className="px-2.5 py-1 bg-white hover:bg-pink-50 text-pink-700 border border-pink-200 text-xs font-bold rounded-lg flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {fetchingIg ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-pink-600" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5 text-pink-600" />
+                  )}
+                  {fetchingIg ? 'Chargement…' : '⚡ Pré-remplir depuis Instagram'}
+                </button>
+              </div>
+              <input
+                type="text"
+                placeholder="@nomdutilisateur ou https://instagram.com/..."
+                value={instagramUrl}
+                onChange={(e) => setInstagramUrl(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-mv-border rounded-lg text-xs text-mv-ink placeholder:text-mv-ink-faint focus:outline-none focus:border-mv-green"
+              />
+              <p className="text-[10.5px] text-mv-ink-faint">
+                Entrez votre compte et cliquez sur « Pré-remplir » pour importer automatiquement votre photo de profil et votre nom.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
               <input type="text" placeholder="LinkedIn" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} className={inputClass} />
-              <input type="text" placeholder="Instagram" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} className={inputClass} />
               <input type="text" placeholder="Facebook" value={facebookUrl} onChange={(e) => setFacebookUrl(e.target.value)} className={inputClass} />
-              <input type="text" placeholder="Site web / WhatsApp / autre" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} className={inputClass} />
+              <input type="text" placeholder="Site web / Autre" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} className={inputClass} />
             </div>
           </div>
 
