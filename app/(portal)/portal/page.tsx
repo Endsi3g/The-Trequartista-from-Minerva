@@ -440,6 +440,34 @@ export default function PortalOverviewPage() {
         </Link>
       </div>
 
+      {/* ── 2.6 Minerva-Flow Results & Feature Requests Ribbon ── */}
+      <div className="bg-gradient-to-r from-emerald-950 via-zinc-900 to-emerald-950 text-white rounded-lg p-3.5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-emerald-800/40">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] font-semibold text-white">Minerva-Flow & Demandes de Fonctionnalités</span>
+              <span className="text-[10px] font-mono text-emerald-300 bg-emerald-500/20 px-1.5 py-0.2 rounded border border-emerald-500/30 font-semibold" style={MONO}>
+                0% Commission Directe
+              </span>
+            </div>
+            <p className="text-[11.5px] text-zinc-400">
+              Consultez vos économies nettes de marge, vos tickets cuisine et suivez l&apos;avancement de vos demandes techniques en temps réel.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/portal/requests"
+          className="h-7 px-3 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-md transition-colors flex items-center justify-center gap-1.5 shrink-0 shadow-2xs"
+        >
+          <span>Résultats & Demandes</span>
+          <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
+
       {/* ── 3. Monolith 2-Column Split View ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
         {/* Left Column (2/3): Reactive Chart & Filterable Leads DataTable */}

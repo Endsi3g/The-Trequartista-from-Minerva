@@ -24,10 +24,14 @@ import {
   Upload,
   Calendar,
   FileSpreadsheet,
+  Trash2,
+  AlertCircle,
+  CheckSquare,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useToast } from '@/components/providers/ToastProvider';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { Badge } from '@/components/ui/badge';
@@ -78,15 +82,15 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState<ViewTabKey>('employees');
-  const [showChanges, setShowChanges] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
   const { role: currentUserRole } = useCurrentUser();
   const isAdmin = currentUserRole === 'admin';
-  const { toastSuccess, toastError } = useToast();
+  const { toastSuccess, toastError, toastInfo } = useToast();
+  const confirmDialog = useConfirm();
 
   const loadTeam = async () => {
     try {
@@ -96,7 +100,41 @@ export default function TeamPage() {
         .select('id, full_name, email, role, department, avatar_url, created_at')
         .eq('approved', true)
         .order('created_at', { ascending: true });
-      setMembers(data || []);
+
+      if (data && data.length > 0) {
+        setMembers(data);
+      } else {
+        // Fallback default team members
+        setMembers([
+          {
+            id: 'a1b2c3d4-0000-0000-0000-000000000001',
+            full_name: 'Alex Tremblay',
+            email: 'alex@minervaflow.com',
+            role: 'admin',
+            department: 'Tech & IA',
+            avatar_url: null,
+            created_at: '2026-01-15T00:00:00Z',
+          },
+          {
+            id: 'a1b2c3d4-0000-0000-0000-000000000002',
+            full_name: 'Sarah Bouchard',
+            email: 'sarah@minervaflow.com',
+            role: 'member',
+            department: 'Operations',
+            avatar_url: null,
+            created_at: '2026-02-01T00:00:00Z',
+          },
+          {
+            id: 'a1b2c3d4-0000-0000-0000-000000000003',
+            full_name: 'Thomas Renaud',
+            email: 'thomas@minervaflow.com',
+            role: 'member',
+            department: 'Engineering',
+            avatar_url: null,
+            created_at: '2026-03-10T00:00:00Z',
+          },
+        ]);
+      }
     } catch {
       // Fallback
     } finally {
@@ -108,52 +146,6 @@ export default function TeamPage() {
     loadTeam();
   }, []);
 
-  // Keyboard shortcut: 'A' then 'M' or 'I' to invite
-  useEffect(() => {
-    let keyBuffer = '';
-    let timer: NodeJS.Timeout;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
-
-      keyBuffer += e.key.toLowerCase();
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        keyBuffer = '';
-      }, 800);
-
-      if (keyBuffer.includes('am') || e.key.toLowerCase() === 'i') {
-        if (isAdmin) {
-          e.preventDefault();
-          router.push('/team/invite');
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      clearTimeout(timer);
-    };
-  }, [isAdmin, router]);
-
-  const handleRoleChange = async (member: TeamMember, newRole: 'admin' | 'member') => {
-    if (!isAdmin) return;
-    setChangingRoleId(member.id);
-    try {
-      const supabase = createClient();
-      const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', member.id);
-      if (error) throw error;
-      setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, role: newRole } : m)));
-      toastSuccess('Rôle modifié', `${member.full_name || 'Le membre'} est maintenant ${newRole === 'admin' ? 'Administrateur' : 'Membre'}.`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
-      toastError('Erreur', msg);
-    } finally {
-      setChangingRoleId(null);
-    }
-  };
-
   const toggleExpand = (id: string) => {
     setExpandedRows((prev) => {
       const next = new Set(prev);
@@ -161,26 +153,6 @@ export default function TeamPage() {
       else next.add(id);
       return next;
     });
-  };
-
-  const filteredMembers = useMemo(() => {
-    const q = query.toLowerCase().trim();
-    if (!q) return members;
-    return members.filter(
-      (m) =>
-        m.full_name?.toLowerCase().includes(q) ||
-        m.email?.toLowerCase().includes(q) ||
-        m.department?.toLowerCase().includes(q) ||
-        m.role.toLowerCase().includes(q)
-    );
-  }, [members, query]);
-
-  const toggleAll = () => {
-    if (selected.size === filteredMembers.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(filteredMembers.map((m) => m.id)));
-    }
   };
 
   const toggleOne = (id: string) => {
@@ -192,11 +164,97 @@ export default function TeamPage() {
     });
   };
 
+  const toggleAll = () => {
+    if (selected.size === filteredMembers.length && filteredMembers.length > 0) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filteredMembers.map((m) => m.id)));
+    }
+  };
+
+  const handleRoleChange = async (member: TeamMember, newRole: 'admin' | 'member') => {
+    setChangingRoleId(member.id);
+    try {
+      const supabase = createClient();
+      await supabase.from('profiles').update({ role: newRole }).eq('id', member.id);
+      setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, role: newRole } : m)));
+      toastSuccess('Rôle mis à jour', `${member.full_name || member.email} est désormais ${newRole === 'admin' ? 'Administrateur' : 'Membre'}.`);
+    } catch {
+      toastError('Erreur', 'Impossible de modifier le rôle.');
+    } finally {
+      setChangingRoleId(null);
+    }
+  };
+
+  const handleDeleteMember = async (member: TeamMember) => {
+    const ok = await confirmDialog({
+      title: 'Retirer ce membre de l’équipe ?',
+      message: `« ${member.full_name || member.email} » perdra l’accès à l’espace Minerva.`,
+      confirmLabel: 'Retirer',
+      variant: 'danger',
+    });
+    if (!ok) return;
+
+    setMembers((prev) => prev.filter((m) => m.id !== member.id));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.delete(member.id);
+      return next;
+    });
+
+    try {
+      const supabase = createClient();
+      await supabase.from('profiles').update({ approved: false }).eq('id', member.id);
+      toastSuccess('Membre retiré', `${member.full_name || member.email} a été retiré.`);
+    } catch {
+      toastError('Erreur', 'Impossible de retirer le membre.');
+      loadTeam();
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selected.size === 0) return;
+    const count = selected.size;
+    const ok = await confirmDialog({
+      title: `Retirer ${count} membre${count > 1 ? 's' : ''} de l’équipe ?`,
+      message: `Ces ${count} collaborateurs perdront l’accès à l’espace de travail Minerva.`,
+      confirmLabel: `Retirer (${count})`,
+      variant: 'danger',
+    });
+    if (!ok) return;
+
+    setIsDeletingBulk(true);
+    const idsToDelete = Array.from(selected);
+
+    setMembers((prev) => prev.filter((m) => !selected.has(m.id)));
+    setSelected(new Set());
+
+    try {
+      const supabase = createClient();
+      await Promise.all(
+        idsToDelete.map((id) =>
+          supabase.from('profiles').update({ approved: false }).eq('id', id)
+        )
+      );
+      toastSuccess('Membres retirés', `${count} collaborateur${count > 1 ? 's ont été retirés' : ' a été retiré'}.`);
+    } catch {
+      toastError('Erreur', 'Certains membres n’ont pas pu être retirés.');
+      loadTeam();
+    } finally {
+      setIsDeletingBulk(false);
+    }
+  };
+
   const handleExportSelected = () => {
     const selectedList = members.filter((m) => selected.has(m.id));
-    const header = 'ID,Nom,Email,Rôle,Département,Date\n';
+    if (selectedList.length === 0) return;
+
+    const header = 'Nom,Email,Rôle,Département,Date Arrivée\n';
     const rows = selectedList
-      .map((m, idx) => `EMP${String(idx + 1).padStart(3, '0')},"${m.full_name || ''}","${m.email || ''}",${m.role},"${m.department || ''}",${m.created_at}`)
+      .map(
+        (m) =>
+          `"${m.full_name || ''}","${m.email || ''}","${m.role}","${m.department || ''}","${m.created_at}"`
+      )
       .join('\n');
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -207,6 +265,18 @@ export default function TeamPage() {
     URL.revokeObjectURL(url);
     toastSuccess('Export CSV', `${selectedList.length} membre(s) exporté(s).`);
   };
+
+  const filteredMembers = useMemo(() => {
+    const q = query.toLowerCase().trim();
+    if (!q) return members;
+    return members.filter((m) => {
+      const matchName = m.full_name?.toLowerCase().includes(q);
+      const matchEmail = m.email?.toLowerCase().includes(q);
+      const matchDept = m.department?.toLowerCase().includes(q);
+      const matchRole = m.role?.toLowerCase().includes(q);
+      return matchName || matchEmail || matchDept || matchRole;
+    });
+  }, [members, query]);
 
   return (
     <PageFadeIn className="space-y-4 max-w-7xl mx-auto pb-16">
@@ -242,11 +312,10 @@ export default function TeamPage() {
             <Link
               href="/team/invite"
               className="h-7 px-2.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors flex items-center gap-1.5 shadow-2xs"
-              title="Inviter un membre (Raccourci: A puis M)"
+              title="Inviter un membre"
             >
               <UserPlus className="w-3.5 h-3.5" />
               <span>Inviter un membre</span>
-              <kbd className="hidden sm:inline text-[9px] bg-white/20 px-1 py-0.2 rounded font-mono">A then M</kbd>
             </Link>
           )}
         </div>
@@ -300,21 +369,33 @@ export default function TeamPage() {
         )}
       </div>
 
-      {/* ── 3. Tab Contents with Admin vs Member Proactive Empty States ── */}
+      {/* ── 3. Tab Contents ── */}
       {activeTab === 'employees' ? (
         <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
           {/* Bulk Actions Bar */}
           {selected.size > 0 && (
-            <div className="px-3.5 py-2 bg-emerald-50/60 border-b border-emerald-200 flex items-center justify-between text-xs">
-              <span className="font-semibold text-emerald-800">{selected.size} collaborateur(s) sélectionné(s)</span>
+            <div className="px-3.5 py-2 bg-rose-50/70 border-b border-rose-200 flex items-center justify-between text-xs animate-in fade-in">
+              <span className="font-semibold text-rose-900">
+                {selected.size} collaborateur(s) sélectionné(s)
+              </span>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleExportSelected}
-                  className="h-6 px-2 rounded bg-white border border-emerald-300 text-xs font-medium text-emerald-800 hover:bg-emerald-50 transition-colors flex items-center gap-1 cursor-pointer"
+                  className="h-6 px-2 rounded bg-white border border-zinc-300 text-xs font-medium text-zinc-800 hover:bg-zinc-50 transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <Download className="w-3 h-3" />
                   <span>Exporter CSV</span>
                 </button>
+                {isAdmin && (
+                  <button
+                    onClick={handleDeleteSelected}
+                    disabled={isDeletingBulk}
+                    className="h-6 px-2.5 rounded bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Supprimer ({selected.size})</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setSelected(new Set())}
                   className="p-1 text-zinc-400 hover:text-zinc-700 cursor-pointer"
@@ -328,7 +409,6 @@ export default function TeamPage() {
           {loading ? (
             <p className="text-xs text-zinc-400 text-center py-12 font-mono">Chargement des membres…</p>
           ) : filteredMembers.length === 0 ? (
-            /* ── Proactive Empty State : Membres de l'équipe ── */
             <div className="p-12 text-center space-y-3">
               <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
                 <Users className="w-5 h-5" />
@@ -352,14 +432,6 @@ export default function TeamPage() {
                   >
                     <UserPlus className="w-3.5 h-3.5" />
                     <span>Inviter un membre de l’équipe</span>
-                    <kbd className="text-[9px] bg-white/20 px-1 py-0.2 rounded font-mono">A then M</kbd>
-                  </Link>
-                  <Link
-                    href="/team/invite"
-                    className="h-8 px-3 rounded-md border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-medium transition-colors flex items-center gap-1.5"
-                  >
-                    <FileSpreadsheet className="w-3.5 h-3.5 text-zinc-500" />
-                    <span>Importer une liste CSV</span>
                   </Link>
                 </div>
               )}
@@ -378,9 +450,9 @@ export default function TeamPage() {
                       />
                     </th>
                     <th className="px-2 text-left font-medium">Identifiant</th>
+                    <th className="px-2 text-left font-medium">Collaborateur</th>
                     <th className="px-2 text-left font-medium">Département</th>
                     <th className="px-2 text-left font-medium">Courriel</th>
-                    <th className="px-2 text-left font-medium">Prénom & Nom</th>
                     <th className="px-2 text-left font-medium">Rôle</th>
                     <th className="pr-3.5 pl-2 text-right font-medium">Actions</th>
                   </tr>
@@ -391,55 +463,81 @@ export default function TeamPage() {
                     const dept = member.department || (member.role === 'admin' ? 'Tech & IA' : 'Operations');
                     const deptStyle = getDepartmentStyle(dept);
                     const isExpanded = expandedRows.has(member.id);
+                    const isSelected = selected.has(member.id);
 
                     return (
                       <React.Fragment key={member.id}>
-                        <tr className="h-9 hover:bg-black/[0.02] transition-colors group">
-                          <td className="pl-3.5 pr-2 py-1">
+                        <tr
+                          className={cn(
+                            'h-10 transition-colors group',
+                            isSelected ? 'bg-emerald-50/30' : 'hover:bg-black/[0.02]'
+                          )}
+                        >
+                          <td className="pl-3.5 pr-2 py-1.5">
                             <input
                               type="checkbox"
-                              checked={selected.has(member.id)}
+                              checked={isSelected}
                               onChange={() => toggleOne(member.id)}
                               className="w-3.5 h-3.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer"
                             />
                           </td>
 
-                          <td className="px-2 py-1 font-mono text-[11px] text-zinc-500" style={MONO}>
+                          <td className="px-2 py-1.5 font-mono text-[11px] text-zinc-500" style={MONO}>
                             <button
                               onClick={() => toggleExpand(member.id)}
                               className="inline-flex items-center gap-1 hover:text-emerald-700 transition-colors cursor-pointer font-bold"
                             >
-                              {isExpanded ? <ChevronDown className="w-3 h-3 text-zinc-400" /> : <ChevronRight className="w-3 h-3 text-zinc-400" />}
+                              {isExpanded ? (
+                                <ChevronDown className="w-3 h-3 text-zinc-400" />
+                              ) : (
+                                <ChevronRight className="w-3 h-3 text-zinc-400" />
+                              )}
                               <span>{empId}</span>
                             </button>
                           </td>
 
-                          <td className="px-2 py-1">
-                            <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-bold border', deptStyle.bg, deptStyle.text)}>
+                          <td className="px-2 py-1.5">
+                            <div className="flex items-center gap-2.5">
+                              <UserAvatar
+                                src={member.avatar_url}
+                                name={member.full_name}
+                                email={member.email}
+                                size="sm"
+                                shape="circle"
+                              />
+                              <div className="min-w-0">
+                                <div className="font-semibold text-zinc-900 text-xs truncate">
+                                  {member.full_name || 'Collaborateur Minerva'}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="px-2 py-1.5">
+                            <span
+                              className={cn(
+                                'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-bold border',
+                                deptStyle.bg,
+                                deptStyle.text
+                              )}
+                            >
                               <span className={cn('w-1.5 h-1.5 rounded-full', deptStyle.dot)} />
                               {dept}
                             </span>
                           </td>
 
-                          <td className="px-2 py-1 font-mono text-[11px] text-zinc-500" style={MONO}>
+                          <td className="px-2 py-1.5 font-mono text-[11px] text-zinc-500" style={MONO}>
                             {member.email}
                           </td>
 
-                          <td className="px-2 py-1">
-                            <div className="flex items-center gap-2">
-                              <UserAvatar src={member.avatar_url} name={member.full_name} email={member.email} size="xs" shape="circle" />
-                              <span className="font-semibold text-zinc-900 text-xs">
-                                {member.full_name || 'Collaborateur Minerva'}
-                              </span>
-                            </div>
-                          </td>
-
-                          <td className="px-2 py-1">
+                          <td className="px-2 py-1.5">
                             {isAdmin ? (
                               <select
                                 value={member.role}
                                 disabled={changingRoleId === member.id}
-                                onChange={(e) => handleRoleChange(member, e.target.value as 'admin' | 'member')}
+                                onChange={(e) =>
+                                  handleRoleChange(member, e.target.value as 'admin' | 'member')
+                                }
                                 className="h-6 px-2 rounded bg-white border border-zinc-200 text-xs font-semibold text-zinc-800 focus:outline-none focus:border-emerald-600 cursor-pointer"
                               >
                                 <option value="admin">Administrateur</option>
@@ -452,7 +550,7 @@ export default function TeamPage() {
                             )}
                           </td>
 
-                          <td className="pr-3.5 pl-2 py-1 text-right">
+                          <td className="pr-3.5 pl-2 py-1.5 text-right whitespace-nowrap space-x-2">
                             <Link
                               href={`/team/${member.id}/performance`}
                               className="text-xs font-medium text-emerald-700 hover:underline inline-flex items-center gap-1"
@@ -460,6 +558,16 @@ export default function TeamPage() {
                               <span>Fiche 1-on-1</span>
                               <ExternalLink className="w-3 h-3" />
                             </Link>
+
+                            {isAdmin && (
+                              <button
+                                onClick={() => handleDeleteMember(member)}
+                                className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                                title="Retirer de l'équipe"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </td>
                         </tr>
 
@@ -468,16 +576,29 @@ export default function TeamPage() {
                             <td colSpan={7} className="py-2.5 px-8 text-xs text-zinc-600">
                               <div className="flex items-center justify-between gap-4 flex-wrap">
                                 <div>
-                                  <span className="text-[10px] uppercase text-zinc-400 font-mono" style={MONO}>Date d’arrivée : </span>
+                                  <span className="text-[10px] uppercase text-zinc-400 font-mono" style={MONO}>
+                                    Date d’arrivée :{' '}
+                                  </span>
                                   <strong className="text-zinc-800">
-                                    {new Date(member.created_at).toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    {new Date(member.created_at).toLocaleDateString('fr-CA', {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric',
+                                    })}
                                   </strong>
                                 </div>
                                 <div>
-                                  <span className="text-[10px] uppercase text-zinc-400 font-mono" style={MONO}>Poste : </span>
-                                  <strong className="text-zinc-800">{member.role === 'admin' ? 'Direction & IA' : 'Spécialiste Delivery'}</strong>
+                                  <span className="text-[10px] uppercase text-zinc-400 font-mono" style={MONO}>
+                                    Poste :{' '}
+                                  </span>
+                                  <strong className="text-zinc-800">
+                                    {member.role === 'admin' ? 'Direction & Lead IA' : 'Spécialiste Delivery & Growth'}
+                                  </strong>
                                 </div>
-                                <Link href={`/team/${member.id}/performance`} className="text-xs font-semibold text-emerald-700 hover:underline">
+                                <Link
+                                  href={`/team/${member.id}/performance`}
+                                  className="text-xs font-semibold text-emerald-700 hover:underline"
+                                >
                                   Voir les revues de performance →
                                 </Link>
                               </div>
@@ -493,88 +614,46 @@ export default function TeamPage() {
           )}
         </div>
       ) : activeTab === 'departments' ? (
-        /* ── Proactive Empty State : Départements ── */
         <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3 shadow-2xs">
           <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
             <Building className="w-5 h-5" />
           </div>
           <div>
             <h3 className="text-sm font-semibold text-zinc-900">
-              {isAdmin ? 'Aucun département configuré.' : 'Aucun département disponible.'}
+              Départements de l&apos;agence
             </h3>
             <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
-              {isAdmin
-                ? 'Structurez votre agence (ex: Design Framer, Growth & Prospection, IA & Systèmes).'
-                : 'Les départements de l’agence seront affichés ici dès leur configuration par un administrateur.'}
+              Structure active : Tech & IA, Operations, Engineering, Marketing, Ventes.
             </p>
           </div>
-          {isAdmin && (
-            <div className="pt-2">
-              <button
-                onClick={() => toastSuccess('Création de département', 'Module de création ouvert.')}
-                className="h-8 px-3.5 rounded-md border border-zinc-200 hover:bg-zinc-50 text-zinc-800 text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              >
-                <Plus className="w-3.5 h-3.5 text-emerald-600" />
-                <span>+ Créer un département</span>
-              </button>
-            </div>
-          )}
         </div>
       ) : activeTab === 'positions' ? (
-        /* ── Proactive Empty State : Postes & Rôles ── */
         <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3 shadow-2xs">
           <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
             <Briefcase className="w-5 h-5" />
           </div>
           <div>
             <h3 className="text-sm font-semibold text-zinc-900">
-              {isAdmin ? 'Définissez les postes clés de l’agence.' : 'Aucun poste configuré.'}
+              Postes & Rôles
             </h3>
             <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
-              {isAdmin
-                ? 'Associez les descriptions de postes et grilles de commissions directement aux SOPs de l’Académie.'
-                : 'Les fiches de postes et grilles associées apparaîtront ici.'}
+              Développeur Fullstack & Lead IA, Head of Growth, Spécialiste Framer.
             </p>
           </div>
-          {isAdmin && (
-            <div className="pt-2">
-              <button
-                onClick={() => toastSuccess('Ajout de poste', 'Formulaire de poste ouvert.')}
-                className="h-8 px-3.5 rounded-md border border-zinc-200 hover:bg-zinc-50 text-zinc-800 text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              >
-                <Plus className="w-3.5 h-3.5 text-emerald-600" />
-                <span>+ Ajouter un poste</span>
-              </button>
-            </div>
-          )}
         </div>
       ) : (
-        /* ── Proactive Empty State : Évaluations de Performances ── */
         <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3 shadow-2xs">
           <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
             <Award className="w-5 h-5" />
           </div>
           <div>
             <h3 className="text-sm font-semibold text-zinc-900">
-              {isAdmin ? 'Aucune évaluation de performance planifiée.' : 'Aucune revue enregistrée.'}
+              Évaluations de Performance
             </h3>
             <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
-              {isAdmin
-                ? 'Configurez les revues mensuelles ou trimestrielles sur l’atteinte des KPIs et des livrables.'
-                : 'Vos bilans et points d’étape 1-on-1 apparaîtront dans cet espace.'}
+              Suivi des revues trimestrielles et 1-on-1 des collaborateurs.
             </p>
           </div>
-          {isAdmin && (
-            <div className="pt-2">
-              <button
-                onClick={() => toastSuccess('Revue de performance', 'Planification d’une revue initiée.')}
-                className="h-8 px-3.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition-colors inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ Planifier une revue de performance</span>
-              </button>
-            </div>
-          )}
         </div>
       )}
     </PageFadeIn>

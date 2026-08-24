@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 
 const NAV = [
   { key: 'overview', label: 'Tableau de bord', href: '/portal', icon: LayoutDashboard },
+  { key: 'requests', label: '📊 Résultats & Demandes', href: '/portal/requests', icon: Sparkles },
   { key: 'tasks', label: '⚡ Avancement & Livrables', href: '/portal/tasks', icon: Zap },
   { key: 'performance', label: 'Performance détaillée', href: '/portal/performance', icon: BarChart3 },
   { key: 'calendar', label: 'Calendrier éditorial', href: '/portal/calendar', icon: Calendar },

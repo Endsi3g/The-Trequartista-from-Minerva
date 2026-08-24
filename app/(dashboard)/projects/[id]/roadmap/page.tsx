@@ -20,6 +20,8 @@ import {
   Check,
   Mail,
   Send,
+  Utensils,
+  BookOpen,
 } from 'lucide-react';
 import {
   fetchProjects,
@@ -33,6 +35,7 @@ import type { Project, ProjectMilestone } from '@/lib/types';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { MilestoneEmailModal } from '@/components/projects/MilestoneEmailModal';
+import { MinervaFlowProjectGuide } from '@/components/projects/MinervaFlowProjectGuide';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { cn } from '@/lib/utils';
 
@@ -48,6 +51,17 @@ const SERVICE_PACKAGE_TEMPLATES: Record<
   string,
   { label: string; description: string; phases: { title: string; dueOffsetDays: number; deliverables: string[] }[] }
 > = {
+  minerva_flow: {
+    label: 'Minerva-Flow (0% Commission)',
+    description: 'Commande directe, carte digitalisée, QR codes cuisine et 0 % commission',
+    phases: [
+      { title: '01. Audit des Marges & Démonstration Live', dueOffsetDays: 2, deliverables: ['Audit Marge', 'Démo /minerva-flow'] },
+      { title: '02. Digitalisation du Menu & Photos Culinaire HD', dueOffsetDays: 5, deliverables: ['10+ Plats Digitalisés', 'Allergènes & Options'] },
+      { title: '03. Passerelle de Paiement Stripe & QR Codes Cuisine', dueOffsetDays: 8, deliverables: ['Stripe Direct', 'Impression ESC/POS', 'QR Tables'] },
+      { title: '04. Protocole Test 5-Min en Cuisine Réelle', dueOffsetDays: 11, deliverables: ['Test Commande Live', 'Validation Chef < 20 min'] },
+      { title: '05. Lancement Officiel & Suivi en Temps Réel', dueOffsetDays: 14, deliverables: ['Mise en Ligne', 'Formation Salle', 'Dashboard Client'] },
+    ],
+  },
   framer: {
     label: 'Framer Web Design',
     description: 'Structure complète de refonte web Framer & animations',
@@ -120,6 +134,7 @@ export default function ProjectRoadmapPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
   const [emailMilestone, setEmailMilestone] = useState<ProjectMilestone | null>(null);
+  const [activeTab, setActiveTab] = useState<'milestones' | 'guide'>('milestones');
 
   // Inline creation states
   const [inlineOpen, setInlineOpen] = useState(false);
@@ -184,17 +199,16 @@ export default function ProjectRoadmapPage() {
     });
 
     setSavingInline(false);
-    if (!created) {
-      toastError('Erreur', 'Impossible d’enregistrer le jalon.');
-      return;
+    if (created) {
+      setInlineTitle('');
+      setInlineDueDate('');
+      setInlineAssigneeId('');
+      setInlineOpen(false);
+      await loadMilestones(projectId);
+      toastSuccess('Jalon créé', `« ${created.title} » a été ajouté à la feuille de route.`);
+    } else {
+      toastError('Erreur', 'Impossible de créer le jalon.');
     }
-
-    toastSuccess('Jalon ajouté', `« ${inlineTitle.trim()} » a été inséré dans la roadmap.`);
-    setInlineTitle('');
-    setInlineDueDate('');
-    setInlineAssigneeId('');
-    setInlineOpen(false);
-    await loadMilestones(projectId);
   };
 
   const handleApplyServiceTemplate = async (templateKey: string) => {
@@ -349,290 +363,227 @@ export default function ProjectRoadmapPage() {
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Nouveau Jalon</span>
-            <kbd className="hidden sm:inline text-[9px] bg-white/20 px-1 py-0.2 rounded font-mono">C</kbd>
           </button>
         </div>
       </div>
 
-      {/* ── 2. Unified 36px Synthesis Strip ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] shadow-2xs overflow-hidden">
-        <div className="h-9 px-3.5 flex items-center justify-between gap-4 text-xs">
-          {/* Progress Counters */}
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Avancement :</span>
-            <span className="font-semibold font-mono text-zinc-900 text-[12px]" style={MONO}>
-              {doneCount}/{totalCount} complétés
-            </span>
-            <span className="text-[11px] font-mono text-emerald-700 font-bold ml-0.5" style={MONO}>
-              ({progressPct}%)
-            </span>
-          </div>
+      {/* ── Sub-Tabs Switcher: Jalons vs Guide Déploiement Minerva-Flow ── */}
+      <div className="flex items-center gap-2 border-b border-mv-border pb-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab('milestones')}
+          className={cn(
+            'px-3 py-1.5 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5',
+            activeTab === 'milestones'
+              ? 'border-emerald-600 text-zinc-900 font-extrabold'
+              : 'border-transparent text-zinc-500 hover:text-zinc-800'
+          )}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>Feuille de Route & Jalons ({milestones.length})</span>
+        </button>
 
-          {/* Date Cible */}
-          <div className="hidden sm:flex items-center gap-1.5 text-zinc-600 font-mono text-[11.5px]" style={MONO}>
-            <Calendar className="w-3.5 h-3.5 text-zinc-400" />
-            <span>Cible : {targetDueDateFormatted}</span>
-          </div>
-
-          {/* Statut Dans les temps */}
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 font-mono" style={MONO}>
-              Dans les temps
-            </span>
-          </div>
-
-          {/* Compte à rebours */}
-          <div className="flex items-center gap-1 text-zinc-600 font-mono text-[11.5px]" style={MONO}>
-            <Clock className="w-3.5 h-3.5 text-zinc-400" />
-            <span className="font-semibold text-zinc-900">{daysLeft}j</span>
-            <span className="text-zinc-400 hidden sm:inline">restants</span>
-          </div>
-        </div>
-
-        {/* Continuous 3px Progress Gauge */}
-        <div className="h-[3px] w-full bg-zinc-100 relative">
-          <div
-            className="h-full bg-emerald-600 transition-all duration-500 ease-out"
-            style={{ width: `${Math.max(2, progressPct)}%` }}
-          />
-        </div>
+        <button
+          type="button"
+          onClick={() => setActiveTab('guide')}
+          className={cn(
+            'px-3 py-1.5 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5',
+            activeTab === 'guide'
+              ? 'border-emerald-600 text-zinc-900 font-extrabold'
+              : 'border-transparent text-zinc-500 hover:text-zinc-800'
+          )}
+        >
+          <Utensils className="w-3.5 h-3.5 text-emerald-600" />
+          <span>📖 Guide Déploiement Minerva-Flow</span>
+        </button>
       </div>
 
-      {/* ── 3. High-Density 36px DataTable with Dedicated Page Routing ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
-        <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full text-[12px] border-collapse min-w-[700px]">
-            <thead>
-              <tr className="h-7 bg-black/[0.02] border-b border-mv-border text-[10.5px] font-medium uppercase tracking-wider text-zinc-400">
-                <th className="pl-3.5 pr-2 w-12 text-left font-medium">Ordre</th>
-                <th className="px-2 text-left font-medium">Jalon / Phase Technique</th>
-                <th className="px-2 text-left font-medium">Échéance</th>
-                <th className="px-2 text-left font-medium">Statut</th>
-                <th className="px-2 text-left font-medium">Responsable</th>
-                <th className="pr-3.5 pl-2 text-right font-medium">Actions</th>
-              </tr>
-            </thead>
+      {/* ── Tab 2: Minerva-Flow Deployment Guide ── */}
+      {activeTab === 'guide' ? (
+        <MinervaFlowProjectGuide restaurantName={project?.client_name || project?.name || 'Votre Client'} />
+      ) : (
+        /* ── Tab 1: Milestones & Roadmap ── */
+        <>
+          {/* ── 2. Continuous Project Synthesis Strip (32px) ── */}
+          <div
+            className="h-8 bg-mv-surface border border-mv-border rounded-[5px] px-3.5 flex items-center justify-between text-[11px] font-mono text-zinc-600 shadow-2xs overflow-x-auto whitespace-nowrap gap-4"
+            style={MONO}
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="text-zinc-400">STATUS :</span>
+              <span className="font-semibold text-zinc-900">{project?.current_stage || 'Onboarding'}</span>
+            </div>
+            <span className="text-zinc-300">·</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-zinc-400">JALONS COMPLÉTÉS :</span>
+              <span className="font-semibold text-mv-green">
+                {doneCount}/{totalCount} ({progressPct}%)
+              </span>
+            </div>
+            <span className="text-zinc-300">·</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-zinc-400">ÉCHÉANCE GLOBALE :</span>
+              <span className="font-semibold text-zinc-900">{targetDueDateFormatted}</span>
+            </div>
+            <span className="text-zinc-300">·</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-zinc-400">TEMPS RESTANT :</span>
+              <span className="font-semibold text-zinc-900">{daysLeft} jours</span>
+            </div>
+          </div>
 
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-xs text-zinc-400 font-mono">
-                    Chargement de la feuille de route…
-                  </td>
-                </tr>
-              ) : milestones.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center space-y-3">
-                    <p className="text-xs font-semibold text-zinc-700">Aucun jalon configuré pour ce projet</p>
-                    <p className="text-[11px] text-zinc-400 max-w-md mx-auto">
-                      Cliquez sur « Générer selon service » ci-dessus ou appliquez les 5 phases standard Framer.
-                    </p>
-                    <button
-                      onClick={() => handleApplyServiceTemplate('framer')}
-                      className="h-7 px-3 rounded-[4px] bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1.5"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Générer les 5 phases types Framer</span>
-                    </button>
-                  </td>
-                </tr>
-              ) : (
-                milestones.map((m, idx) => {
+          {/* ── 3. Main Milestones List ── */}
+          <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
+            {/* Inline Quick Creation Row */}
+            {inlineOpen && (
+              <form
+                onSubmit={handleInlineSubmit}
+                className="p-3 bg-emerald-50/50 border-b border-emerald-200/80 flex items-center gap-2 flex-wrap text-xs animate-in fade-in"
+              >
+                <input
+                  ref={inlineInputRef}
+                  type="text"
+                  required
+                  placeholder="Intitulé du nouveau jalon... (Entrée pour valider)"
+                  value={inlineTitle}
+                  onChange={(e) => setInlineTitle(e.target.value)}
+                  className="flex-1 min-w-[200px] h-7 px-2.5 rounded bg-white border border-emerald-300 text-xs text-zinc-900 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+                <input
+                  type="date"
+                  value={inlineDueDate}
+                  onChange={(e) => setInlineDueDate(e.target.value)}
+                  className="h-7 px-2 rounded bg-white border border-zinc-200 text-[11px] text-zinc-700 focus:outline-none"
+                />
+                <select
+                  value={inlineAssigneeId}
+                  onChange={(e) => setInlineAssigneeId(e.target.value)}
+                  className="h-7 px-2 rounded bg-white border border-zinc-200 text-[11px] text-zinc-700 focus:outline-none"
+                >
+                  <option value="">Assigné...</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.full_name || m.email}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  disabled={savingInline || !inlineTitle.trim()}
+                  className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded text-xs transition-colors cursor-pointer"
+                >
+                  Ajouter
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInlineOpen(false)}
+                  className="h-7 px-2 text-zinc-500 hover:text-zinc-800 text-xs"
+                >
+                  Annuler
+                </button>
+              </form>
+            )}
+
+            {loading ? (
+              <p className="text-xs text-zinc-400 text-center py-10 font-mono">Chargement des jalons…</p>
+            ) : milestones.length === 0 ? (
+              <div className="py-12 text-center space-y-3">
+                <p className="text-xs font-semibold text-zinc-700">Aucun jalon défini sur ce chantier.</p>
+                <p className="text-[11px] text-zinc-400 max-w-sm mx-auto">
+                  Cliquez sur « Générer selon service » ci-dessus pour appliquer le template Minerva-Flow ou appuyez sur « C » pour ajouter un jalon.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-zinc-100">
+                {milestones.map((m, idx) => {
                   const isDone = m.status === 'done';
-                  const dateFormatted = m.due_date
-                    ? new Date(m.due_date + 'T00:00:00').toLocaleDateString('fr-CA', {
-                        day: 'numeric',
-                        month: 'short',
-                      })
-                    : 'Non fixée';
-
+                  const assignee = members.find((mem) => mem.id === m.assignee_id);
                   return (
-                    <tr
+                    <div
                       key={m.id}
-                      onClick={() => router.push(`/projects/${projectId}/roadmap/${m.id}`)}
-                      className="h-9 border-b border-mv-border last:border-0 hover:bg-black/[0.02] transition-colors cursor-pointer group"
+                      className={cn(
+                        'p-3 sm:p-3.5 flex items-center justify-between gap-3 hover:bg-zinc-50/50 transition-colors group',
+                        isDone && 'bg-zinc-50/30'
+                      )}
                     >
-                      {/* # Ordre */}
-                      <td className="pl-3.5 pr-2 py-1 font-mono text-[11px] text-zinc-400" style={MONO}>
-                        #{String(idx + 1).padStart(2, '0')}
-                      </td>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggle(m, e)}
+                          className="text-zinc-400 hover:text-emerald-600 transition-colors cursor-pointer shrink-0"
+                          title={isDone ? 'Marquer comme en cours' : 'Marquer comme complété'}
+                        >
+                          {isDone ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          ) : (
+                            <Circle className="w-4 h-4 text-zinc-300" />
+                          )}
+                        </button>
 
-                      {/* Jalon / Phase */}
-                      <td className="px-2 py-1 min-w-[240px]">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={(e) => handleToggle(m, e)}
-                            className="text-zinc-400 hover:text-emerald-600 transition-colors cursor-pointer shrink-0"
-                            title={isDone ? 'Marquer à faire' : 'Marquer complété'}
-                          >
-                            {isDone ? (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            ) : (
-                              <Circle className="w-3.5 h-3.5 text-zinc-400 hover:text-emerald-600" />
-                            )}
-                          </button>
-                          <span
-                            className={cn(
-                              'font-semibold truncate transition-colors',
-                              isDone ? 'line-through text-zinc-400' : 'text-zinc-900 group-hover:text-emerald-700'
-                            )}
-                          >
-                            {m.title}
-                          </span>
-                        </div>
-                      </td>
+                        <span className="text-[11px] font-mono text-zinc-400 shrink-0" style={MONO}>
+                          #{String(idx + 1).padStart(2, '0')}
+                        </span>
 
-                      {/* Échéance */}
-                      <td className="px-2 py-1 font-mono text-[11px] text-zinc-500 whitespace-nowrap" style={MONO}>
-                        {dateFormatted}
-                      </td>
+                        <span
+                          className={cn(
+                            'text-xs sm:text-sm font-semibold truncate transition-colors',
+                            isDone ? 'line-through text-zinc-400' : 'text-zinc-900'
+                          )}
+                        >
+                          {m.title}
+                        </span>
+                      </div>
 
-                      {/* Statut */}
-                      <td className="px-2 py-1 whitespace-nowrap">
-                        {isDone ? (
-                          <span className="inline-flex items-center gap-1 text-[10.5px] text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded font-medium">
-                            <span>✓ Complété</span>
-                          </span>
-                        ) : idx === doneCount ? (
-                          <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span>● En cours</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10.5px] text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded font-medium">
-                            <span>○ En attente</span>
+                      <div className="flex items-center gap-3 shrink-0">
+                        {m.due_date && (
+                          <span className="text-[11px] font-mono text-zinc-500" style={MONO}>
+                            {new Date(m.due_date).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })}
                           </span>
                         )}
-                      </td>
 
-                      {/* Responsable */}
-                      <td className="px-2 py-1 text-zinc-600 whitespace-nowrap text-[11px]">
-                        {m.assignee_name || 'Équipe Minerva'}
-                      </td>
+                        {assignee && (
+                          <span className="text-[11px] text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded font-medium">
+                            {assignee.full_name || assignee.email}
+                          </span>
+                        )}
 
-                      {/* Actions */}
-                      <td className="pr-3.5 pl-2 py-1 text-right whitespace-nowrap space-x-1.5">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEmailMilestone(m);
-                          }}
-                          className="h-6 px-1.5 text-[10.5px] font-medium border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          type="button"
+                          onClick={() => setEmailMilestone(m)}
+                          className="p-1 rounded text-zinc-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
                           title="Notifier le client par email"
                         >
-                          <Mail className="w-3 h-3 text-emerald-600" />
-                          <span className="hidden sm:inline">Notifier</span>
+                          <Mail className="w-3.5 h-3.5" />
                         </button>
+
                         <button
+                          type="button"
                           onClick={(e) => handleDelete(m, e)}
-                          className="text-zinc-400 hover:text-rose-600 p-1 transition-colors opacity-0 group-hover:opacity-100"
-                          title="Supprimer"
+                          className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+                          title="Supprimer ce jalon"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                        <span className="text-[11px] font-medium text-emerald-700 group-hover:underline inline-flex items-center gap-0.5">
-                          <span>Ouvrir</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-
-              {/* ── 4. Inline Creation Row ── */}
-              {inlineOpen ? (
-                <tr className="h-10 bg-emerald-50/40 border-t border-emerald-200">
-                  <td className="pl-3.5 pr-2 py-1 font-mono text-[11px] text-emerald-600" style={MONO}>
-                    +{String(milestones.length + 1).padStart(2, '0')}
-                  </td>
-                  <td className="px-2 py-1">
-                    <input
-                      ref={inlineInputRef}
-                      type="text"
-                      value={inlineTitle}
-                      onChange={(e) => setInlineTitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleInlineSubmit();
-                        if (e.key === 'Escape') setInlineOpen(false);
-                      }}
-                      placeholder="Nom du jalon (ex: Validation des maquettes)..."
-                      className="w-full h-7 px-2 text-xs rounded border border-emerald-300 bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                    />
-                  </td>
-                  <td className="px-2 py-1">
-                    <input
-                      type="date"
-                      value={inlineDueDate}
-                      onChange={(e) => setInlineDueDate(e.target.value)}
-                      className="h-7 px-1.5 text-xs rounded border border-emerald-300 bg-white text-zinc-900 focus:outline-none font-mono"
-                      style={MONO}
-                    />
-                  </td>
-                  <td className="px-2 py-1">
-                    <span className="text-[10.5px] font-medium text-emerald-700 bg-white px-2 py-1 rounded border border-emerald-200">
-                      Nouveau
-                    </span>
-                  </td>
-                  <td className="px-2 py-1">
-                    <select
-                      value={inlineAssigneeId}
-                      onChange={(e) => setInlineAssigneeId(e.target.value)}
-                      className="h-7 px-1.5 text-xs rounded border border-emerald-300 bg-white text-zinc-900 focus:outline-none"
-                    >
-                      <option value="">Assigner...</option>
-                      {members.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.full_name || m.email}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="pr-3.5 pl-2 py-1 text-right space-x-1 whitespace-nowrap">
-                    <button
-                      onClick={() => setInlineOpen(false)}
-                      className="h-6 px-2 text-[11px] text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200/50 rounded transition-colors cursor-pointer"
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      onClick={() => handleInlineSubmit()}
-                      disabled={savingInline || !inlineTitle.trim()}
-                      className="h-6 px-2.5 text-[11px] font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
-                    >
-                      Ajouter
-                    </button>
-                  </td>
-                </tr>
-              ) : (
-                <tr
-                  onClick={() => {
-                    setInlineOpen(true);
-                    setTimeout(() => inlineInputRef.current?.focus(), 50);
-                  }}
-                  className="h-8 border-t border-dashed border-mv-border hover:bg-zinc-50/80 transition-colors cursor-pointer text-zinc-400 hover:text-zinc-700"
-                >
-                  <td colSpan={6} className="px-3.5 py-1 text-left text-[11.5px] font-medium">
-                    <div className="flex items-center gap-1.5">
-                      <Plus className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>+ Ajouter un jalon à la feuille de route (C ou N)</span>
+                      </div>
                     </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
-      {/* ── 5. Milestone Email Notification Modal ── */}
-      <MilestoneEmailModal
-        isOpen={!!emailMilestone}
-        onClose={() => setEmailMilestone(null)}
-        milestone={emailMilestone}
-        clientName={project?.client_name || 'Client'}
-      />
+      {/* Email Notification Modal */}
+      {emailMilestone && (
+        <MilestoneEmailModal
+          isOpen={Boolean(emailMilestone)}
+          onClose={() => setEmailMilestone(null)}
+          milestone={emailMilestone}
+          clientName={project?.client_name || 'Client'}
+          clientEmail="direction@bellanapoli.ca"
+        />
+      )}
     </PageFadeIn>
   );
 }

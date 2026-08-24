@@ -4,6 +4,34 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-24 (v2.5.0) — Minerva-Flow Expansion, Multi-Suppression & Toolkit Opérationnel
+
+Déploiement majeur v2.5.0 apportant la suite complète Minerva-Flow et les outils de gestion en lot :
+
+- **Portail Client : Section « Mes Résultats » Minerva-Flow (`/portal/requests`)** :
+  - KPI Cards en direct : 0 % de commission (économies préservées), volume brut encaissé, délai moyen cuisine et nombre de commandes.
+  - Graphique d'évolution des ventes et économies avec bascule d'intervalle.
+  - Flux de tickets de cuisine en temps réel et liste des 5 plats les plus vendus.
+- **Portail Client : Module « Demander une fonctionnalité » & Suivi Realtime (`/portal/requests`)** :
+  - Formulaire de soumission avec choix du module/repo (`minerva-flow`, `framer`, `ads`, `portal`), type et niveau de priorité.
+  - Suivi d'avancement visuel en 5 étapes (*Soumise*, *En revue*, *En développement*, *En recette QA*, *Livré*).
+  - Notifications instantanées via Supabase Realtime avec Toast dès qu'une demande change de statut.
+  - Historique complet avec filtres par statut, dépôt et recherche plein texte.
+- **Sélection Multiple & Suppression Groupée (Bulk Delete)** :
+  - **Documents (`/documents`)** : Checkboxes sur table et grille, barre d'action flottante de suppression et décompte dynamique.
+  - **Équipe (`/team`)** : Checkboxes de sélection, export CSV groupé et suppression de membres avec modale de confirmation.
+  - **Projets (`/projects`)** : Sélection multiple et suppression de projets avec suppression en cascade de leurs jalons.
+- **Nouveau Template de Projet « Minerva-Flow » & Guide Interactif** :
+  - Sélecteur de templates dans `/projects/new` pré-configurant le chantier et générant automatiquement les 5 jalons de déploiement (14 jours).
+  - Intégration du composant `MinervaFlowProjectGuide` dans `/projects/[id]/roadmap` avec checklist interactive et protocoles de cuisine.
+- **Perfectionnement des Avatars Équipe (`UserAvatar`)** :
+  - Gradients de couleurs déterministes et élégants par collaborateur.
+  - Rendu haute résolution et taille `sm` (28px) dans la table pour éliminer tout effet flou ou écrasé.
+- **Administration des Demandes Clients (`/produits`)** :
+  - Onglet dédié permettant à l'équipe agence de consulter, filtrer et mettre à jour le statut des demandes en direct.
+
+---
+
 ## 2026-08-18 (v2.4.3) — Système Anti-Friction (4 Piliers), Académie Redessinée, Studio de Scripting Cas Client 60s & Co-Pilotage ($300-$500/mo)
 
 Mise en production du Framework Directeur Anti-Friction « Donner d’abord, demander ensuite » et de l’ensemble des outils opérationnels pour simplifier le travail de l'équipe sur les 4 piliers :

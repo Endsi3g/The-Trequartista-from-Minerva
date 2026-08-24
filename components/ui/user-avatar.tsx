@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
 export interface UserAvatarProps {
@@ -34,6 +34,27 @@ const STATUS_SIZE_MAP = {
   '2xl': 'w-4 h-4 ring-2',
 };
 
+// Distinct curated gradients based on user string hash
+const AVATAR_GRADIENTS = [
+  'bg-gradient-to-br from-emerald-600 to-teal-800 text-white',
+  'bg-gradient-to-br from-blue-600 to-indigo-800 text-white',
+  'bg-gradient-to-br from-purple-600 to-indigo-900 text-white',
+  'bg-gradient-to-br from-rose-500 to-pink-700 text-white',
+  'bg-gradient-to-br from-amber-500 to-orange-700 text-white',
+  'bg-gradient-to-br from-cyan-600 to-blue-800 text-white',
+  'bg-gradient-to-br from-violet-600 to-purple-800 text-white',
+  'bg-gradient-to-br from-zinc-700 to-zinc-900 text-white',
+];
+
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
 export function getInitials(name?: string | null, email?: string | null): string {
   if (name && name.trim()) {
     const parts = name.trim().split(/\s+/);
@@ -62,7 +83,13 @@ export function UserAvatar({
   textColor,
 }: UserAvatarProps) {
   const [hasError, setHasError] = useState(false);
-  const initials = getInitials(name, email);
+  const initials = useMemo(() => getInitials(name, email), [name, email]);
+
+  const gradientClass = useMemo(() => {
+    const seed = name || email || 'minerva';
+    const index = hashString(seed) % AVATAR_GRADIENTS.length;
+    return AVATAR_GRADIENTS[index];
+  }, [name, email]);
 
   // Reset error state if src changes
   useEffect(() => {
@@ -70,44 +97,60 @@ export function UserAvatar({
   }, [src]);
 
   const sizeClass = SIZE_MAP[size] || SIZE_MAP.md;
-  const shapeClass = shape === 'circle' ? 'rounded-full' : 'rounded-xl';
+  const shapeClass = shape === 'circle' ? 'rounded-full' : 'rounded-lg';
 
-  const showImage = Boolean(src && !hasError && !src.includes('dicebear.com/7.x/broken'));
+  const validSrc = Boolean(
+    src &&
+      src.trim() !== '' &&
+      !hasError &&
+      !src.includes('dicebear.com/7.x/broken') &&
+      (src.startsWith('http') || src.startsWith('/') || src.startsWith('data:'))
+  );
 
   return (
-    <div className={cn('relative inline-flex shrink-0 select-none items-center justify-center font-display font-bold tracking-wider', sizeClass, className)}>
-      {showImage ? (
+    <div
+      className={cn(
+        'relative inline-flex shrink-0 select-none items-center justify-center font-display font-bold tracking-wider overflow-hidden ring-1 ring-black/[0.06] shadow-2xs',
+        sizeClass,
+        shapeClass,
+        className
+      )}
+    >
+      {validSrc ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={src!}
           alt={name || email || 'Avatar'}
+          loading="lazy"
           onError={() => setHasError(true)}
-          className={cn('w-full h-full object-cover border border-mv-border/80 shadow-mv-sm transition-opacity duration-200', shapeClass)}
+          className={cn(
+            'w-full h-full object-cover transition-opacity duration-200',
+            shapeClass
+          )}
         />
       ) : (
         <div
           className={cn(
-            'w-full h-full flex items-center justify-center border border-mv-green/30 shadow-mv-sm select-none',
+            'w-full h-full flex items-center justify-center select-none font-bold',
             shapeClass,
-            bgColor ? '' : 'bg-[#059669]',
-            textColor ? '' : 'text-[#F7F5F0]'
+            bgColor ? '' : gradientClass
           )}
           style={{
-            backgroundColor: bgColor || '#059669',
-            color: textColor || '#F7F5F0',
+            backgroundColor: bgColor || undefined,
+            color: textColor || undefined,
           }}
           title={name || email || 'Minerva'}
         >
-          <span>{initials}</span>
+          <span className="leading-none">{initials}</span>
         </div>
       )}
 
       {showStatus && (
         <span
           className={cn(
-            'absolute bottom-0 right-0 rounded-full ring-mv-surface',
+            'absolute bottom-0 right-0 rounded-full ring-2 ring-white',
             STATUS_SIZE_MAP[size] || STATUS_SIZE_MAP.md,
-            statusActive ? 'bg-mv-green' : 'bg-mv-ink-faint'
+            statusActive ? 'bg-emerald-500' : 'bg-zinc-400'
           )}
         />
       )}

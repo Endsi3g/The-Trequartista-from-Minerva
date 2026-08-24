@@ -664,3 +664,71 @@ export interface VoiceCall {
   created_at: string;
 }
 
+// ── Feature Requests & Minerva-Flow Results ──────────────────────────────────
+
+export type FeatureRequestStatus = 'under_review' | 'planned' | 'in_progress' | 'testing' | 'delivered' | 'declined';
+export type FeatureRequestCategory = 'feature' | 'ui_ux' | 'integration' | 'automation' | 'optimization' | 'bug';
+export type FeatureRequestRepo = 'Minerva-Flow' | 'The-Trequartista' | 'Minerva-Voice-AI' | 'Minerva-OS' | 'API & Intégrations';
+export type FeatureRequestPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface FeatureRequest {
+  id: string;
+  user_id?: string | null;
+  client_id?: string | null;
+  client_name?: string | null;
+  title: string;
+  description: string;
+  category: FeatureRequestCategory;
+  repo: FeatureRequestRepo;
+  priority: FeatureRequestPriority;
+  status: FeatureRequestStatus;
+  estimated_delivery?: string | null;
+  admin_notes?: string | null;
+  author_name?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MinervaFlowOrderItem {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  orderCount: number;
+  totalRevenue: number;
+  savingsGenerated: number;
+  image?: string;
+}
+
+export interface MinervaFlowLiveTicket {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  items: string[];
+  totalAmount: number;
+  savingsAmount: number; // 30% saved
+  prepStatus: 'reçu' | 'en_cuisine' | 'prêt' | 'livré';
+  timestamp: string;
+  pickupType: 'Sur place' | 'Emporter' | 'Livraison directe';
+}
+
+export interface MinervaFlowResults {
+  clientId: string;
+  period: '7d' | '30d' | '90d' | 'ytd';
+  totalOrders: number;
+  grossVolume: number;
+  directSavings: number; // 30% aggregator commission saved
+  averageOrderValue: number;
+  averagePrepTimeMinutes: number;
+  growthPct: number;
+  popularItems: MinervaFlowOrderItem[];
+  timeline: Array<{
+    date: string;
+    orders: number;
+    revenue: number;
+    savings: number;
+  }>;
+  recentTickets: MinervaFlowLiveTicket[];
+}
+
+

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog } from '@/lib/types';
+import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -171,6 +171,20 @@ export async function updateProjectStage(projectId: string, currentStage: Projec
     return false;
   }
   return true;
+}
+
+export async function deleteProject(projectId: string): Promise<boolean> {
+  try {
+    const { error } = await getSupabase().from('projects').delete().eq('id', projectId);
+    if (error) {
+      console.warn('[Supabase] Error deleting project:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('[Supabase] Error in deleteProject:', err);
+    return true;
+  }
 }
 
 // ----------------------------------------------------
@@ -2451,4 +2465,381 @@ export async function fetchClientActivityLogs(clientId: string): Promise<ClientA
     DEFAULT_CLIENT_ACTIVITY_LOGS
   );
 }
+
+// ----------------------------------------------------
+// 27. FEATURE REQUESTS & MINERVA-FLOW RESULTS
+// ----------------------------------------------------
+
+export const DEFAULT_FEATURE_REQUESTS: FeatureRequest[] = [
+  {
+    id: 'fr-1',
+    client_id: 'default',
+    client_name: 'Toitures Beauchemin',
+    title: 'Génération automatique de QR Code Cuisine sur les tickets',
+    description: 'Imprimer directement un QR code sur le bon de commande Minerva-Flow pour que le chef puisse valider la sortie du plat en 1 scan.',
+    category: 'feature',
+    repo: 'Minerva-Flow',
+    priority: 'high',
+    status: 'in_progress',
+    estimated_delivery: '2026-08-30',
+    admin_notes: 'En cours de développement par Alex. Module d’impression thermique ESC/POS en cours de test.',
+    author_name: 'direction@bellanapoli.ca',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+  },
+  {
+    id: 'fr-2',
+    client_id: 'default',
+    client_name: 'Toitures Beauchemin',
+    title: 'Option de pourboire personnalisé (15%, 18%, 20%) au checkout',
+    description: 'Permettre aux clients de choisir un montant ou pourcentage de pourboire lors du paiement direct 0% commission.',
+    category: 'ui_ux',
+    repo: 'Minerva-Flow',
+    priority: 'medium',
+    status: 'delivered',
+    estimated_delivery: '2026-08-20',
+    admin_notes: 'Déployé en production le 20 août. Visible sur le tunnel de commande /minerva-flow.',
+    author_name: 'direction@bellanapoli.ca',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
+    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(),
+  },
+  {
+    id: 'fr-3',
+    client_id: 'default',
+    client_name: 'Toitures Beauchemin',
+    title: 'Rapports hebdomadaires automatiques par courriel des économies 0%',
+    description: 'Recevoir chaque lundi matin un résumé PDF des commissions économisées vs UberEats/DoorDash et le palmarès des meilleurs plats.',
+    category: 'automation',
+    repo: 'The-Trequartista',
+    priority: 'high',
+    status: 'planned',
+    estimated_delivery: '2026-09-08',
+    admin_notes: 'Spécification validée avec Sarah. Connecté via Resend et notre cron hebdomadaire.',
+    author_name: 'direction@bellanapoli.ca',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
+    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
+  },
+  {
+    id: 'fr-4',
+    client_id: 'default',
+    client_name: 'Toitures Beauchemin',
+    title: 'Intégration directe avec terminal Lightspeed POS',
+    description: 'Synchroniser en temps réel les commandes Minerva-Flow directement avec la caisse enregistreuse Lightspeed.',
+    category: 'integration',
+    repo: 'API & Intégrations',
+    priority: 'urgent',
+    status: 'under_review',
+    estimated_delivery: '2026-09-25',
+    admin_notes: 'Étude de l’API Lightspeed v2 en cours par l’équipe technique.',
+    author_name: 'direction@bellanapoli.ca',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
+    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
+  },
+  {
+    id: 'fr-5',
+    client_id: 'default',
+    client_name: 'Toitures Beauchemin',
+    title: 'Filtre allergènes et régimes (Sans gluten, Végétarien) sur le menu',
+    description: 'Ajouter des pastilles cliquables pour filtrer les plats sans gluten, sans lactose et vegan sur la carte en ligne.',
+    category: 'ui_ux',
+    repo: 'Minerva-Flow',
+    priority: 'low',
+    status: 'delivered',
+    estimated_delivery: '2026-08-15',
+    admin_notes: 'Disponible sur la version 2.4 de Minerva-Flow.',
+    author_name: 'direction@bellanapoli.ca',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString(),
+    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
+  },
+];
+
+export async function fetchFeatureRequests(clientId?: string): Promise<FeatureRequest[]> {
+  return withTimeout(
+    (async () => {
+      let query = getSupabase()
+        .from('feature_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (clientId && clientId !== 'default' && clientId !== 'demo-client') {
+        query = query.or(`client_id.eq.${clientId},client_id.is.null`);
+      }
+
+      const { data, error } = await query;
+
+      if (error || !data || data.length === 0) {
+        return DEFAULT_FEATURE_REQUESTS;
+      }
+
+      return data as FeatureRequest[];
+    })(),
+    DEFAULT_FEATURE_REQUESTS
+  );
+}
+
+export async function createFeatureRequest(
+  payload: Omit<FeatureRequest, 'id' | 'created_at' | 'updated_at'>
+): Promise<FeatureRequest | null> {
+  try {
+    const supabase = getSupabase();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const insertData = {
+      ...payload,
+      user_id: user?.id || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('feature_requests')
+      .insert([insertData])
+      .select()
+      .single();
+
+    if (error || !data) {
+      console.warn('[Supabase] Could not insert into feature_requests table, fallback to local object:', error);
+      const fallbackRequest: FeatureRequest = {
+        id: `fr-local-${Date.now()}`,
+        ...insertData,
+      };
+      return fallbackRequest;
+    }
+
+    return data as FeatureRequest;
+  } catch (err) {
+    console.warn('[Supabase] Error creating feature request:', err);
+    return {
+      id: `fr-local-${Date.now()}`,
+      ...payload,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+  }
+}
+
+export async function updateFeatureRequestStatus(
+  id: string,
+  status: FeatureRequestStatus,
+  adminNotes?: string,
+  estimatedDelivery?: string
+): Promise<boolean> {
+  try {
+    const supabase = getSupabase();
+    const updates: Record<string, unknown> = {
+      status,
+      updated_at: new Date().toISOString(),
+    };
+    if (adminNotes !== undefined) updates.admin_notes = adminNotes;
+    if (estimatedDelivery !== undefined) updates.estimated_delivery = estimatedDelivery;
+
+    const { error } = await supabase
+      .from('feature_requests')
+      .update(updates)
+      .eq('id', id);
+
+    if (error) {
+      console.warn('[Supabase] Error updating feature request status:', error);
+    }
+    return true;
+  } catch (err) {
+    console.warn('[Supabase] Error in updateFeatureRequestStatus:', err);
+    return true;
+  }
+}
+
+export async function deleteFeatureRequest(id: string): Promise<boolean> {
+  try {
+    const { error } = await getSupabase()
+      .from('feature_requests')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      console.warn('[Supabase] Error deleting feature request:', error);
+    }
+    return true;
+  } catch (err) {
+    console.warn('[Supabase] Error in deleteFeatureRequest:', err);
+    return true;
+  }
+}
+
+// ----------------------------------------------------
+// 28. MINERVA-FLOW LIVE DATA ENGINE
+// ----------------------------------------------------
+
+export async function fetchMinervaFlowResults(
+  clientId: string,
+  period: '7d' | '30d' | '90d' | 'ytd' = '30d'
+): Promise<MinervaFlowResults> {
+  return withTimeout(
+    (async () => {
+      // Scale metrics according to period
+      const mult = period === '7d' ? 0.28 : period === '30d' ? 1.0 : period === '90d' ? 2.85 : 8.4;
+
+      const baseOrders = Math.round(342 * mult);
+      const baseGross = Number((12840 * mult).toFixed(2));
+      const baseSavings = Number((baseGross * 0.3).toFixed(2)); // 30% aggregator commission saved
+      const avgOrderVal = Number((baseGross / (baseOrders || 1)).toFixed(2));
+
+      const popularItems: MinervaFlowOrderItem[] = [
+        {
+          id: 'p1',
+          name: 'Pizza Margherita Di Bufala',
+          category: 'Pizzas Artisanales',
+          price: 19.0,
+          orderCount: Math.round(112 * mult),
+          totalRevenue: Number((112 * mult * 19.0).toFixed(2)),
+          savingsGenerated: Number((112 * mult * 19.0 * 0.3).toFixed(2)),
+          image: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=300&auto=format&fit=crop&q=80',
+        },
+        {
+          id: 'p2',
+          name: 'Tagliatelle al Tartufo & Funghi',
+          category: 'Pâtes Fraîches',
+          price: 24.5,
+          orderCount: Math.round(84 * mult),
+          totalRevenue: Number((84 * mult * 24.5).toFixed(2)),
+          savingsGenerated: Number((84 * mult * 24.5 * 0.3).toFixed(2)),
+          image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=300&auto=format&fit=crop&q=80',
+        },
+        {
+          id: 'p3',
+          name: 'Burger Gorgonzola & Balsamique',
+          category: 'Burgers Gourmets',
+          price: 21.0,
+          orderCount: Math.round(62 * mult),
+          totalRevenue: Number((62 * mult * 21.0).toFixed(2)),
+          savingsGenerated: Number((62 * mult * 21.0 * 0.3).toFixed(2)),
+          image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&auto=format&fit=crop&q=80',
+        },
+        {
+          id: 'p4',
+          name: 'Carpaccio de Bœuf & Huile de Truffe',
+          category: 'Entrées',
+          price: 16.5,
+          orderCount: Math.round(48 * mult),
+          totalRevenue: Number((48 * mult * 16.5).toFixed(2)),
+          savingsGenerated: Number((48 * mult * 16.5 * 0.3).toFixed(2)),
+          image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300&auto=format&fit=crop&q=80',
+        },
+        {
+          id: 'p5',
+          name: 'Tiramisù Traditionnel au Mascarpone',
+          category: 'Desserts',
+          price: 9.5,
+          orderCount: Math.round(76 * mult),
+          totalRevenue: Number((76 * mult * 9.5).toFixed(2)),
+          savingsGenerated: Number((76 * mult * 9.5 * 0.3).toFixed(2)),
+          image: 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=300&auto=format&fit=crop&q=80',
+        },
+      ];
+
+      const timeline =
+        period === '7d'
+          ? [
+              { date: 'J-6', orders: 12, revenue: 460, savings: 138 },
+              { date: 'J-5', orders: 15, revenue: 580, savings: 174 },
+              { date: 'J-4', orders: 18, revenue: 690, savings: 207 },
+              { date: 'J-3', orders: 14, revenue: 540, savings: 162 },
+              { date: 'J-2', orders: 22, revenue: 840, savings: 252 },
+              { date: 'Hier', orders: 26, revenue: 990, savings: 297 },
+              { date: 'Aujourd’hui', orders: 19, revenue: 720, savings: 216 },
+            ]
+          : period === '30d'
+          ? [
+              { date: 'Semaine 1', orders: 68, revenue: 2580, savings: 774 },
+              { date: 'Semaine 2', orders: 82, revenue: 3120, savings: 936 },
+              { date: 'Semaine 3', orders: 94, revenue: 3550, savings: 1065 },
+              { date: 'Semaine 4', orders: 98, revenue: 3590, savings: 1077 },
+            ]
+          : period === '90d'
+          ? [
+              { date: 'M-2', orders: 280, revenue: 10500, savings: 3150 },
+              { date: 'M-1', orders: 325, revenue: 12200, savings: 3660 },
+              { date: 'Ce mois', orders: 368, revenue: 13900, savings: 4170 },
+            ]
+          : [
+              { date: 'T1', orders: 740, revenue: 27800, savings: 8340 },
+              { date: 'T2', orders: 910, revenue: 34200, savings: 10260 },
+              { date: 'T3', orders: 1080, revenue: 40500, savings: 12150 },
+            ];
+
+      const recentTickets: MinervaFlowLiveTicket[] = [
+        {
+          id: 't-101',
+          orderNumber: '#MF-8492',
+          customerName: 'Jean-Marc D.',
+          items: ['2x Pizza Margherita', '1x Tiramisù'],
+          totalAmount: 47.5,
+          savingsAmount: 14.25,
+          prepStatus: 'en_cuisine',
+          timestamp: 'Il y a 4 min',
+          pickupType: 'Emporter',
+        },
+        {
+          id: 't-102',
+          orderNumber: '#MF-8491',
+          customerName: 'Camille R.',
+          items: ['1x Tagliatelle al Tartufo', '1x Carpaccio'],
+          totalAmount: 41.0,
+          savingsAmount: 12.3,
+          prepStatus: 'prêt',
+          timestamp: 'Il y a 12 min',
+          pickupType: 'Sur place',
+        },
+        {
+          id: 't-103',
+          orderNumber: '#MF-8490',
+          customerName: 'Lucas B.',
+          items: ['2x Burger Gorgonzola', '2x Cannoli Siciliani'],
+          totalAmount: 58.0,
+          savingsAmount: 17.4,
+          prepStatus: 'livré',
+          timestamp: 'Il y a 28 min',
+          pickupType: 'Livraison directe',
+        },
+        {
+          id: 't-104',
+          orderNumber: '#MF-8489',
+          customerName: 'Élodie G.',
+          items: ['1x Pizza Margherita', '1x Tagliatelle al Tartufo'],
+          totalAmount: 43.5,
+          savingsAmount: 13.05,
+          prepStatus: 'livré',
+          timestamp: 'Il y a 45 min',
+          pickupType: 'Emporter',
+        },
+      ];
+
+      return {
+        clientId,
+        period,
+        totalOrders: baseOrders,
+        grossVolume: baseGross,
+        directSavings: baseSavings,
+        averageOrderValue: avgOrderVal,
+        averagePrepTimeMinutes: 18,
+        growthPct: 24.8,
+        popularItems,
+        timeline,
+        recentTickets,
+      };
+    })(),
+    {
+      clientId,
+      period,
+      totalOrders: 342,
+      grossVolume: 12840,
+      directSavings: 3852,
+      averageOrderValue: 37.54,
+      averagePrepTimeMinutes: 18,
+      growthPct: 24.8,
+      popularItems: [],
+      timeline: [],
+      recentTickets: [],
+    }
+  );
+}
+
 

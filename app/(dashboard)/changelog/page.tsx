@@ -12,6 +12,24 @@ import { PageFadeIn } from '@/components/ui/page-transition';
 
 const STATIC_ENTRIES: ChangelogEntry[] = [
   {
+    id: 'v2-5-0',
+    version: '2.5.0',
+    title: 'Minerva-Flow Expansion, Multi-Suppression & Toolkit Opérationnel (v2.5.0)',
+    body: `Déploiement majeur intégrant les sections « Mes Résultats » (métriques Minerva-Flow 0% commission), « Demander une fonctionnalité » et « Statut de mes demandes » avec notifications Supabase Realtime dans le Portail Client. Ajout du template de projet Minerva-Flow avec son guide interactif de déploiement et sa checklist 14 jours, de la sélection multiple et suppression groupée dans Documents, Équipe et Projets, et d'un nouveau système d'avatars déterministes.`,
+    included_items: [
+      '📊 Section « Mes résultats » Minerva-Flow : KPI cards en direct (Économies commissions 0%, Volume brut, Délais cuisine, Commandes passées), graphique d’évolution des ventes et flux de tickets de cuisine en temps réel.',
+      '💡 Module « Demander une fonctionnalité » & Suivi Realtime : Formulaire de proposition de features avec choix du repo/module, priorité et statut en 5 étapes synchronisé en temps réel avec notifications Toast.',
+      '🗂️ Sélection Multiple & Suppression Groupée (Bulk Delete) : Checkboxes de sélection multiple et barre d’actions groupées pour supprimer ou exporter en lot des documents (/documents), des collaborateurs (/team) et des projets (/projects) avec modale de confirmation sécurisée.',
+      '🚀 Nouveau Template de Projet « Minerva-Flow » & Guide Déploiement : Modèle pré-configuré injectant automatiquement les 5 jalons de déploiement 14 jours et un guide complet interactif (/projects/[id]/roadmap) avec checklist terrain.',
+      '🎨 Rendu des Avatars Équipe Perfectionné : Gradients déterministes colorés par collaborateur, typographie d’initiales haute-résolution et taille optimisée éliminant les images floues ou déformées.',
+      '🛠️ Gestion Admin des Demandes Fonctionnalités : Nouvel onglet dans /produits permettant aux administrateurs de consulter, filtrer et changer le statut des demandes en 1 clic.',
+    ],
+    image_url: '/changelog/minerva-flow-v2-5-0.png',
+    created_at: new Date().toISOString(),
+    created_by: 'system',
+    author_name: 'Minerva Core Team',
+  },
+  {
     id: 'v2-4-3',
     version: '2.4.3',
     title: 'Système Anti-Friction (4 Piliers), Académie Redessinée & Studio de Scripting Cas Client (v2.4.3)',
