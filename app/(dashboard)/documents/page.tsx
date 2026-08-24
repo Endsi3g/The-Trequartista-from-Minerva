@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -25,29 +25,122 @@ import {
   PinOff,
   Building2,
   FolderKanban,
+  FileSpreadsheet,
+  Layers,
+  ChevronRight,
 } from 'lucide-react';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
-import { SkeletonCards } from '@/components/ui/skeleton';
 import { useToast } from '@/components/providers/ToastProvider';
-import { fetchDocuments, addDocument, deleteDocument, togglePinDocument } from '@/lib/services/supabase-data';
-import type { TeamDocument } from '@/lib/types';
-import { PageFadeIn } from '@/components/ui/page-transition';
+import {
+  fetchDocuments,
+  addDocument,
+  deleteDocument,
+  togglePinDocument,
+} from '@/lib/services/supabase-data';
+import type { TeamDocument, DocumentBlock } from '@/lib/types';
 import { AgencyTemplatesModal } from '@/components/documents/AgencyTemplatesModal';
 import { AGENCY_TEMPLATES, AgencyTemplate } from '@/components/documents/templates';
-import { blocksToMarkdown } from '@/components/documents/utils';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
-const CATEGORIES = [
+interface CategoryTab {
+  key: string;
+  label: string;
+  categoryFilter?: TeamDocument['category'];
+}
+
+const CATEGORY_TABS: CategoryTab[] = [
   { key: 'all', label: 'Tous les documents' },
-  { key: 'product_brief', label: 'Dossiers Produits' },
-  { key: 'meeting_notes', label: 'Comptes-rendus' },
-  { key: 'spec', label: 'Cahiers des charges' },
-  { key: 'sop', label: 'SOPs & Guides' },
-  { key: 'proposal', label: 'Propositions & Devis' },
+  { key: 'product_brief', label: 'Dossiers Produits', categoryFilter: 'product_brief' },
+  { key: 'meeting_notes', label: 'Comptes-rendus', categoryFilter: 'meeting_notes' },
+  { key: 'spec', label: 'Cahiers des charges', categoryFilter: 'spec' },
+  { key: 'sop', label: 'SOPs & Guides', categoryFilter: 'sop' },
+  { key: 'proposal', label: 'Propositions & Devis', categoryFilter: 'proposal' },
 ];
+
+const QUICK_STARTERS: {
+  key: string;
+  title: string;
+  category: TeamDocument['category'];
+  icon: React.ElementType;
+  color: string;
+  defaultBlocks: DocumentBlock[];
+}[] = [
+  {
+    key: 'spec_framer',
+    title: '📄 Cahier des charges Framer',
+    category: 'spec',
+    icon: FileCode2,
+    color: 'text-amber-600 bg-amber-50',
+    defaultBlocks: [
+      { id: 'b-1', type: 'heading_1', content: 'Cahier des Charges — Site Framer & Portails' },
+      { id: 'b-2', type: 'callout', content: '⚡ **Objectif** : Spécifications fonctionnelles, arborescence et charte graphique du nouveau site client.', calloutType: 'info' },
+      { id: 'b-3', type: 'heading_2', content: '1. Arborescence & Pages Cibles' },
+      { id: 'b-4', type: 'bullet_list', content: 'Page d’accueil avec proposition de valeur claire et CTA d’audit' },
+      { id: 'b-5', type: 'bullet_list', content: 'Section Tarifs transparents & simulation de ROI' },
+      { id: 'b-6', type: 'heading_2', content: '2. Intégrations & Formulaires Webhooks' },
+      { id: 'b-7', type: 'todo_list', content: 'Connexion du webhook Framer vers l’API Minerva Inbound', checked: true },
+      { id: 'b-8', type: 'todo_list', content: 'Déclenchement automatique du SMS de relance J+0', checked: false },
+    ],
+  },
+  {
+    key: 'meeting_client',
+    title: '📝 Compte-rendu de Réunion Client',
+    category: 'meeting_notes',
+    icon: Calendar,
+    color: 'text-purple-600 bg-purple-50',
+    defaultBlocks: [
+      { id: 'b-1', type: 'heading_1', content: 'Compte-Rendu — Réunion Stratégique Client' },
+      { id: 'b-2', type: 'callout', content: '👥 **Participants** : Équipe Minerva + Direction Client\n📅 **Date** : ' + new Date().toLocaleDateString('fr-CA'), calloutType: 'note' },
+      { id: 'b-3', type: 'heading_2', content: '1. Décisions Validées' },
+      { id: 'b-4', type: 'bullet_list', content: 'Validation du déploiement de la solution de commande directe' },
+      { id: 'b-5', type: 'bullet_list', content: 'Date de lancement fixée sous 14 jours' },
+      { id: 'b-6', type: 'heading_2', content: '2. Prochaines Actions & Responsables' },
+      { id: 'b-7', type: 'todo_list', content: 'Configurer la passerelle Stripe Connect (Responsable: Dev)', checked: false },
+      { id: 'b-8', type: 'todo_list', content: 'Valider le menu et les photos produits (Responsable: Client)', checked: false },
+    ],
+  },
+  {
+    key: 'product_spec',
+    title: '💡 Dossier de Spécification Produit',
+    category: 'product_brief',
+    icon: Sparkles,
+    color: 'text-blue-600 bg-blue-50',
+    defaultBlocks: [
+      { id: 'b-1', type: 'heading_1', content: 'Dossier Produit — Vision & Spécifications V1' },
+      { id: 'b-2', type: 'callout', content: '🎯 **Proposition de Valeur** : Solution clé en main 0% commission pour maximiser les marges nettes.', calloutType: 'tip' },
+      { id: 'b-3', type: 'heading_2', content: '1. Fonctionnalités Clés & Livrables' },
+      { id: 'b-4', type: 'todo_list', content: 'Console de commande en ligne multi-appareils', checked: true },
+      { id: 'b-5', type: 'todo_list', content: 'Notification sonore et impression automatique des bons en cuisine', checked: false },
+    ],
+  },
+  {
+    key: 'proposal_audit',
+    title: '📊 Proposition Commerciale & Audit',
+    category: 'proposal',
+    icon: FileSpreadsheet,
+    color: 'text-rose-600 bg-rose-50',
+    defaultBlocks: [
+      { id: 'b-1', type: 'heading_1', content: 'Proposition Commerciale & Audit Opérationnel' },
+      { id: 'b-2', type: 'callout', content: '💼 **Offre sur-mesure** : Déploiement accéléré et retour sur investissement sous 30 jours.', calloutType: 'warning' },
+      { id: 'b-3', type: 'heading_2', content: '1. Diagnostic des Pertes Actuelles' },
+      { id: 'b-4', type: 'bullet_list', content: 'Commissions tierces estimées : ~1 800 $/mois' },
+      { id: 'b-5', type: 'heading_2', content: '2. Forfait Recommandé & Tarification' },
+      { id: 'b-6', type: 'paragraph', content: 'Forfait Clé en main : 3 500 $ CAD + support continu sans commission.' },
+    ],
+  },
+];
+
+const CATEGORY_STYLES: Record<string, { label: string; bg: string; text: string; border: string }> = {
+  product_brief: { label: 'Dossier Produit', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  meeting_notes: { label: 'Compte-rendu', bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+  spec: { label: 'Cahier des charges', bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200' },
+  sop: { label: 'SOP & Guide', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  proposal: { label: 'Proposition', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' },
+  general: { label: 'Document', bg: 'bg-zinc-100', text: 'text-zinc-600', border: 'border-zinc-200' },
+};
 
 export default function DocumentsPage() {
   const router = useRouter();
@@ -60,14 +153,14 @@ export default function DocumentsPage() {
   const [creating, setCreating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [zipping, setZipping] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [templatesModalOpen, setTemplatesModalOpen] = useState(false);
 
   // Multi-selection state
   const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
   const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     setLoading(true);
@@ -83,12 +176,15 @@ export default function DocumentsPage() {
     load();
   }, []);
 
-  // Keyboard shortcut: 'C' to create, '/' to search
+  // Keyboard shortcuts: 'C' or 'N' to create, '/' to search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
-      if (e.key.toLowerCase() === 'c') {
+      if (e.key === '/') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key.toLowerCase() === 'c' || e.key.toLowerCase() === 'n') {
         e.preventDefault();
         handleCreateBlank();
       }
@@ -122,16 +218,16 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleCreateFromTemplate = async (template: AgencyTemplate) => {
+  const handleCreateQuickStarter = async (starter: typeof QUICK_STARTERS[0]) => {
     setCreating(true);
     try {
-      const doc = await addDocument(template.title, userId || null, {
-        category: template.category,
-        contentJson: { blocks: template.defaultBlocks },
+      const cleanTitle = starter.title.replace(/^[^\wÀ-ÿ]+/i, '').trim();
+      const doc = await addDocument(cleanTitle, userId || null, {
+        category: starter.category,
+        contentJson: { blocks: starter.defaultBlocks },
       });
       if (doc) {
-        setTemplatesModalOpen(false);
-        toastSuccess('Modèle instancié', `« ${template.title} » créé avec succès.`);
+        toastSuccess('Modèle instancié', `« ${cleanTitle} » créé avec succès.`);
         router.push(`/documents/${doc.id}`);
         return;
       }
@@ -166,6 +262,7 @@ export default function DocumentsPage() {
       variant: 'danger',
     });
     if (!ok) return;
+
     setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
     setSelectedDocIds((prev) => {
       const next = new Set(prev);
@@ -227,265 +324,183 @@ export default function DocumentsPage() {
     const q = searchQuery.toLowerCase().trim();
     return documents.filter((doc) => {
       if (q && !doc.title.toLowerCase().includes(q)) return false;
-      if (selectedCategory === 'brief' && !doc.title.toLowerCase().includes('brief')) return false;
-      if (
-        selectedCategory === 'meeting' &&
-        !doc.title.toLowerCase().includes('compte') &&
-        !doc.title.toLowerCase().includes('réunion') &&
-        !doc.title.toLowerCase().includes('sync')
-      )
-        return false;
-      if (
-        selectedCategory === 'spec' &&
-        !doc.title.toLowerCase().includes('spec') &&
-        !doc.title.toLowerCase().includes('tech') &&
-        !doc.title.toLowerCase().includes('archi')
-      )
-        return false;
+      if (selectedCategory !== 'all') {
+        const catTab = CATEGORY_TABS.find((t) => t.key === selectedCategory);
+        if (catTab?.categoryFilter && doc.category !== catTab.categoryFilter) {
+          // Fallback title check for legacy documents
+          const t = doc.title.toLowerCase();
+          if (selectedCategory === 'product_brief' && !t.includes('produit') && !t.includes('brief')) return false;
+          if (selectedCategory === 'meeting_notes' && !t.includes('compte') && !t.includes('réunion') && !t.includes('sync')) return false;
+          if (selectedCategory === 'spec' && !t.includes('spec') && !t.includes('cahier') && !t.includes('charge')) return false;
+          if (selectedCategory === 'sop' && !t.includes('sop') && !t.includes('guide') && !t.includes('proc')) return false;
+          if (selectedCategory === 'proposal' && !t.includes('propos') && !t.includes('devis') && !t.includes('offre')) return false;
+        }
+      }
       return true;
     });
   }, [documents, searchQuery, selectedCategory]);
 
-  const pinnedDocuments = useMemo(() => filteredDocuments.filter((d) => d.is_pinned), [filteredDocuments]);
-  const otherDocuments = useMemo(() => filteredDocuments.filter((d) => !d.is_pinned), [filteredDocuments]);
-
-  const allVisibleSelected = filteredDocuments.length > 0 && filteredDocuments.every((d) => selectedIds.has(d.id));
-
-  const toggleAll = () => {
-    setSelectedIds((prev) => {
-      if (allVisibleSelected) {
-        const next = new Set(prev);
-        filteredDocuments.forEach((d) => next.delete(d.id));
-        return next;
-      }
-      const next = new Set(prev);
-      filteredDocuments.forEach((d) => next.add(d.id));
-      return next;
-    });
-  };
-
-  const toggleOne = (id: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const sanitizeFilename = (title: string) =>
-    (title || 'document-sans-titre').replace(/[^a-z0-9\-_ ]/gi, '').trim().replace(/\s+/g, '-').slice(0, 80) || 'document';
-
-  const handleDownloadZip = async () => {
-    const selected = documents.filter((d) => selectedIds.has(d.id));
-    if (selected.length === 0) return;
-    setZipping(true);
-    try {
-      const { default: JSZip } = await import('jszip');
-      const zip = new JSZip();
-
-      for (const doc of selected) {
-        let md = '';
-        if (doc.content_json?.blocks && doc.content_json.blocks.length > 0) {
-          md = blocksToMarkdown(doc.content_json.blocks, doc.title);
-        } else {
-          const cached = typeof window !== 'undefined' ? localStorage.getItem(`minerva_doc_content_${doc.id}`) : null;
-          md = cached || doc.content_text || `# ${doc.title}\n\n*Document d'équipe rédigé sur Minerva*\n`;
-        }
-        zip.file(`${sanitizeFilename(doc.title)}.md`, md);
-      }
-
-      const blob = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `documents-minerva-${new Date().toISOString().slice(0, 10)}.zip`;
-      link.click();
-      URL.revokeObjectURL(url);
-      toastSuccess('Téléchargement ZIP', `${selected.length} document(s) exporté(s).`);
-    } catch {
-      toastError('Erreur', 'Impossible de générer l’archive ZIP.');
-    } finally {
-      setZipping(false);
-    }
-  };
-
-  const handleCopyLinks = async () => {
-    const selected = documents.filter((d) => selectedIds.has(d.id));
-    if (selected.length === 0) return;
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const text = selected.map((d) => `${d.title} : ${origin}/documents/${d.id}`).join('\n');
-    try {
-      await navigator.clipboard.writeText(text);
-      toastSuccess('Liens copiés', `${selected.length} lien(s) copié(s) dans le presse-papier.`);
-    } catch {
-      toastError('Erreur', 'Impossible de copier les liens.');
-    }
-  };
-
   return (
-    <PageFadeIn className="space-y-4 max-w-7xl mx-auto pb-16">
-      {/* ── 1. Top Ribbon & Actions ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-4 shadow-2xs flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-[4px] bg-emerald-100 border border-emerald-300 text-emerald-800 flex items-center justify-center shrink-0">
-            <FileText className="w-4 h-4" />
+    <div className="space-y-4 pb-12">
+      
+      {/* ── 1. Top Navigation Bar (Toolbar 40px) ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+        <div>
+          <div className="text-xs text-zinc-400 font-mono" style={MONO}>
+            Minerva / Espace Partagé / Documents
           </div>
-          <div>
-            <h1 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-              <span>Documents & Wiki d&apos;Équipe</span>
-              <span style={MONO} className="text-[11px] font-semibold px-2 py-0.5 rounded bg-zinc-200 text-zinc-700">
-                {documents.length}
-              </span>
+          <div className="flex items-center gap-2 mt-0.5">
+            <h1 className="text-base font-semibold text-zinc-900 tracking-tight font-display">
+              Documents &amp; Base de Connaissances
             </h1>
-            <p className="text-xs text-zinc-500">
-              Espace de rédaction collaboratif, dossiers de spécifications et modèles d&apos;agence.
-            </p>
+            <span className="text-xs font-mono text-zinc-400" style={MONO}>
+              • {documents.length} document{documents.length > 1 ? 's' : ''}
+            </span>
           </div>
         </div>
 
+        {/* Actions Right */}
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setTemplatesModalOpen(true)}
-            className="h-8 px-3 rounded-[4px] border border-zinc-200 hover:border-zinc-300 bg-white text-zinc-700 text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            className="h-7 px-2.5 text-xs font-medium border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-md flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Modèles d&apos;agence</span>
+            <span>✦ Modèles d&apos;agence</span>
           </button>
+
           <button
             type="button"
             onClick={handleCreateBlank}
             disabled={creating}
-            className="h-8 px-3.5 rounded-[4px] bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
+            className="h-7 px-2.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-md flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer font-sans"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>{creating ? 'Création…' : 'Nouveau document'}</span>
+            <span>{creating ? 'Création…' : '+ Nouveau Document (C)'}</span>
           </button>
         </div>
       </div>
 
-      {/* ── 2. Filters, Categories & Search Bar ── */}
-      <div className="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
-        {/* Category Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          {CATEGORIES.map((cat) => {
-            const isSelected = selectedCategory === cat.key;
+      {/* ── 2. Filtres de Catégories & Recherche (Single Row Strip) ── */}
+      <div className="bg-white border border-zinc-200 rounded-lg p-1.5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+        
+        {/* Underlined Category Tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5">
+          {CATEGORY_TABS.map((tab) => {
+            const isSelected = selectedCategory === tab.key;
+            const count = tab.key === 'all'
+              ? documents.length
+              : documents.filter((d) => d.category === tab.categoryFilter).length;
+
             return (
               <button
-                key={cat.key}
+                key={tab.key}
                 type="button"
-                onClick={() => setSelectedCategory(cat.key)}
+                onClick={() => setSelectedCategory(tab.key)}
                 className={cn(
-                  'px-2.5 py-1 rounded-[4px] text-[11.5px] font-medium transition-colors cursor-pointer shrink-0 border',
+                  'px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-all cursor-pointer relative',
                   isSelected
-                    ? 'bg-zinc-900 text-white border-zinc-900 shadow-2xs'
-                    : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900'
+                    ? 'text-zinc-900 font-bold'
+                    : 'text-zinc-500 hover:text-zinc-800'
                 )}
               >
-                {cat.label}
+                <span>{tab.label}</span>
+                {count > 0 && (
+                  <span
+                    className={cn(
+                      'ml-1.5 px-1 py-0.2 rounded text-[10px] font-mono',
+                      isSelected ? 'bg-zinc-100 text-zinc-900 font-bold' : 'text-zinc-400'
+                    )}
+                    style={MONO}
+                  >
+                    {count}
+                  </span>
+                )}
+
+                {/* 2px Emerald Underline */}
+                {isSelected && (
+                  <span className="absolute bottom-0 left-2.5 right-2.5 h-[2px] bg-emerald-600 rounded-full" />
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* Search & View Mode Switcher */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
+        {/* Search & View Switcher */}
+        <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
+          <div className="relative">
             <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
+              ref={searchInputRef}
               type="text"
+              placeholder="Filtrer... (/)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher (titre, contenu)…"
-              className="w-full h-8 pl-8 pr-3 text-xs bg-white border border-zinc-200 rounded-[4px] focus:outline-none focus:border-emerald-500 placeholder:text-zinc-400 shadow-2xs"
+              className="h-7 w-40 sm:w-48 pl-8 pr-2 text-xs border border-zinc-200 rounded-md bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-600"
             />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
           </div>
 
-          <div className="flex items-center rounded-[4px] border border-zinc-200 bg-white p-0.5 shadow-2xs shrink-0">
+          {/* View Mode Switcher (24px) */}
+          <div className="flex items-center bg-zinc-100 p-0.5 rounded-md border border-zinc-200/60 h-7 text-xs font-mono" style={MONO}>
             <button
               type="button"
               onClick={() => setViewMode('list')}
-              title="Vue liste"
               className={cn(
-                'p-1.5 rounded-[3px] transition-colors cursor-pointer',
-                viewMode === 'list' ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-400 hover:text-zinc-700'
+                'px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1',
+                viewMode === 'list' ? 'bg-white text-zinc-900 shadow-2xs font-bold' : 'text-zinc-500 hover:text-zinc-800'
               )}
+              title="Vue Liste"
             >
-              <TableIcon className="w-3.5 h-3.5" />
+              <TableIcon className="w-3 h-3" />
+              <span className="hidden sm:inline">Liste</span>
             </button>
             <button
               type="button"
               onClick={() => setViewMode('grid')}
-              title="Vue grille"
               className={cn(
-                'p-1.5 rounded-[3px] transition-colors cursor-pointer',
-                viewMode === 'grid' ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-400 hover:text-zinc-700'
+                'px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1',
+                viewMode === 'grid' ? 'bg-white text-zinc-900 shadow-2xs font-bold' : 'text-zinc-500 hover:text-zinc-800'
               )}
+              title="Vue Grille"
             >
-              <LayoutGrid className="w-3.5 h-3.5" />
+              <LayoutGrid className="w-3 h-3" />
+              <span className="hidden sm:inline">Grille</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── 3. Bulk Selection Floating Bar ── */}
-      {selectedIds.size > 0 && (
-        <div className="p-2.5 rounded-[6px] bg-zinc-900 text-white shadow-xl flex items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-bottom-2 duration-150">
-          <div className="flex items-center gap-2 pl-1">
-            <span style={MONO} className="font-bold text-emerald-400">
-              {selectedIds.size}
-            </span>
-            <span>document(s) sélectionné(s)</span>
-          </div>
+      {/* ── 3. Ruban de Modèles d'Amorce Rapide (Quick Starter Templates - 44px) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+        {QUICK_STARTERS.map((starter) => {
+          const Icon = starter.icon;
+          return (
+            <button
+              key={starter.key}
+              type="button"
+              onClick={() => handleCreateQuickStarter(starter)}
+              disabled={creating}
+              className="border border-zinc-200 hover:border-emerald-500/60 hover:bg-emerald-50/20 bg-white rounded-lg p-2.5 flex items-center gap-2.5 text-left text-xs font-medium text-zinc-800 transition-all cursor-pointer shadow-2xs group h-11 disabled:opacity-50"
+            >
+              <div className={cn('w-6 h-6 rounded flex items-center justify-center shrink-0 text-xs', starter.color)}>
+                <Icon className="w-3.5 h-3.5" />
+              </div>
+              <span className="truncate group-hover:text-emerald-700 transition-colors">
+                {starter.title}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleCopyLinks}
-              className="h-7 px-2.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <Share2 className="w-3 h-3" />
-              <span>Copier les liens</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleDownloadZip}
-              disabled={zipping}
-              className="h-7 px-2.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              <Download className="w-3 h-3" />
-              <span>{zipping ? 'Création ZIP…' : 'Télécharger en ZIP'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedIds(new Set())}
-              className="p-1 text-zinc-400 hover:text-white cursor-pointer ml-1"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── 3.5 Floating Bulk Selection Action Bar ── */}
+      {/* ── Bulk Actions Bar ── */}
       {selectedDocIds.size > 0 && (
-        <div className="bg-rose-50 border border-rose-200 rounded-[6px] px-4 py-2.5 flex items-center justify-between gap-3 shadow-sm animate-in fade-in slide-in-from-top-1">
-          <div className="flex items-center gap-2">
-            <CheckSquare className="w-4 h-4 text-rose-600" />
-            <span className="text-xs font-bold text-rose-900">
-              {selectedDocIds.size} document{selectedDocIds.size > 1 ? 's' : ''} sélectionné{selectedDocIds.size > 1 ? 's' : ''}
+        <div className="bg-zinc-900 text-white px-4 py-2 rounded-lg shadow-lg flex items-center justify-between animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center gap-2 text-xs font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>
+              {selectedDocIds.size} document{selectedDocIds.size > 1 ? 's sélectionnés' : ' sélectionné'}
             </span>
           </div>
 
@@ -493,10 +508,11 @@ export default function DocumentsPage() {
             <button
               type="button"
               onClick={() => setSelectedDocIds(new Set())}
-              className="px-2.5 py-1 text-xs font-medium text-zinc-600 hover:text-zinc-900 bg-white border border-zinc-200 rounded-md transition-colors cursor-pointer"
+              className="px-2.5 py-1 text-xs text-zinc-300 hover:text-white transition-colors cursor-pointer"
             >
-              Désélectionner tout
+              Tout désélectionner
             </button>
+
             <button
               type="button"
               onClick={handleBulkDelete}
@@ -504,435 +520,280 @@ export default function DocumentsPage() {
               className="px-3 py-1 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-md flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>Supprimer la sélection ({selectedDocIds.size})</span>
+              <span>Supprimer ({selectedDocIds.size})</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* ── 4. Main Views: 36px DataTable vs Compact Cards Grid ── */}
+      {/* ── 4. DataTable Documentaire Monolithique (Linear Docs Style) ── */}
       {loading ? (
-        <p className="text-xs text-zinc-400 text-center py-12 font-mono">Chargement des documents…</p>
-      ) : filteredDocuments.length === 0 ? (
-        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-2">
-          <FileText className="w-8 h-8 text-zinc-300 mx-auto" />
-          <p className="text-xs font-semibold text-zinc-700">Aucun document trouvé</p>
-          <p className="text-[11px] text-zinc-400">Cliquez sur l’un des modèles d’amorce ci-dessus ou appuyez sur « C » pour rédiger.</p>
+        <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center text-xs text-zinc-400 font-mono" style={MONO}>
+          Chargement des documents…
         </div>
       ) : viewMode === 'list' ? (
-        /* ── 36px DataTable View (Linear Docs Style with Checkboxes) ── */
-        <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
-          <table className="w-full text-[12px] border-collapse">
-            <thead>
-              <tr className="h-7 bg-black/[0.02] border-b border-mv-border text-[10.5px] font-medium uppercase tracking-wider text-zinc-400">
-                <th className="pl-3.5 pr-1 w-8 text-left">
-                  <input
-                    type="checkbox"
-                    checked={selectedDocIds.size === filteredDocuments.length && filteredDocuments.length > 0}
-                    onChange={toggleSelectAll}
-                    className="w-3.5 h-3.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer"
-                    title="Tout sélectionner"
-                  />
-                </th>
-                <th className="px-2 text-left font-medium">Titre du Document</th>
-                <th className="px-2 text-left font-medium">Catégorie</th>
-                <th className="px-2 text-left font-medium">Auteur</th>
-                <th className="px-2 text-right font-medium">Dernière Modification</th>
-                <th className="pr-3.5 pl-2 text-right font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDocuments.map((doc) => {
-                let categoryLabel = 'Doc';
-                const lower = doc.title.toLowerCase();
-                if (lower.includes('brief')) categoryLabel = 'Brief';
-                else if (lower.includes('compte') || lower.includes('réunion') || lower.includes('sync')) categoryLabel = 'Réunion';
-                else if (lower.includes('spec') || lower.includes('tech') || lower.includes('archi')) categoryLabel = 'Tech Spec';
+        <div className="border border-zinc-200 rounded-lg bg-white overflow-hidden shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-zinc-100 bg-zinc-50/70 text-[10px] uppercase font-bold text-zinc-500 tracking-wider h-8">
+                  <th className="pl-3.5 pr-1 w-8 text-left">
+                    <input
+                      type="checkbox"
+                      checked={selectedDocIds.size === filteredDocuments.length && filteredDocuments.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-3.5 h-3.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer"
+                      title="Tout sélectionner"
+                    />
+                  </th>
+                  <th className="py-2 px-3 font-semibold">Titre du Document</th>
+                  <th className="py-2 px-3 font-semibold">Catégorie / Tag</th>
+                  <th className="py-2 px-3 font-semibold">Auteur</th>
+                  <th className="py-2 px-3 font-semibold">Dernière Modification</th>
+                  <th className="py-2 px-3 font-semibold">Statut</th>
+                  <th className="py-2 px-4 font-semibold text-right">Actions</th>
+                </tr>
+              </thead>
 
-                const isSelected = selectedDocIds.has(doc.id);
-
-                return (
-                  <tr
-                    key={doc.id}
-                    onClick={() => router.push(`/documents/${doc.id}`)}
-                    className={cn(
-                      'h-9 border-b border-mv-border last:border-0 transition-colors cursor-pointer group',
-                      isSelected ? 'bg-emerald-50/40' : 'hover:bg-black/[0.02]'
-                    )}
-                  >
-                    <td className="pl-3.5 pr-1 py-1" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => toggleSelectDoc(doc.id, e as unknown as React.MouseEvent)}
-                        className="w-3.5 h-3.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer"
-                      />
-                    </td>
-                    <td className="px-2 py-1 min-w-0 max-w-[320px]">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                        <span className="font-semibold text-zinc-900 truncate group-hover:text-emerald-700 transition-colors">
-                          {doc.title || 'Document sans titre'}
-                        </span>
+              <tbody className="divide-y divide-zinc-100 text-zinc-800">
+                {filteredDocuments.length === 0 ? (
+                  /* ── Single Proactive Inline Empty State ── */
+                  <tr>
+                    <td colSpan={7} className="py-8 px-4 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-2 max-w-sm mx-auto">
+                        <FileText className="w-6 h-6 text-zinc-300" />
+                        <p className="text-xs font-semibold text-zinc-800">Aucun document trouvé</p>
+                        <p className="text-[11px] text-zinc-400">
+                          {searchQuery
+                            ? `Aucun résultat pour « ${searchQuery} ».`
+                            : 'Cliquez sur l’un des modèles d’amorce ci-dessus ou appuyez sur « C » pour rédiger.'}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleCreateBlank}
+                          className="mt-1 px-3 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition-colors cursor-pointer"
+                        >
+                          + Créer un document vierge
+                        </button>
                       </div>
                     </td>
-                    <td className="px-2 py-1">
-                      <span className="text-[10px] bg-zinc-100 text-zinc-600 px-1.5 py-0.5 rounded font-medium border border-zinc-200/50">
-                        {categoryLabel}
-                      </span>
-                    </td>
-                    <td className="px-2 py-1 text-zinc-600 text-[11px]">
-                      Minerva
-                    </td>
-                    <td className="px-2 py-1 text-right font-mono text-[11px] text-zinc-500 whitespace-nowrap" style={MONO}>
-                      {new Date(doc.updated_at).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </td>
-                    <td className="pr-3.5 pl-2 py-1 text-right whitespace-nowrap space-x-2">
-                      <button
-                        onClick={(e) => handleDelete(e, doc)}
-                        className="text-zinc-400 hover:text-rose-600 p-1 transition-colors opacity-0 group-hover:opacity-100"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                      <span className="text-[11px] font-medium text-emerald-700 group-hover:underline inline-flex items-center gap-0.5">
-                        <span>Éditer</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </span>
-                    </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        /* ── Compact Cards Grid with Checkbox support ── */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          {filteredDocuments.map((doc) => {
-            const isSelected = selectedDocIds.has(doc.id);
-            return (
-              <div
-                key={doc.id}
-                onClick={() => router.push(`/documents/${doc.id}`)}
-                className={cn(
-                  'bg-mv-surface border rounded-[6px] p-3.5 shadow-2xs transition-all cursor-pointer flex flex-col justify-between group space-y-3 relative',
-                  isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20' : 'border-mv-border hover:border-zinc-300'
+                ) : (
+                  filteredDocuments.map((doc) => {
+                    const isSelected = selectedDocIds.has(doc.id);
+                    const catStyle = CATEGORY_STYLES[doc.category || 'general'] || CATEGORY_STYLES.general;
+                    const dateStr = doc.updated_at
+                      ? new Date(doc.updated_at).toLocaleDateString('fr-CA', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })
+                      : '24 août 2026';
+
+                    return (
+                      <tr
+                        key={doc.id}
+                        onDoubleClick={() => router.push(`/documents/${doc.id}`)}
+                        className={cn(
+                          'hover:bg-zinc-50/80 transition-colors h-9 cursor-pointer group',
+                          isSelected && 'bg-emerald-50/30'
+                        )}
+                      >
+                        {/* 1. Checkbox */}
+                        <td className="pl-3.5 pr-1 py-1" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => toggleSelectDoc(doc.id, e as unknown as React.MouseEvent)}
+                            className="w-3.5 h-3.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer"
+                          />
+                        </td>
+
+                        {/* 2. Titre */}
+                        <td className="py-2 px-3 font-medium text-zinc-900 max-w-sm">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={(e) => handleTogglePin(e, doc)}
+                              className="text-zinc-300 hover:text-amber-500 transition-colors cursor-pointer"
+                              title={doc.is_pinned ? 'Désépingler' : 'Épingler'}
+                            >
+                              <Pin
+                                className={cn(
+                                  'w-3 h-3',
+                                  doc.is_pinned ? 'text-amber-500 fill-amber-500' : 'opacity-0 group-hover:opacity-100'
+                                )}
+                              />
+                            </button>
+                            <span
+                              onClick={() => router.push(`/documents/${doc.id}`)}
+                              className="font-semibold text-zinc-900 group-hover:text-emerald-700 transition-colors truncate"
+                            >
+                              {doc.title || 'Document sans titre'}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* 3. Catégorie / Tag */}
+                        <td className="py-2 px-3">
+                          <span
+                            className={cn(
+                              'px-1.5 py-0.2 rounded text-[10px] font-mono font-medium border whitespace-nowrap',
+                              catStyle.bg,
+                              catStyle.text,
+                              catStyle.border
+                            )}
+                            style={MONO}
+                          >
+                            {catStyle.label}
+                          </span>
+                        </td>
+
+                        {/* 4. Auteur */}
+                        <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 whitespace-nowrap" style={MONO}>
+                          Minerva
+                        </td>
+
+                        {/* 5. Date */}
+                        <td className="py-2 px-3 font-mono text-[11px] text-zinc-400 whitespace-nowrap" style={MONO}>
+                          {dateStr}
+                        </td>
+
+                        {/* 6. Statut */}
+                        <td className="py-2 px-3">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200" style={MONO}>
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span>Actif</span>
+                          </span>
+                        </td>
+
+                        {/* 7. Actions */}
+                        <td className="py-2 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={(e) => handleDelete(e, doc)}
+                              className="p-1 text-zinc-400 hover:text-rose-600 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+
+                            <Link
+                              href={`/documents/${doc.id}`}
+                              className="px-2 py-0.5 rounded text-[11px] font-medium text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60 transition-colors inline-flex items-center gap-0.5"
+                            >
+                              <span>Éditer</span>
+                              <ChevronRight className="w-3 h-3" />
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <div onClick={(e) => e.stopPropagation()} className="pt-0.5">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => toggleSelectDoc(doc.id, e as unknown as React.MouseEvent)}
-                        className="w-3.5 h-3.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer"
-                      />
-                    </div>
-                    <div className="w-7 h-7 rounded-[4px] bg-zinc-100 border border-mv-border flex items-center justify-center text-zinc-900 shrink-0 group-hover:border-emerald-600 transition-colors">
-                      <FileText className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => handleDelete(e, doc)}
-                    className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
-                    title="Supprimer le document"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <div>
-                  <h3 className="text-[13px] font-semibold text-zinc-900 group-hover:text-emerald-700 transition-colors truncate">
-                    {doc.title || 'Document sans titre'}
-                  </h3>
-                  <div className="text-[10.5px] font-mono text-zinc-400 mt-1 flex items-center gap-1" style={MONO}>
-                    <Clock className="w-3 h-3 text-zinc-400" />
-                    <span>Modifié le {new Date(doc.updated_at).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-mv-border/60 flex items-center justify-between text-[11px]">
-                  <span className="text-zinc-400 font-mono text-[10px]" style={MONO}>
-                    Réf: {doc.id.slice(0, 8)}
-                  </span>
-                  <span className="text-emerald-700 font-medium group-hover:underline inline-flex items-center gap-0.5">
-                    <span>Éditer</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── 4. Main Documents Content ── */}
-      {loading ? (
-        <SkeletonCards count={6} />
-      ) : filteredDocuments.length === 0 ? (
-        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3">
-          <FileText className="w-8 h-8 text-zinc-300 mx-auto" />
-          <p className="text-sm font-semibold text-zinc-800">Aucun document trouvé</p>
-          <p className="text-xs text-zinc-400">
-            {searchQuery
-              ? `Aucun résultat pour « ${searchQuery} ». Essayez un autre terme.`
-              : 'Commencez par créer un nouveau document ou choisissez un modèle d’agence.'}
-          </p>
-          <button
-            type="button"
-            onClick={handleCreateBlank}
-            className="h-8 px-4 rounded-[4px] bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Créer un document</span>
-          </button>
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          {/* Pinned Documents Section */}
-          {pinnedDocuments.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-500 uppercase tracking-wider px-1">
-                <Pin className="w-3 h-3 text-amber-500 fill-amber-500" />
-                <span>Documents Épinglés ({pinnedDocuments.length})</span>
-              </div>
-              <DocumentsList
-                documents={pinnedDocuments}
-                viewMode={viewMode}
-                selectedIds={selectedIds}
-                toggleOne={toggleOne}
-                handleTogglePin={handleTogglePin}
-                handleDelete={handleDelete}
-              />
+        /* ── Grid View ── */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filteredDocuments.length === 0 ? (
+            <div className="col-span-3 bg-white border border-zinc-200 rounded-lg p-12 text-center space-y-2">
+              <FileText className="w-6 h-6 text-zinc-300 mx-auto" />
+              <p className="text-xs font-semibold text-zinc-800">Aucun document trouvé</p>
             </div>
-          )}
+          ) : (
+            filteredDocuments.map((doc) => {
+              const isSelected = selectedDocIds.has(doc.id);
+              const catStyle = CATEGORY_STYLES[doc.category || 'general'] || CATEGORY_STYLES.general;
 
-          {/* Other Documents Section */}
-          {otherDocuments.length > 0 && (
-            <div className="space-y-2">
-              {pinnedDocuments.length > 0 && (
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-400 uppercase tracking-wider px-1 pt-2">
-                  <span>Autres Documents ({otherDocuments.length})</span>
+              return (
+                <div
+                  key={doc.id}
+                  onClick={() => router.push(`/documents/${doc.id}`)}
+                  className={cn(
+                    'bg-white border rounded-lg p-3.5 shadow-2xs transition-all cursor-pointer flex flex-col justify-between group space-y-3 relative',
+                    isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20' : 'border-zinc-200 hover:border-zinc-300'
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => toggleSelectDoc(doc.id, e as unknown as React.MouseEvent)}
+                          className="w-3.5 h-3.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer"
+                        />
+                      </div>
+                      <span
+                        className={cn(
+                          'px-1.5 py-0.2 rounded text-[10px] font-mono font-medium border',
+                          catStyle.bg,
+                          catStyle.text,
+                          catStyle.border
+                        )}
+                        style={MONO}
+                      >
+                        {catStyle.label}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleDelete(e, doc)}
+                      className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xs font-semibold text-zinc-900 group-hover:text-emerald-700 transition-colors truncate">
+                      {doc.title || 'Document sans titre'}
+                    </h3>
+                    <div className="text-[10.5px] font-mono text-zinc-400 mt-1 flex items-center gap-1" style={MONO}>
+                      <Clock className="w-3 h-3 text-zinc-400" />
+                      <span>{new Date(doc.updated_at).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-[11px]">
+                    <span className="text-zinc-400 font-mono text-[10px]" style={MONO}>
+                      Réf: {doc.id.slice(0, 8)}
+                    </span>
+                    <span className="text-emerald-700 font-medium group-hover:underline inline-flex items-center gap-0.5">
+                      <span>Éditer</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </span>
+                  </div>
                 </div>
-              )}
-              <DocumentsList
-                documents={otherDocuments}
-                viewMode={viewMode}
-                selectedIds={selectedIds}
-                toggleOne={toggleOne}
-                handleTogglePin={handleTogglePin}
-                handleDelete={handleDelete}
-              />
-            </div>
+              );
+            })
           )}
         </div>
       )}
 
-      {/* ── 5. Agency Templates Modal ── */}
+      {/* Agency Templates Modal */}
       <AgencyTemplatesModal
         isOpen={templatesModalOpen}
         onClose={() => setTemplatesModalOpen(false)}
-        onSelect={handleCreateFromTemplate}
-        loading={creating}
+        onSelect={(template: AgencyTemplate) => {
+          setTemplatesModalOpen(false);
+          handleCreateQuickStarter({
+            key: template.key,
+            title: template.title,
+            category: template.category,
+            icon: FileText,
+            color: 'text-emerald-600 bg-emerald-50',
+            defaultBlocks: template.defaultBlocks,
+          });
+        }}
       />
-    </PageFadeIn>
-  );
-}
 
-interface DocumentsListProps {
-  documents: TeamDocument[];
-  viewMode: 'grid' | 'list';
-  selectedIds: Set<string>;
-  toggleOne: (id: string, e: React.MouseEvent) => void;
-  handleTogglePin: (e: React.MouseEvent, doc: TeamDocument) => Promise<void>;
-  handleDelete: (e: React.MouseEvent, doc: TeamDocument) => Promise<void>;
-}
-
-function DocumentsList({
-  documents,
-  viewMode,
-  selectedIds,
-  toggleOne,
-  handleTogglePin,
-  handleDelete,
-}: DocumentsListProps) {
-  if (viewMode === 'list') {
-    return (
-      <div className="bg-white border border-zinc-200 rounded-[6px] overflow-hidden shadow-2xs">
-        <table className="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-500 font-medium text-[11px]">
-              <th className="w-8 py-2 px-3"></th>
-              <th className="py-2 px-3 font-semibold">Titre du document</th>
-              <th className="py-2 px-3 font-semibold hidden md:table-cell">Catégorie</th>
-              <th className="py-2 px-3 font-semibold hidden lg:table-cell">Liaison</th>
-              <th className="py-2 px-3 font-semibold hidden sm:table-cell">Dernière modif.</th>
-              <th className="w-16 py-2 px-3 text-right"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100">
-            {documents.map((doc) => {
-              const isSelected = selectedIds.has(doc.id);
-              const dateStr = new Date(doc.updated_at).toLocaleDateString('fr-CA', {
-                month: 'short',
-                day: 'numeric',
-              });
-
-              return (
-                <tr
-                  key={doc.id}
-                  className={cn(
-                    'group hover:bg-zinc-50/80 transition-colors cursor-pointer',
-                    isSelected && 'bg-emerald-50/40'
-                  )}
-                >
-                  <td className="py-2.5 px-3">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={(e) => toggleOne(doc.id, e as any)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                    />
-                  </td>
-                  <td className="py-2.5 px-3">
-                    <Link href={`/documents/${doc.id}`} className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-emerald-700 shrink-0" />
-                      <span className="font-semibold text-zinc-900 group-hover:text-emerald-700 transition-colors truncate max-w-sm">
-                        {doc.title}
-                      </span>
-                      {doc.is_pinned && (
-                        <Pin className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />
-                      )}
-                      {doc.is_shared_with_client && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                          Portail client
-                        </span>
-                      )}
-                    </Link>
-                  </td>
-                  <td className="py-2.5 px-3 hidden md:table-cell">
-                    <span className="text-[10.5px] px-2 py-0.5 rounded-[4px] bg-zinc-100 text-zinc-600 font-medium">
-                      {doc.category || 'Général'}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 hidden lg:table-cell text-zinc-500 text-[11px]">
-                    {doc.client_name ? (
-                      <span className="flex items-center gap-1">
-                        <Building2 className="w-3 h-3 text-zinc-400" />
-                        <span>{doc.client_name}</span>
-                      </span>
-                    ) : doc.project_name ? (
-                      <span className="flex items-center gap-1">
-                        <FolderKanban className="w-3 h-3 text-zinc-400" />
-                        <span>{doc.project_name}</span>
-                      </span>
-                    ) : (
-                      <span className="text-zinc-400">—</span>
-                    )}
-                  </td>
-                  <td className="py-2.5 px-3 hidden sm:table-cell text-zinc-400 font-mono text-[11px]">
-                    {dateStr}
-                  </td>
-                  <td className="py-2.5 px-3 text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        type="button"
-                        onClick={(e) => handleTogglePin(e, doc)}
-                        title={doc.is_pinned ? 'Désépingler' : 'Épingler'}
-                        className="p-1 rounded text-zinc-400 hover:text-amber-600 hover:bg-amber-50 cursor-pointer"
-                      >
-                        {doc.is_pinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => handleDelete(e, doc)}
-                        title="Supprimer"
-                        className="p-1 rounded text-zinc-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-      {documents.map((doc) => {
-        const isSelected = selectedIds.has(doc.id);
-        const dateStr = new Date(doc.updated_at).toLocaleDateString('fr-CA', {
-          month: 'short',
-          day: 'numeric',
-        });
-
-        return (
-          <div
-            key={doc.id}
-            className={cn(
-              'group relative bg-white border rounded-[6px] p-3.5 shadow-2xs hover:border-zinc-300 transition-all flex flex-col justify-between space-y-3',
-              isSelected ? 'border-emerald-500 bg-emerald-50/30 ring-1 ring-emerald-500/30' : 'border-zinc-200'
-            )}
-          >
-            <div className="space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={(e) => toggleOne(doc.id, e as any)}
-                  className="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer mt-0.5"
-                />
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={(e) => handleTogglePin(e, doc)}
-                    title={doc.is_pinned ? 'Désépingler' : 'Épingler'}
-                    className={cn(
-                      'p-1 rounded transition-colors cursor-pointer',
-                      doc.is_pinned ? 'text-amber-500' : 'text-zinc-300 hover:text-zinc-600'
-                    )}
-                  >
-                    <Pin className={cn('w-3.5 h-3.5', doc.is_pinned && 'fill-amber-500')} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => handleDelete(e, doc)}
-                    title="Supprimer"
-                    className="p-1 rounded text-zinc-300 hover:text-red-600 hover:bg-red-50 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              <Link href={`/documents/${doc.id}`} className="block group-hover:text-emerald-700">
-                <h3 className="text-xs font-bold text-zinc-900 line-clamp-2 leading-snug">
-                  {doc.title}
-                </h3>
-              </Link>
-
-              <p className="text-[11px] text-zinc-500 line-clamp-2 leading-relaxed font-mono">
-                {doc.content_text || 'Document d\'équipe prêt à être édité.'}
-              </p>
-            </div>
-
-            <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-[10.5px] text-zinc-400">
-              <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-600 font-medium">
-                {doc.category || 'Général'}
-              </span>
-              <span style={MONO}>{dateStr}</span>
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 }
