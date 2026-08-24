@@ -2189,7 +2189,9 @@ export async function createAudit(audit: {
   intake_lead_id?: string | null;
   client_id?: string | null;
   crm_lead_id?: string | null;
-  created_by: string;
+  created_by?: string | null;
+  status?: Audit['status'];
+  transcript_source?: Audit['transcript_source'];
 }): Promise<Audit | null> {
   const { data, error } = await getSupabase().from('audits').insert([audit]).select().single();
   if (error) {
@@ -2198,6 +2200,8 @@ export async function createAudit(audit: {
   }
   return data as Audit;
 }
+
+export const addAudit = createAudit;
 
 export async function updateAudit(id: string, updates: Partial<Audit>): Promise<boolean> {
   const { error } = await getSupabase().from('audits').update(updates).eq('id', id);
@@ -2306,6 +2310,22 @@ export async function fetchProposals(): Promise<Proposal[]> {
     []
   );
 }
+
+export async function createProposal(proposal: {
+  audit_id: string;
+  status?: Proposal['status'];
+  calendly_link?: string | null;
+  created_by?: string | null;
+}): Promise<Proposal | null> {
+  const { data, error } = await getSupabase().from('proposals').insert([proposal]).select().single();
+  if (error) {
+    console.error('[Supabase] Error creating proposal:', error);
+    return null;
+  }
+  return data as Proposal;
+}
+
+export const addProposal = createProposal;
 
 // ── 22. Acquisition: Telemetry ──────────────────────────────────────────────
 
