@@ -27,8 +27,24 @@ export interface Client {
   instagram_url?: string | null;
   facebook_url?: string | null;
   linkedin_url?: string | null;
+  address?: string | null;
+  contract_start_date?: string | null;
+  service_package?: string | null;
+  account_manager_id?: string | null;
+  account_manager_name?: string;
   created_at: string;
   current_focus?: string | null;
+}
+
+export interface ClientMrrHistoryEntry {
+  id: string;
+  client_id: string;
+  mrr: number;
+  note: string | null;
+  recorded_at: string;
+  created_by: string | null;
+  author_name?: string;
+  created_at: string;
 }
 
 export interface ClientInvite {
@@ -38,6 +54,44 @@ export interface ClientInvite {
   created_at: string;
   expires_at: string;
   used_at: string | null;
+  created_by?: string | null;
+  used_by?: string | null;
+}
+
+export interface CustomRole {
+  id: string;
+  name: string;
+  description: string | null;
+  is_system: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomRolePermission {
+  id: string;
+  role_id: string;
+  module: string;
+  action: 'view' | 'create' | 'edit' | 'delete';
+}
+
+export interface Department {
+  id: string;
+  name: string;
+  color: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface HelpArticle {
+  id: string;
+  question: string;
+  answer: string;
+  category: string | null;
+  sort_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ChangelogEntry {
@@ -67,6 +121,7 @@ export interface Task {
   assignee_avatar_url?: string | null;
   created_by: string | null;
   status: 'todo' | 'in_progress' | 'done';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date: string | null;
   created_at: string;
   updated_at: string;
@@ -124,6 +179,8 @@ export interface TeamInvite {
   token: string;
   role: 'admin' | 'member';
   department: string | null;
+  custom_role_id: string | null;
+  workspace: 'prospection' | 'managing' | null;
   created_by: string | null;
   created_at: string;
   expires_at: string;
@@ -188,6 +245,18 @@ export interface Project {
   progress_pct: number;
   due_date: string;
   assignees: string[];
+  budget_cad?: number | null;
+  client_visible?: boolean;
+}
+
+export interface ProjectAttachment {
+  id: string;
+  project_id: string;
+  name: string;
+  url: string;
+  file_type: string | null;
+  created_by: string | null;
+  created_at: string;
 }
 
 export interface TeamChatMessage {
@@ -217,13 +286,67 @@ export interface TeamMemberSummary {
   avatar_url: string | null;
 }
 
+export type DocumentBlockType =
+  | 'paragraph'
+  | 'heading_1'
+  | 'heading_2'
+  | 'heading_3'
+  | 'bullet_list'
+  | 'numbered_list'
+  | 'todo_list'
+  | 'quote'
+  | 'callout'
+  | 'code_block'
+  | 'table'
+  | 'divider';
+
+export interface DocumentBlock {
+  id: string;
+  type: DocumentBlockType;
+  content: string;
+  checked?: boolean;
+  calloutType?: 'info' | 'warning' | 'tip' | 'note';
+  codeLanguage?: string;
+  tableData?: string[][];
+}
+
+export interface DocumentContentJson {
+  blocks: DocumentBlock[];
+}
+
+export interface DocumentVersion {
+  id: string;
+  document_id: string;
+  version_number: number;
+  title: string;
+  content_json: DocumentContentJson;
+  content_text: string;
+  created_by: string | null;
+  created_at: string;
+  creator_name?: string | null;
+  creator_avatar?: string | null;
+}
+
 export interface TeamDocument {
   id: string;
   title: string;
+  content_json?: DocumentContentJson | null;
+  content_text?: string | null;
+  category?: 'general' | 'product_brief' | 'meeting_notes' | 'spec' | 'sop' | 'proposal' | string;
+  is_pinned?: boolean;
+  is_shared_with_client?: boolean;
+  project_id?: string | null;
+  client_id?: string | null;
+  workspace?: 'prospection' | 'managing' | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  creator_name?: string | null;
+  creator_avatar?: string | null;
+  client_name?: string | null;
+  project_name?: string | null;
 }
+
 
 export interface MinervaRoadmapItem {
   id: string;
@@ -286,8 +409,8 @@ export interface ContentPost {
   client_id: string;
   client_name: string;
   title: string;
-  format: 'Reel 60s' | 'Carrousel IG' | 'Post LinkedIn' | 'Story';
-  platform?: 'Instagram' | 'TikTok' | 'YouTube Shorts' | 'LinkedIn';
+  format: 'Reel 30s' | 'Reel 60s' | 'Reel 90s' | 'Carrousel' | 'Carrousel IG' | 'Post LinkedIn' | 'Story';
+  platform?: 'Instagram' | 'TikTok' | 'YouTube' | 'YouTube Shorts' | 'LinkedIn' | 'Facebook';
   scheduled_date: string;
   status: 'Idéation' | 'Rédigé' | 'Enregistré' | 'Publié';
   thumbnail_url: string;
@@ -323,6 +446,8 @@ export interface MinervaContentItem {
   external_url?: string | null;
   note?: string | null;
   file_url?: string | null;
+  platform?: string | null;
+  format?: string | null;
   scheduled_date?: string | null;
   posted: boolean;
   assignee_id?: string | null;
@@ -391,7 +516,8 @@ export interface AcademySOP {
     | 'Ventes & Prospection'
     | 'Gestion de compte'
     | 'Support & QA'
-    | 'Stratégie & Offre';
+    | 'Stratégie & Offre'
+    | 'Stratégie & Vision';
   read_time_min: number;
   author: string;
   video_url?: string;
@@ -479,6 +605,48 @@ export interface TimeEntry {
   ended_at: string | null;
   duration_seconds: number | null;
   note?: string | null;
+}
+
+export interface Contact {
+  id: string;
+  full_name: string;
+  company: string | null;
+  role_title: string | null;
+  sector: string | null;
+  email: string | null;
+  phone: string | null;
+  linkedin_url: string | null;
+  instagram_url: string | null;
+  twitter_url: string | null;
+  facebook_url: string | null;
+  website_url: string | null;
+  met_at_event: string | null;
+  met_at_location: string | null;
+  met_at_date: string | null;
+  follow_up_date: string | null;
+  follow_up_note: string | null;
+  converted_to_lead_id: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  how_can_i_help: string | null;
+  biggest_problem: string | null;
+  open_to_collaborate: boolean | null;
+  preferred_contact_method: 'email' | 'reseaux_sociaux' | 'site_web' | 'autre' | null;
+  status: 'a_contacter' | 'rencontre_proposee' | 'entrevue_minerva' | 'collaboration_en_cours';
+  source: 'manual' | 'self_submitted';
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContactNote {
+  id: string;
+  contact_id: string;
+  body: string;
+  channel: 'note' | 'sms' | 'email';
+  created_by: string | null;
+  author_name?: string;
+  created_at: string;
 }
 
 export type LeadStage = 'nouveau' | 'qualification' | 'proposition' | 'negociation' | 'gagne' | 'perdu';
@@ -657,6 +825,7 @@ export interface VoiceCall {
   caller_name: string | null;
   caller_phone: string | null;
   duration_seconds: number | null;
+  recording_url: string | null;
   status: 'completed' | 'abandoned' | 'failed';
   transcript: VoiceCallTranscriptLine[] | null;
   outcome: string | null;

@@ -87,6 +87,7 @@ export default function NewProjectPage() {
   const [saving, setSaving] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [loadingClients, setLoadingClients] = useState(true);
+  const [teamMembers, setTeamMembers] = useState<TeamMemberSummary[]>([]);
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('minerva_flow');
   const [name, setName] = useState('Déploiement Minerva-Flow — Commande Directe 0%');
@@ -100,14 +101,15 @@ export default function NewProjectPage() {
   });
 
   useEffect(() => {
-    async function loadClients() {
+    async function loadData() {
       setLoadingClients(true);
-      const data = await fetchClients();
-      setClients(data);
-      if (data[0]) setClientId(data[0].id);
+      const [clientData, members] = await Promise.all([fetchClients(), fetchTeamMembers()]);
+      setClients(clientData);
+      if (clientData[0]) setClientId(clientData[0].id);
+      setTeamMembers(members);
       setLoadingClients(false);
     }
-    loadClients();
+    loadData();
   }, []);
 
   const handleSelectTemplate = (tmpl: typeof TEMPLATES[0]) => {
@@ -123,12 +125,18 @@ export default function NewProjectPage() {
     if (!name || !clientId || !dueDate) return;
     setSaving(true);
 
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     const newProject = await addProject({
       client_id: clientId,
       name,
       current_stage: currentStage,
       health,
       due_date: dueDate,
+      budget_cad: budget ? Number(budget) : null,
+      assignees: assigneeIds,
+      client_visible: clientVisible,
     });
 
     if (newProject) {
@@ -159,6 +167,7 @@ export default function NewProjectPage() {
       setSaving(false);
       toastError('Erreur', 'Impossible de créer ce projet. Réessayez.');
     }
+    setSaving(false);
   };
 
   const client = clients.find((c) => c.id === clientId);
@@ -289,18 +298,61 @@ export default function NewProjectPage() {
                   </select>
                 </div>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-mv-ink mb-1.5">Échéance</label>
+                  <div className="relative">
+                    <CalendarDays className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="date"
+                      required
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-mv-ink mb-1.5">Budget (CAD, optionnel)</label>
+                  <div className="relative">
+                    <DollarSign className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="number"
+                      min={0}
+                      placeholder="5000"
+                      value={budget}
+                      onChange={(e) => setBudget(e.target.value)}
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink font-mono focus:outline-none focus:border-mv-green transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm space-y-4">
+              <SectionLabel>Équipe & visibilité</SectionLabel>
               <div>
                 <label className="block text-xs font-bold text-mv-ink mb-1.5">Échéance de livraison</label>
                 <div className="relative">
                   <CalendarDays className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
-                    type="date"
-                    required
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors"
+                    type="url"
+                    placeholder="https://…"
+                    value={attachmentUrl}
+                    onChange={(e) => setAttachmentUrl(e.target.value)}
+                    className="w-full pl-8 pr-2 py-2 rounded-lg bg-mv-cream-soft border border-mv-border text-xs text-mv-ink focus:outline-none focus:border-mv-green"
                   />
                 </div>
+                <input
+                  type="text"
+                  placeholder="Nom du lien"
+                  value={attachmentName}
+                  onChange={(e) => setAttachmentName(e.target.value)}
+                  className="w-32 px-2 py-2 rounded-lg bg-mv-cream-soft border border-mv-border text-xs text-mv-ink focus:outline-none focus:border-mv-green"
+                />
+                <button type="button" onClick={addAttachmentDraft} className="px-3 py-2 rounded-lg bg-mv-ink hover:bg-black text-white text-xs font-bold cursor-pointer shrink-0">
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
 
@@ -335,6 +387,24 @@ export default function NewProjectPage() {
                   {dueDate ? new Date(dueDate + 'T00:00:00').toLocaleDateString('fr-CA', { day: 'numeric', month: 'short', year: 'numeric' }) : 'À définir'}
                 </span>
               </div>
+              {budget && (
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-mv-ink-soft">Budget</span>
+                  <span className="text-xs font-mono font-bold text-mv-green">{Number(budget).toLocaleString('fr-CA')} $</span>
+                </div>
+              )}
+              {assigneeIds.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-mv-ink-soft">Équipe</span>
+                  <span className="text-xs font-semibold text-mv-ink">{assigneeIds.length} membre{assigneeIds.length > 1 ? 's' : ''}</span>
+                </div>
+              )}
+              {milestones.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-mv-ink-soft">Jalons</span>
+                  <span className="text-xs font-semibold text-mv-ink">{milestones.length}</span>
+                </div>
+              )}
               <Badge variant={healthVariant}>{health}</Badge>
             </div>
             <p className="text-[11px] text-mv-ink-faint leading-relaxed">

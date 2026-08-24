@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, ShieldAlert, Plus, FileSearch } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +38,7 @@ const STATUS_BADGE: Record<Audit['status'], { variant: 'neutral' | 'green'; styl
 };
 
 export default function AuditsPage() {
+  const router = useRouter();
   const { role, loading: userLoading } = useCurrentUser();
   const [audits, setAudits] = useState<Audit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,6 +86,8 @@ export default function AuditsPage() {
             icon={FileSearch}
             title="Aucun audit"
             description="Créez un audit après un appel de diagnostic pour lancer l'extraction IA des bottlenecks et coûts cachés."
+            actionLabel="Créer un audit"
+            onAction={() => router.push('/audits/new')}
           />
         ) : (
           <div className="divide-y divide-mv-border/40">

@@ -29,6 +29,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { VideoAssetPlayer } from '@/components/media/VideoAssetPlayer';
 import { createClient } from '@/lib/supabase/client';
+import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 import {
   fetchAcademySop,
   fetchCompletedSopIds,
@@ -119,7 +120,18 @@ export default function SopDetailPage() {
   };
 
   if (loading) {
-    return <div className="py-16 text-center text-xs text-zinc-400 font-mono">Chargement du guide…</div>;
+    return (
+      <div className="max-w-3xl mx-auto space-y-4 py-6">
+        <SkeletonText className="w-32 h-2.5" />
+        <SkeletonText className="w-2/3 h-6" />
+        <Skeleton className="w-full h-48 rounded-2xl" />
+        <div className="space-y-2 pt-2">
+          <SkeletonText className="w-full" />
+          <SkeletonText className="w-full" />
+          <SkeletonText className="w-4/5" />
+        </div>
+      </div>
+    );
   }
 
   if (!sop) {
@@ -305,10 +317,13 @@ export default function SopDetailPage() {
       {/* ── 4. Main Markdown Content & Visual Callouts ── */}
       <div className="bg-mv-surface border border-mv-border rounded-[6px] p-6 shadow-2xs space-y-6">
         <div className="prose prose-zinc prose-sm max-w-none text-xs sm:text-[13px] leading-relaxed text-zinc-700">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {sop.content_markdown ||
-              `## Guide Opératoire & Méthodologie\n\n${sop.description || 'Consultez les étapes ci-dessous pour exécuter ce processus avec l’équipe.'}\n\n### 1. Analyse Préliminaire\n- Évaluer la maturité digitale du prospect et identifier les points de friction.\n- Vérifier la configuration des outils internes avant toute prise de contact.\n\n### 2. Exécution & Personnalisation\n- Utiliser le script de prospection ci-dessous en adaptant les 3 points clés.\n- Documenter chaque interaction dans l'espace client pour un suivi fluide.`}
-          </ReactMarkdown>
+          {sop.content_markdown ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{sop.content_markdown}</ReactMarkdown>
+          ) : sop.description ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{sop.description}</ReactMarkdown>
+          ) : (
+            <p className="text-zinc-400 italic">Aucun contenu détaillé pour cette SOP pour le moment.</p>
+          )}
         </div>
 
         {/* ── 5. Actionable Outreach Script Callout ── */}

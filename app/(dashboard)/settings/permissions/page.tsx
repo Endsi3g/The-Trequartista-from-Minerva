@@ -35,7 +35,7 @@ export default function PermissionsSettingsPage() {
       setSavingKey(null);
       return;
     }
-    const ok = await setAppPermission(key, next, user.id);
+    const ok = await setAppPermission(key, next);
     setSavingKey(null);
     if (ok) {
       setPermissions((prev) => ({ ...prev, [key]: next }));

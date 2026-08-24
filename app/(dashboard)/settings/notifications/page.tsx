@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { ShieldCheck, Bell } from 'lucide-react';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { SkeletonRows } from '@/components/ui/skeleton';
 import { useToast } from '@/components/providers/ToastProvider';
 import { createClient } from '@/lib/supabase/client';
 
@@ -82,16 +84,22 @@ export default function NotificationsSettingsPage() {
   };
 
   return (
-    <PageFadeIn className="max-w-3xl mx-auto space-y-8 pb-12">
-      {/* Header (Shadcnblocks inspiration) */}
-      <div>
-        <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
-          Notifications
-        </h1>
-        <p className="text-xs sm:text-sm text-mv-ink-soft mt-1">
-          Gérez la manière dont vous recevez les notifications à travers les différentes sections.
-        </p>
+    <PageFadeIn className="max-w-3xl mx-auto space-y-4 pb-12">
+      {/* ── Compact Header Bar ── */}
+      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3.5 shadow-2xs flex items-center gap-2.5">
+        <div className="w-6 h-6 rounded-[4px] bg-zinc-100 border border-mv-border flex items-center justify-center text-zinc-900 shrink-0">
+          <Bell className="w-3.5 h-3.5" />
+        </div>
+        <div>
+          <h1 className="text-[15px] font-semibold text-mv-ink tracking-tight">Notifications</h1>
+          <p className="text-xs text-mv-ink-soft">Gérez la manière dont vous recevez les notifications à travers les différentes sections.</p>
+        </div>
       </div>
+
+      {loading ? (
+        <SkeletonRows count={5} />
+      ) : (
+        <>
 
       {/* Group 1: ACTIVITY */}
       <div className="space-y-3">
@@ -180,27 +188,29 @@ export default function NotificationsSettingsPage() {
           Compte
         </h2>
         <Card className="p-0 overflow-hidden border border-mv-border shadow-mv-sm divide-y divide-mv-border/60">
-          <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
+          <div className="p-4 sm:p-5 flex items-start gap-3">
+            <ShieldCheck className="w-4 h-4 text-mv-green shrink-0 mt-0.5" />
             <div className="space-y-0.5">
               <div className="text-sm font-bold text-mv-ink">Alertes de sécurité</div>
               <p className="text-xs text-mv-ink-soft">
                 Alertes critiques concernant la sécurité de votre compte — toujours activées, non désactivables.
               </p>
             </div>
-            <Switch checked disabled onCheckedChange={() => {}} />
           </div>
 
-          <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
+          <div className="p-4 sm:p-5 flex items-start gap-3">
+            <ShieldCheck className="w-4 h-4 text-mv-green shrink-0 mt-0.5" />
             <div className="space-y-0.5">
               <div className="text-sm font-bold text-mv-ink">Mises à jour de facturation</div>
               <p className="text-xs text-mv-ink-soft">
                 Notifications concernant les paiements et factures Stripe — toujours activées, non désactivables.
               </p>
             </div>
-            <Switch checked disabled onCheckedChange={() => {}} />
           </div>
         </Card>
       </div>
+        </>
+      )}
     </PageFadeIn>
   );
 }

@@ -103,7 +103,12 @@ pnpm test
 
 # 6. Générer le build d'optimisation pour la production
 pnpm build
+
+# 7. (Manuel, au besoin) Capturer les screenshots du changelog in-app
+PLAYWRIGHT_TEST_EMAIL=admin@example.com PLAYWRIGHT_TEST_PASSWORD=•••••• pnpm changelog:screenshots
 ```
+
+Le script #7 (`scripts/capture-changelog-screenshots.mjs`) navigue vers chaque page illustrée dans `/changelog` avec un vrai compte admin et enregistre les captures dans `public/changelog/`. Ce n'est pas automatisé à la publication d'une entrée — à relancer manuellement après un changement visuel notable, puis committer les PNG mis à jour.
 
 ---
 

@@ -26,5 +26,28 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Pipeline Leads",
+      "short_name": "Leads",
+      "description": "Accéder directement au CRM et pipeline des prospects",
+      "url": "/leads",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Tâches & Livrables",
+      "short_name": "Tâches",
+      "description": "Consulter les tâches et sous-tâches d'équipe",
+      "url": "/tasks",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Répertoire Clients",
+      "short_name": "Clients",
+      "description": "Fiches clients et suivi du MRR actif",
+      "url": "/clients",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }

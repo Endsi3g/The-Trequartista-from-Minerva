@@ -39,14 +39,17 @@ export async function fetchClients(): Promise<Client[]> {
     (async () => {
       const { data, error } = await getSupabase()
         .from('clients')
-        .select('*')
+        .select('*, account_manager:profiles(full_name)')
         .order('created_at', { ascending: false });
 
       if (error || !data) {
         console.warn('[Supabase] Error fetching clients:', error);
         return [];
       }
-      return data as Client[];
+      return data.map((row: Record<string, unknown>) => ({
+        ...row,
+        account_manager_name: (row.account_manager as { full_name?: string } | null)?.full_name,
+      })) as Client[];
     })(),
     []
   );
@@ -85,6 +88,41 @@ export async function updateClient(
     return null;
   }
   return data as Client;
+}
+
+// ----------------------------------------------------
+// 1b. CLIENT MRR HISTORY
+// ----------------------------------------------------
+export async function fetchClientMrrHistory(clientId: string): Promise<ClientMrrHistoryEntry[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('client_mrr_history')
+        .select('*, author:profiles(full_name)')
+        .eq('client_id', clientId)
+        .order('recorded_at', { ascending: true });
+      if (error || !data) return [];
+      return data.map((row: Record<string, unknown>) => ({
+        ...row,
+        author_name: (row.author as { full_name?: string } | null)?.full_name,
+      })) as ClientMrrHistoryEntry[];
+    })(),
+    []
+  );
+}
+
+export async function logClientMrrChange(entry: {
+  client_id: string;
+  mrr: number;
+  note?: string | null;
+  created_by: string;
+}): Promise<boolean> {
+  const { error } = await getSupabase().from('client_mrr_history').insert([entry]);
+  if (error) {
+    console.error('[Supabase] Error logging MRR change:', error);
+    return false;
+  }
+  return true;
 }
 
 // ----------------------------------------------------
@@ -145,6 +183,9 @@ export async function addProject(project: {
   current_stage: Project['current_stage'];
   health: Project['health'];
   due_date: string;
+  budget_cad?: number | null;
+  assignees?: string[];
+  client_visible?: boolean;
 }): Promise<Project | null> {
   const { data, error } = await getSupabase()
     .from('projects')
@@ -160,8 +201,47 @@ export async function addProject(project: {
   return {
     ...row,
     client_name: (row.client as { name?: string } | null)?.name || 'Client Minerva',
-    assignees: [],
+    assignees: (row.assignees as string[] | null) || [],
   } as unknown as Project;
+}
+
+export async function fetchProjectAttachments(projectId: string): Promise<ProjectAttachment[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('project_attachments')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+      if (error || !data) return [];
+      return data as ProjectAttachment[];
+    })(),
+    []
+  );
+}
+
+export async function addProjectAttachment(attachment: {
+  project_id: string;
+  name: string;
+  url: string;
+  file_type?: string | null;
+  created_by: string;
+}): Promise<ProjectAttachment | null> {
+  const { data, error } = await getSupabase().from('project_attachments').insert([attachment]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding project attachment:', error);
+    return null;
+  }
+  return data as ProjectAttachment;
+}
+
+export async function deleteProjectAttachment(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('project_attachments').delete().eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error deleting project attachment:', error);
+    return false;
+  }
+  return true;
 }
 
 export async function updateProjectStage(projectId: string, currentStage: Project['current_stage']): Promise<boolean> {
@@ -572,6 +652,117 @@ MES INSPIRATIONS
 `,
   },
   {
+    id: 'sop-minerva-flow-dossier-produit',
+    title: 'Minerva Flow : Dossier Produit, Vision & Offre Pilote',
+    category: 'Outils & Systèmes',
+    read_time_min: 10,
+    author: 'Direction Minerva',
+    description: 'Spécification complète du produit Minerva Flow — ICP, fonctionnalités clés, roadmap, business model et offre pilote (90 jours).',
+    is_essential: true,
+    pillar: 'flow',
+    content_markdown: `# Minerva Flow — Dossier Produit, Vision & Offre Pilote
+
+## 🌊 Concept en 1 phrase
+Minerva Flow est un système de gestion complet pour permettre aux restaurants et cafés de gérer l'ensemble de leurs opérations quotidiennes dans un seul endroit moderne : simple, visuel et performant.
+
+---
+
+## 🎯 Problème résolu
+Les restaurants & cafés utilisent souvent de nombreux outils fragmentés, complexes ou peu adaptés à la réalité de leur métier. Flow centralise tout dans un seul espace conçu pour leur réalité.
+
+---
+
+## 👤 ICP (Ideal Customer Profile)
+- **Restaurants** (service aux tables, comptoir, rapide)
+- **Cafés & Bistrots**
+- **Restaurants-cafés**
+- **Établissements alimentaires** qui veulent mieux gérer leurs opérations quotidiennes
+
+---
+
+## ⚡ Key Features (Fonctionnalités clés)
+- [x] **Saisie des revenus par journée** (chiffre d'affaires en temps réel)
+- [x] **Gestion des dépenses & coûts opérationnels**
+- [x] **Suivi des marges commerciales & rentabilité**
+- [x] **Gestion de l'inventaire & stocks**
+- [x] **Gestion des employés & horaires**
+- [x] **Rapports et graphiques visuels**
+- [x] **Multi-enseignes & multi-points de vente**
+- [x] **Accès offre sur mesure**
+- [ ] **Commande directe à partir de système d'un QR code**
+
+---
+
+## 🎨 Expérience utilisateur (UX/UI)
+- **Interface très fluide et navigable**
+- **Graphiques clairs et visuels**
+- **Rapports simples à comprendre** sans jargon technique
+- **Informations faciles à lire** même pour un utilisateur non technicien
+- **Produit pensé pour être partageable en équipe** en invitant d'autres membres utilisateurs
+
+---
+
+## 🚀 Différenciation & Positionnement
+- **Focus net :** Se concentrer réellement et uniquement sur la réalité spécifique des restaurants et cafés.
+- **Approche visuelle et ergonomique :** Une grande spécialité moderne, pas un générique POS vieillot.
+- **Idée stratégique :** Flow doit devenir un produit qui se markete par sa propre qualité — assez fort, beau et fluide pour que les utilisateurs aient envie de le recommander à d'autres restos.
+
+---
+
+## 🗺️ Roadmap (Feuille de route)
+
+### 0–3 mois (Phase Terrain & Feedback)
+- Faire tester l'application à des restaurants et cafés pilotes
+- Obtenir du feedback réel du terrain
+- Perfectionner le produit jusqu'à ce qu'il soit parfaitement adapté aux coups de feu en cuisine
+
+### 3–12 mois (Consolidation & Valeur)
+- Renforcer les fonctions les plus utiles
+- Stabiliser l'expérience et les intégrations
+- Améliorer la valeur commerciale du produit
+
+### 1–3 ans (Échelle & Référence)
+- Faire de Flow une référence dans sa niche
+- Développer un produit assez fort pour se recommander presque par lui-même
+- Créer une solution à la fois operational, visuelle et stratégique
+
+---
+
+## 💼 Business Model (Modèle Économique)
+- **Paiement sur abonnement** (SaaS = mensuel)
+- **Tarification accessible** selon le restaurant (minimum et maximum)
+- **Flexibilité** selon le besoin, la taille ou le niveau de personnalisation
+
+---
+
+## 📣 Go-to-Market (Stratégie d'Acquisition)
+- Démarrage direct auprès des restaurants — boucle de recommandation / bouche-à-oreille
+- Qualité du produit comme moteur principal d'acquisition
+- Preuve sociale forte : restaurants mis en valeur + expérience réelle
+- Démonstrations directes des fonctionnalités clés
+
+---
+
+## 🎁 Offre Pilote (90 jours) — Premiers clients
+
+**Objectif de la phase d'embarquement :** 3 à 5 restaurants et cafés pilotes pour valider le produit et générer les premières études de cas.
+
+| Élément | Détail |
+| :--- | :--- |
+| **Prix** | **0 $** (gratuit pendant 90 jours) |
+| **Engagement** | Retour d'expérience complet et étude de cas (1 à 2 heures de feedback / semaine) |
+| **Places disponibles** | 3 à 5 places maximum |
+| **Garantie** | Si la valeur n'est pas au rendez-vous après 90 jours, aucun frais, jamais. |
+
+---
+
+### 📝 Mises à jour & Notes d'exécution
+- **Mise à jour (15 juillet 2026) :** Le module de commande directe (paiement sur place, sans commission) est à l'essai en mode *Connect-ready* — non pas pour tout remplacer dans l'ancien système, mais pour tester à l'essai sans risque.
+- **Positionnement du pilote :** Générateur de meilleure rentabilité + Combiner l'expérience de menu + Commande directe (seulement sur place, 0% commission).
+- ⚠️ **Principe "Non pas tout changer" :** Le système est un canal complémentaire, pas un POS total à remplacer immédiatement. Au moment d'imprimer la commande sur place ou via QR code, rien ne saute.
+- **Session d'essai (24 juillet 2026) :** Flow — 150/150 remplis, en cas réels et automatisés (parcours complet, numérotation, bag de préparation) avant mise en service réelle.`,
+  },
+  {
     id: 'sop-restaurant-margin-recovery',
     title: 'Pilier 1 (Flow) : Acquisition Restauration & Démo Directe 0% Commission',
     category: 'Ventes & Prospection',
@@ -736,6 +927,127 @@ Mes Inspirations est le moteur de preuve sociale pour les 3 autres piliers de Mi
     description: 'Checklist complète pour assurer un déploiement Framer sans faille : SEO, responsive, assets et tracking.',
     is_essential: true,
     pillar: 'agency',
+  },
+  {
+    id: 'sop-minerva-agence-studio-produit',
+    title: 'Minerva — Agence & Studio Produit : Vue d’Ensemble Stratégique',
+    category: 'Stratégie & Vision',
+    read_time_min: 10,
+    author: 'Direction Minerva',
+    description: 'Écosystème, structure juridique, offre signature restaurants, stratégie marketing, roadmap 12 mois, KPIs, projections financières et gestion des risques de Minerva.',
+    is_essential: true,
+    content_markdown: `## Minerva — Agence & Studio Produit
+
+> 🏢 **Montréal, Québec** — Une compagnie hybride qui combine design, systèmes d'automatisation IA et logicielles sur mesure pour les entrepreneurs et les restaurants.
+
+---
+
+## 🌐 Écosystème Minerva
+
+Minerva fonctionne comme une **marque parapluie** (« umbrella brand ») articulée autour de quatre piliers :
+
+### 🏢 Minerva (Agence)
+L'entité principale — design, conseil stratégique, sites web Framer, intégration de systèmes.
+
+### 🧠 Minerva OS
+Le noyau technique propriétaire — systèmes de gestion, automatisation et tableaux de bord propulsés par l'IA.
+
+### 📡 Minerva Reach
+Solution de prospection automatisée spécialisée pour le Québec — tout le cycle de prospection dans une seule app.
+
+### 🌊 Minerva Flow
+Cockpit de gestion pour restaurants et cafés — opérations, fournisseurs, inventaire, employés, revenus.
+
+---
+
+## ⚖️ Structure juridique
+
+- **Forme :** Entreprise individuelle enregistrée au Québec (NEQ)
+- **Siège :** Montréal, Québec, Canada
+- **Fiscalité :** Inscription TPS et TVQ selon le seuil de chiffre d'affaires
+- **Propriété intellectuelle :** Minerva conserve la propriété exclusive du code source et des architectures. Les clients bénéficient d'une licence d'exploitation pour leurs plateformes.
+
+---
+
+## 💼 Offre signature — Restaurants & Cafés
+
+**Clientèle cible :** cafés indépendants de niche, restaurants haut de gamme, chaînes locales du Grand Montréal.
+
+| Composante | Description |
+| --- | --- |
+| **Plateforme Web Framer** | Design sur mesure : accueil, menu dynamique, réservations, galerie, identité |
+| **Intégration Minerva OS** | Tableaux de bord, gestion des avis, suivi analytique |
+| **Pipeline de contenu** | Création et planification de Reels, Stories, Carrousels automatisés |
+| **Accompagnement** | Revues mensuelles et optimisations continues |
+
+---
+
+## 📣 Stratégie marketing
+
+### Canaux prioritaires
+
+| Canal | Orientation | Fréquence |
+| --- | --- | --- |
+| **Instagram** | Univers visuel Restauration + Éducation Growth/Finance | 1–2/semaine |
+| **YouTube / TikTok** | Contenus de fond et capsules sur l'IA, le code, les systèmes | Flux continu |
+| **LinkedIn** | Crédibilité B2B, génération de leads décideurs | Hebdomadaire |
+
+### Stratégie d'acquisition B2B (Restaurants)
+
+1. **Criblage :** fichier de 200 profils ICP qualifiés localement
+2. **Campagnes directes :** vagues de prospection téléphonique et emails personnalisés
+3. **Démos :** prototypes Framer interactifs avant signature
+4. **Phase pilote :** 1–2 clients initiaux à conditions préférentielles pour études de cas
+
+---
+
+## 📈 Roadmap stratégique (12 mois)
+
+| Phase | Période | Priorités |
+| --- | --- | --- |
+| **1. Fondations** | Juillet–Août | Enregistrement légal, charte graphique, vitrine Framer, calendrier éditorial |
+| **2. Conquête locale** | Septembre–Novembre | Prospection restaurants, signatures pilotes, déploiement systèmes |
+| **3. Lancement SaaS** | Novembre–Février | Spécifications Reach & HelloAdvice, versions V1, bêta test |
+| **4. Passage à l'échelle** | Mars–Juin | Stabilisation rétention, accélération budgets publicitaires, croissance MRR |
+
+---
+
+## 🎯 KPI prioritaires (Année 1)
+
+| Indicateur | Cible |
+| --- | --- |
+| **Contrats restaurants actifs** | 3 |
+| **MRR global** | En croissance continue |
+| **Utilisateurs actifs mensuels (apps)** | Suivi mensuel |
+| **Rétention 30/60/90 jours** | Taux cible à définir |
+
+---
+
+## 📊 Projections financières (Année 1 — scénario intermédiaire)
+
+| Unité d'affaires | Hypothèses | Revenus estimés |
+| --- | --- | --- |
+| Services Restaurants (Setup) | 3 contrats × 3 000 $ | 9 000 $ |
+| Services Restaurants (Récurrent) | 3 abonnements × 250 $/mois | 9 000 $ |
+| HelloAdvice SaaS | 100–150 abonnés (~12 $ ARPU) | 14 000 $ – 21 000 $ |
+| Minerva Reach SaaS | 50–100 abonnés (~25 $ ARPU) | 15 000 $ – 30 000 $ |
+| **TOTAL** | | **38 000 $ – 48 000 $** |
+
+---
+
+## ⚠️ Gestion des risques
+
+| Risque | Mitigation |
+| --- | --- |
+| **Disponibilité opérationnelle** | Priorisation stricte des livrables essentiels, automatisation maximale |
+| **Inertie du marché SaaS** | Lancement MVP pour collecter données et ajuster l'offre rapidement |
+| **Conformité réglementaire** | Audit comptable et conseil juridique dès les premiers paliers de revenus |
+
+---
+
+### Voir aussi dans l'Académie
+- [Pilier 4 — Mes Inspirations (Marque Média & Contenu)](/academy/sop-mes-inspirations-media)
+- [Produits Minerva (roadmap)](/produits)`,
   },
 ];
 
@@ -1034,6 +1346,35 @@ export async function createClientInvite(clientId: string, createdBy: string): P
   return data as ClientInvite;
 }
 
+export async function fetchClientInvites(): Promise<(ClientInvite & { client_name: string })[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('client_invites')
+        .select('*, client:clients(name)')
+        .order('created_at', { ascending: false });
+      if (error || !data) {
+        console.warn('[Supabase] Error fetching client invites:', error);
+        return [];
+      }
+      return data.map((row: any) => ({ ...row, client_name: row.client?.name || 'Client' }));
+    })(),
+    []
+  );
+}
+
+export async function revokeClientInvite(inviteId: string): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('client_invites')
+    .update({ expires_at: new Date().toISOString() })
+    .eq('id', inviteId);
+  if (error) {
+    console.error('[Supabase] Error revoking client invite:', error);
+    return false;
+  }
+  return true;
+}
+
 export async function fetchInviteByToken(token: string): Promise<(ClientInvite & { client_name: string }) | null> {
   const { data, error } = await getSupabase()
     .from('client_invites')
@@ -1177,12 +1518,14 @@ export async function deletePushSubscription(endpoint: string): Promise<void> {
 export async function createTeamInvite(
   role: 'admin' | 'member',
   department: string | null,
-  createdBy: string
+  createdBy: string,
+  customRoleId?: string | null,
+  workspace?: 'prospection' | 'managing' | null
 ): Promise<TeamInvite | null> {
   const token = Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => b.toString(16).padStart(2, '0')).join('');
   const { data, error } = await getSupabase()
     .from('team_invites')
-    .insert([{ token, role, department, created_by: createdBy }])
+    .insert([{ token, role, department, created_by: createdBy, custom_role_id: customRoleId || null, workspace: workspace || null }])
     .select()
     .single();
 
@@ -1230,6 +1573,8 @@ export async function redeemTeamInvite(token: string, userId: string): Promise<b
   const supabase = getSupabase();
   const profileUpdate: Record<string, unknown> = { role: invite.role };
   if (invite.department) profileUpdate.department = invite.department;
+  if (invite.custom_role_id) profileUpdate.custom_role_id = invite.custom_role_id;
+  if (invite.workspace) profileUpdate.workspace = invite.workspace;
 
   const [{ error: profileError }, { error: inviteError }] = await Promise.all([
     supabase.from('profiles').update(profileUpdate).eq('id', userId),
@@ -1240,6 +1585,14 @@ export async function redeemTeamInvite(token: string, userId: string): Promise<b
     console.error('[Supabase] Error redeeming team invite:', profileError || inviteError);
     return false;
   }
+
+  // Translate the pre-assigned custom role's permission grid into
+  // app_permissions right away -- mirrors the same sync call the Postes &
+  // Rôles tab makes after assigning a role to an existing member.
+  if (invite.custom_role_id) {
+    await syncCustomRolePermissionsToAppPermissions(userId);
+  }
+
   return true;
 }
 
@@ -1347,9 +1700,33 @@ export async function addTask(task: {
 }
 
 export async function updateTaskStatus(taskId: string, status: Task['status']): Promise<boolean> {
-  const { error } = await getSupabase().from('tasks').update({ status }).eq('id', taskId);
+  const supabase = getSupabase();
+  const { data: existing } = await supabase.from('tasks').select('client_id, title').eq('id', taskId).maybeSingle();
+
+  const { error } = await supabase.from('tasks').update({ status }).eq('id', taskId);
   if (error) {
     console.error('[Supabase] Error updating task status:', error);
+    return false;
+  }
+
+  // Surfaces on the client's portal activity feed when this task is linked
+  // to a client -- real progress updates instead of the fake feed that
+  // used to always show there regardless of what actually happened.
+  if (existing?.client_id) {
+    await logClientActivity(existing.client_id, {
+      action_type: status === 'done' ? 'task_completed' : 'task_started',
+      title: status === 'done' ? 'Tâche complétée par l’équipe' : 'Mise à jour de tâche',
+      description: existing.title || '',
+    });
+  }
+
+  return true;
+}
+
+export async function updateTaskPriority(taskId: string, priority: Task['priority']): Promise<boolean> {
+  const { error } = await getSupabase().from('tasks').update({ priority }).eq('id', taskId);
+  if (error) {
+    console.error('[Supabase] Error updating task priority:', error);
     return false;
   }
   return true;
@@ -1440,6 +1817,184 @@ export async function deleteTaskSubitem(id: string): Promise<boolean> {
   return true;
 }
 
+// ── 15b. Custom Roles ────────────────────────────────────────────────────────
+
+export async function fetchRoles(): Promise<CustomRole[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase().from('roles').select('*').order('name', { ascending: true });
+      if (error || !data) return [];
+      return data as CustomRole[];
+    })(),
+    []
+  );
+}
+
+export async function addRole(role: { name: string; description?: string | null; created_by: string }): Promise<CustomRole | null> {
+  const { data, error } = await getSupabase().from('roles').insert([role]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding role:', error);
+    return null;
+  }
+  return data as CustomRole;
+}
+
+export async function deleteRole(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('roles').delete().eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error deleting role:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function fetchCustomRolePermissions(roleId: string): Promise<CustomRolePermission[]> {
+  const { data, error } = await getSupabase().from('role_permissions').select('*').eq('role_id', roleId);
+  if (error || !data) return [];
+  return data as CustomRolePermission[];
+}
+
+// Replaces the full permission set for a role in one call (delete + insert)
+// so the checkbox grid can just send its current state.
+export async function setCustomRolePermissions(
+  roleId: string,
+  permissions: { module: string; action: CustomRolePermission['action'] }[]
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const { error: deleteError } = await supabase.from('role_permissions').delete().eq('role_id', roleId);
+  if (deleteError) {
+    console.error('[Supabase] Error clearing role permissions:', deleteError);
+    return false;
+  }
+  if (permissions.length === 0) return true;
+  const { error: insertError } = await supabase
+    .from('role_permissions')
+    .insert(permissions.map((p) => ({ role_id: roleId, module: p.module, action: p.action })));
+  if (insertError) {
+    console.error('[Supabase] Error saving role permissions:', insertError);
+    return false;
+  }
+  return true;
+}
+
+export async function assignCustomRole(profileId: string, roleId: string | null): Promise<boolean> {
+  const { error } = await getSupabase().from('profiles').update({ custom_role_id: roleId }).eq('id', profileId);
+  if (error) {
+    console.error('[Supabase] Error assigning role:', error);
+    return false;
+  }
+  return true;
+}
+
+// Translates a profile's assigned custom role's (module, action) grid into
+// the app_permissions rows member_can() actually reads, via
+// ROLE_MODULE_ACTIONS (lib/permissions.ts) -- only pairs with a real
+// mapping produce a write; the rest are captured in role_permissions for
+// a future enforcement point but don't yet grant anything live.
+export async function syncCustomRolePermissionsToAppPermissions(profileId: string): Promise<boolean> {
+  const supabase = getSupabase();
+  const { data: profile } = await supabase.from('profiles').select('custom_role_id').eq('id', profileId).maybeSingle();
+  const roleId = profile?.custom_role_id as string | null;
+
+  const { ROLE_MODULE_ACTIONS } = await import('@/lib/permissions');
+  const allPermissionKeys = new Set(
+    Object.values(ROLE_MODULE_ACTIONS).flatMap((actions) => Object.values(actions).filter(Boolean) as string[])
+  );
+
+  const grantedKeys = new Set<string>();
+  if (roleId) {
+    const perms = await fetchCustomRolePermissions(roleId);
+    for (const p of perms) {
+      const key = ROLE_MODULE_ACTIONS[p.module]?.[p.action];
+      if (key) grantedKeys.add(key);
+    }
+  }
+
+  const rows = Array.from(allPermissionKeys).map((key) => ({
+    profile_id: profileId,
+    permission: key,
+    enabled: grantedKeys.has(key),
+  }));
+  const { error } = await supabase.from('app_permissions').upsert(rows, { onConflict: 'profile_id,permission' });
+  if (error) {
+    console.error('[Supabase] Error syncing role permissions:', error);
+    return false;
+  }
+  return true;
+}
+
+// ── 16a. Departments ─────────────────────────────────────────────────────────
+
+export async function fetchDepartments(): Promise<Department[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase().from('departments').select('*').order('name', { ascending: true });
+      if (error || !data) return [];
+      return data as Department[];
+    })(),
+    []
+  );
+}
+
+export async function addDepartment(department: { name: string; color: string; created_by: string }): Promise<Department | null> {
+  const { data, error } = await getSupabase().from('departments').insert([department]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding department:', error);
+    return null;
+  }
+  return data as Department;
+}
+
+export async function deleteDepartment(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('departments').delete().eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error deleting department:', error);
+    return false;
+  }
+  return true;
+}
+
+// ── 16b. Help / FAQ ──────────────────────────────────────────────────────────
+
+export async function fetchHelpArticles(): Promise<HelpArticle[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('help_articles')
+        .select('*')
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (error || !data) return [];
+      return data as HelpArticle[];
+    })(),
+    []
+  );
+}
+
+export async function addHelpArticle(article: {
+  question: string;
+  answer: string;
+  category?: string | null;
+  sort_order?: number;
+  created_by: string;
+}): Promise<HelpArticle | null> {
+  const { data, error } = await getSupabase().from('help_articles').insert([article]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding help article:', error);
+    return null;
+  }
+  return data as HelpArticle;
+}
+
+export async function deleteHelpArticle(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('help_articles').delete().eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error deleting help article:', error);
+    return false;
+  }
+  return true;
+}
+
 // ── 17. In-App Changelog ────────────────────────────────────────────────────
 
 export async function fetchChangelogEntries(): Promise<ChangelogEntry[]> {
@@ -1471,7 +2026,19 @@ export async function addChangelogEntry(entry: {
   included_items?: string[];
   created_by: string;
 }): Promise<ChangelogEntry | null> {
-  const { data, error } = await getSupabase().from('changelog_entries').insert([entry]).select().single();
+  // The live table (confirmed via information_schema, differs from this
+  // repo's consolidated migration) has a required `description` column the
+  // app never populated -- every insert was failing on that alone. `body`
+  // is what the UI's "Description" field actually maps to and what
+  // rendering reads, so the same text goes to both. `created_by` and
+  // `author_id` both genuinely exist live; fill both rather than guess
+  // which one fetchChangelogEntries()'s author:profiles(...) embed needs.
+  const { created_by, body, ...rest } = entry;
+  const { data, error } = await getSupabase()
+    .from('changelog_entries')
+    .insert([{ ...rest, body, description: body, created_by, author_id: created_by }])
+    .select()
+    .single();
   if (error) {
     console.error('[Supabase] Error adding changelog entry:', error);
     return null;
@@ -1542,6 +2109,42 @@ export async function fetchVoiceCalls(limit = 100): Promise<VoiceCall[]> {
     })(),
     []
   );
+}
+
+// Single-row, agency-wide config (voice/prompt/auto-trigger) -- created
+// lazily on first save rather than seeded by migration, so a fresh
+// environment has an honest "non configuré" state instead of a fake default.
+export async function fetchVoiceAgentConfig(): Promise<VoiceAgentConfig | null> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('voice_agent_config')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error || !data) return null;
+      return data as VoiceAgentConfig;
+    })(),
+    null
+  );
+}
+
+export async function saveVoiceAgentConfig(
+  input: Partial<Pick<VoiceAgentConfig, 'voice_id' | 'system_prompt' | 'auto_trigger_enabled' | 'auto_trigger_delay_seconds'>>,
+  existingId: string | null,
+  updatedBy: string
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const payload = { ...input, updated_by: updatedBy, updated_at: new Date().toISOString() };
+  const { error } = existingId
+    ? await supabase.from('voice_agent_config').update(payload).eq('id', existingId)
+    : await supabase.from('voice_agent_config').insert(payload);
+  if (error) {
+    console.error('[Supabase] Error saving voice agent config:', error);
+    return false;
+  }
+  return true;
 }
 
 export async function fetchAuditWithFindings(id: string): Promise<AuditWithFindings | null> {
@@ -1751,18 +2354,31 @@ export async function fetchAcquisitionFunnelStats(): Promise<AcquisitionFunnelSt
 export async function fetchAppPermissions(): Promise<Record<string, boolean>> {
   return withTimeout(
     (async () => {
-      const { data, error } = await getSupabase().from('app_permissions').select('permission_key, member_allowed');
+      const { data, error } = await getSupabase().from('app_permissions').select('permission, enabled');
       if (error || !data) return {};
-      return Object.fromEntries(data.map((row) => [row.permission_key, row.member_allowed]));
+      // A permission reads as "on" if any member profile currently has it enabled
+      // — the page's own copy frames this as a collective member-tier toggle, and
+      // setAppPermission() below fans a toggle out to every member profile.
+      const result: Record<string, boolean> = {};
+      for (const row of data as { permission: string; enabled: boolean }[]) {
+        if (row.enabled || !(row.permission in result)) result[row.permission] = row.enabled;
+      }
+      return result;
     })(),
     {}
   );
 }
 
-export async function setAppPermission(key: string, allowed: boolean, updatedBy: string): Promise<boolean> {
-  const { error } = await getSupabase()
-    .from('app_permissions')
-    .upsert({ permission_key: key, member_allowed: allowed, updated_by: updatedBy, updated_at: new Date().toISOString() });
+export async function setAppPermission(key: string, allowed: boolean): Promise<boolean> {
+  const supabase = getSupabase();
+  const { data: members, error: membersError } = await supabase.from('profiles').select('id').eq('role', 'member');
+  if (membersError) {
+    console.error('[Supabase] Error fetching member profiles for permission update:', membersError);
+    return false;
+  }
+  if (!members || members.length === 0) return true;
+  const rows = members.map((m) => ({ profile_id: m.id, permission: key, enabled: allowed }));
+  const { error } = await supabase.from('app_permissions').upsert(rows, { onConflict: 'profile_id,permission' });
   if (error) {
     console.error('[Supabase] Error updating app permission:', error);
     return false;
@@ -1773,6 +2389,42 @@ export async function setAppPermission(key: string, allowed: boolean, updatedBy:
 // ----------------------------------------------------
 // 16. PRODUITS MINERVA — ROADMAP INTERNE (admin-only)
 // ----------------------------------------------------
+const DEFAULT_ROADMAP_ITEMS: MinervaRoadmapItem[] = [
+  {
+    id: 'roadmap-flow-0-3m',
+    title: 'Pilote 90 jours : Tests terrain restos & cafés, feedback réel et ajustements',
+    product: 'Minerva Flow',
+    item_type: 'Milestone',
+    status: 'In Progress',
+    impact: 'High',
+    start_date: '2026-08-01',
+    end_date: '2026-11-01',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'roadmap-flow-3-12m',
+    title: 'Consolidation : Stabilisation du produit, fonctions clés & valeur commerciale',
+    product: 'Minerva Flow',
+    item_type: 'Launch',
+    status: 'Planned',
+    impact: 'High',
+    start_date: '2026-11-01',
+    end_date: '2027-08-01',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'roadmap-flow-1-3y',
+    title: 'Référence Niche : Expansion produit viral autonome & solution stratégique',
+    product: 'Minerva Flow',
+    item_type: 'Experiment',
+    status: 'Planned',
+    impact: 'High',
+    start_date: '2027-08-01',
+    end_date: '2029-08-01',
+    created_at: new Date().toISOString(),
+  },
+];
+
 export async function fetchMinervaRoadmap(): Promise<MinervaRoadmapItem[]> {
   return withTimeout(
     (async () => {
@@ -1780,10 +2432,10 @@ export async function fetchMinervaRoadmap(): Promise<MinervaRoadmapItem[]> {
         .from('minerva_roadmap_items')
         .select('*')
         .order('start_date', { ascending: true });
-      if (error || !data) return [];
+      if (error || !data || data.length === 0) return DEFAULT_ROADMAP_ITEMS;
       return data as MinervaRoadmapItem[];
     })(),
-    []
+    DEFAULT_ROADMAP_ITEMS
   );
 }
 
@@ -1824,18 +2476,64 @@ export async function deleteMinervaRoadmapItem(id: string): Promise<boolean> {
 }
 
 // ----------------------------------------------------
-// 17. DOCUMENTS — équipe, édition collaborative temps réel
+// 17. DOCUMENTS & WIKI — équipe, édition collaborative temps réel
 // ----------------------------------------------------
 const DOCS_STORAGE_KEY = 'minerva-team-documents-cache';
+const DOCS_VERSIONS_KEY = 'minerva-team-doc-versions-cache';
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const DEFAULT_FLOW_BLOCKS: DocumentBlock[] = [
+  { id: 'b-1', type: 'heading_1', content: 'Minerva Flow — Dossier Produit, Vision & Offre Pilote' },
+  { id: 'b-2', type: 'callout', content: '🌊 **Concept en 1 phrase** : Minerva Flow est un système de gestion complet permettant aux restaurants et cafés de piloter l\'ensemble de leurs opérations quotidiennes dans un seul endroit moderne : simple, visuel et performant.', calloutType: 'info' },
+  { id: 'b-3', type: 'heading_2', content: '🎯 Problème résolu' },
+  { id: 'b-4', type: 'paragraph', content: 'Les restaurants & cafés montréalais utilisent souvent des outils fragmentés (POS vieillots, tableurs Excel perdus, fiches papier). Flow centralise la gestion financière, le suivi des marges et l\'organisation en salle dans un cockpit fluide.' },
+  { id: 'b-5', type: 'heading_2', content: '⚡ Fonctionnalités clés (Key Features)' },
+  { id: 'b-6', type: 'todo_list', content: 'Saisie des revenus par journée & chiffre d\'affaires temps réel', checked: true },
+  { id: 'b-7', type: 'todo_list', content: 'Gestion des dépenses & coûts opérationnels (food cost)', checked: true },
+  { id: 'b-8', type: 'todo_list', content: 'Suivi des marges commerciales & rentabilité brute', checked: true },
+  { id: 'b-9', type: 'todo_list', content: 'Gestion de l\'inventaire & alertes stocks bas', checked: true },
+  { id: 'b-10', type: 'todo_list', content: 'Gestion des employés & planning d\'équipe', checked: true },
+  { id: 'b-11', type: 'todo_list', content: 'Rapports visuels et export comptable 1-clic', checked: true },
+  { id: 'b-12', type: 'todo_list', content: 'Module Click-to-WhatsApp & QR Code sur table', checked: false },
+  { id: 'b-13', type: 'heading_2', content: '🎁 Offre Pilote (90 jours) — 3 à 5 établissements' },
+  { id: 'b-14', type: 'callout', content: '💡 **Garantie Pilote** : 0 $ pendant 90 jours en échange d\'un retour d\'expérience hebdomadaire structuré. Si la valeur n\'est pas au rendez-vous, aucun frais n\'est engagé.', calloutType: 'tip' },
+  { id: 'b-15', type: 'table', content: 'Offre Pilote', tableData: [
+    ['Critère', 'Engagement Pilote', 'Standard'],
+    ['Tarif', '0 $ (Gratuit 90j)', '149 $ - 299 $/mois'],
+    ['Support', 'Canal direct WhatsApp VIP', 'Email standard'],
+    ['Feedback requis', '1h par semaine', 'Optionnel']
+  ]},
+  { id: 'b-16', type: 'heading_2', content: '🗺️ Roadmap & Jalons' },
+  { id: 'b-17', type: 'paragraph', content: '1. Phase Terrain : Déploiement chez 5 restaurants pilotes de Rosemont & Mile End.\n2. Phase Consolidation : Automatisation des alertes de marge.\n3. Échelle : Référencement comme standard d\'exploitation pour cafés québécois.' }
+];
+
+const DEFAULT_DOCUMENTS: TeamDocument[] = [
+  {
+    id: 'doc-minerva-flow-dossier-produit',
+    title: 'Minerva Flow — Dossier Produit, Vision & Offre Pilote',
+    category: 'product_brief',
+    is_pinned: true,
+    is_shared_with_client: false,
+    workspace: 'managing',
+    content_json: { blocks: DEFAULT_FLOW_BLOCKS },
+    content_text: 'Minerva Flow — Dossier Produit, Vision & Offre Pilote. Système de gestion complet pour restaurants et cafés.',
+    created_by: null,
+    created_at: new Date('2026-08-20T12:00:00.000Z').toISOString(),
+    updated_at: new Date('2026-08-20T15:00:00.000Z').toISOString(),
+  },
+];
+
 function getLocalDocs(): TeamDocument[] {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined') return DEFAULT_DOCUMENTS;
   try {
     const raw = localStorage.getItem(DOCS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return DEFAULT_DOCUMENTS;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_DOCUMENTS;
+    const hasFlowDoc = parsed.some((d: TeamDocument) => d.id === 'doc-minerva-flow-dossier-produit');
+    return hasFlowDoc ? parsed : [...DEFAULT_DOCUMENTS, ...parsed];
   } catch {
-    return [];
+    return DEFAULT_DOCUMENTS;
   }
 }
 
@@ -1862,16 +2560,57 @@ export async function fetchDocuments(): Promise<TeamDocument[]> {
       try {
         const { data, error } = await getSupabase()
           .from('documents')
-          .select('*')
+          .select(`
+            *,
+            creator:created_by(full_name, avatar_url),
+            client:client_id(name),
+            project:project_id(name)
+          `)
+          .order('is_pinned', { ascending: false })
           .order('updated_at', { ascending: false });
 
         const localDocs = getLocalDocs();
         if (error || !data) {
+          // Fallback if table doesn't have join or is empty
+          const { data: simpleData } = await getSupabase()
+            .from('documents')
+            .select('*')
+            .order('updated_at', { ascending: false });
+          
+          if (simpleData && simpleData.length > 0) {
+            const formatted = simpleData.map((d: any) => ({
+              ...d,
+              is_pinned: !!d.is_pinned,
+              is_shared_with_client: !!d.is_shared_with_client,
+            })) as TeamDocument[];
+            const remoteIds = new Set(formatted.map((d) => d.id));
+            const missingLocal = localDocs.filter((d) => !remoteIds.has(d.id));
+            return [...formatted, ...missingLocal];
+          }
           return localDocs;
         }
 
-        const remoteDocs = data as TeamDocument[];
-        // Merge any local-only docs not in remote
+        const remoteDocs: TeamDocument[] = data.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          content_json: d.content_json || null,
+          content_text: d.content_text || null,
+          category: d.category || 'general',
+          is_pinned: !!d.is_pinned,
+          is_shared_with_client: !!d.is_shared_with_client,
+          project_id: d.project_id || null,
+          client_id: d.client_id || null,
+          workspace: d.workspace || null,
+          created_by: d.created_by || null,
+          created_at: d.created_at,
+          updated_at: d.updated_at,
+          creator_name: d.creator?.full_name || null,
+          creator_avatar: d.creator?.avatar_url || null,
+          client_name: d.client?.name || null,
+          project_name: d.project?.name || null,
+        }));
+
+        // Merge local-only docs
         const remoteIds = new Set(remoteDocs.map((d) => d.id));
         const missingLocal = localDocs.filter((d) => !remoteIds.has(d.id));
         return [...remoteDocs, ...missingLocal];
@@ -1887,9 +2626,37 @@ export async function fetchDocument(id: string): Promise<TeamDocument | null> {
   return withTimeout(
     (async () => {
       try {
-        const { data, error } = await getSupabase().from('documents').select('*').eq('id', id).maybeSingle();
+        const { data, error } = await getSupabase()
+          .from('documents')
+          .select(`
+            *,
+            creator:created_by(full_name, avatar_url),
+            client:client_id(name),
+            project:project_id(name)
+          `)
+          .eq('id', id)
+          .maybeSingle();
+
         if (!error && data) {
-          const doc = data as TeamDocument;
+          const doc: TeamDocument = {
+            id: data.id,
+            title: data.title,
+            content_json: data.content_json || null,
+            content_text: data.content_text || null,
+            category: data.category || 'general',
+            is_pinned: !!data.is_pinned,
+            is_shared_with_client: !!data.is_shared_with_client,
+            project_id: data.project_id || null,
+            client_id: data.client_id || null,
+            workspace: data.workspace || null,
+            created_by: data.created_by || null,
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+            creator_name: data.creator?.full_name || null,
+            creator_avatar: data.creator?.avatar_url || null,
+            client_name: data.client?.name || null,
+            project_name: data.project?.name || null,
+          };
           saveLocalDoc(doc);
           return doc;
         }
@@ -1901,16 +2668,35 @@ export async function fetchDocument(id: string): Promise<TeamDocument | null> {
   );
 }
 
-export async function addDocument(title: string, createdBy?: string | null): Promise<TeamDocument | null> {
+export async function addDocument(
+  title?: string,
+  createdBy?: string | null,
+  options?: {
+    category?: string;
+    workspace?: 'prospection' | 'managing' | null;
+    projectId?: string | null;
+    clientId?: string | null;
+    contentJson?: DocumentContentJson;
+    contentText?: string;
+    isPinned?: boolean;
+    isSharedWithClient?: boolean;
+  }
+): Promise<TeamDocument | null> {
   const cleanTitle = title?.trim() || 'Document sans titre';
   const isValidUuid = createdBy && UUID_REGEX.test(createdBy);
 
-  const payload: { title: string; created_by?: string | null } = {
+  const payload: Record<string, unknown> = {
     title: cleanTitle,
+    category: options?.category || 'general',
+    is_pinned: options?.isPinned || false,
+    is_shared_with_client: options?.isSharedWithClient || false,
   };
-  if (isValidUuid) {
-    payload.created_by = createdBy;
-  }
+  if (isValidUuid) payload.created_by = createdBy;
+  if (options?.workspace) payload.workspace = options.workspace;
+  if (options?.projectId) payload.project_id = options.projectId;
+  if (options?.clientId) payload.client_id = options.clientId;
+  if (options?.contentJson) payload.content_json = options.contentJson;
+  if (options?.contentText) payload.content_text = options.contentText;
 
   try {
     const { data, error } = await getSupabase()
@@ -1932,6 +2718,14 @@ export async function addDocument(title: string, createdBy?: string | null): Pro
   const localDoc: TeamDocument = {
     id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `doc-${Date.now()}`,
     title: cleanTitle,
+    category: options?.category || 'general',
+    is_pinned: options?.isPinned || false,
+    is_shared_with_client: options?.isSharedWithClient || false,
+    workspace: options?.workspace || null,
+    project_id: options?.projectId || null,
+    client_id: options?.clientId || null,
+    content_json: options?.contentJson || { blocks: [] },
+    content_text: options?.contentText || '',
     created_by: isValidUuid ? createdBy : null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -1940,29 +2734,190 @@ export async function addDocument(title: string, createdBy?: string | null): Pro
   return localDoc;
 }
 
-export async function renameDocument(id: string, title: string): Promise<boolean> {
-  const cleanTitle = title || 'Document sans titre';
+export async function saveDocumentContent(
+  id: string,
+  contentJson: DocumentContentJson,
+  contentText: string,
+  title?: string
+): Promise<boolean> {
   const local = getLocalDocs().find((d) => d.id === id);
   if (local) {
-    local.title = cleanTitle;
+    local.content_json = contentJson;
+    local.content_text = contentText;
+    if (title) local.title = title;
     local.updated_at = new Date().toISOString();
     saveLocalDoc(local);
   }
 
+  const updates: Record<string, unknown> = {
+    content_json: contentJson,
+    content_text: contentText,
+    updated_at: new Date().toISOString(),
+  };
+  if (title) updates.title = title;
+
   try {
-    const { error } = await getSupabase().from('documents').update({ title: cleanTitle }).eq('id', id);
+    const { error } = await getSupabase().from('documents').update(updates).eq('id', id);
     if (!error) return true;
   } catch {}
   return true;
 }
 
+export async function updateDocumentMeta(id: string, updates: Partial<TeamDocument>): Promise<boolean> {
+  const local = getLocalDocs().find((d) => d.id === id);
+  if (local) {
+    Object.assign(local, updates);
+    local.updated_at = new Date().toISOString();
+    saveLocalDoc(local);
+  }
+
+  try {
+    const dbPayload: Record<string, unknown> = { ...updates, updated_at: new Date().toISOString() };
+    delete dbPayload.id;
+    delete dbPayload.creator_name;
+    delete dbPayload.creator_avatar;
+    delete dbPayload.client_name;
+    delete dbPayload.project_name;
+
+    const { error } = await getSupabase().from('documents').update(dbPayload).eq('id', id);
+    if (!error) return true;
+  } catch {}
+  return true;
+}
+
+export async function togglePinDocument(id: string, isPinned: boolean): Promise<boolean> {
+  return updateDocumentMeta(id, { is_pinned: isPinned });
+}
+
+export async function renameDocument(id: string, title: string): Promise<boolean> {
+  const cleanTitle = title?.trim() || 'Document sans titre';
+  return updateDocumentMeta(id, { title: cleanTitle });
+}
+
 export async function deleteDocument(id: string): Promise<boolean> {
   removeLocalDoc(id);
   try {
+    await getSupabase().from('document_versions').delete().eq('document_id', id);
     await getSupabase().from('documents').delete().eq('id', id);
     await getSupabase().from('yjs_documents').delete().eq('room', id);
   } catch {}
   return true;
+}
+
+// ----------------------------------------------------
+// 17.1 HISTORIQUE DE VERSIONS DES DOCUMENTS
+// ----------------------------------------------------
+function getLocalDocVersions(documentId: string): DocumentVersion[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${DOCS_VERSIONS_KEY}-${documentId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalDocVersion(version: DocumentVersion) {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = getLocalDocVersions(version.document_id).filter((v) => v.id !== version.id);
+    list.unshift(version);
+    localStorage.setItem(`${DOCS_VERSIONS_KEY}-${version.document_id}`, JSON.stringify(list));
+  } catch {}
+}
+
+export async function fetchDocumentVersions(documentId: string): Promise<DocumentVersion[]> {
+  return withTimeout(
+    (async () => {
+      try {
+        const { data, error } = await getSupabase()
+          .from('document_versions')
+          .select(`
+            *,
+            creator:created_by(full_name, avatar_url)
+          `)
+          .eq('document_id', documentId)
+          .order('version_number', { ascending: false });
+
+        const local = getLocalDocVersions(documentId);
+        if (error || !data || data.length === 0) {
+          return local;
+        }
+
+        const remoteVersions: DocumentVersion[] = data.map((d: any) => ({
+          id: d.id,
+          document_id: d.document_id,
+          version_number: d.version_number,
+          title: d.title,
+          content_json: d.content_json || { blocks: [] },
+          content_text: d.content_text || '',
+          created_by: d.created_by,
+          created_at: d.created_at,
+          creator_name: d.creator?.full_name || null,
+          creator_avatar: d.creator?.avatar_url || null,
+        }));
+
+        const remoteIds = new Set(remoteVersions.map((v) => v.id));
+        const missingLocal = local.filter((v) => !remoteIds.has(v.id));
+        return [...remoteVersions, ...missingLocal];
+      } catch {
+        return getLocalDocVersions(documentId);
+      }
+    })(),
+    getLocalDocVersions(documentId)
+  );
+}
+
+export async function createDocumentVersion(
+  documentId: string,
+  title: string,
+  contentJson: DocumentContentJson,
+  contentText: string,
+  createdBy?: string | null
+): Promise<DocumentVersion | null> {
+  const existing = await fetchDocumentVersions(documentId);
+  const nextVersionNum = existing.length > 0 ? Math.max(...existing.map((v) => v.version_number)) + 1 : 1;
+  const isValidUuid = createdBy && UUID_REGEX.test(createdBy);
+
+  const payload: Record<string, unknown> = {
+    document_id: documentId,
+    version_number: nextVersionNum,
+    title: title || 'Version sauvegardée',
+    content_json: contentJson,
+    content_text: contentText,
+  };
+  if (isValidUuid) payload.created_by = createdBy;
+
+  try {
+    const { data, error } = await getSupabase()
+      .from('document_versions')
+      .insert([payload])
+      .select()
+      .single();
+
+    if (!error && data) {
+      const v = data as DocumentVersion;
+      saveLocalDocVersion(v);
+      return v;
+    }
+  } catch {}
+
+  const localVersion: DocumentVersion = {
+    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `ver-${Date.now()}`,
+    document_id: documentId,
+    version_number: nextVersionNum,
+    title: title || `Version ${nextVersionNum}`,
+    content_json: contentJson,
+    content_text: contentText,
+    created_by: isValidUuid ? createdBy : null,
+    created_at: new Date().toISOString(),
+  };
+  saveLocalDocVersion(localVersion);
+  return localVersion;
+}
+
+export async function restoreDocumentVersion(documentId: string, version: DocumentVersion): Promise<boolean> {
+  return saveDocumentContent(documentId, version.content_json, version.content_text, version.title);
 }
 
 // ----------------------------------------------------
@@ -2193,13 +3148,25 @@ export async function createMinervaContentItem(payload: {
   external_url?: string | null;
   note?: string | null;
   file_url?: string | null;
+  platform?: string | null;
+  format?: string | null;
   scheduled_date?: string | null;
   assignee_id?: string | null;
   created_by: string;
 }): Promise<MinervaContentItem | null> {
+  // platform/format live behind a pending migration (20260819000000) --
+  // only send them when actually filled in, same pattern as addClient's
+  // pending-columns guard, so creating content keeps working before that
+  // migration is deployed.
+  const { platform, format, ...rest } = payload;
+  const insertPayload = {
+    ...rest,
+    ...(platform ? { platform } : {}),
+    ...(format ? { format } : {}),
+  };
   const { data, error } = await getSupabase()
     .from('minerva_content_items')
-    .insert([payload])
+    .insert([insertPayload])
     .select('*')
     .single();
   if (error) {
@@ -2285,136 +3252,16 @@ export async function createOpusClipJob(payload: {
 // 21. CLIENT PORTAL — SUIVI DES TÂCHES & LIVRABLES EN TEMPS RÉEL
 // ----------------------------------------------------
 
-export const DEFAULT_CLIENT_WORK_ITEMS: ClientWorkItem[] = [
-  {
-    id: 'cw-1',
-    title: 'Design du Hero Section & Système Typographique V2',
-    description: 'Refonte complète de l’en-tête du site avec intégration des typographies Geist/Inter et micro-animations.',
-    phase_name: 'Phase 1 : Design & UX',
-    category: 'Design & UX',
-    status: 'in_review',
-    assignee_name: 'Alexandre Laurent',
-    assignee_role: 'Lead UI/UX Designer',
-    due_date: '2026-08-20',
-    deliverable_url: 'https://figma.com/proto/demo-hero-section',
-    deliverable_type: 'figma',
-    client_feedback: null,
-    updated_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-  },
-  {
-    id: 'cw-2',
-    title: 'Développement du Formulaire Multi-Étapes d’Estimation',
-    description: 'Tunnel de conversion 2 étapes avec validation instantanée et intégration Webhook CRM.',
-    phase_name: 'Phase 2 : Développement Web',
-    category: 'Développement',
-    status: 'in_progress',
-    assignee_name: 'Thomas Renaud',
-    assignee_role: 'Fullstack Dev',
-    due_date: '2026-08-22',
-    deliverable_url: 'https://framer.com/share/estimation-toitures',
-    deliverable_type: 'framer',
-    client_feedback: null,
-    updated_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-  },
-  {
-    id: 'cw-3',
-    title: 'Montage Vidéo Reel 4K — Avant / Après Toitures Résidentielles',
-    description: 'Vidéo verticale 9:16 avec sous-titrage dynamique et hook visuel optimisé pour TikTok & Reels.',
-    phase_name: 'Phase 3 : Social & Ads',
-    category: 'Contenu Vidéo',
-    status: 'in_review',
-    assignee_name: 'Camille Gagnon',
-    assignee_role: 'Motion & Video Editor',
-    due_date: '2026-08-19',
-    deliverable_url: 'https://cdn.minerva.agency/samples/reel-toitures-v1.mp4',
-    deliverable_type: 'video',
-    client_feedback: null,
-    updated_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-  },
-  {
-    id: 'cw-4',
-    title: 'Audit & Optimisation Complète Fiche Google My Business',
-    description: 'Enrichissement des catégories secondaires, ajout de 15 photos géociblées et configuration de la messagerie instantanée.',
-    phase_name: 'Phase 1 : Audit & Fondations',
-    category: 'SEO & Ads',
-    status: 'done',
-    assignee_name: 'Éric Bélanger',
-    assignee_role: 'Expert SEO Local',
-    due_date: '2026-08-15',
-    deliverable_url: 'https://cdn.minerva.agency/reports/gmb-audit-beauchemin.pdf',
-    deliverable_type: 'pdf',
-    client_feedback: 'Excellent travail, les appels ont augmenté dès le lendemain !',
-    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-  },
-  {
-    id: 'cw-5',
-    title: 'Configuration de l’Agent Vocal IA Qualification Téléphonique',
-    description: 'Mise en place de l’agent ElevenLabs pour répondre 24/7 aux demandes de soumission et pré-remplir le devis.',
-    phase_name: 'Phase 4 : Automatisation',
-    category: 'Automation & IA',
-    status: 'todo',
-    assignee_name: 'Thomas Renaud',
-    assignee_role: 'Ingénieur IA & Back-end',
-    due_date: '2026-08-28',
-    deliverable_url: null,
-    deliverable_type: null,
-    client_feedback: null,
-    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-  },
-];
-
-export const DEFAULT_CLIENT_ACTIVITY_LOGS: ClientActivityLog[] = [
-  {
-    id: 'cal-1',
-    client_id: 'default',
-    actor_name: 'Camille Gagnon',
-    action_type: 'deliverable_submitted',
-    title: 'Nouveau livrable soumis à votre validation',
-    description: 'Montage Vidéo Reel 4K — Avant / Après Toitures Résidentielles prêt pour revue.',
-    created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-  },
-  {
-    id: 'cal-2',
-    client_id: 'default',
-    actor_name: 'Alexandre Laurent',
-    action_type: 'deliverable_submitted',
-    title: 'Maquette V2 publiée sur Figma',
-    description: 'Hero Section & Système Typographique V2 disponible pour inspection.',
-    created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-  },
-  {
-    id: 'cal-3',
-    client_id: 'default',
-    actor_name: 'Thomas Renaud',
-    action_type: 'task_started',
-    title: 'Démarrage du développement',
-    description: 'Intégration du formulaire multi-étapes dans Framer & Supabase.',
-    created_at: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-  },
-  {
-    id: 'cal-4',
-    client_id: 'default',
-    actor_name: 'Éric Bélanger',
-    action_type: 'milestone_achieved',
-    title: 'Jalon complété avec succès',
-    description: 'Fiche Google My Business optimisée et indexée dans le Top 3 local.',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-  },
-];
-
 export async function fetchClientWorkItems(clientId: string): Promise<ClientWorkItem[]> {
   return withTimeout(
     (async () => {
-      // 1. Check if real tasks exist in Supabase for this client
       const { data: dbTasks, error } = await getSupabase()
         .from('tasks')
         .select('*')
         .eq('client_id', clientId)
         .order('updated_at', { ascending: false });
 
-      if (error || !dbTasks || dbTasks.length === 0) {
-        return DEFAULT_CLIENT_WORK_ITEMS;
-      }
+      if (error || !dbTasks) return [];
 
       return dbTasks.map((t) => ({
         id: t.id,
@@ -2430,39 +3277,92 @@ export async function fetchClientWorkItems(clientId: string): Promise<ClientWork
         updated_at: t.updated_at || t.created_at,
       })) as ClientWorkItem[];
     })(),
-    DEFAULT_CLIENT_WORK_ITEMS
+    []
   );
 }
 
-export async function approveClientWorkItem(taskId: string, clientId: string): Promise<boolean> {
-  try {
-    const supabase = getSupabase();
-    await supabase.from('tasks').update({ status: 'done' }).eq('id', taskId);
-    return true;
-  } catch (err) {
-    console.warn('[Supabase] Error approving client work item:', err);
-    return true;
+// Real timeline entry on client_activity_log -- actorName resolves to the
+// current authenticated user's profile name when not passed explicitly
+// (team-driven events); portal-side callers pass the client's own name.
+export async function logClientActivity(
+  clientId: string,
+  entry: { action_type: ClientActivityLog['action_type']; title: string; description?: string; actorName?: string }
+): Promise<boolean> {
+  const supabase = getSupabase();
+  let actorName = entry.actorName;
+  if (!actorName) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
+      actorName = profile?.full_name || 'Équipe Minerva';
+    } else {
+      actorName = 'Équipe Minerva';
+    }
   }
+
+  const { error } = await supabase.from('client_activity_log').insert([
+    {
+      client_id: clientId,
+      actor_name: actorName,
+      action_type: entry.action_type,
+      title: entry.title,
+      description: entry.description || '',
+    },
+  ]);
+  if (error) {
+    console.warn('[Supabase] Error logging client activity:', error);
+    return false;
+  }
+  return true;
 }
 
-export async function requestClientWorkItemRevision(taskId: string, clientId: string, feedback: string): Promise<boolean> {
-  try {
-    const supabase = getSupabase();
-    // Log comment / message
-    await sendClientMessage(clientId, 'portal-client', 'client', `[Ajustement demandé sur livrable] : ${feedback}`);
-    return true;
-  } catch (err) {
-    console.warn('[Supabase] Error requesting revision:', err);
-    return true;
+export async function approveClientWorkItem(taskId: string, clientId: string, taskTitle: string, actorName?: string): Promise<boolean> {
+  const { error } = await getSupabase().from('tasks').update({ status: 'done' }).eq('id', taskId);
+  if (error) {
+    console.error('[Supabase] Error approving client work item:', error);
+    return false;
   }
+  await logClientActivity(clientId, {
+    action_type: 'task_completed',
+    title: 'Livrable validé par le client',
+    description: taskTitle,
+    actorName,
+  });
+  return true;
+}
+
+export async function requestClientWorkItemRevision(
+  taskId: string,
+  clientId: string,
+  feedback: string,
+  taskTitle: string,
+  actorName?: string
+): Promise<boolean> {
+  // sendClientMessage has its own resilient-fallback contract (never
+  // throws, always resolves to a message) -- treated as fire-and-forget
+  // here the same way every other caller of it in the app already does.
+  await sendClientMessage(clientId, 'portal-client', 'client', `[Ajustement demandé sur livrable] : ${feedback}`);
+  return logClientActivity(clientId, {
+    action_type: 'revision_requested',
+    title: 'Demande d’ajustement soumise',
+    description: `${taskTitle} : « ${feedback} »`,
+    actorName,
+  });
 }
 
 export async function fetchClientActivityLogs(clientId: string): Promise<ClientActivityLog[]> {
   return withTimeout(
     (async () => {
-      return DEFAULT_CLIENT_ACTIVITY_LOGS;
+      const { data, error } = await getSupabase()
+        .from('client_activity_log')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      if (error || !data) return [];
+      return data as ClientActivityLog[];
     })(),
-    DEFAULT_CLIENT_ACTIVITY_LOGS
+    []
   );
 }
 

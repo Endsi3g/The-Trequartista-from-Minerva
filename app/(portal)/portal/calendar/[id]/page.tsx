@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { VideoAssetPlayer } from '@/components/media/VideoAssetPlayer';
+import { LinkPreviewCard } from '@/components/content/LinkPreviewCard';
 import { fetchContentPost, updateContentPost } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
 import type { ContentPost } from '@/lib/types';
@@ -123,6 +124,11 @@ export default function PortalContentDetailPage() {
         )}
         {post.caption && (
           <p className="mt-4 text-sm text-mv-ink leading-relaxed whitespace-pre-wrap">{post.caption}</p>
+        )}
+        {post.native_url && (
+          <div className="mt-4">
+            <LinkPreviewCard url={post.native_url} />
+          </div>
         )}
       </Card>
 

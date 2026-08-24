@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createOpusClipProject } from '@/lib/services/opus-clip';
+import { requireTeamMember } from '@/lib/server/permissions';
 
 export const runtime = 'nodejs';
 
@@ -12,14 +13,9 @@ export const runtime = 'nodejs';
 // lib/services/opus-clip.ts).
 export async function POST(req: Request) {
   const authed = await createServerClient();
-  const { data: { user } } = await authed.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-  }
-  const { data: profile } = await authed.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  if (profile?.role !== 'admin' && profile?.role !== 'member') {
-    return NextResponse.json({ error: 'Réservé à l’équipe interne.' }, { status: 403 });
-  }
+  const guard = await requireTeamMember(authed);
+  if (guard.error) return guard.error;
+  const { user } = guard;
 
   let body: { videoUrl?: string; title?: string; contentItemId?: string };
   try {

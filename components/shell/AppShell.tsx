@@ -7,6 +7,9 @@ import { TopbarActions } from './TopbarActions';
 import { AppBreadcrumb } from './AppBreadcrumb';
 import { ChangelogBanner } from './ChangelogBanner';
 import { ShortcutsModal } from '@/components/ui/shortcuts-modal';
+import { MobileBottomNav } from './MobileBottomNav';
+import { OfflineStatusIndicator } from '@/components/ui/OfflineStatusIndicator';
+import { PwaInstallBanner } from '@/components/pwa/PwaInstallBanner';
 import { SidebarStateProvider, useSidebarState } from './SidebarState';
 
 interface AppShellProps {
@@ -30,14 +33,16 @@ function SidebarTrigger() {
 function AppShellInner({ children }: AppShellProps) {
   return (
     <div className="h-screen bg-mv-cream-soft text-mv-ink flex flex-col w-full relative font-sans overflow-hidden">
+      {/* Non-intrusive offline/online network status indicator */}
+      <OfflineStatusIndicator />
+
       <ChangelogBanner />
       <div className="flex flex-1 w-full min-h-0">
         <AppSidebar />
 
         {/* Main Content Container */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Top Header -- solid background, no blur (a translucent/blurred
-              header over scrolling content read as visually noisy). */}
+          {/* Top Header */}
           <header className="h-14 px-4 md:px-6 bg-mv-surface border-b border-mv-border sticky top-0 z-20 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3 min-w-0">
               <SidebarTrigger />
@@ -48,17 +53,20 @@ function AppShellInner({ children }: AppShellProps) {
             <TopbarActions />
           </header>
 
-          {/* Page Content -- full width of whatever the sidebar leaves
-              available, so collapsing it actually gives pages more room
-              instead of just growing empty margins. Scrolls on its own so
-              the sidebar footer never gets pushed off-screen by a tall page. */}
-          <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 w-full min-w-0 transition-all duration-200 ease-in-out">
+          {/* Page Content -- pb-20 on mobile leaves room for MobileBottomNav */}
+          <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 pb-20 md:pb-8 w-full min-w-0 transition-all duration-200 ease-in-out">
             {children}
           </main>
         </div>
 
         {/* Global Keyboard Shortcuts Modal Helper */}
         <ShortcutsModal />
+
+        {/* Smart Guided PWA Installation Banner */}
+        <PwaInstallBanner />
+
+        {/* Mobile Fixed Bottom Navigation Bar (md:hidden) */}
+        <MobileBottomNav />
       </div>
     </div>
   );

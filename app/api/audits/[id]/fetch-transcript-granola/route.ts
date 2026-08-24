@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/server/permissions';
 
 // Granola transcript auto-fetch via Composio. NOT wired to a live call yet:
 // the Composio tools available interactively (GRANOLA_MCP_GET_MEETING_TRANSCRIPT
@@ -13,14 +14,8 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: auditId } = await params;
   const authed = await createServerClient();
-  const { data: { user } } = await authed.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-  }
-  const { data: profile } = await authed.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  if (profile?.role !== 'admin') {
-    return NextResponse.json({ error: 'Réservé aux administrateurs.' }, { status: 403 });
-  }
+  const guard = await requireAdmin(authed);
+  if (guard.error) return guard.error;
 
   const composioKey = process.env.COMPOSIO_API_KEY;
   if (!composioKey) {

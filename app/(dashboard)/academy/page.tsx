@@ -27,6 +27,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { fetchAcademySops, addDocument } from '@/lib/services/supabase-data';
+import { SkeletonCards } from '@/components/ui/skeleton';
 import type { AcademySOP } from '@/lib/types';
 import { StorageBrowser } from '@/components/storage/StorageBrowser';
 import { PageFadeIn } from '@/components/ui/page-transition';
@@ -399,7 +400,7 @@ export default function AcademyPage() {
 
       {/* ── 4. Main Views: Grid vs 36px DataTable ── */}
       {loading ? (
-        <p className="text-xs text-zinc-400 text-center py-12 font-mono">Chargement des guides…</p>
+        <SkeletonCards count={6} />
       ) : visibleSops.length === 0 ? (
         <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-2">
           <BookOpen className="w-8 h-8 text-zinc-300 mx-auto" />

@@ -1,33 +1,23 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  Sparkles,
-  Link2,
-  UploadCloud,
-  Check,
-  Plus,
-  Video,
-  Youtube,
-  Calendar,
-  User,
-  X,
-  FileVideo,
-} from 'lucide-react';
+import { ArrowLeft, Sparkles, Link2, Check, Calendar, User } from 'lucide-react';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useToast } from '@/components/providers/ToastProvider';
 import {
   fetchMinervaContentCategories,
   createMinervaContentCategory,
   createMinervaContentItem,
-  uploadMinervaContentFile,
   fetchTeamMembers,
 } from '@/lib/services/supabase-data';
 import type { MinervaContentCategory, TeamMemberSummary } from '@/lib/types';
 import { PageFadeIn } from '@/components/ui/page-transition';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { VideoUploadField } from '@/components/media/VideoUploadField';
+import { ReelDistributionFields } from '@/components/content/ReelDistributionFields';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -44,18 +34,17 @@ export default function NewMinervaContentPage() {
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
 
+  const [platform, setPlatform] = useState('Instagram');
+  const [format, setFormat] = useState('Reel 60s');
   const [externalUrl, setExternalUrl] = useState('');
   const [note, setNote] = useState('');
 
   const [fileUrl, setFileUrl] = useState('');
-  const [fileName, setFileName] = useState('');
-  const [uploading, setUploading] = useState(false);
   const [scheduledDate, setScheduledDate] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
   const [members, setMembers] = useState<TeamMemberSummary[]>([]);
 
   const [saving, setSaving] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -81,6 +70,15 @@ export default function NewMinervaContentPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   });
 
+  // The DB enforces file_url/external_url mutual exclusivity per kind
+  // (minerva_content_items_kind_fields) -- switching kind must clear
+  // whichever field no longer applies, or the insert 400s silently.
+  const handleKindChange = (next: 'inspiration' | 'own_video') => {
+    setKind(next);
+    if (next === 'inspiration') setFileUrl('');
+    else setExternalUrl('');
+  };
+
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
@@ -96,28 +94,18 @@ export default function NewMinervaContentPage() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setFileName(file.name);
-    try {
-      const url = await uploadMinervaContentFile(file);
-      if (url) {
-        setFileUrl(url);
-        toastSuccess('Fichier importé', `${file.name} est prêt pour l’enregistrement.`);
-      } else {
-        toastError('Erreur', 'Échec du téléversement.');
-      }
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!title.trim()) {
       toastError('Champ requis', 'Veuillez saisir un titre pour ce contenu.');
+      return;
+    }
+    if (kind === 'inspiration' && !externalUrl.trim()) {
+      toastError('Lien requis', 'Une inspiration nécessite un lien externe.');
+      return;
+    }
+    if (kind === 'own_video' && !fileUrl) {
+      toastError('Fichier requis', 'Téléversez une vidéo pour ce contenu Minerva.');
       return;
     }
 
@@ -127,9 +115,11 @@ export default function NewMinervaContentPage() {
         kind,
         title: title.trim(),
         category_id: categoryId || null,
-        external_url: externalUrl.trim() || null,
+        external_url: kind === 'inspiration' ? externalUrl.trim() || null : null,
         note: note.trim() || null,
-        file_url: fileUrl || null,
+        file_url: kind === 'own_video' ? fileUrl || null : null,
+        platform,
+        format,
         scheduled_date: scheduledDate || null,
         assignee_id: assigneeId || null,
         created_by: userId || 'local-user',
@@ -150,33 +140,26 @@ export default function NewMinervaContentPage() {
 
   return (
     <PageFadeIn className="max-w-2xl mx-auto py-6 pb-20 space-y-4">
-      {/* ── Single Monolith Card ── */}
-      <div className="bg-white border border-zinc-200 rounded-lg p-5 shadow-sm space-y-4">
-        {/* 1. Header Intégré */}
-        <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+      <Card contentClassName="p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-mv-border pb-3">
           <div>
             <Link
               href="/content-planner"
-              className="text-xs font-medium text-zinc-500 hover:text-zinc-900 mb-0.5 inline-flex items-center gap-1 transition-colors"
+              className="text-xs font-semibold text-mv-ink-soft hover:text-mv-ink mb-0.5 inline-flex items-center gap-1 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Contenu Minerva</span>
             </Link>
-            <h1 className="text-[16px] font-semibold text-zinc-900">
-              Nouveau Contenu Minerva
-            </h1>
+            <h1 className="text-base font-extrabold text-mv-ink font-display">Nouveau Contenu Minerva</h1>
           </div>
 
-          {/* 2. Segmented Control Type (28px height) */}
-          <div className="flex items-center bg-zinc-100 p-0.5 rounded-md border border-zinc-200/60 h-7 text-[11px] font-medium">
+          <div className="flex items-center bg-mv-cream-soft p-0.5 rounded-lg border border-mv-border h-7 text-[11px] font-bold">
             <button
               type="button"
-              onClick={() => setKind('inspiration')}
+              onClick={() => handleKindChange('inspiration')}
               className={cn(
-                'px-2.5 py-0.5 rounded transition-all cursor-pointer flex items-center gap-1',
-                kind === 'inspiration'
-                  ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
-                  : 'text-zinc-500 hover:text-zinc-900'
+                'px-2.5 py-0.5 rounded-md transition-all cursor-pointer flex items-center gap-1',
+                kind === 'inspiration' ? 'bg-mv-surface text-mv-ink shadow-2xs' : 'text-mv-ink-soft hover:text-mv-ink'
               )}
             >
               <Link2 className="w-3 h-3" />
@@ -184,24 +167,21 @@ export default function NewMinervaContentPage() {
             </button>
             <button
               type="button"
-              onClick={() => setKind('own_video')}
+              onClick={() => handleKindChange('own_video')}
               className={cn(
-                'px-2.5 py-0.5 rounded transition-all cursor-pointer flex items-center gap-1',
-                kind === 'own_video'
-                  ? 'bg-white text-emerald-700 shadow-2xs font-semibold'
-                  : 'text-zinc-500 hover:text-zinc-900'
+                'px-2.5 py-0.5 rounded-md transition-all cursor-pointer flex items-center gap-1',
+                kind === 'own_video' ? 'bg-mv-surface text-mv-green shadow-2xs' : 'text-mv-ink-soft hover:text-mv-ink'
               )}
             >
-              <Sparkles className="w-3 h-3 text-emerald-600" />
+              <Sparkles className="w-3 h-3 text-mv-green" />
               <span>Vidéo Minerva</span>
             </button>
           </div>
         </div>
 
-        {/* 3. Ligne Titre & Catégorie */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="sm:col-span-2 space-y-1">
-            <label className="text-[10.5px] font-semibold uppercase tracking-wider text-zinc-500 block">
+            <label className="text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-soft block">
               Titre du contenu *
             </label>
             <input
@@ -209,20 +189,18 @@ export default function NewMinervaContentPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="ex: Hook d'accroche B2B pour cabinet comptable..."
-              className="w-full h-8 px-3 text-xs bg-white border border-zinc-200 rounded-md text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20"
+              className="w-full h-9 px-3 text-xs bg-mv-cream-soft border border-mv-border rounded-lg text-mv-ink placeholder:text-mv-ink-faint focus:outline-none focus:border-mv-green"
               required
             />
           </div>
 
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-[10.5px] font-semibold uppercase tracking-wider text-zinc-500 block">
-                Catégorie
-              </label>
+              <label className="text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-soft block">Catégorie</label>
               <button
                 type="button"
                 onClick={() => setAddingCategory(!addingCategory)}
-                className="text-[10.5px] text-emerald-700 hover:underline font-medium cursor-pointer"
+                className="text-[10.5px] text-mv-green hover:underline font-bold cursor-pointer"
               >
                 {addingCategory ? 'Fermer' : '+ Ajouter'}
               </button>
@@ -235,20 +213,17 @@ export default function NewMinervaContentPage() {
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   placeholder="Nouvelle cat..."
-                  className="w-full h-8 px-2 text-xs border border-zinc-200 rounded-md focus:border-emerald-600 outline-none"
+                  className="w-full h-9 px-2 text-xs border border-mv-border rounded-lg bg-mv-cream-soft focus:border-mv-green outline-none"
                 />
-                <button
-                  type="submit"
-                  className="h-8 px-2 bg-emerald-600 text-white rounded-md text-xs font-medium shrink-0"
-                >
+                <Button type="submit" size="sm" className="shrink-0">
                   OK
-                </button>
+                </Button>
               </form>
             ) : (
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full h-8 px-2 text-xs bg-white border border-zinc-200 rounded-md text-zinc-900 focus:outline-none focus:border-emerald-600 cursor-pointer"
+                className="w-full h-9 px-2 text-xs bg-mv-cream-soft border border-mv-border rounded-lg text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
               >
                 <option value="">Sélectionner...</option>
                 {categories.map((c) => (
@@ -261,79 +236,66 @@ export default function NewMinervaContentPage() {
           </div>
         </div>
 
-        {/* 4. Lien Vidéo YouTube / URL externe */}
-        <div className="space-y-1">
-          <label className="text-[10.5px] font-semibold uppercase tracking-wider text-zinc-500 flex items-center gap-1">
-            <Youtube className="w-3.5 h-3.5 text-rose-600" />
-            <span>Lien Vidéo YouTube / Instagram / TikTok</span>
+        <div className="space-y-2">
+          <label className="text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-soft block">
+            Format & Diffusion
           </label>
-          <input
-            type="url"
-            value={externalUrl}
-            onChange={(e) => setExternalUrl(e.target.value)}
-            placeholder="https://www.youtube.com/watch?v=... ou lien Reel"
-            className="w-full h-8 px-3 text-xs bg-white border border-zinc-200 rounded-md text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20 font-mono text-[11.5px]"
+          <ReelDistributionFields
+            platform={platform}
+            format={format}
+            onPlatformChange={setPlatform}
+            onFormatChange={setFormat}
           />
         </div>
 
-        {/* 5. Zone Vidéo & Fichiers Ultra-Compacte (40px) */}
-        <div className="space-y-1">
-          <label className="text-[10.5px] font-semibold uppercase tracking-wider text-zinc-500 block">
-            Fichier Vidéo Local (Optionnel)
-          </label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="video/mp4,video/quicktime,video/webm"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="h-10 border-dashed border border-zinc-200 hover:border-zinc-300 bg-zinc-50/50 rounded-md flex items-center justify-center gap-2 text-xs text-zinc-500 cursor-pointer transition-colors px-3"
-          >
-            {uploading ? (
-              <span className="text-emerald-700 font-medium animate-pulse">Téléversement en cours…</span>
-            ) : fileUrl ? (
-              <div className="flex items-center gap-1.5 text-emerald-700 font-medium">
-                <Check className="w-3.5 h-3.5" />
-                <span className="truncate max-w-[300px]">{fileName || 'Fichier vidéo attaché'}</span>
-              </div>
-            ) : (
-              <>
-                <UploadCloud className="w-3.5 h-3.5 text-zinc-400" />
-                <span>Glisser un fichier vidéo ou Parcourir (MP4, MOV - Max 100 Mo)</span>
-              </>
-            )}
+        {kind === 'inspiration' ? (
+          <div className="space-y-1">
+            <label className="text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-soft flex items-center gap-1">
+              <Link2 className="w-3.5 h-3.5 text-mv-ink-faint" />
+              <span>Lien Vidéo (YouTube / Instagram / TikTok) *</span>
+            </label>
+            <input
+              type="url"
+              value={externalUrl}
+              onChange={(e) => setExternalUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=... ou lien Reel"
+              className="w-full h-9 px-3 text-[11.5px] bg-mv-cream-soft border border-mv-border rounded-lg text-mv-ink placeholder:text-mv-ink-faint focus:outline-none focus:border-mv-green font-mono"
+              style={MONO}
+            />
           </div>
-        </div>
+        ) : (
+          <div className="space-y-1">
+            <label className="text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-soft block">
+              Fichier Vidéo *
+            </label>
+            <VideoUploadField value={fileUrl} onChange={setFileUrl} bucket="team-documents" folder="minerva-content" />
+          </div>
+        )}
 
-        {/* 6. Ligne Date & Assignation (Grille 2 Colonnes) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-[10.5px] font-semibold uppercase tracking-wider text-zinc-500 flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-zinc-400" />
+            <label className="text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-soft flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-mv-ink-faint" />
               <span>Date prévue de publication</span>
             </label>
             <input
               type="date"
               value={scheduledDate}
               onChange={(e) => setScheduledDate(e.target.value)}
-              className="w-full h-8 px-2.5 text-xs bg-white border border-zinc-200 rounded-md text-zinc-900 focus:outline-none focus:border-emerald-600 font-mono"
+              className="w-full h-9 px-2.5 text-xs bg-mv-cream-soft border border-mv-border rounded-lg text-mv-ink focus:outline-none focus:border-mv-green font-mono"
               style={MONO}
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10.5px] font-semibold uppercase tracking-wider text-zinc-500 flex items-center gap-1">
-              <User className="w-3 h-3 text-zinc-400" />
+            <label className="text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-soft flex items-center gap-1">
+              <User className="w-3 h-3 text-mv-ink-faint" />
               <span>Assigné à</span>
             </label>
             <select
               value={assigneeId}
               onChange={(e) => setAssigneeId(e.target.value)}
-              className="w-full h-8 px-2.5 text-xs bg-white border border-zinc-200 rounded-md text-zinc-900 focus:outline-none focus:border-emerald-600 cursor-pointer"
+              className="w-full h-9 px-2.5 text-xs bg-mv-cream-soft border border-mv-border rounded-lg text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
             >
               <option value="">Non assigné (Équipe Minerva)</option>
               {members.map((m) => (
@@ -345,9 +307,8 @@ export default function NewMinervaContentPage() {
           </div>
         </div>
 
-        {/* 7. Notes & Script / Angle */}
         <div className="space-y-1">
-          <label className="text-[10.5px] font-semibold uppercase tracking-wider text-zinc-500 block">
+          <label className="text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-soft block">
             Notes & Contexte d’Inspiration
           </label>
           <textarea
@@ -355,36 +316,31 @@ export default function NewMinervaContentPage() {
             onChange={(e) => setNote(e.target.value)}
             placeholder="Points clés, structure du hook, call-to-action ou instructions pour le monteur..."
             rows={3}
-            className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-md text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20 resize-none leading-relaxed"
+            className="w-full px-3 py-2 text-xs bg-mv-cream-soft border border-mv-border rounded-lg text-mv-ink placeholder:text-mv-ink-faint focus:outline-none focus:border-mv-green resize-none leading-relaxed"
           />
         </div>
 
-        {/* 8. Barre d'Actions & Raccourcis Clavier (Footer Strip) */}
-        <div className="pt-3 border-t border-zinc-100 flex items-center justify-between">
-          <span className="text-[10.5px] font-mono text-zinc-400 hidden sm:inline" style={MONO}>
+        <div className="pt-3 border-t border-mv-border flex items-center justify-between">
+          <span className="text-[10.5px] font-mono text-mv-ink-faint hidden sm:inline" style={MONO}>
             Soumission : ⌘ + Entrée · Annuler : Échap
           </span>
 
           <div className="flex items-center gap-2 ml-auto">
-            <Link
-              href="/content-planner"
-              className="h-8 px-3 text-xs text-zinc-600 hover:bg-zinc-100 rounded-md transition-colors flex items-center"
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={() => router.push('/content-planner')}>
               Annuler (Échap)
-            </Link>
-
-            <button
+            </Button>
+            <Button
               type="button"
+              size="sm"
               onClick={() => handleSubmit()}
               disabled={saving || !title.trim()}
-              className="h-8 px-3 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+              icon={<Check className="w-3.5 h-3.5" />}
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>{saving ? 'Enregistrement…' : '+ Enregistrer le contenu'}</span>
-            </button>
+              {saving ? 'Enregistrement…' : 'Enregistrer le contenu'}
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
     </PageFadeIn>
   );
 }

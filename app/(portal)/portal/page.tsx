@@ -20,6 +20,12 @@ import {
   Check,
   X,
   Zap,
+  Mail,
+  Rocket,
+  Layers,
+  Bot,
+  Video,
+  Loader2,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -38,6 +44,7 @@ import {
 } from '@/lib/services/supabase-data';
 import type { Client, ClientRoiMetrics, Lead, ClientMessage } from '@/lib/types';
 import { PageFadeIn } from '@/components/ui/page-transition';
+import { useToast } from '@/components/providers/ToastProvider';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -115,6 +122,61 @@ export default function PortalOverviewPage() {
   const [messages, setMessages] = useState<ClientMessage[]>([]);
   const [userInput, setUserInput] = useState('');
   const [sending, setSending] = useState(false);
+
+  const { toastSuccess, toastError } = useToast();
+  const [sendingEmailSummary, setSendingEmailSummary] = useState(false);
+
+  const handleSendEmailSummary = async () => {
+    const recipientEmail = client?.contact_email;
+    if (!recipientEmail) {
+      toastError('Courriel manquant', 'Aucun courriel de contact n\'est configuré pour ce client.');
+      return;
+    }
+
+    setSendingEmailSummary(true);
+    try {
+      const res = await fetch('/api/emails/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: recipientEmail,
+          subject: `Suivi Station Pilote & Outils — ${client?.name || 'Votre Espace Minerva'}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #18181b; padding: 20px;">
+              <h2 style="color: #059669; margin-bottom: 8px;">Station Pilote & Déploiement des Outils</h2>
+              <p>Bonjour <strong>${client?.contact_name || 'partenaire'}</strong>,</p>
+              <p>Voici l'état d'avancement de votre station pilote et des produits déployés pour <strong>${client?.name || 'votre entreprise'}</strong> :</p>
+              
+              <div style="background: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px; margin: 16px 0;">
+                <h3 style="margin-top: 0; font-size: 14px; text-transform: uppercase; color: #71717a;">Phase actuelle : Phase 2 / 4 — Déploiement Outils & Création (65% complété)</h3>
+                <ul style="padding-left: 20px; line-height: 1.6; font-size: 13px;">
+                  <li><strong>Minerva Reach :</strong> Actif — ${periodKpis.leads} leads qualifiés générés (${selectedPeriod.toUpperCase()})</li>
+                  <li><strong>Minerva Flow :</strong> Actif — Relance automatique SMS & Courriels en &lt; 5 min</li>
+                  <li><strong>Station Créative & Contenu :</strong> 3/5 livrables validés en production</li>
+                  <li><strong>Minerva Voice Agent (Alex) :</strong> Configuré pour qualification 24/7</li>
+                </ul>
+              </div>
+
+              <p style="font-size: 13px; color: #71717a;">Accédez à votre portail pour suivre vos résultats en temps réel ou échanger avec votre équipe dédiée.</p>
+              <p>Cordialement,<br/><strong>L'équipe Minerva</strong></p>
+            </div>
+          `,
+          text: `Suivi Station Pilote pour ${client?.name || 'votre compte'} : Phase 2/4 (65% complété). ${periodKpis.leads} leads générés (${selectedPeriod.toUpperCase()}). Outils actifs : Reach, Flow, Station Créative, Voice Agent.`,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok && !data.success) {
+        toastError('Erreur d\'envoi', data.error || 'Impossible d\'envoyer le courriel.');
+      } else {
+        toastSuccess('Rapport envoyé !', `Le récapitulatif a été transmis à ${recipientEmail}.`);
+      }
+    } catch {
+      toastError('Erreur réseau', 'Impossible de contacter le service d\'envoi.');
+    } finally {
+      setSendingEmailSummary(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {

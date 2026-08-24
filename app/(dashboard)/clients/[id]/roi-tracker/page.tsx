@@ -25,6 +25,7 @@ import { ClientExecutiveReport } from '@/components/reports/ClientExecutiveRepor
 import { InviteClientButton } from '@/components/clients/InviteClientButton';
 import { VideoAssetPlayer } from '@/components/media/VideoAssetPlayer';
 import { AnimatedNumber } from '@/components/ui/animated-number';
+import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 
 import { fetchClients, fetchClientRoiMetrics, fetchContentPosts, logAuditEvent } from '@/lib/services/supabase-data';
 import { invokeRoiAggregator } from '@/lib/services/edge-functions';
@@ -118,9 +119,19 @@ export default function RoiTrackerPage() {
   if (loading) {
     return (
       <div className="space-y-4 max-w-7xl mx-auto py-6">
-        <div className="h-14 bg-mv-surface border border-mv-border rounded-[6px] animate-pulse" />
-        <div className="h-16 bg-mv-surface border border-mv-border rounded-[6px] animate-pulse" />
-        <div className="h-64 bg-mv-surface border border-mv-border rounded-[6px] animate-pulse" />
+        <div className="h-14 bg-mv-surface border border-mv-border rounded-[6px] p-3.5 flex items-center gap-3">
+          <Skeleton className="w-8 h-8 rounded-full shrink-0" />
+          <SkeletonText className="w-48" />
+        </div>
+        <div className="h-16 bg-mv-surface border border-mv-border rounded-[6px] p-3.5 grid grid-cols-4 gap-4 items-center">
+          {[1, 2, 3, 4].map((i) => (
+            <SkeletonText key={i} className="w-full" />
+          ))}
+        </div>
+        <div className="h-64 bg-mv-surface border border-mv-border rounded-[6px] p-4 space-y-3">
+          <SkeletonText className="w-1/3" />
+          <Skeleton className="w-full h-40 rounded-lg" />
+        </div>
       </div>
     );
   }

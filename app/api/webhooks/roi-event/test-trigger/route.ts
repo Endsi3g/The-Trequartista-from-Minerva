@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/server/permissions';
 
 // Lets an admin trigger a REAL call to /api/webhooks/roi-event from the
 // Integrations page without exposing CENTURIONS_WEBHOOK_SECRET to the
@@ -9,14 +10,8 @@ export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   const authed = await createServerClient();
-  const { data: { user } } = await authed.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-  }
-  const { data: profile } = await authed.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  if (profile?.role !== 'admin') {
-    return NextResponse.json({ error: 'Réservé aux administrateurs.' }, { status: 403 });
-  }
+  const guard = await requireAdmin(authed);
+  if (guard.error) return guard.error;
 
   const { clientId } = await req.json().catch(() => ({ clientId: null }));
   if (!clientId) {

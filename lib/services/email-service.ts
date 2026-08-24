@@ -158,6 +158,43 @@ export function generateRestaurantPitchEmail(data: {
   return { subject, html, text };
 }
 
+// Direct Resend call for server-side code (API routes) -- the browser
+// can't hold RESEND_API_KEY, so client code uses sendEmailViaResend()
+// below instead, which goes through /api/emails/send.
+export async function sendEmailServerSide(payload: {
+  to: string;
+  subject: string;
+  html?: string;
+  text?: string;
+}): Promise<{ success: boolean; id?: string; error?: string }> {
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (!resendApiKey) {
+    return { success: false, error: 'RESEND_API_KEY non configuré -- aucun courriel envoyé.' };
+  }
+  const fromAddress = process.env.RESEND_FROM_EMAIL || 'Minerva Agency <notifications@resend.dev>';
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: fromAddress,
+        to: [payload.to],
+        subject: payload.subject,
+        html: payload.html || undefined,
+        text: payload.text || undefined,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('[Resend API Error]', data);
+      return { success: false, error: data.message || "Erreur lors de l'envoi Resend" };
+    }
+    return { success: true, id: data.id };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Erreur réseau' };
+  }
+}
+
 /**
  * Sends email via the Next.js Resend API endpoint.
  */

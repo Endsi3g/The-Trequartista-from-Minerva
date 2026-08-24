@@ -24,6 +24,7 @@ import type { Project } from '@/lib/types';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { useToast } from '@/components/providers/ToastProvider';
 import { PageFadeIn } from '@/components/ui/page-transition';
+import { PaginatedColumn } from '@/components/ui/paginated-column';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };

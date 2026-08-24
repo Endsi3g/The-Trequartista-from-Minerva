@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { corsHeaders, handleCorsPreflight } from '@/lib/cors';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { scheduleDelayedCallback } from '@/lib/services/qstash';
 
 // Lazily instantiated -- see leads/step-1/route.ts for why.
 function getSupabase() {
@@ -81,6 +82,31 @@ export async function POST(req: Request) {
   if (updateError) {
     console.error('[leads/step-2] Update error:', updateError);
     return NextResponse.json({ error: 'Impossible de mettre à jour ce lead.' }, { status: 500, headers });
+  }
+
+  // Best-effort: schedule an outbound qualification call via the ElevenLabs
+  // voice agent, same delayed-callback mechanism as the step-1 SMS
+  // follow-up. Off by default -- only fires once an admin has explicitly
+  // enabled it in /voice-agent's configuration.
+  const { data: voiceConfig } = await supabase
+    .from('voice_agent_config')
+    .select('auto_trigger_enabled, auto_trigger_delay_seconds')
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (voiceConfig?.auto_trigger_enabled) {
+    const { scheduled, error: scheduleError } = await scheduleDelayedCallback(
+      '/api/voice/outbound-trigger-callback',
+      { intakeLeadId: target.id },
+      voiceConfig.auto_trigger_delay_seconds ?? 300
+    );
+    if (!scheduled) {
+      console.warn('[leads/step-2] Voice follow-up not scheduled:', scheduleError);
+      await supabase.from('intake_leads').update({ voice_follow_up_status: 'skipped_no_config' }).eq('id', target.id);
+    }
+  } else {
+    await supabase.from('intake_leads').update({ voice_follow_up_status: 'skipped_disabled' }).eq('id', target.id);
   }
 
   return NextResponse.json({ leadId: target.id, status: 'qualified' }, { status: 200, headers });

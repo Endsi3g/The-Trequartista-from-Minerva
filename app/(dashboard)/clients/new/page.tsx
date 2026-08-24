@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/ui/user-avatar';
-import { ArrowLeft, Building2, UploadCloud, Loader2, X, Mail, User as UserIcon, DollarSign, Phone, Globe, Instagram, Facebook, Linkedin, MapPin } from 'lucide-react';
-import { addClient } from '@/lib/services/supabase-data';
+import { ArrowLeft, Building2, UploadCloud, Loader2, X, Mail, User as UserIcon, DollarSign, Phone, Globe, Instagram, Facebook, Linkedin, MapPin, Home, CalendarDays, Package, UserCog } from 'lucide-react';
+import { addClient, fetchTeamMembers } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
 import { createClient } from '@/lib/supabase/client';
+import type { TeamMemberSummary } from '@/lib/types';
 
 const INDUSTRY_SUGGESTIONS = [
   'Bâtiment & Rénovation',
@@ -18,6 +19,17 @@ const INDUSTRY_SUGGESTIONS = [
   'Commerce de détail',
   'Services professionnels',
   'Automobile',
+];
+
+// Mirrors SERVICE_PACKAGE_TEMPLATES in projects/[id]/roadmap/page.tsx --
+// same 5 packages, kept as plain labels here since this page doesn't need
+// the milestone-generation phases, just the name for the client's fiche.
+const SERVICE_PACKAGES = [
+  'Framer Web Design',
+  'Acquisition & Ads LeadGen',
+  'Growth & Social Reels',
+  'SEO Local & Fiche GMB',
+  'Audit & Conseil IA',
 ];
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -42,6 +54,15 @@ export default function NewClientPage() {
   const [facebookUrl, setFacebookUrl] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
+  const [address, setAddress] = useState('');
+  const [contractStartDate, setContractStartDate] = useState('');
+  const [servicePackage, setServicePackage] = useState('');
+  const [accountManagerId, setAccountManagerId] = useState('');
+  const [teamMembers, setTeamMembers] = useState<TeamMemberSummary[]>([]);
+
+  useEffect(() => {
+    fetchTeamMembers().then(setTeamMembers);
+  }, []);
 
   const handleLogoUpload = async (file: File) => {
     setUploading(true);
@@ -80,6 +101,10 @@ export default function NewClientPage() {
       facebook_url: facebookUrl || undefined,
       linkedin_url: linkedinUrl || undefined,
       logo_url: logoUrl,
+      address: address || undefined,
+      contract_start_date: contractStartDate || undefined,
+      service_package: servicePackage || undefined,
+      account_manager_id: accountManagerId || undefined,
     });
 
     setSaving(false);
@@ -162,6 +187,19 @@ export default function NewClientPage() {
                     {INDUSTRY_SUGGESTIONS.map((s) => <option key={s} value={s} />)}
                   </datalist>
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-mv-ink mb-1.5">Adresse d&apos;affaires</label>
+                  <div className="relative">
+                    <Home className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="123 rue Principale, Montréal, QC"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -179,6 +217,49 @@ export default function NewClientPage() {
                   onChange={(e) => setMrr(Number(e.target.value))}
                   className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink font-mono focus:outline-none focus:border-mv-green transition-colors"
                 />
+              </div>
+              <p className="text-[10.5px] text-mv-ink-faint mt-1.5">Le suivi de l&apos;évolution du MRR se fait ensuite depuis la fiche client.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-mv-ink mb-1.5">Forfait de service</label>
+                <div className="relative">
+                  <Package className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <select
+                    value={servicePackage}
+                    onChange={(e) => setServicePackage(e.target.value)}
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors cursor-pointer appearance-none"
+                  >
+                    <option value="">Aucun</option>
+                    {SERVICE_PACKAGES.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-mv-ink mb-1.5">Début du contrat</label>
+                <div className="relative">
+                  <CalendarDays className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="date"
+                    value={contractStartDate}
+                    onChange={(e) => setContractStartDate(e.target.value)}
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-mv-ink mb-1.5">Responsable de compte</label>
+              <div className="relative">
+                <UserCog className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <select
+                  value={accountManagerId}
+                  onChange={(e) => setAccountManagerId(e.target.value)}
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors cursor-pointer appearance-none"
+                >
+                  <option value="">Non assigné</option>
+                  {teamMembers.map((m) => <option key={m.id} value={m.id}>{m.full_name}</option>)}
+                </select>
               </div>
             </div>
           </div>
@@ -333,6 +414,20 @@ export default function NewClientPage() {
                 {contactName || 'À définir'}
               </span>
             </div>
+            {servicePackage && (
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-mv-ink-soft">Forfait</span>
+                <span className="text-xs font-semibold text-mv-ink text-right truncate max-w-[160px]">{servicePackage}</span>
+              </div>
+            )}
+            {accountManagerId && (
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-mv-ink-soft">Responsable</span>
+                <span className="text-xs font-semibold text-mv-ink text-right">
+                  {teamMembers.find((m) => m.id === accountManagerId)?.full_name || '—'}
+                </span>
+              </div>
+            )}
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold rounded-full border bg-mv-green-tint text-mv-green border-mv-green/30">
               <span className="w-1.5 h-1.5 rounded-full bg-mv-green" /> Active
             </span>

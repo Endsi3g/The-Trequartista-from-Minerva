@@ -37,6 +37,20 @@ import { UserAvatar } from '@/components/ui/user-avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import {
+  fetchDepartments,
+  addDepartment,
+  deleteDepartment,
+  fetchRoles,
+  addRole,
+  deleteRole,
+  fetchCustomRolePermissions,
+  setCustomRolePermissions,
+  assignCustomRole,
+  syncCustomRolePermissionsToAppPermissions,
+} from '@/lib/services/supabase-data';
+import type { Department, CustomRole, CustomRolePermission } from '@/lib/types';
+import { ROLE_MODULE_ACTIONS, ROLE_MODULE_LABELS } from '@/lib/permissions';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
@@ -48,6 +62,7 @@ interface TeamMember {
   department: string | null;
   avatar_url: string | null;
   created_at: string;
+  custom_role_id: string | null;
 }
 
 const VIEW_TABS = [
@@ -92,12 +107,22 @@ export default function TeamPage() {
   const { toastSuccess, toastError, toastInfo } = useToast();
   const confirmDialog = useConfirm();
 
+  // Lets external links (e.g. "Créer un rôle" on /team/invite) deep-link
+  // straight to a tab -- read once on mount, no next/navigation hook needed
+  // (avoids the Suspense-boundary requirement useSearchParams() carries).
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    if (tab && VIEW_TABS.some((t) => t.key === tab)) {
+      setActiveTab(tab as ViewTabKey);
+    }
+  }, []);
+
   const loadTeam = async () => {
     try {
       const supabase = createClient();
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, email, role, department, avatar_url, created_at')
+        .select('id, full_name, email, role, department, avatar_url, created_at, custom_role_id')
         .eq('approved', true)
         .order('created_at', { ascending: true });
 
@@ -144,6 +169,8 @@ export default function TeamPage() {
 
   useEffect(() => {
     loadTeam();
+    fetchDepartments().then(setDepartments);
+    fetchRoles().then(setRoles);
   }, []);
 
   const toggleExpand = (id: string) => {
