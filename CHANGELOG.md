@@ -4,6 +4,34 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-24 (v2.6.0) — Refonte Totale Haute Densité Linear / Adaline & Workspace Documentaire
+
+Mise en production de la suite de télémétrie de croissance et de productivité haute densité style **Linear / Adaline / Raycast / Notion** :
+
+- **Console d'Acquisition & Inbound (`/acquisition`)** :
+  - Ruban Funnel Monolithique 6-KPIs : *Leads Captés*, *SMS Relance*, *Taux Qualification*, *Audits Complétés*, *Propositions Envoyées*, *Closing Estimé*.
+  - Voice Agent Strip 40px compact + **Tiroir de simulation vocale Alex (`VoiceSimulationDrawer`)** avec WebRTC ElevenLabs, waveform animée, transcription horodatée en direct, scoring IA (9.2/10) et conversion en lead CRM.
+  - DataTable des Leads Captés avec écoute en direct du Webhook Framer et bouton de simulation de test immédiate.
+- **Audits IA & Diagnostics (`/audits`)** :
+  - Ruban 4-KPIs connectés (Audits Analysés, Score Santé, Opportunités de Revenus, Temps d'Analyse IA).
+  - DataTable technique dense avec scores de maturité et goulots d'étranglement.
+  - **Side-Drawer de Rapport Diagnostic (`AuditDetailSideDrawer`)** : Lecteur audio interactif avec waveform 28px, marqueurs temporels d'objections cliquables, 3 recommandations stratégiques IA et conversion en proposition commerciale en 1 clic.
+- **Roadmap Produits & Demandes Clients Monolithique (`/produits`)** :
+  - Roadmap continue groupée par pôle (`REACH`, `OPS`, `MARKETING`, `FLOW & OS`, `LABS & RECHERCHE`) avec sections repliables et statuts modifiables inline.
+  - Ruban de progression supérieur avec micro-jauge multicolore 3px.
+  - Table des demandes fonctionnalités clients avec filtres instantanés et statuts clients modifiables en temps réel.
+- **Création de Tâche Single Viewport 0-Scroll (`/tasks/new`)** :
+  - Layout 2-colonnes compact sans défilement.
+  - **Générateur de Sous-tâches par IA (`✦ Découper en étapes`)** avec checklist interactive.
+  - Aperçu live de la carte Kanban et liaisons contextuelles CRM (Client, Lead).
+  - Soumission instantanée au clavier `⌘ + Entrée` / `Ctrl + Entrée`.
+- **Documents & Base de Connaissances (`/documents`)** :
+  - **Résolution définitive du bug d'état critique** : Élimination du double conteneur d'Empty State au profit d'une DataTable monolithique unique.
+  - **Ruban de Modèles d'Amorce Rapide (44px)** : 4 micro-cartes interactives pour création instantanée en 1-clic (*Cahier des charges Framer*, *Compte-rendu Client*, *Spécification Produit*, *Proposition & Audit*).
+  - Barre de filtres de catégories soulignés (2px émeraude), raccourcis clavier `C`/`N` et `/`, et barre flottante de suppression multiple.
+
+---
+
 ## 2026-08-24 (v2.5.0) — Minerva-Flow Expansion, Multi-Suppression & Toolkit Opérationnel
 
 Déploiement majeur v2.5.0 apportant la suite complète Minerva-Flow et les outils de gestion en lot :
