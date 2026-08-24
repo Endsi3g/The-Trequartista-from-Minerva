@@ -62,7 +62,7 @@ interface TeamMember {
   department: string | null;
   avatar_url: string | null;
   created_at: string;
-  custom_role_id: string | null;
+  custom_role_id?: string | null;
 }
 
 const VIEW_TABS = [
@@ -94,6 +94,8 @@ function getDepartmentStyle(dept: string | null) {
 export default function TeamPage() {
   const router = useRouter();
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [roles, setRoles] = useState<CustomRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState<ViewTabKey>('employees');
@@ -139,6 +141,7 @@ export default function TeamPage() {
             department: 'Tech & IA',
             avatar_url: null,
             created_at: '2026-01-15T00:00:00Z',
+            custom_role_id: null,
           },
           {
             id: 'a1b2c3d4-0000-0000-0000-000000000002',
@@ -148,6 +151,7 @@ export default function TeamPage() {
             department: 'Operations',
             avatar_url: null,
             created_at: '2026-02-01T00:00:00Z',
+            custom_role_id: null,
           },
           {
             id: 'a1b2c3d4-0000-0000-0000-000000000003',
@@ -157,6 +161,7 @@ export default function TeamPage() {
             department: 'Engineering',
             avatar_url: null,
             created_at: '2026-03-10T00:00:00Z',
+            custom_role_id: null,
           },
         ]);
       }

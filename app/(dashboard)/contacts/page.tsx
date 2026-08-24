@@ -181,7 +181,7 @@ export default function ContactsPage() {
         <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs divide-y divide-mv-border">
           {filtered.map((contact) => {
             const dueSoon = isFollowUpDue(contact);
-            const statusInfo = STATUS_MAP[contact.status];
+            const statusInfo = STATUS_MAP[contact.status || 'a_contacter'];
             return (
               <Link
                 key={contact.id}

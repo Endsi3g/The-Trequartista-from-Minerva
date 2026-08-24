@@ -43,6 +43,13 @@ const STATUS_CONFIG: Record<
   FeatureRequestStatus,
   { label: string; bg: string; text: string; border: string; dot: string }
 > = {
+  submitted: {
+    label: 'Soumise',
+    bg: 'bg-zinc-50',
+    text: 'text-zinc-700',
+    border: 'border-zinc-200',
+    dot: 'bg-zinc-400',
+  },
   under_review: {
     label: 'En revue',
     bg: 'bg-amber-50',
@@ -64,8 +71,22 @@ const STATUS_CONFIG: Record<
     border: 'border-blue-200',
     dot: 'bg-blue-500',
   },
+  in_development: {
+    label: 'En développement',
+    bg: 'bg-blue-50',
+    text: 'text-blue-800',
+    border: 'border-blue-200',
+    dot: 'bg-blue-500',
+  },
   testing: {
     label: 'En test & QA',
+    bg: 'bg-purple-50',
+    text: 'text-purple-800',
+    border: 'border-purple-200',
+    dot: 'bg-purple-500',
+  },
+  in_qa: {
+    label: 'En recette QA',
     bg: 'bg-purple-50',
     text: 'text-purple-800',
     border: 'border-purple-200',
@@ -125,7 +146,8 @@ export function FeatureRequestHistory({
         const q = searchQuery.toLowerCase();
         const matchTitle = item.title.toLowerCase().includes(q);
         const matchDesc = item.description.toLowerCase().includes(q);
-        const matchRepo = item.repo.toLowerCase().includes(q);
+        const itemRepo = item.repo || item.target_repo || '';
+        const matchRepo = itemRepo.toLowerCase().includes(q);
         if (!matchTitle && !matchDesc && !matchRepo) return false;
       }
 
@@ -135,7 +157,8 @@ export function FeatureRequestHistory({
       }
 
       // 3. Repo Filter
-      if (repoFilter !== 'all' && item.repo !== repoFilter) {
+      const itemRepo = item.repo || item.target_repo;
+      if (repoFilter !== 'all' && itemRepo !== repoFilter) {
         return false;
       }
 
@@ -362,7 +385,7 @@ export function FeatureRequestHistory({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-zinc-900 text-white font-mono" style={MONO}>
-                      {req.repo}
+                      {req.repo || req.target_repo || 'Minerva-Flow'}
                     </span>
                     <span className="text-[11px] text-zinc-400">•</span>
                     <span className="text-[11px] text-zinc-500 font-medium" style={MONO}>
@@ -414,7 +437,7 @@ export function FeatureRequestHistory({
                       <div className="text-[11px] text-zinc-500 truncate">{req.description}</div>
                     </td>
                     <td className="py-3 px-4 font-mono font-semibold" style={MONO}>
-                      {req.repo}
+                      {req.repo || req.target_repo || 'Minerva-Flow'}
                     </td>
                     <td className="py-3 px-4 capitalize text-zinc-600">
                       {req.priority}

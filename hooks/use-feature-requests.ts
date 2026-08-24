@@ -12,10 +12,13 @@ import type { FeatureRequest, FeatureRequestStatus } from '@/lib/types';
 import { useToast } from '@/components/providers/ToastProvider';
 
 const STATUS_LABELS: Record<FeatureRequestStatus, string> = {
+  submitted: 'Soumise',
   under_review: 'En revue',
   planned: 'Planifié',
   in_progress: 'En développement',
+  in_development: 'En développement',
   testing: 'En test & QA',
+  in_qa: 'En recette QA',
   delivered: 'Livré',
   declined: 'Refusé',
 };

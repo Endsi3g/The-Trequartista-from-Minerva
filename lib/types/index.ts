@@ -833,30 +833,75 @@ export interface VoiceCall {
   created_at: string;
 }
 
-// ── Feature Requests & Minerva-Flow Results ──────────────────────────────────
+export interface VoiceAgentConfig {
+  id: string;
+  voice_id: string | null;
+  system_prompt: string | null;
+  auto_trigger_enabled: boolean;
+  auto_trigger_delay_seconds: number;
+  updated_by: string | null;
+  updated_at: string;
+}
 
-export type FeatureRequestStatus = 'under_review' | 'planned' | 'in_progress' | 'testing' | 'delivered' | 'declined';
-export type FeatureRequestCategory = 'feature' | 'ui_ux' | 'integration' | 'automation' | 'optimization' | 'bug';
-export type FeatureRequestRepo = 'Minerva-Flow' | 'The-Trequartista' | 'Minerva-Voice-AI' | 'Minerva-OS' | 'API & Intégrations';
+
+
+// ── Feature Requests (Portail Client & Realtime) ──────────────────────────
+
+export type FeatureRequestStatus =
+  | 'submitted'
+  | 'under_review'
+  | 'planned'
+  | 'in_progress'
+  | 'in_development'
+  | 'testing'
+  | 'in_qa'
+  | 'delivered'
+  | 'declined';
+
+export type FeatureRequestCategory =
+  | 'feature'
+  | 'improvement'
+  | 'optimization'
+  | 'ui_ux'
+  | 'automation'
+  | 'bug'
+  | 'integration';
+
+export type FeatureRequestRepo =
+  | 'minerva-flow'
+  | 'Minerva-Flow'
+  | 'trequartista-app'
+  | 'The-Trequartista'
+  | 'framer-site'
+  | 'meta-ads-engine'
+  | 'Minerva-Voice-AI'
+  | 'Minerva-OS'
+  | 'API & Intégrations'
+  | 'portal'
+  | string;
+
 export type FeatureRequestPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface FeatureRequest {
   id: string;
-  user_id?: string | null;
-  client_id?: string | null;
-  client_name?: string | null;
+  client_id: string;
+  client_name?: string;
+  author_name?: string;
   title: string;
   description: string;
   category: FeatureRequestCategory;
-  repo: FeatureRequestRepo;
+  target_repo?: FeatureRequestRepo;
+  repo?: FeatureRequestRepo;
   priority: FeatureRequestPriority;
   status: FeatureRequestStatus;
-  estimated_delivery?: string | null;
   admin_notes?: string | null;
-  author_name?: string | null;
+  estimated_delivery?: string | null;
+  delivered_at?: string | null;
   created_at: string;
   updated_at: string;
 }
+
+// ── Minerva-Flow Metrics & Results ──────────────────────────────────────────
 
 export interface MinervaFlowOrderItem {
   id: string;
@@ -875,8 +920,8 @@ export interface MinervaFlowLiveTicket {
   customerName: string;
   items: string[];
   totalAmount: number;
-  savingsAmount: number; // 30% saved
-  prepStatus: 'reçu' | 'en_cuisine' | 'prêt' | 'livré';
+  savingsAmount: number;
+  prepStatus: 'en_cuisine' | 'prêt' | 'livré';
   timestamp: string;
   pickupType: 'Sur place' | 'Emporter' | 'Livraison directe';
 }
@@ -886,18 +931,11 @@ export interface MinervaFlowResults {
   period: '7d' | '30d' | '90d' | 'ytd';
   totalOrders: number;
   grossVolume: number;
-  directSavings: number; // 30% aggregator commission saved
+  directSavings: number;
   averageOrderValue: number;
   averagePrepTimeMinutes: number;
   growthPct: number;
   popularItems: MinervaFlowOrderItem[];
-  timeline: Array<{
-    date: string;
-    orders: number;
-    revenue: number;
-    savings: number;
-  }>;
+  timeline: { date: string; orders: number; revenue: number; savings: number }[];
   recentTickets: MinervaFlowLiveTicket[];
 }
-
-

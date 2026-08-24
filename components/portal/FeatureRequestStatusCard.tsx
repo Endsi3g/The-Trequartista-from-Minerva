@@ -33,13 +33,16 @@ export const STEPS: { status: FeatureRequestStatus; label: string; desc: string 
 
 function getStepIndex(status: FeatureRequestStatus): number {
   switch (status) {
+    case 'submitted':
     case 'under_review':
       return 0;
     case 'planned':
       return 1;
     case 'in_progress':
+    case 'in_development':
       return 2;
     case 'testing':
+    case 'in_qa':
       return 3;
     case 'delivered':
       return 4;
@@ -89,38 +92,38 @@ export function FeatureRequestStatusCard({
           <span
             className={cn(
               'w-2 h-2 rounded-full',
-              isRealtimeConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+              isRealtimeConnected ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-400'
             )}
           />
-          <span className="font-semibold text-zinc-700 text-[11.5px]">
-            {isRealtimeConnected ? 'Supabase Realtime actif' : 'Connexion...'}
+          <span className="font-semibold text-zinc-700">
+            {isRealtimeConnected ? 'Temps réel actif' : 'Hors-ligne'}
           </span>
         </div>
       </div>
 
       {/* ── Requests List ── */}
-      <div className="divide-y divide-zinc-100">
-        {activeRequests.length === 0 ? (
-          <div className="p-12 text-center space-y-2">
-            <Sparkles className="w-8 h-8 text-zinc-300 mx-auto" />
-            <p className="text-sm font-semibold text-zinc-700">Aucune demande active pour le moment</p>
-            <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-              Utilisez le formulaire &quot;Demander une fonctionnalité&quot; pour soumettre votre premier besoin à l&apos;équipe.
-            </p>
-          </div>
-        ) : (
-          activeRequests.map((req) => {
+      {activeRequests.length === 0 ? (
+        <div className="py-12 px-6 text-center space-y-2">
+          <Clock className="w-8 h-8 text-zinc-300 mx-auto" />
+          <p className="text-sm font-semibold text-zinc-800">Aucune demande en cours</p>
+          <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+            Utilisez le formulaire ci-dessus pour soumettre une nouvelle idée ou fonctionnalité pour vos outils Minerva.
+          </p>
+        </div>
+      ) : (
+        <div className="divide-y divide-zinc-100">
+          {activeRequests.map((req) => {
             const stepIndex = getStepIndex(req.status);
             const isDelivered = req.status === 'delivered';
 
             return (
-              <div key={req.id} className="p-5 sm:p-6 space-y-4 hover:bg-zinc-50/40 transition-colors">
-                {/* Title & Metadata Top Row */}
+              <div key={req.id} className="p-5 sm:p-6 space-y-5 hover:bg-zinc-50/40 transition-colors">
+                {/* Top: Title & Repo */}
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="space-y-1.5 max-w-2xl">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-zinc-900 text-white font-mono" style={MONO}>
-                        {req.repo}
+                        {req.repo || req.target_repo || 'Minerva-Flow'}
                       </span>
 
                       <span
@@ -157,9 +160,9 @@ export function FeatureRequestStatusCard({
                         'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-2xs',
                         isDelivered
                           ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                          : req.status === 'in_progress'
+                          : req.status === 'in_progress' || req.status === 'in_development'
                           ? 'bg-blue-50 text-blue-800 border-blue-300'
-                          : req.status === 'testing'
+                          : req.status === 'testing' || req.status === 'in_qa'
                           ? 'bg-purple-50 text-purple-800 border-purple-300'
                           : req.status === 'planned'
                           ? 'bg-indigo-50 text-indigo-800 border-indigo-300'
@@ -171,9 +174,9 @@ export function FeatureRequestStatusCard({
                           'w-2 h-2 rounded-full',
                           isDelivered
                             ? 'bg-emerald-600'
-                            : req.status === 'in_progress'
+                            : req.status === 'in_progress' || req.status === 'in_development'
                             ? 'bg-blue-600 animate-pulse'
-                            : req.status === 'testing'
+                            : req.status === 'testing' || req.status === 'in_qa'
                             ? 'bg-purple-600'
                             : req.status === 'planned'
                             ? 'bg-indigo-600'
@@ -282,9 +285,9 @@ export function FeatureRequestStatusCard({
                 )}
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </Card>
   );
 }

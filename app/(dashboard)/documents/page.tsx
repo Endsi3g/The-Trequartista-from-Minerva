@@ -19,6 +19,12 @@ import {
   CheckSquare,
   Square,
   Check,
+  Share2,
+  Download,
+  Pin,
+  PinOff,
+  Building2,
+  FolderKanban,
 } from 'lucide-react';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
@@ -221,16 +227,16 @@ export default function DocumentsPage() {
     const q = searchQuery.toLowerCase().trim();
     return documents.filter((doc) => {
       if (q && !doc.title.toLowerCase().includes(q)) return false;
-      if (selectedType === 'brief' && !doc.title.toLowerCase().includes('brief')) return false;
+      if (selectedCategory === 'brief' && !doc.title.toLowerCase().includes('brief')) return false;
       if (
-        selectedType === 'meeting' &&
+        selectedCategory === 'meeting' &&
         !doc.title.toLowerCase().includes('compte') &&
         !doc.title.toLowerCase().includes('réunion') &&
         !doc.title.toLowerCase().includes('sync')
       )
         return false;
       if (
-        selectedType === 'spec' &&
+        selectedCategory === 'spec' &&
         !doc.title.toLowerCase().includes('spec') &&
         !doc.title.toLowerCase().includes('tech') &&
         !doc.title.toLowerCase().includes('archi')
@@ -469,9 +475,9 @@ export default function DocumentsPage() {
             >
               <X className="w-3.5 h-3.5" />
             </button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── 3.5 Floating Bulk Selection Action Bar ── */}
       {selectedDocIds.size > 0 && (

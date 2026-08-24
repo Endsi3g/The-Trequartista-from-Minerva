@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, Project, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, ProjectMilestone, MinervaRoadmapItem, TeamDocument, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -1904,8 +1904,9 @@ export async function syncCustomRolePermissionsToAppPermissions(profileId: strin
   const grantedKeys = new Set<string>();
   if (roleId) {
     const perms = await fetchCustomRolePermissions(roleId);
+    const moduleActions = ROLE_MODULE_ACTIONS as Record<string, Record<string, string> | undefined>;
     for (const p of perms) {
-      const key = ROLE_MODULE_ACTIONS[p.module]?.[p.action];
+      const key = moduleActions[p.module]?.[p.action];
       if (key) grantedKeys.add(key);
     }
   }
@@ -3740,6 +3741,116 @@ export async function fetchMinervaFlowResults(
       recentTickets: [],
     }
   );
+}
+
+// ----------------------------------------------------
+// 29. CONTACTS (ROLODEX PROFESSIONNEL)
+// ----------------------------------------------------
+export async function fetchContacts(): Promise<Contact[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase().from('contacts').select('*').order('created_at', { ascending: false });
+      if (error || !data) return [];
+      return data as Contact[];
+    })(),
+    []
+  );
+}
+
+export async function fetchContact(id: string): Promise<Contact | null> {
+  const { data, error } = await getSupabase().from('contacts').select('*').eq('id', id).maybeSingle();
+  if (error || !data) return null;
+  return data as Contact;
+}
+
+export async function addContact(
+  contact: Partial<Omit<Contact, 'id' | 'created_at' | 'updated_at' | 'converted_to_lead_id'>> & {
+    full_name: string;
+    created_by?: string | null;
+  }
+): Promise<Contact | null> {
+  const { data, error } = await getSupabase().from('contacts').insert([contact]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding contact:', error);
+    return null;
+  }
+  return data as Contact;
+}
+
+export async function updateContact(id: string, updates: Partial<Contact>): Promise<boolean> {
+  const { error } = await getSupabase().from('contacts').update(updates).eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error updating contact:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteContact(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('contacts').delete().eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error deleting contact:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function fetchContactNotes(contactId: string): Promise<ContactNote[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('contact_notes')
+        .select('*, author:profiles(full_name)')
+        .eq('contact_id', contactId)
+        .order('created_at', { ascending: false });
+      if (error || !data) return [];
+      return data.map((row: Record<string, unknown>) => ({
+        ...row,
+        author_name: (row.author as { full_name?: string } | null)?.full_name,
+      })) as ContactNote[];
+    })(),
+    []
+  );
+}
+
+export async function addContactNote(note: {
+  contact_id: string;
+  body: string;
+  channel: ContactNote['channel'];
+  created_by: string;
+}): Promise<ContactNote | null> {
+  const { data, error } = await getSupabase().from('contact_notes').insert([note]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding contact note:', error);
+    return null;
+  }
+  return data as ContactNote;
+}
+
+export async function convertContactToLead(contact: Contact, createdBy: string): Promise<Lead | null> {
+  const lead = await addLead({
+    client_name: contact.company || contact.full_name,
+    company_name: contact.company || undefined,
+    contact_name: contact.full_name,
+    contact_email: contact.email || '',
+    contact_phone: contact.phone || undefined,
+    service_requested: 'À qualifier',
+    score_grade: 'C',
+    status: 'Nouveau',
+    stage: 'nouveau',
+    probability_pct: 10,
+    notes: [],
+  });
+  if (!lead) return null;
+
+  await updateContact(contact.id, { converted_to_lead_id: lead.id });
+  await addContactNote({
+    contact_id: contact.id,
+    body: `Converti en lead CRM ("${lead.contact_name}").`,
+    channel: 'note',
+    created_by: createdBy,
+  });
+  return lead;
 }
 
 

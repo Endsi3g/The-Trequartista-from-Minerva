@@ -112,8 +112,8 @@ export function FeatureRequestForm({
 
     setSubmitting(true);
     const created = await onSubmit({
-      client_id: clientId || null,
-      client_name: clientName || null,
+      client_id: clientId || 'c1b2c3d4-0000-0000-0000-000000000001',
+      client_name: clientName || undefined,
       author_name: authorName || 'Client Portail',
       title: title.trim(),
       description: description.trim(),
