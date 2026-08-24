@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import {
   ShieldAlert,
@@ -17,6 +17,15 @@ import {
   Clock,
   Send,
   Zap,
+  ChevronDown,
+  ChevronRight,
+  MoreHorizontal,
+  ExternalLink,
+  Tag,
+  Building2,
+  MessageSquare,
+  DollarSign,
+  TrendingUp,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,55 +41,48 @@ import {
   updateMinervaRoadmapStatus,
   deleteMinervaRoadmapItem,
 } from '@/lib/services/supabase-data';
-import type { MinervaRoadmapItem, FeatureRequestStatus, FeatureRequestRepo } from '@/lib/types';
+import type { MinervaRoadmapItem, FeatureRequest, FeatureRequestStatus, FeatureRequestRepo } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
-const IMPACT_VARIANT: Record<MinervaRoadmapItem['impact'], 'green' | 'amber' | 'red'> = {
-  Low: 'green',
-  Medium: 'amber',
-  High: 'red',
+const PRODUCT_GROUPS: { key: string; label: string; products: string[] }[] = [
+  { key: 'reach', label: 'REACH', products: ['Reach', 'Prospection', 'Acquisition'] },
+  { key: 'ops', label: 'OPS', products: ['Operations', 'Ops', 'Partenariats'] },
+  { key: 'marketing', label: 'MARKETING', products: ['Marketing', 'YouTube', 'Content'] },
+  { key: 'flow_os', label: 'FLOW & OS', products: ['Minerva-Flow', 'Minerva OS', 'Flow', 'OS'] },
+  { key: 'labs', label: 'LABS & RECHERCHE', products: ['Atlas', 'Forge', 'Ascend', 'Recherche', 'IA'] },
+];
+
+const STATUS_CONFIG_MAP: Record<
+  MinervaRoadmapItem['status'],
+  { label: string; bg: string; text: string; border: string; dot: string }
+> = {
+  Done: { label: 'Done', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' },
+  'In Progress': { label: 'In Progress', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', dot: 'bg-blue-500' },
+  Planned: { label: 'Planned', bg: 'bg-zinc-100', text: 'text-zinc-600', border: 'border-zinc-200', dot: 'bg-zinc-400' },
 };
 
-const TYPE_VARIANT: Record<MinervaRoadmapItem['item_type'], 'blue' | 'green' | 'purple'> = {
-  Launch: 'green',
-  Milestone: 'purple',
-  Experiment: 'blue',
-};
-
-const STATUS_LABELS: Record<FeatureRequestStatus, string> = {
-  submitted: 'Soumise',
-  under_review: 'En revue',
-  planned: 'Planifié',
-  in_progress: 'En développement',
-  in_development: 'En développement',
-  testing: 'En test & QA',
-  in_qa: 'En recette QA',
-  delivered: 'Livré',
-  declined: 'Refusé',
-};
+const CLIENT_STATUS_OPTIONS: { status: FeatureRequestStatus; label: string; bg: string; text: string; border: string }[] = [
+  { status: 'delivered', label: '✓ Livré', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  { status: 'in_progress', label: '⚙️ En dév.', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  { status: 'planned', label: '⏱ Planifié', bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+  { status: 'under_review', label: '👁 En revue', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  { status: 'declined', label: '✕ Refusé', bg: 'bg-zinc-100', text: 'text-zinc-500', border: 'border-zinc-200' },
+];
 
 export default function ProduitsMinervaPage() {
   const { role, loading: userLoading } = useCurrentUser();
   const confirmDialog = useConfirm();
-  const { toastError, toastSuccess } = useToast();
+  const { toastError, toastSuccess, toastInfo } = useToast();
 
   const [activeTab, setActiveTab] = useState<'roadmap' | 'feature_requests'>('roadmap');
 
   // Roadmap State
   const [items, setItems] = useState<MinervaRoadmapItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const [title, setTitle] = useState('');
-  const [product, setProduct] = useState('');
-  const [itemType, setItemType] = useState<MinervaRoadmapItem['item_type']>('Milestone');
-  const [status, setStatus] = useState<MinervaRoadmapItem['status']>('Planned');
-  const [impact, setImpact] = useState<MinervaRoadmapItem['impact']>('Medium');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [loadingRoadmap, setLoadingRoadmap] = useState(true);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [inlineInputs, setInlineInputs] = useState<Record<string, string>>({});
 
   // Feature Requests (Client & Product Backlog via Realtime Hook)
   const {
@@ -89,456 +91,656 @@ export default function ProduitsMinervaPage() {
     isRealtimeConnected,
     updateStatus: updateFRStatus,
     removeRequest: removeFR,
+    submitRequest: createFR,
   } = useFeatureRequests();
 
   const [frRepoFilter, setFrRepoFilter] = useState<string>('all');
   const [frStatusFilter, setFrStatusFilter] = useState<string>('all');
   const [frSearch, setFrSearch] = useState<string>('');
+  const [inlineClientRequest, setInlineClientRequest] = useState<string>('');
 
-  const load = async () => {
-    setItems(await fetchMinervaRoadmap());
-    setLoading(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const loadRoadmap = async () => {
+    setLoadingRoadmap(true);
+    try {
+      const data = await fetchMinervaRoadmap();
+      setItems(data);
+    } finally {
+      setLoadingRoadmap(false);
+    }
   };
 
   useEffect(() => {
-    if (role === 'admin') load();
-    else setLoading(false);
-  }, [role]);
+    loadRoadmap();
+  }, []);
+
+  // Keyboard shortcut '/'
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+      if (e.key === '/') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const toggleGroupCollapse = (groupKey: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupKey)) next.delete(groupKey);
+      else next.add(groupKey);
+      return next;
+    });
+  };
+
+  const handleStatusChange = async (itemId: string, newStatus: MinervaRoadmapItem['status']) => {
+    setItems((prev) => prev.map((item) => (item.id === itemId ? { ...item, status: newStatus } : item)));
+    const ok = await updateMinervaRoadmapStatus(itemId, newStatus);
+    if (!ok) {
+      toastError('Erreur', 'Impossible de mettre à jour le statut.');
+      loadRoadmap();
+    } else {
+      toastSuccess('Statut mis à jour', `Initiative passée à « ${newStatus} ».`);
+    }
+  };
+
+  const handleInlineAdd = async (groupKey: string, defaultProduct: string) => {
+    const text = (inlineInputs[groupKey] || '').trim();
+    if (!text) return;
+
+    try {
+      const newItem = await addMinervaRoadmapItem({
+        title: text,
+        product: defaultProduct,
+        item_type: 'Milestone',
+        status: 'Planned',
+        impact: 'Medium',
+      });
+
+      if (newItem) {
+        setItems((prev) => [newItem, ...prev]);
+        setInlineInputs((prev) => ({ ...prev, [groupKey]: '' }));
+        toastSuccess('Élément ajouté', `« ${newItem.title} » a été ajouté à la roadmap.`);
+      }
+    } catch {
+      toastError('Erreur', "Impossible d'ajouter l'élément.");
+    }
+  };
+
+  const handleInlineAddClientRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inlineClientRequest.trim()) return;
+
+    try {
+      const created = await createFR({
+        client_id: 'c1b2c3d4-0000-0000-0000-000000000001',
+        client_name: 'Toitures Beauchemin Inc.',
+        author_name: 'Client Portail',
+        title: inlineClientRequest.trim(),
+        description: 'Requête soumise via console produit.',
+        target_repo: 'minerva-flow',
+        category: 'feature',
+        priority: 'medium',
+        status: 'under_review',
+      });
+
+      if (created) {
+        setInlineClientRequest('');
+        toastSuccess('Demande enregistrée', `La demande « ${created.title} » a été consignée.`);
+      }
+    } catch {
+      toastError('Erreur', "Impossible d'enregistrer la demande.");
+    }
+  };
+
+  // Group items for Tab 1
+  const groupedItems = useMemo(() => {
+    const map: Record<string, MinervaRoadmapItem[]> = {
+      reach: [],
+      ops: [],
+      marketing: [],
+      flow_os: [],
+      labs: [],
+    };
+
+    items.forEach((item) => {
+      const p = (item.product || '').toLowerCase();
+      if (p.includes('reach') || p.includes('prospect') || p.includes('acquis')) map.reach.push(item);
+      else if (p.includes('op') || p.includes('parten')) map.ops.push(item);
+      else if (p.includes('market') || p.includes('youtub') || p.includes('content')) map.marketing.push(item);
+      else if (p.includes('flow') || p.includes('os')) map.flow_os.push(item);
+      else map.labs.push(item);
+    });
+
+    return map;
+  }, [items]);
+
+  // Ribbon Stats
+  const totalItems = items.length || 10;
+  const doneCount = items.filter((i) => i.status === 'Done').length;
+  const inProgressCount = items.filter((i) => i.status === 'In Progress').length;
+  const plannedCount = items.filter((i) => i.status === 'Planned').length;
+
+  const donePct = Math.round((doneCount / totalItems) * 100);
+  const inProgressPct = Math.round((inProgressCount / totalItems) * 100);
+  const plannedPct = Math.round((plannedCount / totalItems) * 100);
+
+  // Filter Client Requests (Tab 2)
+  const filteredRequests = useMemo(() => {
+    return requests.filter((r) => {
+      if (frRepoFilter !== 'all' && (r.repo || r.target_repo) !== frRepoFilter) return false;
+      if (frStatusFilter !== 'all' && r.status !== frStatusFilter) return false;
+      if (frSearch.trim()) {
+        const q = frSearch.toLowerCase();
+        const matchTitle = r.title.toLowerCase().includes(q);
+        const matchDesc = r.description.toLowerCase().includes(q);
+        const matchClient = (r.client_name || '').toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc && !matchClient) return false;
+      }
+      return true;
+    });
+  }, [requests, frRepoFilter, frStatusFilter, frSearch]);
 
   if (!userLoading && role !== 'admin') {
     return (
       <div className="max-w-lg mx-auto py-16 text-center space-y-3">
-        <ShieldAlert className="w-8 h-8 text-mv-amber mx-auto" />
-        <p className="text-sm font-bold text-mv-ink">Réservé aux administrateurs.</p>
-        <Link href="/overview" className="text-xs text-mv-green hover:underline">
+        <ShieldAlert className="w-8 h-8 text-amber-500 mx-auto" />
+        <p className="text-sm font-bold text-zinc-900">Réservé aux administrateurs.</p>
+        <Link href="/overview" className="text-xs text-emerald-600 hover:underline">
           Retour à l&apos;aperçu
         </Link>
       </div>
     );
   }
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || !product.trim()) return;
-    setSaving(true);
-    const created = await addMinervaRoadmapItem({
-      title: title.trim(),
-      product: product.trim(),
-      item_type: itemType,
-      status,
-      impact,
-      start_date: startDate || null,
-      end_date: endDate || null,
-    });
-    setSaving(false);
-    if (!created) {
-      toastError(
-        'Erreur',
-        'Impossible de créer cet item. La migration minerva_roadmap_items est peut-être encore en attente de déploiement.'
-      );
-      return;
-    }
-    setTitle('');
-    setProduct('');
-    setStartDate('');
-    setEndDate('');
-    setShowAddForm(false);
-    await load();
-  };
-
-  const handleStatusChange = async (item: MinervaRoadmapItem, next: MinervaRoadmapItem['status']) => {
-    setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, status: next } : x)));
-    await updateMinervaRoadmapStatus(item.id, next);
-  };
-
-  const handleDelete = async (item: MinervaRoadmapItem) => {
-    const ok = await confirmDialog({
-      title: 'Supprimer cet item de roadmap ?',
-      message: `« ${item.title} » sera retiré définitivement.`,
-      confirmLabel: 'Supprimer',
-      variant: 'danger',
-    });
-    if (!ok) return;
-    setItems((prev) => prev.filter((x) => x.id !== item.id));
-    const done = await deleteMinervaRoadmapItem(item.id);
-    if (done) toastSuccess('Item supprimé');
-  };
-
-  const grouped = items.reduce<Record<string, MinervaRoadmapItem[]>>((acc, item) => {
-    (acc[item.product] ||= []).push(item);
-    return acc;
-  }, {});
-
-  // Filtered feature requests
-  const filteredFR = requests.filter((r) => {
-    if (frRepoFilter !== 'all' && r.repo !== frRepoFilter) return false;
-    if (frStatusFilter !== 'all' && r.status !== frStatusFilter) return false;
-    if (frSearch.trim()) {
-      const q = frSearch.toLowerCase();
-      if (!r.title.toLowerCase().includes(q) && !r.description.toLowerCase().includes(q)) return false;
-    }
-    return true;
-  });
-
   return (
-    <div className="space-y-6 pb-12">
-      {/* ── Top Header ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">
-              Produits & Demandes Minerva
-            </h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              {isRealtimeConnected ? 'Realtime Connecté' : 'Supabase'}
-            </span>
+    <div className="space-y-4 pb-12">
+      
+      {/* ── 1. En-tête Contextuel (Hauteur 40px) ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+        <div className="flex items-center gap-3">
+          <h1 className="text-base font-semibold text-zinc-900 tracking-tight font-display">
+            Roadmap Produits &amp; Demandes
+          </h1>
+
+          {/* Sync status tag */}
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200/80 text-[10.5px] font-mono text-emerald-700" style={MONO}>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Synchronisé</span>
           </div>
-          <p className="text-xs sm:text-sm text-mv-ink-soft mt-1">
-            Roadmap interne des produits (Reach, Flow, OS) et gestion en direct des demandes de fonctionnalités clients.
-          </p>
         </div>
 
-        {activeTab === 'roadmap' && (
-          <Button
-            variant="primary"
-            icon={<Plus className="w-4 h-4" />}
-            onClick={() => setShowAddForm((v) => !v)}
+        {/* Controls Right */}
+        <div className="flex items-center gap-2.5">
+          {/* Tabs Switcher (Segmented Control 28px) */}
+          <div className="flex items-center bg-zinc-100 p-0.5 rounded-md border border-zinc-200/60 h-7 text-xs font-mono" style={MONO}>
+            <button
+              type="button"
+              onClick={() => setActiveTab('roadmap')}
+              className={cn(
+                'px-2.5 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5',
+                activeTab === 'roadmap'
+                  ? 'bg-white text-zinc-900 font-bold shadow-2xs'
+                  : 'text-zinc-500 hover:text-zinc-800'
+              )}
+            >
+              <span>🚀 Roadmap Produits</span>
+              <span className="px-1 py-0.2 rounded bg-zinc-200 text-[10px] text-zinc-700">{items.length}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('feature_requests')}
+              className={cn(
+                'px-2.5 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5',
+                activeTab === 'feature_requests'
+                  ? 'bg-white text-zinc-900 font-bold shadow-2xs'
+                  : 'text-zinc-500 hover:text-zinc-800'
+              )}
+            >
+              <span>💡 Demandes Clients</span>
+              <span className="px-1 py-0.2 rounded bg-emerald-100 text-[10px] text-emerald-800 font-bold">{requests.length}</span>
+            </button>
+          </div>
+
+          {/* New Initiative Button */}
+          <button
+            type="button"
+            onClick={() => {
+              if (activeTab === 'roadmap') {
+                const title = prompt('Titre de la nouvelle initiative produit :');
+                if (title && title.trim()) {
+                  addMinervaRoadmapItem({
+                    title: title.trim(),
+                    product: 'Minerva-Flow',
+                    item_type: 'Launch',
+                    status: 'Planned',
+                    impact: 'High',
+                  }).then((item) => {
+                    if (item) {
+                      setItems((prev) => [item, ...prev]);
+                      toastSuccess('Initiative créée', `« ${item.title} » ajoutée.`);
+                    }
+                  });
+                }
+              } else {
+                const title = prompt('Demande de fonctionnalité client :');
+                if (title && title.trim()) {
+                  createFR({
+                    client_id: 'c1b2c3d4-0000-0000-0000-000000000001',
+                    client_name: 'Toitures Beauchemin Inc.',
+                    author_name: 'Client Portail',
+                    title: title.trim(),
+                    description: 'Nouvelle demande consigné en console.',
+                    target_repo: 'minerva-flow',
+                    category: 'feature',
+                    priority: 'high',
+                    status: 'under_review',
+                  });
+                }
+              }
+            }}
+            className="h-7 px-2.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
           >
-            {showAddForm ? 'Annuler' : 'Nouvel item'}
-          </Button>
-        )}
+            <Plus className="w-3.5 h-3.5" />
+            <span>{activeTab === 'roadmap' ? 'Nouvelle Initiative (C)' : 'Nouvelle Requête (C)'}</span>
+          </button>
+        </div>
       </div>
 
-      {/* ── Sub Tabs ── */}
-      <div className="flex items-center gap-2 border-b border-mv-border pb-1">
-        <button
-          type="button"
-          onClick={() => setActiveTab('roadmap')}
-          className={cn(
-            'px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5',
-            activeTab === 'roadmap'
-              ? 'border-mv-green text-mv-ink font-extrabold'
-              : 'border-transparent text-mv-ink-soft hover:text-mv-ink'
-          )}
-        >
-          <Rocket className="w-3.5 h-3.5" />
-          <span>Roadmap Produits ({items.length})</span>
-        </button>
+      {/* ── 2. Ruban de Synthèse d'Avancement (Strip 4 Métriques + Micro-Jauge) ── */}
+      <div className="bg-white border border-zinc-200 rounded-lg shadow-xs overflow-hidden">
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-zinc-100 p-2.5">
+          <div className="px-3 py-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Total Items</div>
+            <div className="text-sm font-bold text-zinc-900 font-mono" style={MONO}>{totalItems}</div>
+          </div>
+          <div className="px-3 py-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-600">En cours</div>
+            <div className="text-sm font-bold text-blue-700 font-mono" style={MONO}>{inProgressCount} <span className="text-xs font-normal text-zinc-400">({inProgressPct}%)</span></div>
+          </div>
+          <div className="px-3 py-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600">Terminés</div>
+            <div className="text-sm font-bold text-emerald-700 font-mono" style={MONO}>{doneCount} <span className="text-xs font-normal text-zinc-400">({donePct}%)</span></div>
+          </div>
+          <div className="px-3 py-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Planifiés</div>
+            <div className="text-sm font-bold text-zinc-700 font-mono" style={MONO}>{plannedCount} <span className="text-xs font-normal text-zinc-400">({plannedPct}%)</span></div>
+          </div>
+        </div>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('feature_requests')}
-          className={cn(
-            'px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5',
-            activeTab === 'feature_requests'
-              ? 'border-mv-green text-mv-ink font-extrabold'
-              : 'border-transparent text-mv-ink-soft hover:text-mv-ink'
-          )}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Demandes Fonctionnalités Clients ({requests.length})</span>
-        </button>
+        {/* Micro Multi-color Gauge (3px height) */}
+        <div className="h-1 bg-zinc-100 flex w-full overflow-hidden">
+          <div style={{ width: `${donePct}%` }} className="bg-emerald-500 transition-all duration-500" />
+          <div style={{ width: `${inProgressPct}%` }} className="bg-blue-500 transition-all duration-500" />
+          <div style={{ width: `${plannedPct}%` }} className="bg-zinc-300 transition-all duration-500" />
+        </div>
       </div>
 
-      {/* ── Tab 1: Roadmap Interne ── */}
+      {/* ── 3. CONTENU ONGLET 1 : Roadmap Produits Monolithique (Collapsible Groups) ── */}
       {activeTab === 'roadmap' && (
-        <div className="space-y-6">
-          {showAddForm && (
-            <Card>
-              <form onSubmit={handleAdd} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-mv-ink mb-1.5">Titre</label>
-                    <input
-                      type="text"
-                      required
-                      autoFocus
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Ex: Lancement Ascend V1"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-mv-ink mb-1.5">Produit</label>
-                    <input
-                      type="text"
-                      required
-                      value={product}
-                      onChange={(e) => setProduct(e.target.value)}
-                      placeholder="Reach, Flow, OS, Ascend…"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-mv-ink mb-1.5">Type</label>
-                    <select
-                      value={itemType}
-                      onChange={(e) => setItemType(e.target.value as MinervaRoadmapItem['item_type'])}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors cursor-pointer"
-                    >
-                      <option value="Milestone">Milestone</option>
-                      <option value="Launch">Launch</option>
-                      <option value="Experiment">Experiment</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-mv-ink mb-1.5">Statut</label>
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as MinervaRoadmapItem['status'])}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors cursor-pointer"
-                    >
-                      <option value="Planned">Planned</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Done">Done</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-mv-ink mb-1.5">Impact</label>
-                    <select
-                      value={impact}
-                      onChange={(e) => setImpact(e.target.value as MinervaRoadmapItem['impact'])}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors cursor-pointer"
-                    >
-                      <option value="Low">Low</option>
-                      <option value="Medium">Medium</option>
-                      <option value="High">High</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-mv-ink mb-1.5">Début</label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <Button type="submit" variant="primary" disabled={saving}>
-                    {saving ? 'Création…' : 'Ajouter'}
-                  </Button>
-                </div>
-              </form>
-            </Card>
-          )}
-
-          {loading ? (
-            <div className="py-12 text-center text-xs text-mv-ink-soft">Chargement…</div>
-          ) : items.length === 0 ? (
-            <EmptyState
-              icon={Rocket}
-              title="Aucun item de roadmap"
-              description="Ajoute le premier jalon produit ci-dessus."
-            />
-          ) : (
-            <div className="space-y-6">
-              {Object.entries(grouped).map(([productName, productItems]) => (
-                <Card
-                  key={productName}
-                  header={
-                    <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
-                      {productName}
-                    </h3>
-                  }
-                >
-                  <div className="space-y-2">
-                    {productItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex flex-wrap items-center gap-3 p-3.5 rounded-xl bg-mv-cream-soft border border-mv-border"
-                      >
-                        <div className="flex-1 min-w-[200px]">
-                          <div className="font-semibold text-sm text-mv-ink">{item.title}</div>
-                          <div className="flex items-center gap-3 mt-1 text-[11px] text-mv-ink-faint">
-                            {item.start_date && (
-                              <span className="flex items-center gap-1">
-                                <CalendarDays className="w-3 h-3" />
-                                {new Date(item.start_date).toLocaleDateString('fr-CA', {
-                                  day: 'numeric',
-                                  month: 'short',
-                                })}
-                                {item.end_date &&
-                                  ` → ${new Date(item.end_date).toLocaleDateString('fr-CA', {
-                                    day: 'numeric',
-                                    month: 'short',
-                                  })}`}
-                              </span>
-                            )}
-                            {item.owner_name && (
-                              <span className="flex items-center gap-1">
-                                <UserIcon className="w-3 h-3" /> {item.owner_name.trim()}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <Badge variant={TYPE_VARIANT[item.item_type]}>{item.item_type}</Badge>
-                        <Badge variant={IMPACT_VARIANT[item.impact]}>{item.impact}</Badge>
-                        <select
-                          value={item.status}
-                          onChange={(e) =>
-                            handleStatusChange(item, e.target.value as MinervaRoadmapItem['status'])
-                          }
-                          className="px-2 py-1 rounded-lg bg-mv-surface border border-mv-border text-[11px] font-bold text-mv-ink cursor-pointer focus:outline-none"
-                        >
-                          <option value="Planned">Planned</option>
-                          <option value="In Progress">In Progress</option>
-                          <option value="Done">Done</option>
-                        </select>
-                        <button
-                          onClick={() => handleDelete(item)}
-                          className="p-1.5 text-mv-ink-faint hover:text-mv-red transition-colors cursor-pointer"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              ))}
+        <div className="border border-zinc-200 rounded-lg bg-white overflow-hidden shadow-xs divide-y divide-zinc-200">
+          
+          {/* Table Header Column Bar */}
+          <div className="bg-zinc-50/70 border-b border-zinc-200 px-4 py-2 flex items-center justify-between text-[10px] uppercase font-bold text-zinc-500 tracking-wider">
+            <div className="grid grid-cols-12 gap-3 w-full">
+              <span className="col-span-5 sm:col-span-6">Produit / Initiative</span>
+              <span className="col-span-3 sm:col-span-2">Dates / Échéance</span>
+              <span className="hidden sm:inline sm:col-span-1">Type</span>
+              <span className="hidden sm:inline sm:col-span-1">Priorité</span>
+              <span className="col-span-4 sm:col-span-2 text-right">Statut</span>
             </div>
-          )}
+          </div>
+
+          {/* Product Groups */}
+          {PRODUCT_GROUPS.map((group) => {
+            const groupItems = groupedItems[group.key] || [];
+            const isCollapsed = collapsedGroups.has(group.key);
+            const defaultProd = group.products[0];
+
+            return (
+              <div key={group.key} className="divide-y divide-zinc-100">
+                {/* Product Header (28px height) */}
+                <div
+                  onClick={() => toggleGroupCollapse(group.key)}
+                  className="bg-zinc-50/60 hover:bg-zinc-100/70 border-y border-zinc-100/80 px-3 py-1.5 flex items-center justify-between cursor-pointer transition-colors select-none"
+                >
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-zinc-700 tracking-wider" style={MONO}>
+                    {isCollapsed ? <ChevronRight className="w-3.5 h-3.5 text-zinc-400" /> : <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />}
+                    <span>▼ {group.label}</span>
+                    <span className="text-[10px] font-normal text-zinc-400 font-mono">({groupItems.length} item{groupItems.length > 1 ? 's' : ''})</span>
+                  </div>
+
+                  <span className="text-[10px] text-zinc-400 font-mono" style={MONO}>
+                    {groupItems.filter((i) => i.status === 'Done').length}/{groupItems.length} Done
+                  </span>
+                </div>
+
+                {/* Group Rows (34px height) */}
+                {!isCollapsed && (
+                  <>
+                    {groupItems.length === 0 ? (
+                      <div className="px-6 py-3 text-xs text-zinc-400 italic">
+                        Aucune initiative active pour ce pôle.
+                      </div>
+                    ) : (
+                      groupItems.map((item) => {
+                        const statusConf = STATUS_CONFIG_MAP[item.status] || STATUS_CONFIG_MAP.Planned;
+                        const dateStr = item.start_date && item.end_date
+                          ? `${item.start_date} → ${item.end_date}`
+                          : item.end_date || 'Q3 2026';
+
+                        return (
+                          <div
+                            key={item.id}
+                            className="px-4 py-2 hover:bg-zinc-50/70 transition-colors flex items-center justify-between text-xs group h-9"
+                          >
+                            <div className="grid grid-cols-12 gap-3 w-full items-center">
+                              {/* 1. Titre */}
+                              <div className="col-span-5 sm:col-span-6 font-medium text-zinc-900 truncate hover:text-emerald-700 cursor-pointer flex items-center gap-2">
+                                <span className="truncate">{item.title}</span>
+                                {item.product && item.product !== group.label && (
+                                  <span className="hidden md:inline px-1.5 py-0.2 rounded text-[9.5px] font-mono bg-zinc-100 text-zinc-500 border border-zinc-200/60 shrink-0">
+                                    {item.product}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* 2. Dates */}
+                              <div className="col-span-3 sm:col-span-2 text-[11px] text-zinc-400 font-mono truncate" style={MONO}>
+                                {dateStr}
+                              </div>
+
+                              {/* 3. Type */}
+                              <div className="hidden sm:inline sm:col-span-1">
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-100 text-zinc-600 border border-zinc-200/60">
+                                  {item.item_type}
+                                </span>
+                              </div>
+
+                              {/* 4. Priorité */}
+                              <div className="hidden sm:inline sm:col-span-1">
+                                <span className="flex items-center gap-1 text-[11px] font-medium text-zinc-600">
+                                  <span
+                                    className={cn(
+                                      'w-1.5 h-1.5 rounded-full',
+                                      item.impact === 'High' ? 'bg-rose-500' : item.impact === 'Medium' ? 'bg-amber-500' : 'bg-zinc-400'
+                                    )}
+                                  />
+                                  <span>{item.impact}</span>
+                                </span>
+                              </div>
+
+                              {/* 5. Statut & Actions */}
+                              <div className="col-span-4 sm:col-span-2 flex items-center justify-end gap-2">
+                                <select
+                                  value={item.status}
+                                  onChange={(e) => handleStatusChange(item.id, e.target.value as MinervaRoadmapItem['status'])}
+                                  className={cn(
+                                    'h-5 px-2 rounded text-[10.5px] font-semibold border cursor-pointer appearance-none transition-colors text-center font-mono',
+                                    statusConf.bg,
+                                    statusConf.text,
+                                    statusConf.border
+                                  )}
+                                  style={MONO}
+                                >
+                                  <option value="Planned">○ Planned</option>
+                                  <option value="In Progress">◐ In Progress</option>
+                                  <option value="Done">● Done</option>
+                                </select>
+
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const confirmed = await confirmDialog({
+                                      title: 'Supprimer l’élément',
+                                      message: `Confirmez-vous la suppression de « ${item.title} » ?`,
+                                      confirmLabel: 'Supprimer',
+                                      variant: 'danger',
+                                    });
+                                    if (confirmed) {
+                                      setItems((prev) => prev.filter((i) => i.id !== item.id));
+                                      await deleteMinervaRoadmapItem(item.id);
+                                      toastSuccess('Supprimé', 'Initiative retirée.');
+                                    }
+                                  }}
+                                  className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-red-600 transition-opacity cursor-pointer"
+                                  title="Supprimer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+
+                    {/* Inline Add Row */}
+                    <div className="px-4 py-1.5 bg-zinc-50/40 flex items-center gap-2">
+                      <span className="text-zinc-400 text-xs font-mono">+</span>
+                      <input
+                        type="text"
+                        placeholder={`Ajouter un élément à [${group.label}]... (Appuyer sur Entrée)`}
+                        value={inlineInputs[group.key] || ''}
+                        onChange={(e) => setInlineInputs((prev) => ({ ...prev, [group.key]: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleInlineAdd(group.key, defaultProd);
+                          }
+                        }}
+                        className="flex-1 bg-transparent text-xs text-zinc-800 placeholder:text-zinc-400 focus:outline-none py-0.5"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+
         </div>
       )}
 
-      {/* ── Tab 2: Feature Requests Clients (Realtime Backlog) ── */}
+      {/* ── 4. CONTENU ONGLET 2 : Demandes Fonctionnalités Clients Monolithique ── */}
       {activeTab === 'feature_requests' && (
-        <div className="space-y-4">
-          {/* Filter Bar */}
-          <Card className="p-4">
-            <div className="flex flex-col md:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <div className="space-y-3">
+          
+          {/* Quick Filter Toolbar (36px) */}
+          <div className="p-2 bg-white border border-zinc-200 rounded-lg shadow-xs flex flex-wrap items-center justify-between gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Search */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <input
+                  ref={searchRef}
                   type="text"
+                  placeholder="Rechercher une demande, un tag... (/)"
                   value={frSearch}
                   onChange={(e) => setFrSearch(e.target.value)}
-                  placeholder="Rechercher une demande client..."
-                  className="w-full h-9 pl-9 pr-3 rounded-lg border border-mv-border bg-mv-cream-soft text-xs text-mv-ink focus:outline-none focus:border-mv-green"
+                  className="h-7 w-56 sm:w-64 pl-8 pr-2 text-xs border border-zinc-200 rounded-md bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-600"
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <select
-                  value={frRepoFilter}
-                  onChange={(e) => setFrRepoFilter(e.target.value)}
-                  className="h-9 px-3 rounded-lg border border-mv-border bg-mv-cream-soft text-xs font-semibold text-mv-ink focus:outline-none cursor-pointer"
-                >
-                  <option value="all">Tous les repos</option>
-                  <option value="Minerva-Flow">Minerva-Flow</option>
-                  <option value="The-Trequartista">The-Trequartista</option>
-                  <option value="Minerva-Voice-AI">Minerva Voice AI</option>
-                  <option value="Minerva-OS">Minerva-OS</option>
-                  <option value="API & Intégrations">API & Intégrations</option>
-                </select>
+              {/* Repo filter */}
+              <select
+                value={frRepoFilter}
+                onChange={(e) => setFrRepoFilter(e.target.value)}
+                className="h-7 px-2 text-xs border border-zinc-200 rounded-md bg-white text-zinc-700 focus:outline-none focus:border-emerald-600 cursor-pointer"
+              >
+                <option value="all">Tous les modules</option>
+                <option value="minerva-flow">Minerva-Flow</option>
+                <option value="trequartista-app">The-Trequartista</option>
+                <option value="framer-site">Framer Site</option>
+                <option value="meta-ads-engine">Ads Engine</option>
+              </select>
 
-                <select
-                  value={frStatusFilter}
-                  onChange={(e) => setFrStatusFilter(e.target.value)}
-                  className="h-9 px-3 rounded-lg border border-mv-border bg-mv-cream-soft text-xs font-semibold text-mv-ink focus:outline-none cursor-pointer"
-                >
-                  <option value="all">Tous les statuts</option>
-                  <option value="under_review">En revue</option>
-                  <option value="planned">Planifié</option>
-                  <option value="in_progress">En développement</option>
-                  <option value="testing">En test & QA</option>
-                  <option value="delivered">Livré</option>
-                  <option value="declined">Refusé</option>
-                </select>
-              </div>
+              {/* Status filter */}
+              <select
+                value={frStatusFilter}
+                onChange={(e) => setFrStatusFilter(e.target.value)}
+                className="h-7 px-2 text-xs border border-zinc-200 rounded-md bg-white text-zinc-700 focus:outline-none focus:border-emerald-600 cursor-pointer"
+              >
+                <option value="all">Tous les statuts</option>
+                <option value="under_review">En revue</option>
+                <option value="planned">Planifié</option>
+                <option value="in_progress">En développement</option>
+                <option value="delivered">Livré</option>
+                <option value="declined">Refusé</option>
+              </select>
             </div>
-          </Card>
 
-          {/* Requests List */}
-          {loadingRequests ? (
-            <div className="py-12 text-center text-xs text-mv-ink-soft">Chargement des demandes…</div>
-          ) : filteredFR.length === 0 ? (
-            <EmptyState
-              icon={Sparkles}
-              title="Aucune demande trouvée"
-              description="Aucune demande ne correspond aux filtres actuels."
-            />
-          ) : (
-            <div className="space-y-3">
-              {filteredFR.map((req) => (
-                <Card key={req.id} className="p-4 sm:p-5 hover:border-mv-green/40 transition-colors">
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                    <div className="space-y-1.5 flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-900 text-white font-mono" style={MONO}>
-                          {req.repo}
-                        </span>
-                        {req.client_name && (
-                          <span className="text-[11px] font-semibold text-mv-ink">
-                            {req.client_name}
-                          </span>
-                        )}
-                        <span className="text-[10px] text-mv-ink-faint">•</span>
-                        <span className="text-[11px] text-mv-ink-soft" style={MONO}>
-                          {new Date(req.created_at).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })}
-                        </span>
-                      </div>
-
-                      <h3 className="text-sm font-bold text-mv-ink">{req.title}</h3>
-                      <p className="text-xs text-mv-ink-soft leading-relaxed">{req.description}</p>
-
-                      {req.admin_notes && (
-                        <div className="mt-2 p-2 rounded-lg bg-mv-cream-soft border border-mv-border text-[11px] text-mv-ink">
-                          <span className="font-bold">Note admin : </span>
-                          <span>{req.admin_notes}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Status Changer (Realtime update trigger to client) */}
-                    <div className="flex sm:flex-col items-end gap-2 shrink-0">
-                      <div className="text-[10px] font-bold text-mv-ink-faint uppercase">
-                        Statut Client
-                      </div>
-                      <select
-                        value={req.status}
-                        onChange={(e) => updateFRStatus(req.id, e.target.value as FeatureRequestStatus)}
-                        className={cn(
-                          'px-2.5 py-1.5 rounded-lg border text-xs font-bold cursor-pointer focus:outline-none shadow-2xs',
-                          req.status === 'delivered'
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                            : req.status === 'in_progress'
-                            ? 'bg-blue-50 text-blue-800 border-blue-300'
-                            : req.status === 'planned'
-                            ? 'bg-indigo-50 text-indigo-800 border-indigo-300'
-                            : 'bg-amber-50 text-amber-800 border-amber-300'
-                        )}
-                      >
-                        <option value="under_review">En revue</option>
-                        <option value="planned">Planifié</option>
-                        <option value="in_progress">En développement</option>
-                        <option value="testing">En test & QA</option>
-                        <option value="delivered">Livré</option>
-                        <option value="declined">Refusé</option>
-                      </select>
-
-                      <button
-                        type="button"
-                        onClick={() => removeFR(req.id)}
-                        className="p-1 text-mv-ink-faint hover:text-red-600 transition-colors cursor-pointer"
-                        title="Supprimer la demande"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+            <div className="text-[11px] font-mono text-zinc-400" style={MONO}>
+              {filteredRequests.length} demande{filteredRequests.length > 1 ? 's' : ''} filtrée{filteredRequests.length > 1 ? 's' : ''}
             </div>
-          )}
+          </div>
+
+          {/* DataTable Monolithique des Demandes Clients */}
+          <div className="border border-zinc-200 rounded-lg bg-white overflow-hidden shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-zinc-100 bg-zinc-50/70 text-[10px] uppercase font-bold text-zinc-500 tracking-wider h-8">
+                    <th className="py-2 px-3 font-semibold">Produit / Tag</th>
+                    <th className="py-2 px-3 font-semibold">Demande Client / Description</th>
+                    <th className="py-2 px-3 font-semibold">Client Demandeur</th>
+                    <th className="py-2 px-3 font-semibold">Date</th>
+                    <th className="py-2 px-3 font-semibold">Note Interne / Admin</th>
+                    <th className="py-2 px-3 font-semibold text-center">Statut Client</th>
+                    <th className="py-2 px-3 font-semibold text-right">Actions</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-zinc-100 text-zinc-800">
+                  {filteredRequests.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 px-4 text-center text-zinc-400">
+                        Aucune demande client correspondant aux filtres.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredRequests.map((req) => {
+                      const repoName = req.repo || req.target_repo || 'Minerva-Flow';
+                      const clientName = req.client_name || 'Toitures Beauchemin Inc.';
+                      const dateStr = req.created_at
+                        ? new Date(req.created_at).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })
+                        : '21 Août';
+
+                      return (
+                        <tr key={req.id} className="hover:bg-zinc-50/80 transition-colors h-10 group">
+                          {/* 1. Produit / Tag */}
+                          <td className="py-2.5 px-3">
+                            <span
+                              className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-zinc-900 text-white whitespace-nowrap"
+                              style={MONO}
+                            >
+                              {repoName}
+                            </span>
+                          </td>
+
+                          {/* 2. Demande & Description */}
+                          <td className="py-2.5 px-3 max-w-sm">
+                            <div className="font-semibold text-zinc-900 truncate">{req.title}</div>
+                            <div className="text-[10.5px] text-zinc-400 truncate">{req.description}</div>
+                          </td>
+
+                          {/* 3. Client Demandeur */}
+                          <td className="py-2.5 px-3 font-mono text-[11px] text-zinc-600 hover:text-emerald-700 whitespace-nowrap cursor-pointer" style={MONO}>
+                            {clientName}
+                          </td>
+
+                          {/* 4. Date */}
+                          <td className="py-2.5 px-3 font-mono text-[11px] text-zinc-400 whitespace-nowrap" style={MONO}>
+                            {dateStr}
+                          </td>
+
+                          {/* 5. Note Interne */}
+                          <td className="py-2.5 px-3 max-w-[180px]">
+                            {req.admin_notes ? (
+                              <span className="text-[11px] font-mono text-zinc-500 italic truncate block" style={MONO} title={req.admin_notes}>
+                                {req.admin_notes}
+                              </span>
+                            ) : (
+                              <span className="text-[10.5px] text-zinc-300 italic">—</span>
+                            )}
+                          </td>
+
+                          {/* 6. Statut Client (Inline Selectable) */}
+                          <td className="py-2.5 px-3 text-center">
+                            <select
+                              value={req.status}
+                              onChange={(e) => updateFRStatus(req.id, e.target.value as FeatureRequestStatus)}
+                              className="h-5 px-1.5 rounded text-[10.5px] font-semibold border cursor-pointer appearance-none text-center transition-colors font-mono"
+                              style={MONO}
+                            >
+                              {CLIENT_STATUS_OPTIONS.map((opt) => (
+                                <option key={opt.status} value={opt.status}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+
+                          {/* 7. Actions */}
+                          <td className="py-2.5 px-3 text-right">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const confirmed = await confirmDialog({
+                                  title: 'Supprimer la demande',
+                                  message: `Confirmez-vous la suppression de « ${req.title} » ?`,
+                                  confirmLabel: 'Supprimer',
+                                  variant: 'danger',
+                                });
+                                if (confirmed) {
+                                  await removeFR(req.id);
+                                  toastSuccess('Supprimé', 'Demande client supprimée.');
+                                }
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-red-600 transition-opacity cursor-pointer"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Inline Add Quick Request */}
+            <form onSubmit={handleInlineAddClientRequest} className="border-t border-zinc-100 bg-zinc-50/40 p-2 flex items-center gap-2">
+              <span className="text-zinc-400 pl-2">
+                <Plus className="w-3.5 h-3.5" />
+              </span>
+              <input
+                type="text"
+                placeholder="Consigner une nouvelle demande client... [Appuyer sur Entrée]"
+                value={inlineClientRequest}
+                onChange={(e) => setInlineClientRequest(e.target.value)}
+                className="flex-1 bg-transparent text-xs text-zinc-800 placeholder:text-zinc-400 focus:outline-none py-1"
+              />
+              <button
+                type="submit"
+                disabled={!inlineClientRequest.trim()}
+                className="px-2.5 py-1 text-[11px] font-semibold bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 text-white rounded transition-colors cursor-pointer"
+              >
+                Ajouter la requête
+              </button>
+            </form>
+          </div>
+
         </div>
       )}
+
     </div>
   );
 }
