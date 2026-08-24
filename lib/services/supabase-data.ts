@@ -2322,17 +2322,75 @@ export interface AcquisitionFunnelStats {
   closeRatePct: number;
 }
 
-export async function fetchAcquisitionFunnelStats(): Promise<AcquisitionFunnelStats> {
-  const [intakeLeads, audits, proposals] = await Promise.all([
+export async function createTestIntakeLead(customData?: Partial<IntakeLead>): Promise<IntakeLead | null> {
+  const testCompanies = [
+    'Bistro Le Saint-Sauveur',
+    'Toitures Beauchemin Inc.',
+    'Garage Mécanique Express',
+    'Clinique Dentaire Nord',
+    'Café & Boulangerie Artisan',
+  ];
+  const testPhones = ['+15145550192', '+14505550183', '+14185550144', '+18195550129', '+15145550177'];
+  const testNames = ['Marc-Antoine', 'Isabelle', 'Jean-Philippe', 'Alexandre', 'Sophie'];
+
+  const randIdx = Math.floor(Math.random() * testCompanies.length);
+  const company = testCompanies[randIdx];
+  const firstName = testNames[randIdx];
+  const phone = testPhones[randIdx];
+
+  const payload = {
+    first_name: customData?.first_name || firstName,
+    phone: customData?.phone || phone,
+    email:
+      customData?.email ||
+      `${firstName.toLowerCase().replace(/[^a-z]/g, '')}@${company.toLowerCase().replace(/[^a-z]/g, '')}.qc.ca`,
+    status: customData?.status || 'step1_abandoned',
+    source: customData?.source || 'Framer Inbound Webhook',
+    sms_follow_up_status: customData?.sms_follow_up_status || 'sent',
+    qualification_data: customData?.qualification_data || {
+      company,
+      interest: 'Minerva-Flow 0% Commande Directe',
+      budget_estimate: '3 500 $ - 8 000 $',
+      urgency: 'Immédiat (sous 14 jours)',
+      ai_readiness_score: 8.5,
+    },
+  };
+
+  const { data, error } = await getSupabase().from('intake_leads').insert([payload]).select().single();
+  if (error || !data) {
+    console.error('[Supabase] Error creating test intake lead:', error);
+    return null;
+  }
+  return data as IntakeLead;
+}
+
+export async function fetchAcquisitionFunnelStats(
+  period?: '24h' | '7j' | '30j' | 'all'
+): Promise<AcquisitionFunnelStats> {
+  const [intakeLeadsAll, auditsAll, proposalsAll] = await Promise.all([
     fetchIntakeLeads(),
     fetchAudits(),
     fetchProposals(),
   ]);
 
+  const now = Date.now();
+  const filterByDate = <T extends { created_at?: string }>(items: T[]) => {
+    if (!period || period === 'all') return items;
+    const days = period === '24h' ? 1 : period === '7j' ? 7 : 30;
+    const cutoff = now - days * 86400000;
+    return items.filter((item) => (item.created_at ? new Date(item.created_at).getTime() >= cutoff : true));
+  };
+
+  const intakeLeads = filterByDate(intakeLeadsAll);
+  const audits = filterByDate(auditsAll);
+  const proposals = filterByDate(proposalsAll);
+
   const step1Abandoned = intakeLeads.filter((l) => l.status === 'step1_abandoned').length;
   const qualified = intakeLeads.filter((l) => l.status === 'qualified' || l.status === 'converted').length;
   const smsSent = intakeLeads.filter((l) => l.sms_follow_up_status === 'sent').length;
-  const auditsExtracted = audits.filter((a) => a.status === 'extracted' || a.status === 'reviewed' || a.status === 'proposal_sent').length;
+  const auditsExtracted = audits.filter(
+    (a) => a.status === 'extracted' || a.status === 'reviewed' || a.status === 'proposal_sent'
+  ).length;
   const proposalsSent = proposals.filter((p) => p.status === 'sent').length;
 
   return {
