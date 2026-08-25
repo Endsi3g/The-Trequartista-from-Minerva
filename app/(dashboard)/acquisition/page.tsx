@@ -198,6 +198,17 @@ export default function AcquisitionDashboardPage() {
 
         {/* Right Controls */}
         <div className="flex items-center gap-2.5">
+          {/* Link to Review Engine 297/mo */}
+          <Link href="/acquisition/review-engine">
+            <button
+              type="button"
+              className="h-7 px-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-md flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Review Engine ($297/mo)</span>
+            </button>
+          </Link>
+
           {/* Framer Webhook Active Tag */}
           <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-50 border border-emerald-200/80 text-[10.5px] font-mono text-emerald-700" style={MONO}>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
