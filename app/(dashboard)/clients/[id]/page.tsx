@@ -28,6 +28,11 @@ import {
   Pencil,
   UploadCloud,
   Loader2,
+  Receipt,
+  ShieldCheck,
+  Layers,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   fetchClients,
@@ -45,10 +50,12 @@ import { useToast } from '@/components/providers/ToastProvider';
 import { useAppPermissions } from '@/components/providers/AppPermissionsProvider';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useClientChatThread } from '@/hooks/use-client-chat-thread';
-import { Client, Lead, Project, ClientPaymentLink, Task, ContentPost, ClientMrrHistoryEntry } from '@/lib/types';
+import { Client, Lead, Project, ClientPaymentLink, Task, ContentPost, ClientMrrHistoryEntry, Invoice, ClientDeliverable } from '@/lib/types';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { CoPilotageTracker } from '@/components/clients/CoPilotageTracker';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
+import { fetchInvoices } from '@/lib/services/invoicing';
+import { fetchClientDeliverables, ensureClientPortalToken } from '@/lib/services/client-portal';
 
 const HEALTH_BADGE: Record<Client['health_status'], 'blue' | 'amber' | 'green'> = {
   Ready: 'blue',
@@ -86,9 +93,13 @@ export default function ClientDetailPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [contentPosts, setContentPosts] = useState<ContentPost[]>([]);
   const [mrrHistory, setMrrHistory] = useState<ClientMrrHistoryEntry[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [deliverables, setDeliverables] = useState<ClientDeliverable[]>([]);
+  const [portalToken, setPortalToken] = useState<string>('');
+  const [copiedToken, setCopiedToken] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const { toastSuccess, toastError } = useToast();
+  const { toastSuccess, toastError, toastInfo } = useToast();
   const { can } = useAppPermissions();
   const { id: currentUserId, fullName: currentUserName } = useCurrentUser();
   const { messages, send: sendReply } = useClientChatThread(clientId, currentUserId, currentUserName || 'Équipe Minerva', 'team');
@@ -149,13 +160,16 @@ export default function ClientDetailPage() {
       setContactEmail(targetClient.contact_email || '');
       setLogoUrl(targetClient.logo_url || '');
 
-      const [leadsData, projectsData, paymentLinksData, tasksData, postsData, mrrHistoryData] = await Promise.all([
+      const [leadsData, projectsData, paymentLinksData, tasksData, postsData, mrrHistoryData, invoicesData, deliverablesData, tokenStr] = await Promise.all([
         fetchLeads(targetClient.id),
         fetchProjects(),
         fetchClientPaymentLinks(),
         fetchTasks(),
         fetchContentPosts(),
         fetchClientMrrHistory(targetClient.id),
+        fetchInvoices({ clientId: targetClient.id }),
+        fetchClientDeliverables(targetClient.id),
+        ensureClientPortalToken(targetClient.id),
       ]);
 
       setLeads(leadsData);
@@ -164,6 +178,9 @@ export default function ClientDetailPage() {
       setTasks(tasksData.filter((t) => t.client_id === targetClient.id));
       setContentPosts(postsData.filter((p) => p.client_id === targetClient.id));
       setMrrHistory(mrrHistoryData);
+      setInvoices(invoicesData);
+      setDeliverables(deliverablesData);
+      setPortalToken(tokenStr);
       setLoading(false);
     }
     loadData();
@@ -361,6 +378,17 @@ export default function ClientDetailPage() {
               </span>
             )}
             <InviteClientButton clientId={client.id} />
+            <a
+              href={`/portal/${portalToken || client.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-mv-green/10 border border-mv-green/30 text-xs font-bold text-mv-green hover:bg-mv-green hover:text-white transition-colors cursor-pointer"
+              title="Ouvrir le portail client sécurisé"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Portail Client</span>
+              <ExternalLink className="w-3 h-3 opacity-70" />
+            </a>
             <Link href={`/clients/${client.id}/roi-tracker`}>
               <Button variant="primary" size="sm" icon={<ExternalLink className="w-3.5 h-3.5" />}>
                 Suivi ROI
@@ -582,6 +610,115 @@ export default function ClientDetailPage() {
           </div>
         )}
       </Card>
+
+      {/* Factures & Devis + Livrables */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Factures Client */}
+        <Card
+          header={
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Receipt className="w-4 h-4 text-mv-green" />
+                <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">Facturation & Devis</h3>
+              </div>
+              <Link href="/invoices">
+                <Button size="sm" variant="ghost" className="text-xs text-mv-green h-7 px-2">
+                  <span>Gérer tout</span>
+                  <ExternalLink className="w-3 h-3 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          }
+        >
+          {invoices.length === 0 ? (
+            <EmptyState
+              icon={Receipt}
+              title="Aucune facture"
+              description="Aucune facture ou devis n'a été émis pour ce client."
+              actionLabel="Créer une facture"
+              onAction={() => router.push('/invoices')}
+            />
+          ) : (
+            <div className="space-y-2">
+              {invoices.map((inv) => (
+                <Link
+                  key={inv.id}
+                  href={`/invoices/${inv.id}`}
+                  className="flex items-center justify-between p-3 rounded-lg bg-mv-cream-soft border border-mv-border hover:border-mv-green/50 transition-colors text-xs"
+                >
+                  <div>
+                    <div className="font-bold text-mv-ink font-mono">{inv.invoice_number}</div>
+                    <div className="text-mv-ink-soft mt-0.5">
+                      ${Number(inv.total_cad).toLocaleString('fr-CA', { minimumFractionDigits: 2 })} {inv.currency}
+                    </div>
+                  </div>
+                  <Badge variant={inv.status === 'paid' ? 'green' : inv.status === 'sent' ? 'blue' : 'neutral'}>
+                    {inv.status === 'paid' ? 'Payé' : inv.status === 'sent' ? 'Envoyé' : inv.status}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        {/* Livrables & Approbation */}
+        <Card
+          header={
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-mv-green" />
+                <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">Livrables du Portail</h3>
+              </div>
+              <a
+                href={`/portal/${portalToken || client.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-mv-green font-semibold flex items-center gap-1 hover:underline"
+              >
+                <span>Vue Client</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          }
+        >
+          {deliverables.length === 0 ? (
+            <EmptyState
+              icon={Layers}
+              title="Aucun livrable"
+              description="Aucun fichier de production en attente de validation."
+            />
+          ) : (
+            <div className="space-y-2">
+              {deliverables.map((del) => (
+                <div
+                  key={del.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-mv-cream-soft border border-mv-border text-xs"
+                >
+                  <div className="min-w-0 pr-2">
+                    <div className="font-bold text-mv-ink truncate">{del.title}</div>
+                    <div className="text-mv-ink-faint text-[10.5px] capitalize mt-0.5">{del.type}</div>
+                  </div>
+                  <Badge
+                    variant={
+                      del.status === 'approved'
+                        ? 'green'
+                        : del.status === 'revision_requested'
+                        ? 'amber'
+                        : 'blue'
+                    }
+                  >
+                    {del.status === 'approved'
+                      ? 'Approuvé'
+                      : del.status === 'revision_requested'
+                      ? 'Retouches'
+                      : 'En attente'}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
 
       {/* Leads + Tasks */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

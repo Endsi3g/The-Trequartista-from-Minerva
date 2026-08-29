@@ -4,6 +4,124 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-28 (v2.11.0) — Console RevOps, Équilibrage de Charge & Moteur de Commissions Commerciales
+
+Mise en production de la suite complète **RevOps, Gestion de Capacité d'Équipe & Commissions Hybrides** :
+
+- **Console d'Équilibrage de Charge & Capacité (`/team/workload`)** :
+  - Supervision en temps réel de la charge hebdomadaire (base de 35h/semaine par collaborateur).
+  - Jauges de charge visuelles avec alertes de surcharge (>85%) et détection de sous-utilisation (<50%).
+  - Modal de **réattribution de tâches en 1 clic** pour délester les collaborateurs en surcapacité.
+- **Moteur de Commissions Commerciales RevOps** :
+  - Calcul hybride : **10% sur le Setup Studio** signé + **5% récurrent sur le MRR SaaS Flow**.
+  - **Multiplicateur Quota (1.25x)** automatique en cas de dépassement de l'objectif mensuel (>10 000 $ CAD).
+  - Tableau de suivi des commissions dues avec approbation et versement en 1 clic.
+- **Attribution Automatique Intelligente des Livrables** :
+  - Routage des tâches de propositions signées vers les spécialistes (*Production Vidéo*, *Web Framer*, *Acquisition Ads*, *Opérations POS*) ayant la plus faible charge.
+- **Base de Données & Routes API** :
+  - Migration `20260828000004_revops_and_team_commissions.sql` (`team_commissions`, `team_capacity_profiles`).
+  - Routes d'API `/api/team/workload` et `/api/team/commissions`.
+
+---
+
+## 2026-08-28 (v2.10.0) — Générateur de Propositions Commerciales IA & Signature Électronique avec Acompte Stripe 50%
+
+Mise en production de la suite complète **Propositions Commerciales & Signature Électronique** :
+
+- **Studio de Propositions Commerciales (`/proposals`)** :
+  - Dashboard de pilotage avec 4 KPIs de closing (*Pipeline Total TTC*, *Acomptes Encaissés*, *En Attente de Signature*, *Panier Moyen Deal*).
+  - Modal de création assistée avec modèles d'offres pré-configurés (*Pack Flow + Reels 4K*, *Site Framer + Google Ads 5km*).
+  - Constructeur de livrables sur mesure avec calcul automatique des taxes québécoises (TPS 5% + TVQ 9.975%) et de l'acompte 50%.
+  - Génération de liens sécurisés de signature publique (`prop_...`).
+- **Page Publique de Proposition & Signature Électronique (`/proposals/[token]`)** :
+  - Document commercial interactif haute fidélité (Détail des 3 phases de déploiement, tableau des livrables et tableau fiscal).
+  - **Pad de Signature Numérique HTML5 Canvas** tactile/souris avec horodatage certifié et enregistrement d'IP légal.
+  - Bouton de validation & règlement immédiat de l'acompte 50% via Stripe.
+  - Téléchargement du reçu PDF et confirmation instantanée.
+- **Conversion & Automatisation E2E** :
+  - Dès la signature : passage du statut à `signed`, création automatique de la facture d'acompte (`INV-2026-xxx`) dans `/invoices`, conversion du lead CRM en client gagné et provisionnement des livrables sur le portail client.
+- **Base de Données & Routes API** :
+  - Migration `20260828000003_proposals_and_esignature.sql`.
+  - Routes d'API `/api/proposals` et `/api/proposals/[token]`.
+
+---
+
+## 2026-08-28 (v2.9.0) — Synergie Minerva Flow SaaS & Marketplace Studio Agence
+
+Mise en production de la suite complète d'interconnexion entre le SaaS **Minerva Flow** (`minerva-flow.vercel.app`), la vitrine Framer (`minervaflow.framer.website`) et l'agence **Minerva Studio** :
+
+- **Console de Supervision SaaS Minerva Flow (`/flow`)** :
+  - Télémétrie en temps réel des restaurants québécois connectés (Café Saint-Henri, Pizzeria Napolitana, Bistro Laurier, Boulangerie Épi Doré).
+  - 4 métriques continues : *CA Traité 30j ($)*, *Commissions Économisées vs UberEats ($)*, *MRR SaaS Actif*, *Opportunités Studio à pitcher*.
+  - Matrice intelligente de détection des opportunités d'upsell pour l'agence (Reels 4K, Refonte Framer, Ads 5km).
+  - Simulateur de pertes de commissions intégré pour rendez-vous prospects.
+- **Diagnostic Restaurant & Simulateur Public (`/audit/resto/[token]`)** :
+  - Page interactive d'audit accessible depuis le site Framer `minervaflow.framer.website` ou par lien direct.
+  - Calculateur temps réel des pertes financières sur UberEats, DoorDash et Skip (25-30% de commission).
+  - Comparatif chiffré des économies nettes annuelles avec Minerva Flow (149 $/mois fixe).
+  - Formulaire de réservation rapide avec création automatique du lead dans le CRM Trequartista.
+- **Marketplace & Packs Studio dans le Portail Client (`/portal/[token]`)** :
+  - Nouvel onglet **"Studio & Services"** dans l'extranet client.
+  - 5 offres packagées de l'agence disponibles à la commande en 1-clic (*Pack 8 Reels 4K*, *Site Framer & Menu QR*, *Gestion Publicités Ads 5 km*, *Configuration Flow POS*, *Identité Visuelle*).
+  - Génération automatique de la facture correspondante et du lien de paiement Stripe.
+- **Base de Données & Routes d'API** :
+  - Migration `20260828000002_minerva_flow_and_studio.sql` (`minerva_flow_restaurants`, `studio_service_packages`, `studio_service_orders`, `restaurant_audits`).
+  - Routes d'API `/api/flow/telemetry`, `/api/flow/audit`, `/api/studio/packages`, `/api/studio/orders`.
+
+---
+
+## 2026-08-28 (v2.8.0) — Portail Client Extranet Sécurisé & Moteur de Facturation, Devis & Cashflow
+
+Mise en production de la suite complète **Portail Client Extranet & Gestion Financière / Facturation** :
+
+- **Portail Client Extranet (`/portal/[token]`)** :
+  - Accès sécurisé sans mot de passe via jeton unique (`portal_token`) ou compte client (`role: 'client'`).
+  - **Vue d'Ensemble & Progrès** : Statut d'avancement du projet (%), jalons interactifs, protocole d'assurance qualité à 20 points de contrôle.
+  - **Centre de Validation des Livrables** : Cartes visuelles avec médias, boutons d'approbation 1-clic et modal de demande d'ajustements avec retours horodatés.
+  - **Factures & Règlements en Ligne** : Consultation des factures et devis, aperçu reçu PDF et bouton de paiement sécurisé direct Stripe.
+  - **Performance ROI en Direct** : Suivi du CA attribué, des budgets publicitaires optimisés, du volume de leads et du ROAS global.
+  - **Assistance & Requêtes Prioritaires** : Formulaire de demande directe avec notifications de traitement.
+- **Hub Facturation, Devis & Prévisions Financières (`/invoices`)** :
+  - **Tableau de Bord Financier** : 4 métriques directes (*CA Total Facturé*, *Encaissements Réalisés*, *En Attente / Impayés*, *Retainers & MRR*).
+  - **Gestionnaire Devis & Factures** : Création modal rapide avec ajout de lignes dynamiques, calcul automatique des taxes québécoises (TPS 5% + TVQ 9.975%) et support multi-devises (CAD, USD, EUR).
+  - **Conversion 1-Clic** : Transformation instantanée d'un devis accepté en facture officielle avec mise à jour du statut.
+  - **Simulation de Cashflow** : Projections des entrées de trésorerie sur 30/60 jours selon les échéances clients.
+  - **Aperçu & Impression PDF (`/invoices/[id]`)** : Mise en page prête à imprimer aux couleurs de l'agence Minerva avec QR code et coordonnées de virement.
+- **Intégrations Fiche Client & Navigation** :
+  - Nouvel onglet **"Facturation & Devis"** dans la section CRM de la barre latérale (`components/app-sidebar.tsx`).
+  - Ajout des cartes de factures, livrables et bouton « Portail Client » dans la fiche détaillée (`/clients/[id]`).
+- **Base de Données & Schéma Supabase** :
+  - Migration `20260828000000_invoicing_and_client_portal.sql` créant `public.invoices`, `public.invoice_items`, `public.client_deliverables` et `public.client_portal_messages` avec politiques RLS et index dédiés.
+
+---
+
+## 2026-08-27 (v2.7.0) — Intégration Complète Plane (Self-Hosted / Cloud, MCP & Webhooks)
+
+Mise en production de l'intégration complète avec **Plane** (gestionnaire de projet open-source / alternative à Linear & Jira) :
+
+- **Hub Plane dédié (`/plane`)** :
+  - Supervision en direct de l'instance (Self-Hosted / Cloud), latence et état de santé de l'API.
+  - 4 cartes de télémétrie : *Tickets Plane Totaux*, *Tâches Synchronisées*, *Cycles / Sprints Actifs*, *Modules & Epics*.
+  - Visualisation des cycles et sprints en cours avec barres de progression et échéances.
+  - Explorateur de tickets interactif avec filtres d'état/priorité et liens profonds vers l'interface Plane.
+  - Journal d'audit et télémétrie en temps réel des synchronisations (`plane_sync_logs`).
+  - Déclencheur manuel « Synchroniser avec Plane » avec notifications toast.
+- **Service Client & Synchronisation (`lib/services/plane.ts`)** :
+  - Client REST résilient avec dégradation gracieuse lorsque non configuré.
+  - Mapping bidirectionnel des statuts et priorités entre Minerva et Plane.
+  - Poussée et synchronisation unitaire ou en masse des tâches.
+- **Passerelle MCP (/api/mcp)** :
+  - 5 nouveaux outils MCP pour agents IA : `minerva_plane_list_issues`, `minerva_plane_create_issue`, `minerva_plane_update_issue`, `minerva_plane_list_cycles`, `minerva_plane_sync_task`.
+  - Configuration du serveur MCP officiel Plane dans `.mcp.json`.
+- **Webhooks Bidirectionnels (`/api/webhooks/plane`)** :
+  - Réception sécurisée des événements Plane (`issue.create`, `issue.update`, `issue.delete`) avec validation `timingSafeEqual`.
+- **Badges UI & Navigation** :
+  - Badges d'identifiant Plane (`OPS-XX`) intégrés sur le Kanban et le tableau de `/tasks`.
+  - Carte d'intégration Plane dans `/integrations` et nouvel onglet dans la barre latérale (`components/app-sidebar.tsx`).
+- **Base de Données** : Migration `20260827000000_plane_integration.sql` pour colonnes Plane sur `public.tasks` et table `public.plane_sync_logs`.
+
+---
+
 ## 2026-08-24 (v2.6.0) — Refonte Totale Haute Densité Linear / Adaline & Workspace Documentaire
 
 Mise en production de la suite de télémétrie de croissance et de productivité haute densité style **Linear / Adaline / Raycast / Notion** :

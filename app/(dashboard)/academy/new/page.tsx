@@ -104,13 +104,14 @@ export default function NewSopPage() {
                   className="w-full px-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors cursor-pointer"
                 >
                   <option value="Onboarding">Onboarding</option>
-                  <option value="Rôles & Rémunération">Rôles &amp; Rémunération</option>
+                  <option value="IA & Ingénierie">IA &amp; Ingénierie</option>
+                  <option value="Workflows IA">Workflows IA</option>
                   <option value="Outils & Systèmes">Outils &amp; Systèmes</option>
+                  <option value="Rôles & Rémunération">Rôles &amp; Rémunération</option>
                   <option value="Ventes & Prospection">Ventes &amp; Prospection</option>
                   <option value="Gestion de compte">Gestion de compte</option>
                   <option value="Support & QA">Support &amp; QA</option>
                   <option value="Design Framer">Design Framer</option>
-                  <option value="Workflows IA">Workflows IA</option>
                   <option value="Campagnes Ads">Campagnes Ads</option>
                   <option value="Loi 25 & Compliance">Loi 25 &amp; Compliance</option>
                   <option value="Stratégie & Offre">Stratégie &amp; Offre</option>

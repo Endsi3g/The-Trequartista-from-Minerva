@@ -3,6 +3,15 @@
     "shadcn": {
       "command": "npx",
       "args": ["shadcn@latest", "mcp"]
+    },
+    "plane": {
+      "command": "npx",
+      "args": ["-y", "@makeplane/plane-mcp-server"],
+      "env": {
+        "PLANE_API_HOST": "https://plane.minerva.agency",
+        "PLANE_API_KEY": "${PLANE_API_KEY}",
+        "PLANE_WORKSPACE_SLUG": "minerva"
+      }
     }
   }
 }

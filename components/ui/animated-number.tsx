@@ -12,6 +12,7 @@ interface AnimatedNumberProps {
   stiffness?: number
   damping?: number
   precision?: number
+  formatDecimals?: number
   format?: (value: number) => string
   onAnimationStart?: () => void
   onAnimationComplete?: () => void
@@ -23,13 +24,15 @@ export function AnimatedNumber({
   stiffness = 75,
   damping = 15,
   precision = 0,
+  formatDecimals,
   format = (num) => num.toLocaleString(),
   onAnimationStart,
   onAnimationComplete,
 }: AnimatedNumberProps) {
+  const effPrecision = formatDecimals !== undefined ? formatDecimals : precision
   const spring = useSpring(value, { mass, stiffness, damping })
   const display: MotionValue<string> = useTransform(spring, (current) =>
-    format(parseFloat(current.toFixed(precision)))
+    format(parseFloat(current.toFixed(effPrecision)))
   )
 
   useEffect(() => {

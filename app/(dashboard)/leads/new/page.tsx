@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/ui/user-avatar';
-import { ArrowLeft, Building2, Mail, User as UserIcon, DollarSign, Sparkles } from 'lucide-react';
+import { ArrowLeft, Building2, Mail, Phone, User as UserIcon, DollarSign, Sparkles } from 'lucide-react';
 import { addLead } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
 
@@ -23,57 +23,69 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export default function NewLeadPage() {
   const router = useRouter();
-  const { toastError } = useToast();
+  const { toastSuccess, toastError } = useToast();
   const [saving, setSaving] = useState(false);
 
   const [newCompanyName, setNewCompanyName] = useState('');
   const [newContactName, setNewContactName] = useState('');
   const [newContactEmail, setNewContactEmail] = useState('');
+  const [newContactPhone, setNewContactPhone] = useState('');
   const [newService, setNewService] = useState('Gestion Réseaux & Reels');
   const [newMrr, setNewMrr] = useState<number>(1500);
   const [newOneTime, setNewOneTime] = useState<number>(500);
 
   const handleCreateLead = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newContactEmail.trim()) return;
-    setSaving(true);
-
-    const lead = await addLead({
-      client_name: newCompanyName || newContactName,
-      company_name: newCompanyName,
-      contact_name: newContactName || newContactEmail.split('@')[0],
-      contact_email: newContactEmail.trim(),
-      service_requested: newService,
-      score_grade: 'A',
-      status: 'Nouveau',
-      stage: 'nouveau',
-      mrr_value: newMrr,
-      one_time_value: newOneTime,
-      probability_pct: 10,
-      notes: [],
-    });
-
-    setSaving(false);
-
-    if (!lead) {
-      toastError('Erreur', 'Impossible de créer ce lead. Réessayez.');
+    if (!newContactEmail.trim() && !newContactPhone.trim() && !newCompanyName.trim()) {
+      toastError('Champs requis', 'Veuillez renseigner au moins un nom d’entreprise ou un contact.');
       return;
     }
+    setSaving(true);
 
-    // Fire-and-forget: notify the team's subscribed devices. A missing
-    // VAPID config or a failed send should never block lead creation.
-    fetch('/api/push/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: 'Nouveau lead',
-        body: `${lead.company_name || lead.contact_name} vient d'entrer dans le pipeline.`,
-        url: '/leads',
-        preferenceKey: 'new_leads_enabled',
-      }),
-    }).catch(() => {});
+    try {
+      const lead = await addLead({
+        client_name: newCompanyName || newContactName || 'Nouveau lead',
+        company_name: newCompanyName || newContactName,
+        contact_name: newContactName || newCompanyName || (newContactEmail ? newContactEmail.split('@')[0] : 'Contact'),
+        contact_email: newContactEmail.trim(),
+        contact_phone: newContactPhone.trim(),
+        service_requested: newService,
+        score_grade: 'A',
+        status: 'Nouveau',
+        stage: 'nouveau',
+        mrr_value: newMrr,
+        one_time_value: newOneTime,
+        probability_pct: 20,
+        notes: [],
+      });
 
-    router.push('/leads');
+      setSaving(false);
+
+      if (!lead) {
+        toastError('Erreur', 'Impossible de créer ce lead. Réessayez.');
+        return;
+      }
+
+      toastSuccess('Lead créé avec succès', `${lead.company_name || lead.contact_name} a été ajouté au pipeline.`);
+
+      // Fire-and-forget push notification
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Nouveau lead',
+          body: `${lead.company_name || lead.contact_name} vient d'entrer dans le pipeline.`,
+          url: '/leads',
+          preferenceKey: 'new_leads_enabled',
+        }),
+      }).catch(() => {});
+
+      router.push('/leads');
+    } catch (err) {
+      setSaving(false);
+      console.error('[NewLead] Error creating lead:', err);
+      toastError('Erreur', 'Une erreur est survenue lors de la création.');
+    }
   };
 
   return (
@@ -125,13 +137,25 @@ export default function NewLeadPage() {
                   <Mail className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
-                    required
                     placeholder="jean@apex.com"
                     value={newContactEmail}
                     onChange={(e) => setNewContactEmail(e.target.value)}
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors"
                   />
                 </div>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-mv-ink mb-1.5">Téléphone (optionnel)</label>
+              <div className="relative">
+                <Phone className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="tel"
+                  placeholder="+1 (514) 555-0199"
+                  value={newContactPhone}
+                  onChange={(e) => setNewContactPhone(e.target.value)}
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors"
+                />
               </div>
             </div>
           </div>

@@ -775,3 +775,384 @@ UPDATE public.profiles
 SET role = 'admin', approved = TRUE
 WHERE id = (SELECT id FROM auth.users WHERE lower(email) = lower('kbelceus776@gmail.com'));
 
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- SOURCE: supabase/migrations/20260827000000_plane_integration.sql
+-- ═══════════════════════════════════════════════════════════════════════
+ALTER TABLE IF EXISTS public.tasks
+    ADD COLUMN IF NOT EXISTS plane_issue_id TEXT,
+    ADD COLUMN IF NOT EXISTS plane_sequence_id INT,
+    ADD COLUMN IF NOT EXISTS plane_state_id TEXT,
+    ADD COLUMN IF NOT EXISTS plane_priority TEXT,
+    ADD COLUMN IF NOT EXISTS plane_synced_at TIMESTAMPTZ;
+
+CREATE TABLE IF NOT EXISTS public.plane_sync_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_type TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    payload JSONB,
+    status TEXT NOT NULL DEFAULT 'success',
+    error_message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tasks_plane_issue_id ON public.tasks(plane_issue_id);
+CREATE INDEX IF NOT EXISTS idx_plane_sync_logs_created_at ON public.plane_sync_logs(created_at DESC);
+
+ALTER TABLE public.plane_sync_logs ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'plane_sync_logs' AND policyname = 'Allow admin read plane_sync_logs'
+    ) THEN
+        CREATE POLICY "Allow admin read plane_sync_logs" ON public.plane_sync_logs
+            FOR SELECT TO authenticated USING (true);
+    END IF;
+END $$;
+
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- SOURCE: supabase/migrations/20260828000000_invoicing_and_client_portal.sql
+-- ═══════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS public.invoices (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    invoice_number TEXT NOT NULL UNIQUE,
+    type TEXT NOT NULL DEFAULT 'invoice' CHECK (type IN ('invoice', 'quote', 'retainer', 'credit_note')),
+    client_id UUID NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL,
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'paid', 'overdue', 'cancelled')),
+    currency TEXT NOT NULL DEFAULT 'CAD' CHECK (currency IN ('CAD', 'USD', 'EUR')),
+    issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    due_date DATE NOT NULL DEFAULT (CURRENT_DATE + INTERVAL '30 days'),
+    paid_at TIMESTAMPTZ,
+    subtotal_cad NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    tax_tps_cad NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    tax_tvq_cad NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    total_cad NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    stripe_payment_link_url TEXT,
+    notes TEXT,
+    terms TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.invoice_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    invoice_id UUID NOT NULL REFERENCES public.invoices(id) ON DELETE CASCADE,
+    description TEXT NOT NULL,
+    quantity NUMERIC(8,2) NOT NULL DEFAULT 1.00,
+    unit_price_cad NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    amount_cad NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.client_deliverables (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    asset_url TEXT NOT NULL,
+    preview_image_url TEXT,
+    type TEXT NOT NULL DEFAULT 'document' CHECK (type IN ('design', 'video', 'document', 'report', 'code')),
+    status TEXT NOT NULL DEFAULT 'pending_review' CHECK (status IN ('draft', 'pending_review', 'approved', 'revision_requested')),
+    feedback_notes TEXT,
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.client_portal_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
+    author_name TEXT NOT NULL,
+    author_email TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    message TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'unread' CHECK (status IN ('unread', 'read', 'in_progress', 'resolved')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_invoices_client_id ON public.invoices(client_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON public.invoices(status);
+CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice_id ON public.invoice_items(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_client_deliverables_client_id ON public.client_deliverables(client_id);
+CREATE INDEX IF NOT EXISTS idx_client_portal_messages_client_id ON public.client_portal_messages(client_id);
+
+ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.client_deliverables ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.client_portal_messages ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'invoices' AND policyname = 'invoices_authenticated_full_access') THEN
+        CREATE POLICY "invoices_authenticated_full_access" ON public.invoices FOR ALL TO authenticated USING (true) WITH CHECK (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'invoice_items' AND policyname = 'invoice_items_authenticated_full_access') THEN
+        CREATE POLICY "invoice_items_authenticated_full_access" ON public.invoice_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'client_deliverables' AND policyname = 'deliverables_authenticated_full_access') THEN
+        CREATE POLICY "deliverables_authenticated_full_access" ON public.client_deliverables FOR ALL TO authenticated USING (true) WITH CHECK (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'client_portal_messages' AND policyname = 'portal_messages_authenticated_full_access') THEN
+        CREATE POLICY "portal_messages_authenticated_full_access" ON public.client_portal_messages FOR ALL TO authenticated USING (true) WITH CHECK (true);
+    END IF;
+END $$;
+
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- SOURCE: supabase/migrations/20260828000001_leads_columns_sync.sql
+-- ═══════════════════════════════════════════════════════════════════════
+ALTER TABLE IF EXISTS public.leads
+    ADD COLUMN IF NOT EXISTS company_name TEXT,
+    ADD COLUMN IF NOT EXISTS contact_name TEXT,
+    ADD COLUMN IF NOT EXISTS email TEXT,
+    ADD COLUMN IF NOT EXISTS phone TEXT,
+    ADD COLUMN IF NOT EXISTS service_requested TEXT,
+    ADD COLUMN IF NOT EXISTS estimated_value_cad NUMERIC(10,2) DEFAULT 0.00,
+    ADD COLUMN IF NOT EXISTS stage TEXT DEFAULT 'new',
+    ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'open',
+    ADD COLUMN IF NOT EXISTS probability_pct INT DEFAULT 20,
+    ADD COLUMN IF NOT EXISTS score_grade TEXT DEFAULT 'A',
+    ADD COLUMN IF NOT EXISTS notes TEXT,
+    ADD COLUMN IF NOT EXISTS assigned_to UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS converted_client_id UUID REFERENCES public.clients(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS last_contacted_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW(),
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'leads' AND policyname = 'Allow select on leads for authenticated') THEN
+        CREATE POLICY "Allow select on leads for authenticated" ON public.leads FOR SELECT TO authenticated USING (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'leads' AND policyname = 'Allow insert on leads for authenticated') THEN
+        CREATE POLICY "Allow insert on leads for authenticated" ON public.leads FOR INSERT TO authenticated WITH CHECK (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'leads' AND policyname = 'Allow update on leads for authenticated') THEN
+        CREATE POLICY "Allow update on leads for authenticated" ON public.leads FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+    END IF;
+END $$;
+
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- SOURCE: supabase/migrations/20260828000002_minerva_flow_and_studio.sql
+-- ═══════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS public.minerva_flow_restaurants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'restaurant' CHECK (type IN ('restaurant', 'cafe', 'bistro', 'bar', 'boulangerie', 'fast_casual')),
+    address TEXT,
+    city TEXT DEFAULT 'Montréal',
+    owner_name TEXT NOT NULL,
+    owner_email TEXT,
+    owner_phone TEXT,
+    mrr_plan_cad NUMERIC(10,2) NOT NULL DEFAULT 149.00,
+    orders_count_30d INT NOT NULL DEFAULT 0,
+    revenue_volume_30d NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    commission_saved_30d NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    health_score INT NOT NULL DEFAULT 95 CHECK (health_score BETWEEN 0 AND 100),
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'trial', 'churn_risk', 'churned')),
+    client_id UUID REFERENCES public.clients(id) ON DELETE SET NULL,
+    pos_connected BOOLEAN DEFAULT TRUE,
+    qr_menu_active BOOLEAN DEFAULT TRUE,
+    has_studio_upsell BOOLEAN DEFAULT FALSE,
+    studio_upsell_notes TEXT,
+    last_active_at TIMESTAMPTZ DEFAULT NOW(),
+    connected_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.studio_service_packages (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    category TEXT NOT NULL CHECK (category IN ('production_video', 'web_framer', 'acquisition_ads', 'operations_pos', 'branding')),
+    description TEXT NOT NULL,
+    price_cad NUMERIC(10,2) NOT NULL,
+    recurring BOOLEAN DEFAULT FALSE,
+    deliverable_days INT NOT NULL DEFAULT 7,
+    features_list JSONB NOT NULL DEFAULT '[]',
+    is_popular BOOLEAN DEFAULT FALSE,
+    icon_name TEXT DEFAULT 'Sparkles',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.studio_service_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
+    package_id TEXT NOT NULL REFERENCES public.studio_service_packages(id) ON DELETE RESTRICT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'in_production', 'delivered', 'cancelled')),
+    total_cad NUMERIC(10,2) NOT NULL,
+    stripe_payment_link_url TEXT,
+    notes TEXT,
+    ordered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    delivered_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.restaurant_audits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    restaurant_name TEXT NOT NULL,
+    contact_name TEXT NOT NULL,
+    email TEXT,
+    phone TEXT,
+    monthly_ubereats_volume_cad NUMERIC(10,2) NOT NULL DEFAULT 15000.00,
+    commission_rate_pct NUMERIC(5,2) NOT NULL DEFAULT 28.00,
+    annual_loss_cad NUMERIC(10,2) NOT NULL DEFAULT 50400.00,
+    projected_flow_savings_cad NUMERIC(10,2) NOT NULL DEFAULT 42000.00,
+    gmb_rating NUMERIC(3,1) DEFAULT 4.2,
+    website_url TEXT,
+    audit_token TEXT NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'viewed', 'contacted', 'converted')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_flow_restaurants_status ON public.minerva_flow_restaurants(status);
+CREATE INDEX IF NOT EXISTS idx_flow_restaurants_client_id ON public.minerva_flow_restaurants(client_id);
+CREATE INDEX IF NOT EXISTS idx_studio_orders_client_id ON public.studio_service_orders(client_id);
+CREATE INDEX IF NOT EXISTS idx_restaurant_audits_token ON public.restaurant_audits(audit_token);
+
+ALTER TABLE public.minerva_flow_restaurants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.studio_service_packages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.studio_service_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.restaurant_audits ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'minerva_flow_restaurants' AND policyname = 'flow_restaurants_auth_all') THEN
+        CREATE POLICY "flow_restaurants_auth_all" ON public.minerva_flow_restaurants FOR ALL TO authenticated USING (true) WITH CHECK (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'studio_service_packages' AND policyname = 'studio_packages_read_all') THEN
+        CREATE POLICY "studio_packages_read_all" ON public.studio_service_packages FOR SELECT TO authenticated, anon USING (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'studio_service_orders' AND policyname = 'studio_orders_auth_all') THEN
+        CREATE POLICY "studio_orders_auth_all" ON public.studio_service_orders FOR ALL TO authenticated USING (true) WITH CHECK (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'restaurant_audits' AND policyname = 'restaurant_audits_all') THEN
+        CREATE POLICY "restaurant_audits_all" ON public.restaurant_audits FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
+    END IF;
+END $$;
+
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- SOURCE: supabase/migrations/20260828000003_proposals_and_esignature.sql
+-- ═══════════════════════════════════════════════════════════════════════
+ALTER TABLE IF EXISTS public.proposals
+    ADD COLUMN IF NOT EXISTS proposal_number TEXT UNIQUE,
+    ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT 'Proposition Commerciale Minerva',
+    ADD COLUMN IF NOT EXISTS client_name TEXT NOT NULL DEFAULT 'Client',
+    ADD COLUMN IF NOT EXISTS client_email TEXT,
+    ADD COLUMN IF NOT EXISTS client_company TEXT,
+    ADD COLUMN IF NOT EXISTS token TEXT UNIQUE,
+    ADD COLUMN IF NOT EXISTS lead_id UUID REFERENCES public.leads(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS scope_phases JSONB NOT NULL DEFAULT '[]',
+    ADD COLUMN IF NOT EXISTS deliverables JSONB NOT NULL DEFAULT '[]',
+    ADD COLUMN IF NOT EXISTS subtotal_setup_cad NUMERIC(10,2) DEFAULT 0.00,
+    ADD COLUMN IF NOT EXISTS tax_tps_cad NUMERIC(10,2) DEFAULT 0.00,
+    ADD COLUMN IF NOT EXISTS tax_tvq_cad NUMERIC(10,2) DEFAULT 0.00,
+    ADD COLUMN IF NOT EXISTS total_setup_cad NUMERIC(10,2) DEFAULT 0.00,
+    ADD COLUMN IF NOT EXISTS total_monthly_cad NUMERIC(10,2) DEFAULT 0.00,
+    ADD COLUMN IF NOT EXISTS deposit_pct NUMERIC(5,2) DEFAULT 50.00,
+    ADD COLUMN IF NOT EXISTS deposit_amount_cad NUMERIC(10,2) DEFAULT 0.00,
+    ADD COLUMN IF NOT EXISTS deposit_paid BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS deposit_stripe_payment_link TEXT,
+    ADD COLUMN IF NOT EXISTS signature_svg_or_base64 TEXT,
+    ADD COLUMN IF NOT EXISTS signer_name TEXT,
+    ADD COLUMN IF NOT EXISTS signer_ip TEXT,
+    ADD COLUMN IF NOT EXISTS signed_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS terms_and_conditions TEXT,
+    ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'draft';
+
+CREATE INDEX IF NOT EXISTS idx_proposals_token ON public.proposals(token);
+CREATE INDEX IF NOT EXISTS idx_proposals_status ON public.proposals(status);
+CREATE INDEX IF NOT EXISTS idx_proposals_client_id ON public.proposals(client_id);
+CREATE INDEX IF NOT EXISTS idx_proposals_lead_id ON public.proposals(lead_id);
+
+ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'proposals' AND policyname = 'proposals_auth_all'
+    ) THEN
+        CREATE POLICY "proposals_auth_all" ON public.proposals
+            FOR ALL TO authenticated USING (true) WITH CHECK (true);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'proposals' AND policyname = 'proposals_anon_read_token'
+    ) THEN
+        CREATE POLICY "proposals_anon_read_token" ON public.proposals
+            FOR SELECT TO anon USING (token IS NOT NULL);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'proposals' AND policyname = 'proposals_anon_update_sign'
+    ) THEN
+        CREATE POLICY "proposals_anon_update_sign" ON public.proposals
+            FOR UPDATE TO anon USING (token IS NOT NULL) WITH CHECK (token IS NOT NULL);
+    END IF;
+END $$;
+
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- SOURCE: supabase/migrations/20260828000004_revops_and_team_commissions.sql
+-- ═══════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS public.team_commissions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    proposal_id UUID REFERENCES public.proposals(id) ON DELETE SET NULL,
+    client_id UUID REFERENCES public.clients(id) ON DELETE SET NULL,
+    deal_title TEXT NOT NULL,
+    base_amount_cad NUMERIC(10,2) NOT NULL,
+    commission_rate_pct NUMERIC(5,2) NOT NULL DEFAULT 10.00,
+    commission_amount_cad NUMERIC(10,2) NOT NULL,
+    type TEXT NOT NULL DEFAULT 'setup' CHECK (type IN ('setup', 'mrr_recurring', 'bonus_quota')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'paid')),
+    paid_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.team_capacity_profiles (
+    profile_id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+    specialty TEXT NOT NULL DEFAULT 'generalist' CHECK (specialty IN ('video_production', 'web_framer', 'ads_acquisition', 'pos_operations', 'generalist')),
+    weekly_hours_capacity INTEGER NOT NULL DEFAULT 35,
+    monthly_quota_cad NUMERIC(10,2) NOT NULL DEFAULT 10000.00,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_team_commissions_profile_id ON public.team_commissions(profile_id);
+CREATE INDEX IF NOT EXISTS idx_team_commissions_status ON public.team_commissions(status);
+CREATE INDEX IF NOT EXISTS idx_team_commissions_proposal_id ON public.team_commissions(proposal_id);
+
+ALTER TABLE public.team_commissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.team_capacity_profiles ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'team_commissions' AND policyname = 'team_commissions_auth_all'
+    ) THEN
+        CREATE POLICY "team_commissions_auth_all" ON public.team_commissions
+            FOR ALL TO authenticated USING (true) WITH CHECK (true);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'team_capacity_profiles' AND policyname = 'team_capacity_auth_all'
+    ) THEN
+        CREATE POLICY "team_capacity_auth_all" ON public.team_capacity_profiles
+            FOR ALL TO authenticated USING (true) WITH CHECK (true);
+    END IF;
+END $$;
+
+
+
+
+

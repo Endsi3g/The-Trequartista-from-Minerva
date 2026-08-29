@@ -64,9 +64,9 @@ const HUB_LINKS = [
   { href: '/changelog', label: 'Nouveautés', desc: 'Publier une entrée de changelog', icon: Sparkles },
 ] as const;
 
-function statusOf(usedAt: string | null, expiresAt: string): MergedInvite['status'] {
+function statusOf(usedAt: string | null, expiresAt: string | null | undefined): MergedInvite['status'] {
   if (usedAt) return 'used';
-  if (new Date(expiresAt) < new Date()) return 'expired';
+  if (expiresAt && new Date(expiresAt) < new Date()) return 'expired';
   return 'active';
 }
 

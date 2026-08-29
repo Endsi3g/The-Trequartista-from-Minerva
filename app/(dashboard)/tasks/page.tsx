@@ -466,9 +466,19 @@ export default function TasksPage() {
                               )}
                             >
                               <div className="flex items-center justify-between gap-2">
-                                <Badge variant={priorityMeta.variant} className="text-[10px] px-1.5 py-0">
-                                  {priorityMeta.label}
-                                </Badge>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <Badge variant={priorityMeta.variant} className="text-[10px] px-1.5 py-0">
+                                    {priorityMeta.label}
+                                  </Badge>
+                                  {task.plane_sequence_id && (
+                                    <span
+                                      className="text-[9.5px] font-bold text-mv-ink-soft bg-black/[0.04] border border-mv-border px-1.5 py-0 rounded font-mono"
+                                      title="Ticket synchronisé avec Plane"
+                                    >
+                                      {task.plane_sequence_id}
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="flex items-center gap-2">
                                   {task.due_date ? (
                                     <div className={cn('flex items-center gap-1.5 text-[11px] font-medium', overdue ? 'text-mv-red' : 'text-mv-ink-soft')}>
@@ -582,10 +592,20 @@ export default function TasksPage() {
                         <td className="pl-3.5 pr-2 py-1" onClick={(e) => toggleOne(task.id, e)}>
                           <input type="checkbox" checked={isSelected} onChange={() => {}} className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-0 cursor-pointer" />
                         </td>
-                        <td className="px-2 py-1 font-semibold text-zinc-900 truncate max-w-[220px]">
-                          <Link href={`/tasks/${task.id}`} className="hover:text-mv-green transition-colors">
-                            {task.title}
-                          </Link>
+                        <td className="px-2 py-1 font-semibold text-zinc-900 truncate max-w-[240px]">
+                          <div className="flex items-center gap-1.5 truncate">
+                            {task.plane_sequence_id && (
+                              <span
+                                className="text-[9.5px] font-bold text-mv-ink-soft bg-black/[0.04] border border-mv-border px-1 py-0 rounded font-mono shrink-0"
+                                title="Synchronisé avec Plane"
+                              >
+                                {task.plane_sequence_id}
+                              </span>
+                            )}
+                            <Link href={`/tasks/${task.id}`} className="hover:text-mv-green transition-colors truncate">
+                              {task.title}
+                            </Link>
+                          </div>
                         </td>
                         <td className="px-2 py-1 text-[11.5px] text-zinc-600 truncate max-w-[140px]">
                           {task.project_name || task.client_name || '—'}

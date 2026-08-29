@@ -4,6 +4,15 @@ import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { timingSafeEqual } from 'node:crypto';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import {
+  fetchPlaneIssues,
+  createPlaneIssue,
+  updatePlaneIssue,
+  fetchPlaneCycles,
+  syncTaskToPlane,
+  getPlaneConfig,
+} from '@/lib/services/plane';
+import { fetchTask } from '@/lib/services/supabase-data';
 
 export const runtime = 'nodejs';
 
@@ -226,6 +235,176 @@ const handler = createMcpHandler(
           return { content: [{ type: 'text' as const, text: `Erreur Supabase: ${error.message}` }], isError: true };
         }
         return { content: [{ type: 'text' as const, text: JSON.stringify(data ?? [], null, 2) }] };
+      }
+    );
+
+    // ── Outils Plane (Gestion de tickets, cycles, synchronisation) ──────────
+
+    server.registerTool(
+      'minerva_plane_list_issues',
+      {
+        title: 'Issues Plane Workspace',
+        description: 'Liste les tickets et issues de l’espace de gestion de projet Plane (Self-Hosted / Cloud).',
+        inputSchema: z
+          .object({
+            priority: z.enum(['urgent', 'high', 'medium', 'low', 'none']).optional().describe('Filtrer par niveau de priorité'),
+            limit: z.number().int().min(1).max(50).default(20).describe('Nombre maximum d’issues à retourner'),
+          })
+          .strict(),
+      },
+      async ({ priority, limit }, extra) => {
+        const clientId = extra.http?.authInfo?.clientId ?? 'unknown';
+        await logMcpEvent(clientId, { tool: 'minerva_plane_list_issues', priority, limit });
+
+        const config = getPlaneConfig();
+        if (!config.isConfigured) {
+          return {
+            content: [{ type: 'text' as const, text: 'Plane n’est pas configuré sur ce déploiement Minerva.' }],
+            isError: true,
+          };
+        }
+
+        const issues = await fetchPlaneIssues({ priority, limit });
+        return { content: [{ type: 'text' as const, text: JSON.stringify(issues, null, 2) }] };
+      }
+    );
+
+    server.registerTool(
+      'minerva_plane_create_issue',
+      {
+        title: 'Créer une issue Plane',
+        description: 'Crée un nouveau ticket/issue dans le projet maître Plane avec priorité et date cible.',
+        inputSchema: z
+          .object({
+            name: z.string().min(1).describe('Titre de la tâche ou de l’issue'),
+            description: z.string().optional().describe('Description détaillée de l’issue'),
+            priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
+            targetDate: z.string().optional().describe('Date cible d’échéance (YYYY-MM-DD)'),
+          })
+          .strict(),
+      },
+      async ({ name, description, priority, targetDate }, extra) => {
+        const clientId = extra.http?.authInfo?.clientId ?? 'unknown';
+        await logMcpEvent(clientId, { tool: 'minerva_plane_create_issue', name, priority });
+
+        const config = getPlaneConfig();
+        if (!config.isConfigured) {
+          return {
+            content: [{ type: 'text' as const, text: 'Plane n’est pas configuré sur ce serveur.' }],
+            isError: true,
+          };
+        }
+
+        const created = await createPlaneIssue({
+          name,
+          description_html: description ? `<p>${description}</p>` : undefined,
+          priority,
+          target_date: targetDate,
+        });
+
+        if (!created) {
+          return {
+            content: [{ type: 'text' as const, text: 'Échec de création du ticket sur Plane.' }],
+            isError: true,
+          };
+        }
+
+        return { content: [{ type: 'text' as const, text: JSON.stringify(created, null, 2) }] };
+      }
+    );
+
+    server.registerTool(
+      'minerva_plane_update_issue',
+      {
+        title: 'Mettre à jour une issue Plane',
+        description: 'Modifie le titre, la description, la priorité ou le statut d’un ticket Plane existant.',
+        inputSchema: z
+          .object({
+            issueId: z.string().describe('Identifiant UUID de l’issue Plane'),
+            name: z.string().optional().describe('Nouveau titre'),
+            description: z.string().optional().describe('Nouvelle description'),
+            priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+            stateId: z.string().optional().describe('Identifiant de l’état cible (State ID)'),
+          })
+          .strict(),
+      },
+      async ({ issueId, name, description, priority, stateId }, extra) => {
+        const clientId = extra.http?.authInfo?.clientId ?? 'unknown';
+        await logMcpEvent(clientId, { tool: 'minerva_plane_update_issue', issueId, priority });
+
+        const updated = await updatePlaneIssue(issueId, {
+          name,
+          description_html: description ? `<p>${description}</p>` : undefined,
+          priority,
+          state_id: stateId,
+        });
+
+        if (!updated) {
+          return {
+            content: [{ type: 'text' as const, text: `Impossible de mettre à jour l’issue #${issueId}.` }],
+            isError: true,
+          };
+        }
+
+        return { content: [{ type: 'text' as const, text: JSON.stringify(updated, null, 2) }] };
+      }
+    );
+
+    server.registerTool(
+      'minerva_plane_list_cycles',
+      {
+        title: 'Cycles et Sprints Plane',
+        description: 'Récupère la liste des cycles (sprints d’ingénierie) avec leur état d’avancement et dates.',
+        inputSchema: z.object({}).strict(),
+      },
+      async (_params, extra) => {
+        const clientId = extra.http?.authInfo?.clientId ?? 'unknown';
+        await logMcpEvent(clientId, { tool: 'minerva_plane_list_cycles' });
+
+        const cycles = await fetchPlaneCycles();
+        return { content: [{ type: 'text' as const, text: JSON.stringify(cycles, null, 2) }] };
+      }
+    );
+
+    server.registerTool(
+      'minerva_plane_sync_task',
+      {
+        title: 'Synchroniser une tâche Minerva avec Plane',
+        description: 'Pousse une tâche existante de la base Minerva vers Plane (création ou mise à jour de l’issue correspondante).',
+        inputSchema: z
+          .object({
+            taskId: z.string().uuid().describe('Identifiant UUID de la tâche Minerva'),
+          })
+          .strict(),
+      },
+      async ({ taskId }, extra) => {
+        const clientId = extra.http?.authInfo?.clientId ?? 'unknown';
+        await logMcpEvent(clientId, { tool: 'minerva_plane_sync_task', taskId });
+
+        const task = await fetchTask(taskId);
+        if (!task) {
+          return {
+            content: [{ type: 'text' as const, text: `Tâche Minerva #${taskId} introuvable.` }],
+            isError: true,
+          };
+        }
+
+        const syncResult = await syncTaskToPlane(task);
+        if (!syncResult.success) {
+          return {
+            content: [{ type: 'text' as const, text: `Échec de la synchronisation: ${syncResult.error}` }],
+            isError: true,
+          };
+        }
+
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify({ message: 'Tâche synchronisée avec succès', ...syncResult }, null, 2),
+            },
+          ],
+        };
       }
     );
   },

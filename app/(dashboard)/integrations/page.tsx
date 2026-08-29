@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Zap, Send, ExternalLink, Plug } from 'lucide-react';
+import { Search, Zap, Send, ExternalLink, Plug, Kanban, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { fetchClients } from '@/lib/services/supabase-data';
@@ -252,6 +252,34 @@ export default function IntegrationsPage() {
           </div>
         </Card>
       )}
+
+      {/* Plane Workspace Dedicated Integration Card */}
+      <div className="bg-mv-surface border border-mv-border rounded-2xl p-5 shadow-mv-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-mv-green text-white flex items-center justify-center shadow-mv-sm shrink-0">
+            <Kanban className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-base font-bold font-display text-mv-ink">Plane Project Management</h2>
+              <Badge variant="green" className="text-[10px] font-semibold">
+                Natif & MCP
+              </Badge>
+            </div>
+            <p className="text-xs text-mv-ink-soft leading-relaxed max-w-xl">
+              Gestionnaire de projet open-source synchronisé : suivi des tickets, sprints/cycles, modules, passerelle MCP pour agents IA et webhooks bidirectionnels.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/plane"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-mv-ink hover:bg-black text-white transition-colors shrink-0 shadow-mv-sm"
+        >
+          <span>Accéder au Hub Plane</span>
+          <ExternalLink size={13} />
+        </Link>
+      </div>
 
       {/* 2-Column Layout (Shadcnblocks inspiration) */}
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8 items-start">

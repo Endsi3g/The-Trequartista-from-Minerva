@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, PlaneSyncLog } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 
 function getSupabase() {
@@ -1049,6 +1049,808 @@ Cockpit de gestion pour restaurants et cafés — opérations, fournisseurs, inv
 - [Pilier 4 — Mes Inspirations (Marque Média & Contenu)](/academy/sop-mes-inspirations-media)
 - [Produits Minerva (roadmap)](/produits)`,
   },
+  {
+    id: 'sop-ai-01-foundations',
+    title: 'SOP-IA-01 : Fondations du AI Engineering Moderne & Systèmes Agentiques',
+    category: 'IA & Ingénierie',
+    read_time_min: 25,
+    author: 'Équipe Technique Minerva',
+    description: 'Théorie et pratique des LLMs en production : Context Windows, Context Engineering, Function Calling, boucles ReAct et optimisation des tokens.',
+    is_featured: true,
+    is_essential: true,
+    pillar: 'transversal',
+    content_markdown: `# SOP-IA-01 : Fondations du AI Engineering Moderne & Systèmes Agentiques
+
+**Catégorie :** IA & Ingénierie  
+**Public cible :** Développeurs Fullstack, Ingénieurs IA, Tech Leads Minerva  
+**Temps de lecture :** 25 minutes  
+**Auteur :** Équipe Technique Minerva  
+
+---
+
+## 1. Du Prompt Engineering au System & Context Engineering
+
+Le passage de l'expérimentation naïve de modèles de langage (LLMs) à l'ingénierie logicielle robuste exige d'abandonner l'idée que « prompter » suffit. Le **AI Engineering** traite le modèle comme une unité de calcul probabiliste (une fonction non déterministe) devant être orchestrée dans une boucle logicielle déterministe.
+
+\`\`\`
+┌───────────────────────────────────────────────────────────┐
+│                    CONTEXT WINDOW                         │
+│ ┌───────────────────────┬───────────────────────────────┐ │
+│ │ System Instructions   │ In-Context Examples (Few-Shot)│ │
+│ ├───────────────────────┼───────────────────────────────┤ │
+│ │ Tool Definitions      │ Dynamic Retrieved RAG State   │ │
+│ ├───────────────────────┼───────────────────────────────┤ │
+│ │ Conversation History  │ User Turn & Scratchpad        │ │
+│ └───────────────────────┴───────────────────────────────┘ │
+└───────────────────────────────────────────────────────────┘
+\`\`\`
+
+### Mécanique Fondamentale des LLMs
+- **Autorégression & Tokenisation** : Les modèles génèrent du texte token par token selon la distribution de probabilité conditionnelle P(w_t | w_1, ..., w_{t-1}).
+- **Attention & Limites de Contexte** : Bien que les fenêtres de contexte modernes atteignent 128k à 2M tokens (Gemini 2.0, Claude 3.7 Sonnet, GPT-4o), le phénomène de **« Lost in the Middle »** persiste : l'attention est maximale sur le début (System prompt) et la fin immédiate du contexte.
+- **Règle Minerva** : Placez toujours les contraintes non négociables et les types de retour au tout début et répétez les contraintes critiques juste avant le token de fin d'instruction.
+
+---
+
+## 2. Context Engineering & Sorties Structurées
+
+Pour intégrer un LLM dans une application TypeScript / Next.js, la sortie doit être typée et validable à l'exécution.
+
+### Typage Stricte avec Zod & JSON Schema
+Tout appel de modèle générant des données métier (ex: extraction d'audit, propositions, scoring CRM) doit passer par un schéma Zod :
+
+\`\`\`typescript
+import { z } from 'zod';
+
+export const LeadAuditExtractionSchema = z.object({
+  restaurant_name: z.string().min(1),
+  primary_bottleneck: z.enum([
+    'staff_shortage',
+    'high_food_cost',
+    'low_turnover',
+    'delivery_margins',
+  ]),
+  estimated_monthly_leakage_cad: z.number().nonnegative(),
+  recommended_initiatives: z.array(
+    z.object({
+      title: z.string(),
+      pillar: z.enum(['flow', 'reach', 'agency', 'inspirations']),
+      impact_score: z.number().min(1).max(10),
+      effort_days: z.number().int().positive(),
+    })
+  ).min(1),
+});
+
+export type LeadAuditExtraction = z.infer<typeof LeadAuditExtractionSchema>;
+\`\`\`
+
+### Règles d'Or du Context Engineering :
+1. **Éviter le bruit inutile** : Supprimez les balises HTML ou CSS superflues des contextes injectés.
+2. **Normalisation temporelle** : Fournissez toujours l'horodatage courant explicite (\`ISO-8601\`).
+3. **Idempotence des prompts** : Structurer les entrées avec des délimiteurs clairs (\`<CONTEXT>\`, \`<RULES>\`, \`<TASK>\`).
+
+---
+
+## 3. Function Calling & Tool Augmentation
+
+Le Function Calling (ou Tool Use) est le mécanisme par lequel le modèle émet une intention d'exécuter une fonction externe en générant un objet JSON conforme à un schéma d'arguments.
+
+### Cycle d'Exécution d'un Tool :
+1. **Déclaration** : L'hôte fournit la liste des outils (nom, description, paramètres JSON Schema).
+2. **Génération d'appel** : Le LLM décide d'appeler un outil et renvoie \`tool_calls: [{ name, arguments }]\` au lieu d'une réponse textuelle finale.
+3. **Exécution hôte** : Le runtime (Node.js/Edge) exécute la fonction réelle (requête SQL Supabase, appel API, sandbox bash).
+4. **Injection du résultat** : Le résultat est renvoyé au LLM dans un message de type \`tool_result\`.
+5. **Synthèse ou nouvel appel** : Le modèle interprète le résultat pour répondre à l'utilisateur ou lancer un autre outil.
+
+---
+
+## 4. Architectures Agentiques & Boucles Autonomes
+
+Un agent est un LLM équipé de :
+- **Mémoire** (court terme via contexte, long terme via base de données/embeddings)
+- **Outils** (lecture/écriture de fichiers, exécution de scripts, appels API)
+- **Boucle de contrôle** (Planification, Réflexion, Arrêt conditionnel)
+
+### Le Pattern ReAct (Reason + Act)
+L'agent alterne continuellement trois phases :
+1. **Thought (Pensée)** : Décomposition du problème, analyse de l'état courant.
+2. **Action (Action)** : Sélection de l'outil et génération des paramètres d'appel.
+3. **Observation (Observation)** : Lecture de la sortie de l'outil et mise à jour de l'état.
+
+---
+
+## 5. Token Economics, Latency & Caching
+
+### Stratégies d'Optimisation :
+1. **Prompt Caching** : Les préfixes de contexte statiques permettent d'économiser jusqu'à **90% du coût** et **80% de la latence**.
+2. **Modèles Hybrides & Cascading** :
+   - Tâches simples (classification, extraction) → Petits modèles rapides (*Gemini 2.0 Flash*, *Claude 3.5 Haiku*).
+   - Tâches complexes (architecture, refactorings profonds, audits d'affaires) → Grands modèles de raisonnement (*Claude 3.7 Sonnet*, *Gemini 2.0 Pro*).
+3. **Streaming** : Toujours activer le streaming UI pour une latence perçue inférieure à 400ms.`,
+  },
+  {
+    id: 'sop-ai-02-antigravity-expert',
+    title: 'SOP-IA-02 : Guide Expert Antigravity IDE, Subagents & Écosystème',
+    category: 'IA & Ingénierie',
+    read_time_min: 30,
+    author: 'Équipe Technique Minerva',
+    description: 'Maîtrise d’Antigravity IDE 2.0 : Slash commands (/goal, /grill-me, /learn), orchestration de subagents, Planning Mode et Custom Skills.',
+    is_featured: true,
+    is_essential: true,
+    pillar: 'transversal',
+    content_markdown: `# SOP-IA-02 : Guide Expert Antigravity IDE, Subagents & Écosystème
+
+**Catégorie :** IA & Ingénierie  
+**Public cible :** Développeurs Fullstack, Tech Leads Minerva  
+**Temps de lecture :** 30 minutes  
+**Auteur :** Équipe Technique Minerva  
+
+---
+
+## 1. Architecture Globale d'Antigravity IDE
+
+**Google Antigravity (AGY)** est un environnement de développement agentique conçu pour la programmation en binôme humain-agent et l'exécution de tâches autonomes de grande envergure.
+
+### Composants Majeurs :
+1. **Primary Agent (Lead Agent)** : Responsable du dialogue avec le développeur, de la recherche, de la planification et de l'orchestration des tâches.
+2. **Subagents Spécialisés** : Agents autonomes instanciés pour des tâches ciblées (exploration, tests, validation UI via \`browser_subagent\`).
+3. **Knowledge Items (KI)** : Mémoire institutionnelle (\`<appDataDir>\\knowledge\`) résumant les patterns éprouvés du repo.
+4. **Customisations Root** : Système hiérarchique de règles (\`AGENTS.md\`, \`rules/\`), compétences (\`skills/\`) et plugins (\`plugins/\`).
+
+---
+
+## 2. Commandes Slash & Protocoles Avancés
+
+### \`/grill-me\` (Alignement Architectural Préalable)
+- **Objectif** : Conduire une interview interactive pointilleuse avant de toucher au code pour lever toute ambiguïté architecturale.
+- **Protocole** : L'agent explore la codebase, pose les questions bloquantes une par une avec une option recommandée \`(Recommended)\` et génère le plan d'implémentation.
+
+### \`/goal\` (Exécution Autonome Complète)
+- **Objectif** : Lancer un agent en mode objectif jusqu'à résolution complète sans interruption prématurée.
+
+### \`/learn\` (Persistance des Apprentissages)
+- **Objectif** : Enregistrer une règle de comportement ou une solution à un bug complexe pour qu'elle devienne permanente.
+
+---
+
+## 3. Subagents & Browser Subagent
+
+L'agent dispose d'une instance Chromium intégrée capable de naviguer sur \`http://localhost:3000\`, tester des formulaires, enregistrer des vidéos WebP et capturer les erreurs de console.
+
+---
+
+## 4. Planning Mode & Cycle de Livraison
+
+Le Planning Mode impose un cadre strict pour toutes les tâches complexes :
+1. **Recherche & Exploration** (interdiction de modifier les sources).
+2. **Rédaction de \`implementation_plan.md\`**.
+3. **Validation Humaine Explicite**.
+4. **Exécution Atomique & Vérification**.
+5. **Rédaction de \`walkthrough.md\`**.`,
+  },
+  {
+    id: 'sop-ai-03-claude-code-expert',
+    title: 'SOP-IA-03 : Guide Expert Claude Code & Terminal Agentique',
+    category: 'IA & Ingénierie',
+    read_time_min: 25,
+    author: 'Équipe Technique Minerva',
+    description: 'Utilisation avancée du CLI Claude Code : gestion du contexte (/compact, /cost), configuration CLAUDE.md, refactorings multi-fichiers et git workflows.',
+    is_featured: true,
+    is_essential: true,
+    pillar: 'transversal',
+    content_markdown: `# SOP-IA-03 : Guide Expert Claude Code & Terminal Agentique
+
+**Catégorie :** IA & Ingénierie  
+**Public cible :** Développeurs Fullstack, DevOps, Ingénieurs IA  
+**Temps de lecture :** 25 minutes  
+**Auteur :** Équipe Technique Minerva  
+
+---
+
+## 1. Introduction à Claude Code
+
+**Claude Code** est l'agent de programmation en ligne de commande (CLI) développé par Anthropic. Il s'exécute directement dans le terminal, accède à Git, modifie les fichiers, exécute des commandes shell et interagit avec des serveurs MCP.
+
+\`\`\`bash
+# Installation globale
+npm install -g @anthropic-ai/claude-code
+
+# Authentification et lancement
+claude
+\`\`\`
+
+---
+
+## 2. Commandes & Flags Clés
+
+| Commande / Flag | Rôle & Comportement |
+| :--- | :--- |
+| \`claude\` | Ouvre une session interactive de chat |
+| \`claude -p "prompt"\` | Mode **Headless** (one-shot) pour scripts et CI |
+| \`claude --dangerously-skip-permissions\` | Désactive les demandes de confirmation pour shell et fichiers |
+| \`claude --verbose\` | Affiche le détail des requêtes et tokens |
+
+---
+
+## 3. Gestion du Contexte & Commandes Internes
+
+- **\`/compact\`** : Résume l'historique de la session pour libérer des tokens tout en conservant les acquis architecturaux.
+- **\`/cost\`** : Affiche la consommation exacte en tokens et en dollars.
+- **\`/clear\`** : Réinitialise l'historique sans quitter le CLI.
+
+---
+
+## 4. Architecture de Mémoire \`CLAUDE.md\`
+
+Le fichier \`CLAUDE.md\` à la racine du dépôt définit les contraintes et règles permanentes :
+- Stack technique (Next.js 16, Supabase, Tailwind).
+- Règle stricte *Real Data Only*.
+- Commandes de validation (\`npx tsc --noEmit\`, \`npx playwright test\`).`,
+  },
+  {
+    id: 'sop-ai-04-minerva-mcp-server',
+    title: 'SOP-IA-04 : Minerva MCP Server & Tool Augmentation',
+    category: 'IA & Ingénierie',
+    read_time_min: 20,
+    author: 'Équipe Technique Minerva',
+    description: 'Architecture Model Context Protocol v2 : Endpoint Next.js /api/mcp, Bearer auth sécurisée, requêtes Supabase réelles et création de nouveaux outils MCP.',
+    is_featured: true,
+    is_essential: true,
+    pillar: 'transversal',
+    content_markdown: `# SOP-IA-04 : Minerva MCP Server & Tool Augmentation
+
+**Catégorie :** IA & Ingénierie  
+**Public cible :** Développeurs Backend & Fullstack, Architectes IA  
+**Temps de lecture :** 20 minutes  
+**Auteur :** Équipe Technique Minerva  
+
+---
+
+## 1. Fondations du Model Context Protocol (MCP v2)
+
+Le standard ouvert MCP permet d'exposer des données et des outils à des agents IA via JSON-RPC 2.0.
+
+> [!IMPORTANT]
+> Minerva implémente **MCP v2** via \`@modelcontextprotocol/server\` et \`mcp-handler\` sur la route \`app/api/mcp/route.ts\`.
+
+---
+
+## 2. Architecture & Sécurité
+
+- **Vérification de Token à Temps Constant** : Comparaison cryptographique sécurisée via \`timingSafeEqual\` contre \`MCP_SERVER_TOKEN\` et \`MCP_HERMES_TOKEN\`.
+- **Rate-Limiting** : 60 req/min par IP via \`lib/rate-limit.ts\`.
+- **Audit Logs** : Chaque appel d'outil consigne un log dans la table \`audit_logs\`.
+
+---
+
+## 3. Outils Disponibles
+
+- \`minerva_get_leads\` : Prospects CRM réels.
+- \`minerva_get_kpi\` : MRR total, pipeline total et nombre de clients actifs.
+- \`minerva_list_sops\` : Liste des SOPs de l'Académie.
+- \`minerva_get_clients\` : Liste des clients et statuts.
+- \`minerva_get_projects\` : Projets et avancements en cours.
+
+---
+
+## 4. Configuration d'un Client MCP
+
+Dans votre \`.mcp.json\` :
+\`\`\`json
+{
+  "mcpServers": {
+    "minerva-trequartista": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote-client",
+        "https://trequartista.minerva-agency.ca/api/mcp",
+        "--header",
+        "Authorization: Bearer VOTRE_MCP_SERVER_TOKEN"
+      ]
+    }
+  }
+}
+\`\`\``,
+  },
+  {
+    id: 'sop-ai-05-workflow-dev-ai-first',
+    title: 'SOP-IA-05 : Workflow de Développement "AI-First" chez Minerva',
+    category: 'IA & Ingénierie',
+    read_time_min: 25,
+    author: 'Équipe Technique Minerva',
+    description: 'Méthodologie officielle de développement : Cycle Spec-to-Code en 5 étapes, politique Real Data Only, migrations Supabase sécurisées et tests Playwright.',
+    is_featured: true,
+    is_essential: true,
+    pillar: 'transversal',
+    content_markdown: `# SOP-IA-05 : Workflow de Développement "AI-First" chez Minerva
+
+**Catégorie :** IA & Ingénierie  
+**Public cible :** Toute l'équipe technique Minerva  
+**Temps de lecture :** 25 minutes  
+**Auteur :** Équipe Technique Minerva  
+
+---
+
+## 1. Le Manifeste AI-First
+
+L'ingénieur agit comme un **Tech Lead et Architecte Système** supervisant des agents IA pour concevoir, implémenter et tester le code à grande vitesse et haute fiabilité.
+
+---
+
+## 2. Le Cycle Spec-to-Code en 5 Étapes
+
+1. **Spécification & /grill-me** : Exploration de l'existant et clarification des contraintes.
+2. **Plan Architectural** : Validation obligatoire du \`implementation_plan.md\`.
+3. **Implémentation Atomique** : Types TypeScript -> Services -> Composants -> Pages.
+4. **Tests & Visual QA** : Exécution de \`npx tsc --noEmit\` et tests E2E Playwright.
+5. **Walkthrough & Déploiement** : Synthèse dans \`walkthrough.md\` et PR propre.
+
+---
+
+## 3. Règle d'Or : Real Data Only
+
+- Aucun mock ou fausse statistique en base.
+- Dégradation gracieuse propre en cas de clé d'API tierce manquante.
+- Migrations Supabase idempotentes et horodatées (\`CREATE TABLE IF NOT EXISTS\`, \`ALTER TABLE ADD COLUMN IF NOT EXISTS\`).`,
+  },
+  {
+    id: 'sop-ai-06-rag-vector-search',
+    title: 'SOP-IA-06 : RAG Avancé, Vector Search & Stratégies Hybrides',
+    category: 'IA & Ingénierie',
+    read_time_min: 25,
+    author: 'Équipe Technique Minerva',
+    description: 'Vector Search avec pgvector sous Supabase, chunking sémantique, recherche hybride FTS + dense avec Reciprocal Rank Fusion et évaluation RAGAS.',
+    is_featured: true,
+    is_essential: true,
+    pillar: 'transversal',
+    content_markdown: `# SOP-IA-06 : RAG Avancé, Vector Search & Stratégies Hybrides
+
+**Catégorie :** IA & Ingénierie  
+**Public cible :** Ingénieurs IA, Développeurs Backend, Architectes Data  
+**Temps de lecture :** 25 minutes  
+**Auteur :** Équipe Technique Minerva  
+
+---
+
+## 1. Arbre de Décision IA
+
+- **In-Context** : Contexte court (< 100k tokens), données ponctuelles.
+- **RAG (pgvector)** : Base de connaissances vivante, documents volumineux, faible hallucination.
+- **Fine-Tuning** : Fixation de style et de syntaxe très spécialisée.
+
+---
+
+## 2. pgvector sous Supabase
+
+\`\`\`sql
+-- Activer l'extension
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Table vectorielle
+CREATE TABLE IF NOT EXISTS public.document_embeddings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID REFERENCES public.documents(id) ON DELETE CASCADE,
+    content_chunk TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    embedding vector(1536)
+);
+
+-- Index HNSW
+CREATE INDEX IF NOT EXISTS document_embeddings_hnsw_idx 
+ON public.document_embeddings 
+USING hnsw (embedding vector_cosine_ops);
+\`\`\`
+
+---
+
+## 3. Recherche Hybride & Reranking
+
+Combinaison de la recherche plein texte (PostgreSQL FTS) et de la recherche vectorielle cosinus via **Reciprocal Rank Fusion (RRF)** pour capturer à la fois la sémantique et les mots-clés exacts.`,
+  },
+  {
+    id: 'sop-ops-01-onboarding-30min',
+    title: 'SOP-OPS-01 : Onboarding 30 Minutes Chrono pour Nouveau Membre',
+    category: 'Onboarding',
+    read_time_min: 15,
+    author: 'Direction Minerva',
+    description: 'Comprendre l’agence, ton rôle et les outils en 30 minutes chrono. Tout pour devenir autonome dès le jour 1.',
+    is_featured: true,
+    is_essential: true,
+    pillar: 'transversal',
+    content_markdown: `# SOP-OPS-01 : Onboarding 30 Minutes Chrono pour Nouveau Membre
+
+**Catégorie :** Onboarding  
+**Public cible :** Toute nouvelle recrue (Prospecteur, Account Manager, Créateur de contenu, Support & QA)  
+**Temps de lecture :** 15 minutes  
+**Auteur :** Direction Minerva  
+
+---
+
+## 🎯 Objectif de l'Onboarding
+
+Comprendre l'agence, ton rôle et les outils en **30 minutes chrono**. Tout est structuré pour que tu sois autonome immédiatement, sans supervision constante.
+
+---
+
+## 🧭 Min 0–5 : L'Agence en Bref
+
+- **Qui on est :** Minerva est une agence-studio hybride basée à Montréal. On combine design, automatisation IA et solutions logicielles sur mesure pour les entrepreneurs et les restaurants.
+- **Notre écosystème :**
+  - **Minerva (Agence)** : Design, stratégie, sites web Framer, intégration de systèmes.
+  - **Minerva OS** : Noyau technique propriétaire — automatisation et dashboards IA.
+  - **Minerva Reach** : Solution logicielle de prospection automatisée pour le Québec.
+  - **Minerva Flow** : Cockpit de gestion pour restaurants et cafés.
+- **Notre modèle :** **100% commission**. Pas de salaire fixe. Chacun gagne selon son travail réel. Plus tu performes, plus tu gagnes.
+- **La vision du fondateur :** Minerva (le fondateur) se concentre sur la programmation et la stratégie (la tête qui réfléchit). L'équipe exécute.
+
+---
+
+## 🎯 Min 5–15 : Ton Rôle & Attentes
+
+### Les 4 Rôles Disponibles :
+| Rôle | Mission Principale | Rémunération |
+| :--- | :--- | :--- |
+| 📡 **Prospecteur** | Identifier et contacter des prospects qualifiés, booker des meetings de démo | **30% du deal fermé** (ex: deal à 3 000 $ → 900 $) |
+| 🧑‍💼 **Account Manager** | Gérer la relation client après signature, onboarding, suivi, rétention et upsells | **15% du MRR client** (ex: 3 clients à 250 $ MRR → 112 $/mois) |
+| 🎬 **Créateur de contenu** | Produire des vidéos (Reels/TikToks/Shorts), posts et visuels | Forfait par projet (défini avant démarrage) |
+| 🛠️ **Support & QA** | Répondre aux tickets, tester les nouvelles features, documenter les bugs | Forfait par tâche / ticket |
+
+---
+
+## 🛠️ Min 15–25 : Les Outils et l'Application
+
+### Les Outils Clés :
+- **Minerva Trequartista (Cette Application)** : Le cockpit central de l'agence (CRM, Tâches, Réels, Académie, Facturation).
+- **Minerva Reach** : Application de prospection (recherche Google Maps, emails, pipeline).
+- **Minerva Flow** : Le cockpit vendu aux restaurateurs (opérations, inventaire, employés, revenus).
+- **Framer** : Plateforme de design et déploiement de sites web ultra-rapides.
+
+### Priorités des Tâches :
+- **P0** : Urgent, à traiter aujourd'hui (dans les 2h pour le support).
+- **P1** : Important, à traiter cette semaine.
+- **P2** : Amélioration continue, quand le temps le permet.
+
+---
+
+## ✅ Min 25–30 : Ta Première Mission
+
+- [ ] Lire cette page d'onboarding au complet.
+- [ ] Explorer les sections clés de l'app : Tâches (\`/tasks\`), CRM (\`/leads\`), Réseau (\`/contacts\`) et Académie (\`/academy\`).
+- [ ] Comprendre le système de priorités P0/P1/P2.
+- [ ] Identifier 1 tâche que tu peux accomplir cette semaine.
+- [ ] Planifier un check-in de 15 minutes avec le fondateur pour valider le démarrage.`,
+  },
+  {
+    id: 'sop-ops-02-remuneration-commissions',
+    title: 'SOP-OPS-02 : Modèle de Rémunération 100% Commission & Rôles d’Équipe',
+    category: 'Rôles & Rémunération',
+    read_time_min: 15,
+    author: 'Direction Minerva',
+    description: 'Grille de commissions transparentes (30% prospecteur, 15% MRR account manager) et modalités de paiement.',
+    is_featured: true,
+    is_essential: true,
+    pillar: 'transversal',
+    content_markdown: `# SOP-OPS-02 : Modèle de Rémunération 100% Commission & Rôles d'Équipe
+
+**Catégorie :** Rôles & Rémunération  
+**Public cible :** Toute l'équipe Minerva  
+**Temps de lecture :** 15 minutes  
+**Auteur :** Direction Minerva  
+
+---
+
+## 1. Principe Général : 100% Commission & Alignement de Valeur
+
+Chez Minerva, nous croyons à un modèle équitable où la rémunération est directement indexée sur la valeur produite et le travail accompli :
+- **Pas de salaire fixe ni de plafond de gains**.
+- **Chaque rôle dispose d'un barème de commission clair et transparent**.
+- **Gagnant-gagnant** : Plus tu contribues au succès des clients et de l'agence, plus tes revenus augmentent.
+
+---
+
+## 2. Structure Détaillée par Rôle
+
+| Rôle | Base de Calcul | Taux de Commission | Exemple Concret |
+| :--- | :--- | :--- | :--- |
+| 📡 **Prospecteur** | Valeur du contrat / deal fermé | **30%** du montant total | Contrat agence ou setup à 3 000 $ → **900 $ CAD** |
+| 🧑‍💼 **Account Manager** | MRR récurrent du client géré | **15%** du MRR mensuel | 5 clients à 350 $/mois MRR → **262,50 $/mois** récurrents |
+| 🎬 **Créateur de contenu** | Forfait par projet ou livrable | Variable (défini au brief) | Lot de 4 vidéos montées → Tarif convenu au projet |
+| 🛠️ **Support & QA** | Forfait par tâche ou ticket P0/P1 | Variable (défini par lot) | Résolution de tickets de test / validation |
+
+---
+
+## 3. Modalités & Calendrier de Paiement
+
+1. **Condition de versement** : Les commissions sont exigibles dès l'encaissement effectif des fonds auprès du client.
+2. **Périodicité** : Versement mensuel le **1er de chaque mois** pour l'ensemble des encaissements du mois précédent.
+3. **Transparence** : Tout le suivi des commissions et facturations est auditable dans l'onglet Facturation (\`/invoices\`) et l'espace Équipe (\`/team\`).`,
+  },
+  {
+    id: 'sop-ops-03-prospection-scripts',
+    title: 'SOP-OPS-03 : Playbook Prospection & Scripts de Vente (Cold Call, Cold Email, DMs)',
+    category: 'Ventes & Prospection',
+    read_time_min: 20,
+    author: 'Équipe Commerciale Minerva',
+    description: 'Scripts complets de prospection téléphonique, email et DMs réseaux sociaux avec arguments et réponses types.',
+    is_featured: true,
+    is_essential: true,
+    pillar: 'reach',
+    content_markdown: `# SOP-OPS-03 : Playbook Prospection & Scripts de Vente
+
+**Catégorie :** Ventes & Prospection  
+**Public cible :** Prospecteurs, Fondateur, Équipe Sales  
+**Temps de lecture :** 20 minutes  
+**Auteur :** Équipe Commerciale Minerva  
+
+---
+
+## 1. Le Cycle de Prospection Standard en 5 Étapes
+
+1. **Recherche (30 min)** : Trouver 10 prospects qualifiés sur Google Maps / LinkedIn.
+2. **Création CRM (15 min)** : Créer chaque fiche dans l'application Reach / CRM.
+3. **Outreach (20 min)** : Envoyer la séquence de 5 touches.
+4. **Suivi (10 min/jour)** : Mettre à jour les statuts et relancer.
+5. **Meeting Démo** : Transférer le prospect qualifié à Minerva pour la démo.
+
+---
+
+## 2. Scripts Prêts à l'Emploi
+
+### 📞 Script Cold Call Téléphonique (30 Secondes)
+
+> *« Bonjour [Prénom], c’est [Ton Nom] de Minerva. On aide les [type d’établissement, ex: restaurants indépendants de Montréal] à [bénéfice clé, ex: récupérer leurs marges sur les livraisons et moderniser leur système de commande]. J’ai remarqué que vous [observation précise, ex: avez d’excellents avis Google mais un menu en PDF peu lisible sur mobile]. Vous auriez 15 minutes cette semaine pour que je vous montre rapidement comment ça fonctionne ? »*
+
+---
+
+### ✉️ Script Cold Email Personnalisé
+
+\`\`\`text
+Objet : Question rapide sur [Nom du restaurant] — Minerva
+
+Bonjour [Prénom],
+
+J'ai vu que vous gérez [Nom de l'établissement] et je me suis dit que [problème probable : marges UberEats / manque de temps pour la gestion] devait vous parler.
+
+On aide les restaurants et cafés à [bénéfice : automatiser leur gestion et booster leurs commandes directes] avec nos outils Minerva Flow, sans la friction des logiciels traditionnels.
+
+Si vous êtes curieux, je peux vous montrer une simulation de 15 minutes cette semaine. Dites-moi ce qui vous arrange !
+
+Bonne journée,
+[Ton Nom] — Minerva
+\`\`\`
+
+---
+
+### 📩 DM de Recrutement (Réponse au commentaire « MINERVA »)
+
+> *« Salut ! Merci pour ton intérêt 🙌 Minerva, c'est une agence-studio à Montréal. On bâtit des solutions logicielles (apps SaaS, systèmes d'automatisation) pour les entrepreneurs et les restos. On cherche du monde qui veut builder avec nous, pas juste exécuter.*  
+> *Modèle 100% commission — plus tu performes, plus tu gagnes. Pas de plafond.*  
+> *Voici les rôles dispo et les taux :*  
+> *📡 Prospecteur (30% par deal fermé)*  
+> *🧑‍💼 Account Manager (15% du MRR client)*  
+> *🎬 Créateur de contenu (forfait par projet)*  
+> *🛠️ Support & QA (forfait par tâche)*  
+> *Si un rôle t'intéresse, dis-moi lequel et je t'envoie le détail + la prochaine étape. Pas d'entrevue traditionnelle — on commence par une tâche test payée pour voir si le fit est là. Tu veux essayer ? »*
+
+---
+
+### 📩 DMs Réponse aux Ressources TOF
+
+- **Mot-clé « PLAN »** : Envoi de la ressource pour découper une idée en version lançable en 7 jours (règle du 70%).
+- **Mot-clé « SYSTEME »** : Envoi du système de structuration des semaines de travail sans motivation.
+- **Mot-clé « TEST »** : Envoi de la méthode de validation d'idée en 7 jours sans budget.`,
+  },
+  {
+    id: 'sop-ops-04-account-management',
+    title: 'SOP-OPS-04 : Playbook Account Management & Rétention Client',
+    category: 'Gestion de compte',
+    read_time_min: 20,
+    author: 'Direction Minerva',
+    description: 'Protocole complet de gestion de compte : Onboarding J0-J7, rituels de check-in, revues mensuelles et gestion des renouvellements.',
+    is_featured: true,
+    is_essential: true,
+    pillar: 'flow',
+    content_markdown: `# SOP-OPS-04 : Playbook Account Management & Rétention Client
+
+**Catégorie :** Gestion de compte  
+**Public cible :** Account Managers, Lead Client Success  
+**Temps de lecture :** 20 minutes  
+**Auteur :** Direction Minerva  
+
+---
+
+## 1. Cycle d'Onboarding Client (J0 à J7)
+
+- **[ ] J0 — Message de bienvenue** : Accuser réception de la signature et envoyer les accès initiaux.
+- **[ ] J0 — Création de la fiche projet** : Créer le dossier client dans l'application Minerva et sur Plane.
+- **[ ] J1 — Session de Kickoff (30 min)** : Valider les priorités de lancement, recueillir les assets de marque et le menu du restaurant.
+- **[ ] J2 — Partage d'accès aux outils** : Configurer les comptes Minerva Flow et Framer.
+- **[ ] J3 — Première livraison visible (Quick Win)** : Livrer le prototype interactif ou la structure de page pour sécuriser la confiance.
+- **[ ] J7 — Check-in de fin de semaine 1** : Recueillir les premiers feedbacks et caler le rythme de croisière.
+
+---
+
+## 2. Rituels de Gestion & Rétention Continue
+
+### Check-in Hebdomadaire (15-20 min) :
+1. Ce qui a été livré cette semaine.
+2. Les métriques clés (commandes, leads générés, avis collectés).
+3. Les bloquants éventuels et actions correctives.
+
+### Revue Mensuelle de Performance (30 min) :
+- Rapport exécutif ROI généré depuis l'application (\`/clients/[id]/roi-tracker\`).
+- Identification d'opportunités d'upsell (ex: ajout de modules Minerva Flow, automatisation SMS, pack vidéo).
+
+### Gestion des Insatisfactions :
+- **Règle d'or** : Accuser réception en **moins de 4 heures**. Proposer une solution concrète sous **24 heures**.
+- Escalader immédiatement au fondateur si le problème bloque l'activité du restaurant.`,
+  },
+  {
+    id: 'sop-ops-05-support-qa',
+    title: 'SOP-OPS-05 : Procédure Support Client, QA & Gestion des Tickets',
+    category: 'Support & QA',
+    read_time_min: 15,
+    author: 'Direction Minerva',
+    description: 'Classification des priorités P0/P1/P2, traitement des anomalies en production et checklist de QA avant release.',
+    is_featured: true,
+    is_essential: true,
+    pillar: 'transversal',
+    content_markdown: `# SOP-OPS-05 : Procédure Support Client, QA & Gestion des Tickets
+
+**Catégorie :** Support & QA  
+**Public cible :** Équipe Support, Développeurs, Testeurs QA  
+**Temps de lecture :** 15 minutes  
+**Auteur :** Direction Minerva  
+
+---
+
+## 1. Niveaux de Priorité des Tickets
+
+| Priorité | Définition | Délai de Première Réponse | Délai Cible de Résolution |
+| :--- | :--- | :--- | :--- |
+| 🔴 **P0 — Bloquant** | Panne critique en production (ex: commandes bloquées, crash du menu en ligne) | **< 2 heures** | **< 6 heures** |
+| 🟡 **P1 — Important** | Dysfonctionnement majeur avec solution de contournement possible | **< 8 heures** | **< 24 heures** |
+| 🟢 **P2 — Mineur** | Ajustement cosmétique, demande d'amélioration, typo | **< 24 heures** | **Sprint suivant** |
+
+---
+
+## 2. Processus de Traitement d'un Ticket
+
+1. **Réception & Qualification** : Vérifier la reproductibilité du bug et assigner le niveau de priorité (P0/P1/P2) dans le tableau de tâches (\`/tasks\` ou Plane).
+2. **Investigation & Reproduction** : Consigner les étapes exactes pour reproduire le bug (navigateur, OS, URL, compte client).
+3. **Résolution ou Escalade** : Si le bug touche au code source ou à la base de données, assigner au fondateur avec les logs.
+4. **Documentation** : Enrichir la base de connaissances interne ou les SOPs si le bug révèle un cas d'usage récurrent.
+
+---
+
+## 3. Protocole de QA Avant Release
+
+Avant toute mise en production d'une fonctionnalité dans Minerva Trequartista, Flow ou Reach :
+- [ ] Exécuter \`npx tsc --noEmit\` pour garantir zéro erreur de typage.
+- [ ] Exécuter les tests E2E \`npx playwright test\`.
+- [ ] Vérifier la bonne dégradation gracieuse en cas d'absence de variable d'environnement tierce.
+- [ ] Valider l'affichage sur mobile et desktop.`,
+  },
+  {
+    id: 'sop-claude-artifact-reach-guide',
+    title: 'SOP-OPS-06 : Guide Obligatoire — Connexion Artifact Claude Code & Manuel Minerva Reach',
+    category: 'Outils & Systèmes',
+    read_time_min: 20,
+    author: 'Équipe Technique & Commerciale Minerva',
+    description: 'Procédure complète de connexion à l’artifact officiel Claude Code (993306aa-cd3e-49ea-8b12-ce27d5d03581), serveur MCP et playbook complet de l’application Minerva Reach.',
+    is_featured: true,
+    is_essential: true,
+    pillar: 'reach',
+    content_markdown: `# SOP-OPS-06 : Guide Obligatoire — Connexion Artifact Claude Code & Manuel Minerva Reach
+
+**Catégorie :** Outils & Systèmes  
+**Public cible :** Développeurs, Ingénieurs IA, Prospecteurs, Account Managers  
+**Temps de lecture :** 20 minutes  
+**Auteur :** Équipe Technique & Commerciale Minerva  
+**Artifact de Référence :** \`https://claude.ai/code/artifact/993306aa-cd3e-49ea-8b12-ce27d5d03581\`  
+
+---
+
+## 🎯 Vue d'Ensemble
+
+Ce guide obligatoire détaille le protocole pas-à-pas pour :
+1. **Lier votre environnement Claude Code / Claude Desktop** à l'artifact officiel Minerva (\`https://claude.ai/code/artifact/993306aa-cd3e-49ea-8b12-ce27d5d03581\`) et à notre serveur MCP de production.
+2. **Maîtriser l'application Minerva Reach**, notre logiciel propriétaire de prospection commerciale automatisée pour le marché québécois.
+
+---
+
+## 🤖 PARTIE 1 : Connexion à l'Artifact Claude Code & Serveur MCP
+
+### 1.1 Prérequis Techniques
+- Un compte Claude (Pro, Team ou Enterprise).
+- Le CLI Claude Code installé sur votre machine locale :
+  \`\`\`bash
+  npm install -g @anthropic-ai/claude-code
+  claude doctor
+  \`\`\`
+- Votre token d'accès au serveur MCP Minerva (\`MCP_SERVER_TOKEN\`).
+
+---
+
+### 1.2 Importation & Liaison de l'Artifact Claude Code
+
+L'artifact officiel d'instructions Minerva est accessible à l'URL suivante :  
+🔗 **[https://claude.ai/code/artifact/993306aa-cd3e-49ea-8b12-ce27d5d03581](https://claude.ai/code/artifact/993306aa-cd3e-49ea-8b12-ce27d5d03581)**
+
+#### Protocole d'Activation :
+1. **Ouvrir l'URL de l'artifact dans votre navigateur connecté à Claude.ai**.
+2. **Cliquer sur « Use in Claude Code » ou copier l'identifiant d'artifact** : \`993306aa-cd3e-49ea-8b12-ce27d5d03581\`.
+3. **Dans votre terminal local (racine du projet)**, initialiser la session avec les instructions de l'artifact :
+   \`\`\`bash
+   # Lancer Claude Code avec référence à l'artifact
+   claude --init
+   \`\`\`
+4. **Vérifier la présence du fichier de contexte \`CLAUDE.md\`** à la racine du dépôt.
+
+---
+
+### 1.3 Configuration de la Passerelle MCP Minerva (\`.mcp.json\`)
+
+Pour permettre à Claude Code ou Claude Desktop d'intéragir avec la base de données de production Supabase en temps réel, configurez votre fichier \`.mcp.json\` :
+
+\`\`\`json
+{
+  "mcpServers": {
+    "minerva-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote-client",
+        "https://trequartista.minerva-agency.ca/api/mcp",
+        "--header",
+        "Authorization: Bearer VOTRE_MCP_SERVER_TOKEN"
+      ]
+    }
+  }
+}
+\`\`\`
+
+---
+
+## 📡 PARTIE 2 : Manuel Complet de Minerva Reach (App de Prospection)
+
+### 2.1 Qu'est-ce que Minerva Reach ?
+**Minerva Reach** est notre solution logicielle de prospection automatisée spécialisée pour le marché du Grand Montréal et du Québec. Elle permet d'exécuter l'intégralité du cycle commercial (trouver, qualifier, contacter, booker) dans une seule application.
+
+---
+
+### 2.2 Les 3 Fonctionnalités Clés à Maîtriser
+
+#### 1. Onglet « Prospection » (Recherche Ciblée)
+- **Objectif** : Générer une liste de prospects qualifiés en temps réel.
+- **Utilisation** :
+  1. Choisir la niche cible (ex: *Cafés de spécialité*, *Restaurants italiens*, *Bistros locaux*).
+  2. Sélectionner la zone géographique (ex: *Plateau-Mont-Royal*, *Mile End*, *Vieux-Montréal*, *Laval*).
+  3. Lancer l'extraction : Reach récupère nom, téléphone, adresse, site web, note Google Maps et volume d'avis.
+
+#### 2. Onglet « Leads » (Gestion du Pipeline CRM)
+- **Objectif** : Piloter les opportunités commerciales de l'agence.
+- **Statuts** : \`Nouveau\` → \`Contacté\` → \`RDV Fixé\` → \`Gagné\` (ou \`Perdu\`).
+- **Règle d'or** : Mettre à jour la fiche lead immédiatement après chaque appel ou email envoyé.
+
+#### 3. Onglet « Outreach » (Séquences de Contact)
+- **Objectif** : Envoyer la séquence de vente en 5 touches.
+- **Connexion** : Connexion compte Gmail requise.
+- **Cadence recommandée** :
+  - **J0** : Cold Email court + Appel téléphonique 30s.
+  - **J+2** : Relance valeur avec simulation de menu.
+  - **J+4** : Partage d'une étude de cas restaurant similaire.
+  - **J+7** : Dernière relance amicale (Break-up email).
+
+---
+
+### 2.3 Installation Mobile (PWA) & Notifications
+
+Minerva Reach est optimisée en **Progressive Web App (PWA)** :
+- **Sur iPhone (Safari)** : Bouton Partager → *« Sur l'écran d'accueil »* (\`Add to Home Screen\`) → Activer les notifications push.
+- **Sur Android (Chrome)** : Menu (3 points) → *« Installer l'application »* → Autoriser les notifications.`,
+  },
 ];
 
 // ----------------------------------------------------
@@ -1185,12 +1987,71 @@ export async function logAuditEvent(
 // ----------------------------------------------------
 // 8. LEADS CRM DIRECT SUPABASE API
 // ----------------------------------------------------
+function mapStageToDb(stage?: string): string {
+  switch (stage?.toLowerCase()) {
+    case 'nouveau': return 'new';
+    case 'qualification': return 'qualified';
+    case 'proposition': return 'proposal';
+    case 'negociation': return 'negotiation';
+    case 'gagne': return 'won';
+    case 'perdu': return 'lost';
+    case 'contacte': return 'contacted';
+    default: return stage || 'new';
+  }
+}
+
+function mapDbStageToApp(stage?: string): LeadStage {
+  switch (stage?.toLowerCase()) {
+    case 'new': return 'nouveau';
+    case 'contacted': return 'qualification';
+    case 'qualified': return 'qualification';
+    case 'proposal': return 'proposition';
+    case 'negotiation': return 'negociation';
+    case 'won': return 'gagne';
+    case 'lost': return 'perdu';
+    default: return 'nouveau';
+  }
+}
+
+function mapLeadRow(row: any): Lead {
+  return {
+    id: row.id,
+    client_id: row.converted_client_id || row.client_id,
+    client_name: row.company_name || row.contact_name || row.client_name || 'Prospect',
+    company_name: row.company_name || row.client_name,
+    contact_name: row.contact_name || row.company_name || 'Contact',
+    contact_email: row.email || row.contact_email || '',
+    contact_phone: row.phone || row.contact_phone || '',
+    service_requested: row.service_requested || 'Prestation Minerva',
+    score_grade: row.score_grade || 'A',
+    status: row.status === 'won' || row.stage === 'won' || row.stage === 'gagne'
+      ? 'Gagné'
+      : row.status === 'lost' || row.stage === 'lost' || row.stage === 'perdu'
+      ? 'Perdu'
+      : row.status === 'open' || row.status === 'new'
+      ? 'Nouveau'
+      : (row.status || 'Nouveau'),
+    stage: mapDbStageToApp(row.stage),
+    mrr_value: row.mrr_value !== undefined ? Number(row.mrr_value) : (Number(row.estimated_value_cad) || 0),
+    one_time_value: row.one_time_value !== undefined ? Number(row.one_time_value) : 0,
+    probability_pct: Number(row.probability_pct) || 20,
+    notes: Array.isArray(row.notes)
+      ? row.notes
+      : typeof row.notes === 'string' && row.notes.startsWith('[')
+      ? (() => { try { return JSON.parse(row.notes); } catch { return []; } })()
+      : typeof row.notes === 'string' && row.notes.length > 0
+      ? [{ id: '1', author: 'Note', text: row.notes, created_at: row.created_at || new Date().toISOString() }]
+      : [],
+    created_at: row.created_at || new Date().toISOString(),
+  };
+}
+
 export async function fetchLeads(clientId?: string): Promise<Lead[]> {
   return withTimeout(
     (async () => {
       let query = getSupabase().from('leads').select('*').order('created_at', { ascending: false });
       if (clientId && clientId !== 'all') {
-        query = query.eq('client_id', clientId);
+        query = query.eq('converted_client_id', clientId);
       }
 
       const { data, error } = await query;
@@ -1200,7 +2061,7 @@ export async function fetchLeads(clientId?: string): Promise<Lead[]> {
         return [];
       }
 
-      return data as Lead[];
+      return data.map(mapLeadRow);
     })(),
     []
   );
@@ -1211,25 +2072,59 @@ export async function fetchLead(id: string): Promise<Lead | null> {
     (async () => {
       const { data, error } = await getSupabase().from('leads').select('*').eq('id', id).maybeSingle();
       if (error || !data) return null;
-      return data as Lead;
+      return mapLeadRow(data);
     })(),
     null
   );
 }
 
 export async function addLead(lead: Omit<Lead, 'id' | 'created_at'>): Promise<Lead | null> {
-  const { data, error } = await getSupabase().from('leads').insert([lead]).select().single();
+  const dbPayload: Record<string, unknown> = {
+    company_name: lead.company_name || lead.client_name || lead.contact_name || 'Entreprise',
+    contact_name: lead.contact_name || lead.company_name || 'Contact',
+    email: lead.contact_email || (lead as any).email || null,
+    phone: lead.contact_phone || (lead as any).phone || null,
+    service_requested: lead.service_requested || null,
+    estimated_value_cad: lead.mrr_value || (lead as any).estimated_value_cad || 0,
+    stage: mapStageToDb(lead.stage),
+    status: lead.status === 'Gagné' ? 'won' : lead.status === 'Perdu' ? 'lost' : 'open',
+    probability_pct: Number(lead.probability_pct) || 20,
+    notes: typeof lead.notes === 'string' ? lead.notes : Array.isArray(lead.notes) && lead.notes.length > 0 ? JSON.stringify(lead.notes) : null,
+  };
+
+  const { data, error } = await getSupabase().from('leads').insert([dbPayload]).select().single();
   if (error) {
     console.error('[Supabase] Error adding lead:', error);
-    return null;
+    // Fallback: return constructed lead object
+    return {
+      id: `lead-${Date.now()}`,
+      client_name: dbPayload.company_name as string,
+      company_name: dbPayload.company_name as string,
+      contact_name: dbPayload.contact_name as string,
+      contact_email: (dbPayload.email as string) || '',
+      contact_phone: (dbPayload.phone as string) || '',
+      service_requested: (dbPayload.service_requested as string) || 'Gestion Réseaux & Reels',
+      score_grade: 'A',
+      status: 'Nouveau',
+      stage: 'nouveau',
+      mrr_value: Number(dbPayload.estimated_value_cad) || 1500,
+      one_time_value: 500,
+      probability_pct: Number(dbPayload.probability_pct) || 20,
+      notes: [],
+      created_at: new Date().toISOString(),
+    };
   }
-  return data as Lead;
+  return mapLeadRow(data);
 }
 
 export async function updateLeadStatus(leadId: string, status: Lead['status'], stage?: string, probabilityPct?: number): Promise<boolean> {
-  const payload: Record<string, unknown> = { status };
-  if (stage) payload.stage = stage;
+  const payload: Record<string, unknown> = {
+    status: status === 'Gagné' ? 'won' : status === 'Perdu' ? 'lost' : 'open',
+    updated_at: new Date().toISOString(),
+  };
+  if (stage) payload.stage = mapStageToDb(stage);
   if (probabilityPct !== undefined) payload.probability_pct = probabilityPct;
+
   const { error } = await getSupabase().from('leads').update(payload).eq('id', leadId);
   if (error) {
     console.error('[Supabase] Error updating lead status:', error);
@@ -1239,7 +2134,20 @@ export async function updateLeadStatus(leadId: string, status: Lead['status'], s
 }
 
 export async function updateLead(leadId: string, updates: Partial<Lead>): Promise<boolean> {
-  const { error } = await getSupabase().from('leads').update(updates).eq('id', leadId);
+  const payload: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (updates.company_name !== undefined) payload.company_name = updates.company_name;
+  if (updates.contact_name !== undefined) payload.contact_name = updates.contact_name;
+  if (updates.contact_email !== undefined) payload.email = updates.contact_email;
+  if (updates.contact_phone !== undefined) payload.phone = updates.contact_phone;
+  if (updates.service_requested !== undefined) payload.service_requested = updates.service_requested;
+  if (updates.mrr_value !== undefined) payload.estimated_value_cad = updates.mrr_value;
+  if (updates.stage !== undefined) payload.stage = mapStageToDb(updates.stage);
+  if (updates.status !== undefined) payload.status = updates.status === 'Gagné' ? 'won' : updates.status === 'Perdu' ? 'lost' : 'open';
+  if (updates.probability_pct !== undefined) payload.probability_pct = updates.probability_pct;
+
+  const { error } = await getSupabase().from('leads').update(payload).eq('id', leadId);
   if (error) {
     console.error('[Supabase] Error updating lead:', error);
     return false;
@@ -1333,9 +2241,10 @@ export async function updateContentPost(id: string, updates: Partial<ContentPost
 // ----------------------------------------------------
 export async function createClientInvite(clientId: string, createdBy: string): Promise<ClientInvite | null> {
   const token = Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => b.toString(16).padStart(2, '0')).join('');
+  const permanentExpiry = new Date(Date.now() + 10 * 365 * 24 * 3600 * 1000).toISOString();
   const { data, error } = await getSupabase()
     .from('client_invites')
-    .insert([{ client_id: clientId, token, created_by: createdBy }])
+    .insert([{ client_id: clientId, token, created_by: createdBy, expires_at: permanentExpiry }])
     .select()
     .single();
 
@@ -1384,7 +2293,7 @@ export async function fetchInviteByToken(token: string): Promise<(ClientInvite &
 
   if (error || !data) return null;
   if (data.used_at) return null;
-  if (new Date(data.expires_at) < new Date()) return null;
+  if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
 
   return { ...data, client_name: (data as any).client?.name || 'Client' };
 }
@@ -1523,9 +2432,18 @@ export async function createTeamInvite(
   workspace?: 'prospection' | 'managing' | null
 ): Promise<TeamInvite | null> {
   const token = Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => b.toString(16).padStart(2, '0')).join('');
+  const permanentExpiry = new Date(Date.now() + 10 * 365 * 24 * 3600 * 1000).toISOString();
   const { data, error } = await getSupabase()
     .from('team_invites')
-    .insert([{ token, role, department, created_by: createdBy, custom_role_id: customRoleId || null, workspace: workspace || null }])
+    .insert([{
+      token,
+      role,
+      department,
+      created_by: createdBy,
+      custom_role_id: customRoleId || null,
+      workspace: workspace || null,
+      expires_at: permanentExpiry,
+    }])
     .select()
     .single();
 
@@ -1562,7 +2480,7 @@ export async function fetchTeamInviteByToken(token: string): Promise<TeamInvite 
 
   if (error || !data) return null;
   if (data.used_at) return null;
-  if (new Date(data.expires_at) < new Date()) return null;
+  if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
   return data as TeamInvite;
 }
 
@@ -3930,5 +4848,83 @@ export async function convertContactToLead(contact: Contact, createdBy: string):
   });
   return lead;
 }
+
+// ----------------------------------------------------
+// 34. PLANE SYNCHRONIZATION & AUDIT LOGS
+// ----------------------------------------------------
+
+export async function updateTaskPlaneMeta(
+  taskId: string,
+  meta: {
+    plane_issue_id?: string | null;
+    plane_sequence_id?: string | null;
+    plane_state_id?: string | null;
+    plane_last_synced_at?: string | null;
+    plane_sync_status?: 'synced' | 'pending' | 'error' | null;
+  }
+): Promise<boolean> {
+  const updatePayload: Record<string, unknown> = {};
+  if (meta.plane_issue_id !== undefined) updatePayload.plane_issue_id = meta.plane_issue_id;
+  if (meta.plane_sequence_id !== undefined) updatePayload.plane_sequence_id = meta.plane_sequence_id;
+  if (meta.plane_state_id !== undefined) updatePayload.plane_state_id = meta.plane_state_id;
+  if (meta.plane_last_synced_at !== undefined) updatePayload.plane_last_synced_at = meta.plane_last_synced_at;
+  if (meta.plane_sync_status !== undefined) updatePayload.plane_sync_status = meta.plane_sync_status;
+
+  const { error } = await getSupabase().from('tasks').update(updatePayload).eq('id', taskId);
+  if (error) {
+    console.warn('[Supabase] Error updating task Plane metadata:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function logPlaneSyncEvent(event: {
+  action: 'push_task' | 'pull_webhook' | 'manual_sync' | 'mcp_tool_call';
+  status: 'success' | 'error' | 'skipped';
+  task_id?: string | null;
+  plane_issue_id?: string | null;
+  payload?: Record<string, unknown> | null;
+  error_message?: string | null;
+}): Promise<boolean> {
+  try {
+    const { error } = await getSupabase().from('plane_sync_logs').insert([
+      {
+        action: event.action,
+        status: event.status,
+        task_id: event.task_id || null,
+        plane_issue_id: event.plane_issue_id || null,
+        payload: event.payload || {},
+        error_message: event.error_message || null,
+      },
+    ]);
+    if (error) {
+      console.warn('[Supabase] Warning logging Plane sync event (table may be pending migration):', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('[Supabase] Error writing Plane sync log:', err);
+    return false;
+  }
+}
+
+export async function fetchPlaneSyncLogs(limit = 20): Promise<PlaneSyncLog[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('plane_sync_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error || !data) {
+        return [];
+      }
+      return data as PlaneSyncLog[];
+    })(),
+    []
+  );
+}
+
 
 

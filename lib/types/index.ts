@@ -128,6 +128,11 @@ export interface Task {
   subitems_done?: number;
   subitems_total?: number;
   comments_count?: number;
+  plane_issue_id?: string | null;
+  plane_sequence_id?: string | null;
+  plane_state_id?: string | null;
+  plane_last_synced_at?: string | null;
+  plane_sync_status?: 'synced' | 'pending' | 'error' | null;
 }
 
 export interface TaskSubitem {
@@ -508,6 +513,7 @@ export interface AcademySOP {
   category:
     | 'Design Framer'
     | 'Workflows IA'
+    | 'IA & Ingénierie'
     | 'Campagnes Ads'
     | 'Loi 25 & Compliance'
     | 'Onboarding'
@@ -939,3 +945,453 @@ export interface MinervaFlowResults {
   timeline: { date: string; orders: number; revenue: number; savings: number }[];
   recentTickets: MinervaFlowLiveTicket[];
 }
+
+// ── Plane Integration Types ──────────────────────────────────────────────────
+
+export interface PlaneState {
+  id: string;
+  name: string;
+  color: string;
+  group: 'backlog' | 'unstarted' | 'started' | 'completed' | 'cancelled';
+  description?: string;
+  sequence: number;
+}
+
+export interface PlaneIssue {
+  id: string;
+  name: string;
+  description_html?: string;
+  description_stripped?: string;
+  priority: 'none' | 'urgent' | 'high' | 'medium' | 'low';
+  state_id: string;
+  state_detail?: PlaneState;
+  sequence_id?: number;
+  project: string;
+  project_detail?: { id: string; name: string; identifier: string };
+  assignee_ids?: string[];
+  label_ids?: string[];
+  labels?: { id: string; name: string; color: string }[];
+  cycle_id?: string | null;
+  module_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string | null;
+  target_date?: string | null;
+}
+
+export interface PlaneCycle {
+  id: string;
+  name: string;
+  description?: string;
+  start_date: string | null;
+  end_date: string | null;
+  status?: 'draft' | 'upcoming' | 'current' | 'completed';
+  total_issues?: number;
+  completed_issues?: number;
+  cancelled_issues?: number;
+  started_issues?: number;
+  unstarted_issues?: number;
+  backlog_issues?: number;
+}
+
+export interface PlaneModule {
+  id: string;
+  name: string;
+  description?: string;
+  status?: 'backlog' | 'planned' | 'in_progress' | 'paused' | 'completed' | 'cancelled';
+  total_issues?: number;
+  completed_issues?: number;
+  lead_id?: string | null;
+  start_date?: string | null;
+  target_date?: string | null;
+}
+
+export interface PlaneSyncLog {
+  id: string;
+  action: 'push_task' | 'pull_webhook' | 'manual_sync' | 'mcp_tool_call';
+  status: 'success' | 'error' | 'skipped';
+  task_id?: string | null;
+  plane_issue_id?: string | null;
+  payload?: Record<string, unknown> | null;
+  error_message?: string | null;
+  created_at: string;
+}
+
+export interface PlaneSyncStats {
+  configured: boolean;
+  baseUrl: string;
+  workspaceSlug: string;
+  projectId: string;
+  totalIssues: number;
+  syncedTasksCount: number;
+  activeCyclesCount: number;
+  activeModulesCount: number;
+  lastSyncAt: string | null;
+  latencyMs?: number;
+}
+
+// ── Invoicing & Finance Types ───────────────────────────────────────────────
+
+export type InvoiceType = 'invoice' | 'quote' | 'retainer';
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+export type InvoiceCurrency = 'CAD' | 'USD' | 'EUR';
+
+export interface InvoiceItem {
+  id: string;
+  invoice_id: string;
+  description: string;
+  quantity: number;
+  unit_price_cad: number;
+  amount_cad: number;
+  sort_order: number;
+  created_at?: string;
+}
+
+export interface Invoice {
+  id: string;
+  invoice_number: string;
+  type: InvoiceType;
+  client_id: string;
+  client_name?: string;
+  client_email?: string;
+  client_company?: string;
+  client_avatar_url?: string;
+  project_id?: string | null;
+  project_name?: string;
+  status: InvoiceStatus;
+  currency: InvoiceCurrency;
+  issue_date: string;
+  due_date?: string | null;
+  paid_at?: string | null;
+  subtotal_cad: number;
+  tax_tps_cad: number;
+  tax_tvq_cad: number;
+  total_cad: number;
+  stripe_payment_link_url?: string | null;
+  notes?: string | null;
+  terms?: string | null;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+  items?: InvoiceItem[];
+}
+
+export interface FinancialSummary {
+  totalInvoicedCad: number;
+  totalCollectedCad: number;
+  totalPendingCad: number;
+  totalOverdueCad: number;
+  mrrCad: number;
+  totalQuotesCad: number;
+  invoicesCount: number;
+  quotesCount: number;
+  paidInvoicesCount: number;
+  pendingInvoicesCount: number;
+  overdueInvoicesCount: number;
+}
+
+// ── Client Portal & Deliverables Types ─────────────────────────────────────
+
+export type DeliverableType = 'design' | 'website' | 'video' | 'document' | 'campaign' | 'other';
+export type DeliverableStatus = 'draft' | 'pending_review' | 'approved' | 'revision_requested';
+
+export interface ClientDeliverable {
+  id: string;
+  client_id: string;
+  project_id?: string | null;
+  project_name?: string;
+  title: string;
+  description?: string | null;
+  asset_url?: string | null;
+  preview_image_url?: string | null;
+  type: DeliverableType;
+  status: DeliverableStatus;
+  feedback_notes?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClientPortalMessage {
+  id: string;
+  client_id: string;
+  author_name: string;
+  author_email?: string | null;
+  subject?: string | null;
+  message: string;
+  status: 'unread' | 'in_progress' | 'resolved';
+  created_at: string;
+}
+
+export interface ClientPortalData {
+  client: {
+    id: string;
+    name: string;
+    company?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    logo_url?: string | null;
+    plan?: string | null;
+    health_score?: number | null;
+    portal_token: string;
+    account_manager_name?: string;
+  };
+  projects: Array<{
+    id: string;
+    name: string;
+    description?: string | null;
+    status: string;
+    target_end_date?: string | null;
+    milestones: Array<{
+      id: string;
+      title: string;
+      due_date?: string | null;
+      completed: boolean;
+    }>;
+    launch_checks: Array<{
+      id: string;
+      title: string;
+      category?: string | null;
+      is_completed: boolean;
+    }>;
+  }>;
+  deliverables: ClientDeliverable[];
+  invoices: Invoice[];
+  roiMetrics: Array<{
+    id: string;
+    month: string;
+    revenue_generated_cad: number;
+    ad_spend_cad: number;
+    leads_generated: number;
+    conversions: number;
+    roi_percentage: number;
+  }>;
+  messages: ClientPortalMessage[];
+  agencyContact: {
+    agencyName: string;
+    supportEmail: string;
+    phone: string;
+  };
+}
+
+// ── Minerva Flow (SaaS) & Studio Marketplace ───────────────────────────────
+
+export interface MinervaFlowRestaurant {
+  id: string;
+  name: string;
+  type: 'restaurant' | 'cafe' | 'bistro' | 'bar' | 'boulangerie' | 'fast_casual';
+  address?: string | null;
+  city?: string;
+  owner_name: string;
+  owner_email?: string | null;
+  owner_phone?: string | null;
+  mrr_plan_cad: number;
+  orders_count_30d: number;
+  revenue_volume_30d: number;
+  commission_saved_30d: number;
+  health_score: number;
+  status: 'active' | 'trial' | 'churn_risk' | 'churned';
+  client_id?: string | null;
+  pos_connected: boolean;
+  qr_menu_active: boolean;
+  has_studio_upsell: boolean;
+  studio_upsell_notes?: string | null;
+  last_active_at?: string;
+  connected_at: string;
+  created_at?: string;
+}
+
+export type StudioPackageCategory =
+  | 'production_video'
+  | 'web_framer'
+  | 'acquisition_ads'
+  | 'operations_pos'
+  | 'branding';
+
+export interface StudioServicePackage {
+  id: string;
+  title: string;
+  category: StudioPackageCategory;
+  description: string;
+  price_cad: number;
+  recurring: boolean;
+  deliverable_days: number;
+  features_list: string[];
+  is_popular?: boolean;
+  icon_name?: string;
+}
+
+export interface StudioServiceOrder {
+  id: string;
+  client_id: string;
+  package_id: string;
+  package_title?: string;
+  package_price_cad?: number;
+  status: 'pending' | 'confirmed' | 'in_production' | 'delivered' | 'cancelled';
+  total_cad: number;
+  stripe_payment_link_url?: string | null;
+  notes?: string | null;
+  ordered_at: string;
+  delivered_at?: string | null;
+  created_at?: string;
+}
+
+export interface RestaurantAudit {
+  id: string;
+  restaurant_name: string;
+  contact_name: string;
+  email?: string | null;
+  phone?: string | null;
+  monthly_ubereats_volume_cad: number;
+  commission_rate_pct: number;
+  annual_loss_cad: number;
+  projected_flow_savings_cad: number;
+  gmb_rating?: number;
+  website_url?: string | null;
+  audit_token: string;
+  status: 'new' | 'viewed' | 'contacted' | 'converted';
+  created_at: string;
+}
+
+export interface FlowTelemetrySummary {
+  total_restaurants: number;
+  active_restaurants: number;
+  churn_risk_restaurants: number;
+  total_revenue_processed_cad: number;
+  total_commissions_saved_cad: number;
+  mrr_saas_cad: number;
+  upsell_opportunities_count: number;
+}
+
+// ── Commercial Proposals & e-Signature ───────────────────────────────────────
+
+export type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'signed' | 'paid' | 'declined' | 'expired';
+
+export interface ProposalPhase {
+  phase_number: number;
+  title: string;
+  duration_weeks: number;
+  description: string;
+  deliverables: string[];
+}
+
+export interface ProposalDeliverableItem {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  price_cad: number;
+}
+
+export interface CommercialProposal {
+  id: string;
+  proposal_number: string;
+  title: string;
+  client_id?: string | null;
+  lead_id?: string | null;
+  client_name: string;
+  client_email?: string | null;
+  client_company?: string | null;
+  token: string;
+  scope_phases: ProposalPhase[];
+  deliverables: ProposalDeliverableItem[];
+  subtotal_setup_cad: number;
+  tax_tps_cad: number;
+  tax_tvq_cad: number;
+  total_setup_cad: number;
+  total_monthly_cad: number;
+  deposit_pct: number;
+  deposit_amount_cad: number;
+  deposit_paid: boolean;
+  deposit_stripe_payment_link?: string | null;
+  signature_svg_or_base64?: string | null;
+  signer_name?: string | null;
+  signer_ip?: string | null;
+  signed_at?: string | null;
+  terms_and_conditions?: string | null;
+  status: ProposalStatus;
+  sent_at?: string | null;
+  expires_at?: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
+// ── RevOps & Team Workload ───────────────────────────────────────────────────
+
+export type TeamSpecialty =
+  | 'video_production'
+  | 'web_framer'
+  | 'ads_acquisition'
+  | 'pos_operations'
+  | 'generalist';
+
+export interface TeamCapacityProfile {
+  profile_id: string;
+  full_name: string;
+  email?: string | null;
+  avatar_url?: string | null;
+  specialty: TeamSpecialty;
+  weekly_hours_capacity: number;
+  monthly_quota_cad: number;
+  current_assigned_hours: number;
+  utilization_rate_pct: number;
+  load_status: 'underloaded' | 'balanced' | 'overloaded';
+}
+
+export interface TeamMemberWorkload {
+  member_id: string;
+  full_name: string;
+  email?: string | null;
+  specialty: TeamSpecialty;
+  total_tasks: number;
+  todo_tasks: number;
+  in_progress_tasks: number;
+  done_tasks: number;
+  overdue_tasks: number;
+  assigned_hours: number;
+  capacity_hours: number;
+  utilization_pct: number;
+  on_time_delivery_rate_pct: number;
+  total_commissions_earned_cad: number;
+  active_deliverables: Array<{
+    id: string;
+    title: string;
+    client_name: string;
+    due_date?: string | null;
+    status: string;
+  }>;
+}
+
+export type CommissionType = 'setup' | 'mrr_recurring' | 'bonus_quota';
+export type CommissionStatus = 'pending' | 'approved' | 'paid';
+
+export interface TeamCommission {
+  id: string;
+  profile_id: string;
+  member_name?: string;
+  proposal_id?: string | null;
+  client_id?: string | null;
+  deal_title: string;
+  base_amount_cad: number;
+  commission_rate_pct: number;
+  commission_amount_cad: number;
+  type: CommissionType;
+  status: CommissionStatus;
+  paid_at?: string | null;
+  created_at: string;
+}
+
+export interface RevOpsSummary {
+  total_team_members: number;
+  average_team_utilization_pct: number;
+  overloaded_members_count: number;
+  total_commissions_pending_cad: number;
+  total_commissions_paid_cad: number;
+  average_deal_velocity_days: number;
+  global_on_time_delivery_pct: number;
+}
+
+
+
+
+

@@ -87,7 +87,7 @@ export default function TeamInvitePage() {
     setGenerating(false);
     if (invite) {
       await handleCopy(invite.token, 'team');
-      toastSuccess('Lien collaborateur généré & copié', 'Valide 14 jours.');
+      toastSuccess('Lien collaborateur permanent généré & copié', 'Valide indéfiniment (révocable manuellement par l’admin).');
       await loadData();
     }
   };
@@ -108,7 +108,7 @@ export default function TeamInvitePage() {
       const url = `${window.location.origin}/portal/join?token=${invite.token}`;
       await navigator.clipboard.writeText(url);
       setCopiedToken(invite.token);
-      toastSuccess('Lien portail client copié', 'Transmettez-le à votre client (accès direct au portail).');
+      toastSuccess('Lien portail client permanent copié', 'Valide indéfiniment (révocable manuellement).');
       setTimeout(() => setCopiedToken(null), 2500);
     } else {
       toastError('Erreur', "Impossible de générer l'invitation client.");
@@ -324,7 +324,9 @@ export default function TeamInvitePage() {
                           {inv.department && <span className="text-[11px] text-mv-ink-faint">· {inv.department}</span>}
                         </div>
                         <p className="text-[10.5px] text-zinc-400">
-                          Expire le {new Date(inv.expires_at).toLocaleDateString('fr-CA')}
+                          {!inv.expires_at || new Date(inv.expires_at).getFullYear() >= 2035
+                            ? 'Permanent (révocable manuellement)'
+                            : `Expire le ${new Date(inv.expires_at).toLocaleDateString('fr-CA')}`}
                         </p>
                       </div>
 

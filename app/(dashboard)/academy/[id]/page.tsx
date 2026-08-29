@@ -101,6 +101,13 @@ export default function SopDetailPage() {
     setTimeout(() => setCopiedScript(false), 2000);
   };
 
+  const handleSharePublic = () => {
+    if (!sop) return;
+    const shareUrl = `${window.location.origin}/share/academy/${sop.id}`;
+    navigator.clipboard.writeText(shareUrl);
+    toastSuccess('Lien public copié !', 'Le lien accessible sans compte a été copié dans votre presse-papiers.');
+  };
+
   const handleCreateProspectDoc = async () => {
     setCreatingDoc(true);
     try {
@@ -195,6 +202,15 @@ export default function SopDetailPage() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleSharePublic}
+            className="h-7 px-2.5 text-xs font-medium border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-md transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            title="Copier le lien public accessible sans compte"
+          >
+            <Share2 className="w-3.5 h-3.5 text-zinc-500" />
+            <span>Partager le lien public</span>
+          </button>
+
           <button
             onClick={handleCreateProspectDoc}
             disabled={creatingDoc}

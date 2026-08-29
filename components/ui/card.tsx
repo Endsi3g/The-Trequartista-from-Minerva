@@ -3,6 +3,7 @@ import React from 'react';
 interface CardProps {
   children: React.ReactNode;
   className?: string;
+  id?: string;
   header?: React.ReactNode;
   footer?: React.ReactNode;
   /**
@@ -15,9 +16,10 @@ interface CardProps {
   contentClassName?: string;
 }
 
-export function Card({ children, className = '', header, footer, contentClassName = 'p-6' }: CardProps) {
+export function Card({ children, className = '', id, header, footer, contentClassName = 'p-6' }: CardProps) {
   return (
     <div
+      id={id}
       className={`bg-mv-surface border border-mv-border rounded-xl shadow-mv-sm overflow-hidden transition-all duration-200 hover:border-mv-border/80 ${className}`}
     >
       {header && (

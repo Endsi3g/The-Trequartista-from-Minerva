@@ -93,3 +93,14 @@ High-density Notion/Linear-style collaborative documentation engine (`app/(dashb
 - **Agency Blueprints (`components/documents/templates.ts`)**: 5 ready-to-run agency templates (*Dossier Produit*, *Compte-Rendu de Réunion*, *Cahier des Charges*, *SOP Interne*, *Proposition Commerciale*).
 - **Export & Portability**: 1-click Markdown (`.md`) download, clean print/PDF layout, and batch ZIP archive generation.
 
+## Intégration Plane & Gestion de Projets Open-Source (/plane) (2026-08-27)
+
+Intégration hybride et bidirectionnelle complète avec **Plane** (gestionnaire de projet open-source / alternative à Linear & Jira) :
+- **Hub Plane (`app/(dashboard)/plane/page.tsx`)** : Tableau de bord complet de supervision avec état de connexion live, KPIs (tickets totaux, tâches liées, cycles actifs, modules), explorateur de tickets avec filtres d'état/priorité et liens profonds vers Plane, visualisation des sprints/cycles en cours, journal d'audit des synchronisations, et déclencheur manuel « Synchroniser avec Plane ».
+- **Client & Sync Service (`lib/services/plane.ts`)** : Service REST résilient avec dégradation gracieuse (« Plane non configuré »), mapping des statuts (Todo ↔ Backlog/Todo, In Progress ↔ In Progress/In Review, Done ↔ Done) et priorités, synchronisation unitaire ou en masse des tâches.
+- **Webhooks Bidirectionnels (`app/api/webhooks/plane/route.ts`)** : Endpoint récepteur d'événements Plane (`issue.create`, `issue.update`, `issue.delete`) avec validation de signature constant-time (`timingSafeEqual`) et mise à jour automatique des tâches dans Supabase.
+- **Passerelle MCP (/api/mcp)** : 5 outils natifs exposés aux agents IA (`minerva_plane_list_issues`, `minerva_plane_create_issue`, `minerva_plane_update_issue`, `minerva_plane_list_cycles`, `minerva_plane_sync_task`) avec audit logging et limitation de débit.
+- **Modèle de données & Migration (`supabase/migrations/20260827000000_plane_integration.sql`)** : Colonnes Plane optionnelles sur `public.tasks` (`plane_issue_id`, `plane_sequence_id`, `plane_state_id`, `plane_last_synced_at`, `plane_sync_status`) et table de journalisation `public.plane_sync_logs`.
+- **Badges UI** : Badges de synchronisation `OPS-XX` sur les cartes Kanban et les lignes de tableau dans `/tasks`, et carte Plane dédiée dans `/integrations`.
+
+

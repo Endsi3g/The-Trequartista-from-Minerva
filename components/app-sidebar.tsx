@@ -29,6 +29,10 @@ import {
   Search as SearchIcon,
   Star,
   Contact,
+  Kanban,
+  Receipt,
+  Utensils,
+  FileCheck2,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -266,6 +270,7 @@ export function AppSidebar() {
     audits: 'prospection',
     clients: 'managing',
     workload: 'managing',
+    invoices: 'managing',
   };
   const visibleForWorkspace = (item: NavItem) => {
     const tag = WORKSPACE_TAG[item.key];
@@ -285,14 +290,18 @@ export function AppSidebar() {
   const crmItems: NavItem[] = [
     { key: 'contacts', label: 'Réseau', href: '/contacts', icon: Contact, isNew: true },
     { key: 'clients', label: 'Clients', href: '/clients', icon: Users },
+    { key: 'proposals', label: 'Propositions & Devis', href: '/proposals', icon: FileCheck2, isNew: true },
+    { key: 'invoices', label: 'Facturation & Devis', href: '/invoices', icon: Receipt, isNew: true },
     { key: 'leads', label: 'Leads', href: '/leads', icon: Target },
   ].filter(visibleForWorkspace);
 
   // "Livraison" -- client-facing production work
   const deliveryItems: NavItem[] = [
     { key: 'projects', label: 'Projets', href: '/projects', icon: FolderKanban },
+    { key: 'plane', label: 'Plane Workspace', href: '/plane', icon: Kanban, isNew: true },
     { key: 'reels', label: 'Réels', href: '/content-planner', icon: Clapperboard },
     { key: 'academy', label: 'Académie', href: '/academy', icon: GraduationCap },
+    { key: 'company', label: 'Compagnie & Vision', href: '/company', icon: Building2, isNew: true },
   ];
 
   // "Équipe" -- people ops. Workload is admin-only OR a Managing-workspace
@@ -315,6 +324,7 @@ export function AppSidebar() {
           { key: 'audits', label: 'Audits IA', href: '/audits', icon: ClipboardCheck } as NavItem,
         ]
       : []),
+    { key: 'flow', label: 'Minerva Flow (SaaS)', href: '/flow', icon: Utensils, isNew: true },
     ...(isAdmin ? [{ key: 'produits', label: 'Produits Minerva', href: '/produits', icon: Rocket } as NavItem] : []),
   ];
 

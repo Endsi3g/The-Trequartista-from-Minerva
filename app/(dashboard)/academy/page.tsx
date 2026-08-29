@@ -25,6 +25,12 @@ import {
   Filter,
   CheckCircle2,
   Layers,
+  Bot,
+  Cpu,
+  Terminal,
+  Network,
+  Code2,
+  Database,
 } from 'lucide-react';
 import { fetchAcademySops, addDocument } from '@/lib/services/supabase-data';
 import { SkeletonCards } from '@/components/ui/skeleton';
@@ -311,6 +317,134 @@ export default function AcademyPage() {
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
+        </div>
+      </div>
+
+      {/* ── 2.5 Cursus Officiel : AI Engineering & Outils Agentiques ── */}
+      <div className="bg-mv-surface border border-mv-border rounded-[8px] p-5 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-mv-border/60 pb-3.5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                <Bot className="w-3 h-3 text-emerald-700" />
+                <span>Cursus Technique Officiel</span>
+              </span>
+              <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+                6 Modules • 145 min au total
+              </span>
+            </div>
+            <h2 className="text-[15px] sm:text-base font-bold text-mv-ink tracking-tight">
+              AI Engineering, Antigravity & Claude Code
+            </h2>
+            <p className="text-xs text-zinc-500 max-w-2xl leading-relaxed">
+              Le programme complet pour maîtriser les architectures agentiques, les workflows d’ingénierie IA, le serveur MCP v2 et les pratiques AI-First de Minerva.
+            </p>
+          </div>
+          <button
+            onClick={() => setSelectedCategory('IA & Ingénierie')}
+            className="self-start sm:self-center px-3 py-1.5 rounded-[4px] bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 border border-mv-border"
+          >
+            <Filter className="w-3 h-3 text-zinc-500" />
+            <span>Filtrer ce cursus ({categoryCounts['IA & Ingénierie'] || 6})</span>
+          </button>
+        </div>
+
+        {/* 6 Modules Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {[
+            {
+              id: 'sop-ai-01-foundations',
+              step: '01',
+              title: 'Fondations AI Engineering',
+              focus: 'LLMs, Context Engineering, Tool Calling & Loops',
+              duration: '25 min',
+              icon: Cpu,
+              color: 'text-blue-700 bg-blue-50 border-blue-200',
+            },
+            {
+              id: 'sop-ai-02-antigravity-expert',
+              step: '02',
+              title: 'Guide Expert Antigravity',
+              focus: 'Slash Commands, Subagents, Planning Mode & Skills',
+              duration: '30 min',
+              icon: Bot,
+              color: 'text-purple-700 bg-purple-50 border-purple-200',
+            },
+            {
+              id: 'sop-ai-03-claude-code-expert',
+              step: '03',
+              title: 'Guide Expert Claude Code',
+              focus: 'Terminal CLI, /compact, CLAUDE.md & Git Workflows',
+              duration: '25 min',
+              icon: Terminal,
+              color: 'text-amber-700 bg-amber-50 border-amber-200',
+            },
+            {
+              id: 'sop-ai-04-minerva-mcp-server',
+              step: '04',
+              title: 'Minerva MCP Server',
+              focus: 'Protocole MCP v2, /api/mcp, Auth Tokens & Tools',
+              duration: '20 min',
+              icon: Network,
+              color: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+            },
+            {
+              id: 'sop-ai-05-workflow-dev-ai-first',
+              step: '05',
+              title: 'Workflow Dev AI-First',
+              focus: 'Spec-to-Code, Playwright QA, Migrations & Real Data',
+              duration: '25 min',
+              icon: Code2,
+              color: 'text-rose-700 bg-rose-50 border-rose-200',
+            },
+            {
+              id: 'sop-ai-06-rag-vector-search',
+              step: '06',
+              title: 'RAG Avancé & pgvector',
+              focus: 'Vector Search Supabase, Chunking, FTS & RRF Hybride',
+              duration: '25 min',
+              icon: Database,
+              color: 'text-teal-700 bg-teal-50 border-teal-200',
+            },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.id}
+                href={`/academy/${item.id}`}
+                className="group relative bg-white hover:bg-zinc-50/80 border border-mv-border rounded-[6px] p-3.5 transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between gap-3 cursor-pointer"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono font-bold text-zinc-400 bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded-[3px]" style={MONO}>
+                      M{item.step}
+                    </span>
+                    <div className={cn('w-6 h-6 rounded-[4px] border flex items-center justify-center shrink-0', item.color)}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                  <span className="text-[10.5px] font-mono text-zinc-400 flex items-center gap-1" style={MONO}>
+                    <Clock className="w-3 h-3 text-zinc-400" />
+                    {item.duration}
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="text-[13px] font-bold text-mv-ink group-hover:text-mv-green transition-colors leading-tight">
+                    {item.title}
+                  </h3>
+                  <p className="text-[11.5px] text-zinc-500 line-clamp-2 leading-relaxed">
+                    {item.focus}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-[11px] font-semibold text-zinc-600 group-hover:text-mv-green transition-colors">
+                  <span>Accéder au module</span>
+                  <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
 
