@@ -21,10 +21,11 @@ import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
-const WORKSPACES: { value: 'prospection' | 'managing' | null; label: string }[] = [
+const WORKSPACES: { value: 'prospection' | 'managing' | 'tech' | null; label: string }[] = [
   { value: null, label: 'Aucun (tout voir)' },
   { value: 'prospection', label: 'Prospection' },
   { value: 'managing', label: 'Managing' },
+  { value: 'tech', label: 'Tech & Ingénierie' },
 ];
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -42,7 +43,7 @@ export default function TeamInvitePage() {
   const [role, setRole] = useState<'admin' | 'member'>('member');
   const [department, setDepartment] = useState('');
   const [customRoleId, setCustomRoleId] = useState<string>('');
-  const [workspace, setWorkspace] = useState<'prospection' | 'managing' | null>(null);
+  const [workspace, setWorkspace] = useState<'prospection' | 'managing' | 'tech' | null>(null);
   const [generating, setGenerating] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [invites, setInvites] = useState<TeamInvite[]>([]);
@@ -125,17 +126,18 @@ export default function TeamInvitePage() {
 
   const handleRevoke = async (invite: TeamInvite) => {
     const ok = await confirmDialog({
-      title: "Révoquer ce lien d'invitation ?",
-      message: 'Il ne pourra plus être utilisé pour rejoindre l\'équipe.',
-      confirmLabel: 'Révoquer',
+      title: "Supprimer ce lien d'invitation ?",
+      message: 'Ce lien d\'invitation sera immédiatement supprimé et ne pourra plus être utilisé.',
+      confirmLabel: 'Supprimer définitivement',
       variant: 'danger',
     });
     if (!ok) return;
     setRevokingId(invite.id);
+    setInvites((prev) => prev.filter((i) => i.id !== invite.id));
     await revokeTeamInvite(invite.id);
     await loadData();
     setRevokingId(null);
-    toastSuccess('Lien révoqué');
+    toastSuccess('Lien supprimé avec succès');
   };
 
   if (!userLoading && currentUserRole !== 'admin') {

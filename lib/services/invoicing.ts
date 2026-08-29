@@ -55,6 +55,27 @@ export async function generateNextInvoiceNumber(type: InvoiceType = 'invoice'): 
   }
 }
 
+const LOCAL_INVOICES_KEY = 'minerva_invoices_cache';
+
+function getLocalInvoices(): Invoice[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_INVOICES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalInvoice(inv: Invoice) {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = getLocalInvoices();
+    const filtered = list.filter((i) => i.id !== inv.id);
+    localStorage.setItem(LOCAL_INVOICES_KEY, JSON.stringify([inv, ...filtered]));
+  } catch {}
+}
+
 export async function fetchInvoices(options?: {
   clientId?: string;
   type?: InvoiceType;
@@ -78,24 +99,26 @@ export async function fetchInvoices(options?: {
 
     const { data, error } = await query;
 
-    if (error || !data) {
-      console.warn('[Invoicing] Supabase query failed or empty, returning fallback data:', error);
-      return getFallbackInvoices();
+    if (!error && data) {
+      return data.map((row: any) => ({
+        ...row,
+        client_name: row.client?.name || row.client?.company || 'Client',
+        client_email: row.client?.email,
+        client_company: row.client?.company,
+        client_avatar_url: row.client?.avatar_url || row.client?.logo_url,
+        project_name: row.project?.name,
+        items: (row.items || []).sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)),
+      })) as Invoice[];
     }
-
-    return data.map((row: any) => ({
-      ...row,
-      client_name: row.client?.name || row.client?.company || 'Client',
-      client_email: row.client?.email,
-      client_company: row.client?.company,
-      client_avatar_url: row.client?.avatar_url || row.client?.logo_url,
-      project_name: row.project?.name,
-      items: (row.items || []).sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)),
-    })) as Invoice[];
   } catch (err) {
-    console.warn('[Invoicing] Error loading invoices, using fallback:', err);
-    return getFallbackInvoices();
+    console.warn('[Invoicing] Error querying Supabase invoices, checking local cache:', err);
   }
+
+  let local = getLocalInvoices();
+  if (options?.clientId) local = local.filter((i) => i.client_id === options.clientId);
+  if (options?.type) local = local.filter((i) => i.type === options.type);
+  if (options?.status) local = local.filter((i) => i.status === options.status);
+  return local;
 }
 
 export async function fetchInvoiceById(id: string): Promise<Invoice | null> {
@@ -112,24 +135,19 @@ export async function fetchInvoiceById(id: string): Promise<Invoice | null> {
       .eq('id', id)
       .single();
 
-    if (error || !data) {
-      const fallback = getFallbackInvoices().find((inv) => inv.id === id);
-      return fallback || null;
+    if (!error && data) {
+      return {
+        ...data,
+        client_name: data.client?.name || data.client?.company || 'Client',
+        client_email: data.client?.email,
+        client_company: data.client?.company,
+        client_avatar_url: data.client?.avatar_url || data.client?.logo_url,
+        project_name: data.project?.name,
+        items: (data.items || []).sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)),
+      } as Invoice;
     }
-
-    return {
-      ...data,
-      client_name: data.client?.name || data.client?.company || 'Client',
-      client_email: data.client?.email,
-      client_company: data.client?.company,
-      client_avatar_url: data.client?.avatar_url || data.client?.logo_url,
-      project_name: data.project?.name,
-      items: (data.items || []).sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)),
-    } as Invoice;
-  } catch (err) {
-    console.error('[Invoicing] Error in fetchInvoiceById:', err);
-    return null;
-  }
+  } catch {}
+  return getLocalInvoices().find((inv) => inv.id === id) || null;
 }
 
 export async function createInvoice(payload: {

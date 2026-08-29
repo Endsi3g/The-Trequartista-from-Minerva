@@ -33,6 +33,8 @@ import {
   Receipt,
   Utensils,
   FileCheck2,
+  Terminal,
+  Activity,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -228,7 +230,7 @@ export function AppSidebar() {
   // persisted, and an unassigned (NULL) member also sees everything rather
   // than a broken partial state. Persists to profiles.workspace so the
   // choice survives across sessions/devices.
-  const handleWorkspaceChange = async (next: 'prospection' | 'managing' | null) => {
+  const handleWorkspaceChange = async (next: 'prospection' | 'managing' | 'tech' | null) => {
     if (!currentUserId) return;
     const supabase = createClient();
     await supabase.from('profiles').update({ workspace: next }).eq('id', currentUserId);
@@ -298,7 +300,6 @@ export function AppSidebar() {
   // "Livraison" -- client-facing production work
   const deliveryItems: NavItem[] = [
     { key: 'projects', label: 'Projets', href: '/projects', icon: FolderKanban },
-    { key: 'plane', label: 'Plane Workspace', href: '/plane', icon: Kanban, isNew: true },
     { key: 'reels', label: 'Réels', href: '/content-planner', icon: Clapperboard },
     { key: 'academy', label: 'Académie', href: '/academy', icon: GraduationCap },
     { key: 'company', label: 'Compagnie & Vision', href: '/company', icon: Building2, isNew: true },
@@ -328,7 +329,35 @@ export function AppSidebar() {
     ...(isAdmin ? [{ key: 'produits', label: 'Produits Minerva', href: '/produits', icon: Rocket } as NavItem] : []),
   ];
 
-  const allNavItems = [...mainMenuItems, ...crmItems, ...deliveryItems, ...teamItems, ...growthItems];
+  // "Tech Workspace" specific sections
+  const isTechWorkspace = workspace === 'tech';
+
+  const techMainItems: NavItem[] = [
+    { key: 'overview', label: 'Accueil Tech', href: '/overview', icon: LayoutDashboard },
+    { key: 'tasks', label: 'Tâches Tech', href: '/tasks', icon: CheckSquare, count: counts.myTasks ?? undefined },
+    { key: 'documents', label: 'Docs & Specs', href: '/documents', icon: FileText, isNew: true },
+    { key: 'chat', label: 'Chat d\'équipe', href: '/chat', icon: MessageSquare, isNew: true },
+  ];
+
+  const techSprintItems: NavItem[] = [
+    { key: 'projects', label: 'Projets & Livrables', href: '/projects', icon: FolderKanban },
+    { key: 'audits', label: 'Contrôle Qualité & QA', href: '/audits', icon: ClipboardCheck },
+  ];
+
+  const techKnowledgeItems: NavItem[] = [
+    { key: 'academy', label: 'Académie & SOPs', href: '/academy', icon: GraduationCap },
+    { key: 'changelog', label: 'Changelog Technique', href: '/changelog', icon: FileText },
+  ];
+
+  const techProductItems: NavItem[] = [
+    { key: 'flow', label: 'Minerva Flow (SaaS)', href: '/flow', icon: Utensils, isNew: true },
+    { key: 'produits', label: 'Produits Minerva', href: '/produits', icon: Rocket },
+    { key: 'integrations', label: 'Intégrations & Webhooks', href: '/integrations', icon: Sparkles },
+  ];
+
+  const allNavItems = isTechWorkspace
+    ? [...techMainItems, ...techSprintItems, ...techKnowledgeItems, ...techProductItems]
+    : [...mainMenuItems, ...crmItems, ...deliveryItems, ...teamItems, ...growthItems];
   const favoriteItems = allNavItems.filter((item) => favoriteKeys.includes(item.key));
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
@@ -359,16 +388,23 @@ export function AppSidebar() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                disabled={isAdmin}
-                className="flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition-colors hover:bg-mv-ink/5 cursor-pointer disabled:cursor-default disabled:hover:bg-transparent"
+                className="flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition-colors hover:bg-mv-ink/5 cursor-pointer"
               >
                 <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 overflow-hidden">
                   <LogoMark size={22} />
                 </div>
                 <span className="min-w-0 flex-1 truncate text-[13.5px] font-bold text-mv-ink font-display">
-                  {isAdmin ? 'Toutes les données' : workspace === 'prospection' ? 'Prospection' : workspace === 'managing' ? 'Managing' : 'Tous les espaces'}
+                  {workspace === 'prospection'
+                    ? 'Prospection'
+                    : workspace === 'managing'
+                    ? 'Managing'
+                    : workspace === 'tech'
+                    ? 'Tech & Ingénierie'
+                    : isAdmin
+                    ? 'Toutes les données'
+                    : 'Tous les espaces'}
                 </span>
-                {!isAdmin && <ChevronDown size={13} className="shrink-0 text-mv-ink-faint" />}
+                <ChevronDown size={13} className="shrink-0 text-mv-ink-faint" />
               </button>
             </DropdownMenuTrigger>
 
@@ -376,6 +412,11 @@ export function AppSidebar() {
               <div className="px-2 py-1.5 text-[10px] font-bold uppercase text-mv-ink-faint">
                 Espace de travail
               </div>
+              <DropdownMenuItem onClick={() => handleWorkspaceChange('tech')} className="text-xs font-semibold cursor-pointer">
+                <Terminal className="w-3.5 h-3.5 mr-2 text-mv-green" />
+                <span>Tech & Ingénierie</span>
+                {workspace === 'tech' && <Check className="w-3.5 h-3.5 ml-auto text-mv-green" />}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleWorkspaceChange('prospection')} className="text-xs font-semibold cursor-pointer">
                 <Target className="w-3.5 h-3.5 mr-2 text-mv-ink-soft" />
                 <span>Prospection</span>
@@ -407,32 +448,60 @@ export function AppSidebar() {
 
       {/* ── Nav Links ── */}
       <div className="flex-1 space-y-4 overflow-y-auto px-2.5 py-3 scrollbar-none">
-        <NavSection label="Principal" alwaysOpen>
-          {mainMenuItems.map(renderNavLink)}
-        </NavSection>
+        {isTechWorkspace ? (
+          <>
+            <NavSection label="Principal" alwaysOpen>
+              {techMainItems.map(renderNavLink)}
+            </NavSection>
 
-        {favoriteItems.length > 0 && (
-          <NavSection label="Favoris" defaultOpen persist={false}>
-            {favoriteItems.map(renderNavLink)}
-          </NavSection>
-        )}
+            {favoriteItems.length > 0 && (
+              <NavSection label="Favoris" defaultOpen persist={false}>
+                {favoriteItems.map(renderNavLink)}
+              </NavSection>
+            )}
 
-        <NavSection label="CRM" defaultOpen>
-          {crmItems.map(renderNavLink)}
-        </NavSection>
+            <NavSection label="Ingénierie & Sprints" defaultOpen>
+              {techSprintItems.map(renderNavLink)}
+            </NavSection>
 
-        <NavSection label="Livraison" defaultOpen>
-          {deliveryItems.map(renderNavLink)}
-        </NavSection>
+            <NavSection label="Architecture & SOPs" defaultOpen>
+              {techKnowledgeItems.map(renderNavLink)}
+            </NavSection>
 
-        <NavSection label="Équipe" defaultOpen={teamItems.some((item) => isActive(item.href))}>
-          {teamItems.map(renderNavLink)}
-        </NavSection>
+            <NavSection label="Produits & Infra" defaultOpen>
+              {techProductItems.map(renderNavLink)}
+            </NavSection>
+          </>
+        ) : (
+          <>
+            <NavSection label="Principal" alwaysOpen>
+              {mainMenuItems.map(renderNavLink)}
+            </NavSection>
 
-        {growthItems.length > 0 && (
-          <NavSection label="Croissance" defaultOpen={growthItems.some((item) => isActive(item.href))}>
-            {growthItems.map(renderNavLink)}
-          </NavSection>
+            {favoriteItems.length > 0 && (
+              <NavSection label="Favoris" defaultOpen persist={false}>
+                {favoriteItems.map(renderNavLink)}
+              </NavSection>
+            )}
+
+            <NavSection label="CRM" defaultOpen>
+              {crmItems.map(renderNavLink)}
+            </NavSection>
+
+            <NavSection label="Livraison" defaultOpen>
+              {deliveryItems.map(renderNavLink)}
+            </NavSection>
+
+            <NavSection label="Équipe" defaultOpen={teamItems.some((item) => isActive(item.href))}>
+              {teamItems.map(renderNavLink)}
+            </NavSection>
+
+            {growthItems.length > 0 && (
+              <NavSection label="Croissance" defaultOpen={growthItems.some((item) => isActive(item.href))}>
+                {growthItems.map(renderNavLink)}
+              </NavSection>
+            )}
+          </>
         )}
 
         {/* Aujourd'hui -- recent items, not part of the static nav catalog

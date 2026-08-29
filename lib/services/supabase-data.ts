@@ -2429,7 +2429,7 @@ export async function createTeamInvite(
   department: string | null,
   createdBy: string,
   customRoleId?: string | null,
-  workspace?: 'prospection' | 'managing' | null
+  workspace?: 'prospection' | 'managing' | 'tech' | null
 ): Promise<TeamInvite | null> {
   const token = Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => b.toString(16).padStart(2, '0')).join('');
   const permanentExpiry = new Date(Date.now() + 10 * 365 * 24 * 3600 * 1000).toISOString();
@@ -2457,9 +2457,12 @@ export async function createTeamInvite(
 export async function fetchTeamInvites(): Promise<TeamInvite[]> {
   return withTimeout(
     (async () => {
+      const now = new Date().toISOString();
       const { data, error } = await getSupabase()
         .from('team_invites')
         .select('*')
+        .gt('expires_at', now)
+        .is('used_at', null)
         .order('created_at', { ascending: false });
       if (error || !data) {
         console.warn('[Supabase] Error fetching team invites:', error);
@@ -2514,16 +2517,30 @@ export async function redeemTeamInvite(token: string, userId: string): Promise<b
   return true;
 }
 
-export async function revokeTeamInvite(inviteId: string): Promise<boolean> {
-  const { error } = await getSupabase()
-    .from('team_invites')
-    .update({ expires_at: new Date().toISOString() })
-    .eq('id', inviteId);
-  if (error) {
-    console.error('[Supabase] Error revoking team invite:', error);
+export async function deleteTeamInvite(inviteId: string): Promise<boolean> {
+  try {
+    const supabase = getSupabase();
+    const { error } = await supabase
+      .from('team_invites')
+      .delete()
+      .eq('id', inviteId);
+    if (error) {
+      console.warn('[Supabase] Error deleting team invite row directly, updating expires_at:', error);
+      const { error: updErr } = await supabase
+        .from('team_invites')
+        .update({ expires_at: new Date(Date.now() - 3600 * 1000).toISOString() })
+        .eq('id', inviteId);
+      return !updErr;
+    }
+    return true;
+  } catch (err) {
+    console.error('[Supabase] Exception in deleteTeamInvite:', err);
     return false;
   }
-  return true;
+}
+
+export async function revokeTeamInvite(inviteId: string): Promise<boolean> {
+  return deleteTeamInvite(inviteId);
 }
 
 // ── 15. Stripe Payment Links ────────────────────────────────────────────────
@@ -3670,7 +3687,7 @@ export async function addDocument(
   createdBy?: string | null,
   options?: {
     category?: string;
-    workspace?: 'prospection' | 'managing' | null;
+    workspace?: 'prospection' | 'managing' | 'tech' | null;
     projectId?: string | null;
     clientId?: string | null;
     contentJson?: DocumentContentJson;

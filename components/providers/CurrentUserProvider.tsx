@@ -9,7 +9,7 @@ export interface CurrentUserState {
   email: string;
   avatarUrl: string;
   role: string;
-  workspace: 'prospection' | 'managing' | null;
+  workspace: 'prospection' | 'managing' | 'tech' | null;
   loading: boolean;
   refresh: () => void;
 }
@@ -56,7 +56,7 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
         profile?.avatar_url ||
         `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName || user.email || 'MV')}&backgroundColor=059669&fontColor=ffffff`,
       role: profile?.role || 'member',
-      workspace: (profile?.workspace as 'prospection' | 'managing' | null) || null,
+      workspace: (profile?.workspace as 'prospection' | 'managing' | 'tech' | null) || null,
       loading: false,
     });
   }, []);

@@ -185,7 +185,7 @@ export interface TeamInvite {
   role: 'admin' | 'member';
   department: string | null;
   custom_role_id: string | null;
-  workspace: 'prospection' | 'managing' | null;
+  workspace: 'prospection' | 'managing' | 'tech' | null;
   created_by: string | null;
   created_at: string;
   expires_at: string;
@@ -342,7 +342,7 @@ export interface TeamDocument {
   is_shared_with_client?: boolean;
   project_id?: string | null;
   client_id?: string | null;
-  workspace?: 'prospection' | 'managing' | null;
+  workspace?: 'prospection' | 'managing' | 'tech' | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -1391,7 +1391,48 @@ export interface RevOpsSummary {
   global_on_time_delivery_pct: number;
 }
 
+export type TechQaCategory =
+  | 'performance'
+  | 'security_rls'
+  | 'accessibility_seo'
+  | 'architecture_api'
+  | 'ux_responsive';
 
+export interface TechQaPoint {
+  id: string;
+  category: TechQaCategory;
+  category_label: string;
+  title: string;
+  description: string;
+  passed: boolean;
+  critical?: boolean;
+  notes?: string;
+}
 
+export interface TechQaAudit {
+  id: string;
+  project_id?: string | null;
+  project_name: string;
+  target_url?: string | null;
+  environment: 'production' | 'staging' | 'preview';
+  passed_points: number;
+  total_points: number;
+  score_percentage: number;
+  status: 'passed' | 'failed' | 'in_progress' | 'warning';
+  checklist_data: TechQaPoint[];
+  audited_by?: string | null;
+  auditor_name?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
-
+export interface SystemServiceHealth {
+  name: string;
+  key: 'supabase' | 'edge_functions' | 'elevenlabs' | 'notion' | 'vercel';
+  status: 'healthy' | 'degraded' | 'down' | 'checking';
+  latencyMs: number;
+  endpoint?: string;
+  description: string;
+  lastChecked: string;
+}

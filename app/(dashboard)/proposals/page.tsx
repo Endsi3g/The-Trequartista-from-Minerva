@@ -322,95 +322,112 @@ export default function ProposalsDashboardPage() {
 
       {/* ── 4. Proposals Grid / List ── */}
       <div className="space-y-4">
-        {filteredProposals.map((prop) => (
-          <Card key={prop.id} className="p-5 hover:border-mv-green/40 transition-all space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <span className="font-mono font-extrabold text-xs text-mv-green bg-mv-green/10 px-2 py-0.5 rounded">
-                    {prop.proposal_number}
-                  </span>
-                  <h3 className="font-extrabold text-sm text-mv-ink font-display">{prop.title}</h3>
-                  <Badge
-                    variant={
-                      prop.status === 'signed' || prop.status === 'paid'
-                        ? 'green'
-                        : prop.status === 'sent'
-                        ? 'amber'
-                        : 'blue'
-                    }
-                  >
-                    {prop.status === 'signed' ? 'Signé • Acompte OK' : prop.status === 'sent' ? 'Envoyé' : prop.status}
-                  </Badge>
-                </div>
-                <p className="text-xs text-mv-ink-soft">
-                  Client : <strong className="text-mv-ink font-semibold">{prop.client_name}</strong>
-                  {prop.client_company ? ` (${prop.client_company})` : ''} • Émis le{' '}
-                  {new Date(prop.created_at).toLocaleDateString('fr-CA')}
-                </p>
-              </div>
-
-              {/* Financial Snapshot */}
-              <div className="flex items-center gap-4 bg-mv-cream-soft p-3 rounded-xl border border-mv-border shrink-0">
-                <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-mv-ink-soft block">Total Setup TTC</span>
-                  <span className="font-mono font-bold text-sm text-mv-ink" style={MONO}>
-                    {prop.total_setup_cad.toLocaleString('fr-CA')} $
-                  </span>
-                </div>
-                <div className="h-6 w-px bg-mv-border" />
-                <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-emerald-800 block">Acompte 50%</span>
-                  <span className="font-mono font-bold text-sm text-emerald-600" style={MONO}>
-                    {prop.deposit_amount_cad.toLocaleString('fr-CA')} $
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Scope / Deliverables List pills */}
-            <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-mv-border">
-              <span className="text-[11px] font-bold text-mv-ink-soft">Livrables inclus :</span>
-              {prop.deliverables.map((del, idx) => (
-                <span
-                  key={idx}
-                  className="px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-700 text-[11px] font-medium border border-zinc-200"
-                >
-                  {del.title} ({del.price_cad} $)
-                </span>
-              ))}
-            </div>
-
-            {/* Actions Bar */}
-            <div className="flex items-center justify-between pt-2 border-t border-mv-border text-xs">
-              <span className="text-[11px] text-mv-ink-faint">
-                {prop.signer_name
-                  ? `Signé numériquement par ${prop.signer_name} le ${new Date(prop.signed_at || '').toLocaleDateString('fr-CA')}`
-                  : 'En attente de signature du prospect'}
-              </span>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => copyProposalLink(prop.token)}
-                  className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-mv-surface border border-mv-border text-mv-ink text-xs font-semibold hover:bg-zinc-50 transition-colors cursor-pointer"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>Copier lien de signature</span>
-                </button>
-
-                <Link
-                  href={`/proposals/${prop.token}`}
-                  target="_blank"
-                  className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-mv-green text-white text-xs font-bold hover:bg-emerald-600 transition-colors shadow-xs"
-                >
-                  <span>Ouvrir la proposition</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </div>
+        {filteredProposals.length === 0 ? (
+          <Card className="p-12 text-center bg-mv-surface border-mv-border rounded-xl space-y-3 shadow-xs">
+            <FileCheck2 className="w-10 h-10 text-mv-ink-faint mx-auto opacity-50" />
+            <h3 className="text-sm font-bold text-mv-ink">Aucune proposition commerciale trouvée</h3>
+            <p className="text-xs text-mv-ink-soft max-w-md mx-auto">
+              Créez votre première proposition commerciale avec signature électronique et paiement d'acompte Stripe 50% intégré.
+            </p>
+            <Button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-mv-green hover:bg-mv-green/90 text-white text-xs font-semibold gap-1.5 cursor-pointer mt-2"
+            >
+              <Plus size={14} />
+              <span>Créer une proposition</span>
+            </Button>
           </Card>
-        ))}
+        ) : (
+          filteredProposals.map((prop) => (
+            <Card key={prop.id} className="p-5 hover:border-mv-green/40 transition-all space-y-4 bg-mv-surface border-mv-border rounded-xl shadow-xs">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="font-mono font-bold text-xs text-mv-green bg-mv-green/10 px-2 py-0.5 rounded">
+                      {prop.proposal_number}
+                    </span>
+                    <h3 className="font-bold text-sm text-mv-ink font-display">{prop.title}</h3>
+                    <Badge
+                      variant={
+                        prop.status === 'signed' || prop.status === 'paid'
+                          ? 'green'
+                          : prop.status === 'sent'
+                          ? 'amber'
+                          : 'blue'
+                      }
+                    >
+                      {prop.status === 'signed' ? 'Signé • Acompte OK' : prop.status === 'sent' ? 'Envoyé' : prop.status}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-mv-ink-soft">
+                    Client : <strong className="text-mv-ink font-semibold">{prop.client_name}</strong>
+                    {prop.client_company ? ` (${prop.client_company})` : ''} • Émis le{' '}
+                    {new Date(prop.created_at).toLocaleDateString('fr-CA')}
+                  </p>
+                </div>
+
+                {/* Financial Snapshot */}
+                <div className="flex items-center gap-4 bg-mv-cream-soft p-3 rounded-xl border border-mv-border shrink-0">
+                  <div className="text-right">
+                    <span className="text-[10px] uppercase font-bold text-mv-ink-soft block">Total Setup TTC</span>
+                    <span className="font-mono font-bold text-sm text-mv-ink" style={MONO}>
+                      {prop.total_setup_cad.toLocaleString('fr-CA')} $
+                    </span>
+                  </div>
+                  <div className="h-6 w-px bg-mv-border" />
+                  <div className="text-right">
+                    <span className="text-[10px] uppercase font-bold text-emerald-800 block">Acompte 50%</span>
+                    <span className="font-mono font-bold text-sm text-emerald-600" style={MONO}>
+                      {prop.deposit_amount_cad.toLocaleString('fr-CA')} $
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scope / Deliverables List pills */}
+              <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-mv-border">
+                <span className="text-[11px] font-bold text-mv-ink-soft">Livrables inclus :</span>
+                {prop.deliverables.map((del, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-700 text-[11px] font-medium border border-zinc-200"
+                  >
+                    {del.title} ({del.price_cad} $)
+                  </span>
+                ))}
+              </div>
+
+              {/* Actions Bar */}
+              <div className="flex items-center justify-between pt-2 border-t border-mv-border text-xs">
+                <span className="text-[11px] text-mv-ink-faint">
+                  {prop.signer_name
+                    ? `Signé numériquement par ${prop.signer_name} le ${new Date(prop.signed_at || '').toLocaleDateString('fr-CA')}`
+                    : 'En attente de signature du prospect'}
+                </span>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => copyProposalLink(prop.token)}
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-mv-surface border border-mv-border text-mv-ink text-xs font-semibold hover:bg-zinc-50 transition-colors cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copier lien</span>
+                  </button>
+
+                  <Link
+                    href={`/proposals/${prop.token}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-mv-green text-white text-xs font-bold hover:bg-emerald-600 transition-colors shadow-xs"
+                  >
+                    <span>Ouvrir</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </Card>
+          ))
+        )}
       </div>
 
       {/* ── 5. Create Proposal Modal ── */}

@@ -1,20 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FALLBACK_COMMISSIONS, calculateHybridCommission } from '@/lib/services/revops-team';
+import { fetchTeamCommissions, calculateHybridCommission } from '@/lib/services/revops-team';
 import { getSupabase } from '@/lib/supabase/client';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const { data } = await getSupabase()
-      .from('team_commissions')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (data && data.length > 0) {
-      return NextResponse.json({ commissions: data });
-    }
-    return NextResponse.json({ commissions: FALLBACK_COMMISSIONS });
+    const commissions = await fetchTeamCommissions();
+    return NextResponse.json({ commissions });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Erreur chargement commissions';
     return NextResponse.json({ error: msg }, { status: 500 });
@@ -41,12 +34,12 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', commissionId);
 
-      return NextResponse.json({ success: true, status });
+      return NextResponse.json({ success: true });
     }
 
     return NextResponse.json({ error: 'Action non reconnue' }, { status: 400 });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Erreur commissions';
+    const msg = err instanceof Error ? err.message : 'Erreur modification commission';
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

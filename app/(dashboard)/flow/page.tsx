@@ -287,71 +287,88 @@ export default function MinervaFlowSupervisionPage() {
           </div>
 
           {/* Restaurants Grid / Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredRestaurants.map((resto) => (
-              <Card key={resto.id} className="p-5 space-y-4 hover:border-mv-green/40 transition-all">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-extrabold text-sm text-mv-ink font-display">{resto.name}</h3>
-                      <Badge variant={resto.status === 'active' ? 'green' : resto.status === 'churn_risk' ? 'amber' : 'neutral'}>
-                        {resto.status === 'active' ? 'Actif' : resto.status === 'churn_risk' ? 'Risque Churn' : resto.status}
-                      </Badge>
-                      <Badge variant="blue">Score {resto.health_score}/100</Badge>
+          {filteredRestaurants.length === 0 ? (
+            <Card className="p-12 text-center bg-mv-surface border-mv-border rounded-xl space-y-3 shadow-xs">
+              <Utensils className="w-10 h-10 text-mv-ink-faint mx-auto opacity-50" />
+              <h3 className="text-sm font-bold text-mv-ink">Aucun restaurant partenaire connecté</h3>
+              <p className="text-xs text-mv-ink-soft max-w-md mx-auto">
+                Connectez vos premiers restaurants partenaires ou utilisez le simulateur pour quantifier les économies de commissions de vos prospects.
+              </p>
+              <Button
+                onClick={() => setActiveTab('calculator')}
+                className="bg-mv-green hover:bg-mv-green/90 text-white text-xs font-semibold gap-1.5 cursor-pointer mt-2"
+              >
+                <Calculator size={14} />
+                <span>Ouvrir le simulateur de commissions</span>
+              </Button>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredRestaurants.map((resto) => (
+                <Card key={resto.id} className="p-5 space-y-4 hover:border-mv-green/40 transition-all bg-mv-surface border-mv-border rounded-xl shadow-xs">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-extrabold text-sm text-mv-ink font-display">{resto.name}</h3>
+                        <Badge variant={resto.status === 'active' ? 'green' : resto.status === 'churn_risk' ? 'amber' : 'neutral'}>
+                          {resto.status === 'active' ? 'Actif' : resto.status === 'churn_risk' ? 'Risque Churn' : resto.status}
+                        </Badge>
+                        <Badge variant="blue">Score {resto.health_score}/100</Badge>
+                      </div>
+                      <p className="text-xs text-mv-ink-soft mt-1">{resto.address}</p>
                     </div>
-                    <p className="text-xs text-mv-ink-soft mt-1">{resto.address}</p>
+                    <span className="font-mono font-extrabold text-xs text-mv-green bg-mv-green/10 px-2 py-1 rounded-md">
+                      {resto.mrr_plan_cad} $/mo
+                    </span>
                   </div>
-                  <span className="font-mono font-extrabold text-xs text-mv-green bg-mv-green/10 px-2 py-1 rounded-md">
-                    {resto.mrr_plan_cad} $/mo
-                  </span>
-                </div>
 
-                {/* Metrics ribbon for restaurant */}
-                <div className="grid grid-cols-3 gap-2 bg-mv-cream-soft p-2.5 rounded-xl border border-mv-border text-center">
-                  <div>
-                    <span className="text-[10.5px] text-mv-ink-soft block font-medium">Commandes 30j</span>
-                    <span className="font-mono font-bold text-xs text-mv-ink" style={MONO}>
-                      {resto.orders_count_30d.toLocaleString('fr-CA')}
-                    </span>
+                  {/* Metrics ribbon for restaurant */}
+                  <div className="grid grid-cols-3 gap-2 bg-mv-cream-soft p-2.5 rounded-xl border border-mv-border text-center">
+                    <div>
+                      <span className="text-[10.5px] text-mv-ink-soft block font-medium">Commandes 30j</span>
+                      <span className="font-mono font-bold text-xs text-mv-ink" style={MONO}>
+                        {resto.orders_count_30d.toLocaleString('fr-CA')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10.5px] text-mv-ink-soft block font-medium">CA Traité</span>
+                      <span className="font-mono font-bold text-xs text-mv-ink" style={MONO}>
+                        {resto.revenue_volume_30d.toLocaleString('fr-CA')} $
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10.5px] text-emerald-700 block font-medium">Économisé</span>
+                      <span className="font-mono font-bold text-xs text-emerald-600" style={MONO}>
+                        +{resto.commission_saved_30d.toLocaleString('fr-CA')} $
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[10.5px] text-mv-ink-soft block font-medium">CA Traité</span>
-                    <span className="font-mono font-bold text-xs text-mv-ink" style={MONO}>
-                      {resto.revenue_volume_30d.toLocaleString('fr-CA')} $
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10.5px] text-emerald-700 block font-medium">Économisé</span>
-                    <span className="font-mono font-bold text-xs text-emerald-600" style={MONO}>
-                      +{resto.commission_saved_30d.toLocaleString('fr-CA')} $
-                    </span>
-                  </div>
-                </div>
 
-                {/* Contact & Upsell */}
-                <div className="flex items-center justify-between pt-2 border-t border-mv-border text-xs">
-                  <span className="text-mv-ink-soft">
-                    Propriétaire : <strong className="text-mv-ink font-semibold">{resto.owner_name}</strong>
-                  </span>
-                  {resto.has_studio_upsell ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      <CheckCircle2 className="w-3 h-3" /> Client Studio
+                  {/* Contact & Upsell */}
+                  <div className="flex items-center justify-between pt-2 border-t border-mv-border text-xs">
+                    <span className="text-mv-ink-soft">
+                      Propriétaire : <strong className="text-mv-ink font-semibold">{resto.owner_name}</strong>
                     </span>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setActiveTab('upsells');
-                        toastSuccess('Opportunité Studio', `Pitch de packs suggéré pour ${resto.name}.`);
-                      }}
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200 cursor-pointer transition-colors"
-                    >
-                      <Sparkles className="w-3 h-3 text-amber-600" /> Pitcher Studio
-                    </button>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
+                    {resto.has_studio_upsell ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <CheckCircle2 className="w-3 h-3" /> Client Studio
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setActiveTab('upsells');
+                          toastSuccess('Opportunité Studio', `Pitch de packs suggéré pour ${resto.name}.`);
+                        }}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200 cursor-pointer transition-colors"
+                      >
+                        <Sparkles className="w-3 h-3 text-amber-600" /> Pitcher Studio
+                      </button>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

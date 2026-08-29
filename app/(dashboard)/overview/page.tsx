@@ -28,6 +28,7 @@ import { fetchClients, fetchLeads, fetchProjects, fetchVoiceCalls, fetchTasks } 
 import type { Client, Lead, Project, VoiceCall, Task } from '@/lib/types';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { useCurrentUser } from '@/hooks/use-current-user';
+import { TechDashboard } from '@/components/tech/TechDashboard';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -144,8 +145,12 @@ function useSequenceShortcuts() {
 
 export default function OverviewPage() {
   const router = useRouter();
-  const { fullName } = useCurrentUser();
+  const { fullName, workspace, role } = useCurrentUser();
   const [overviewTab, setOverviewTab] = useState<'metrics' | 'hub'>('metrics');
+
+  if (workspace === 'tech') {
+    return <TechDashboard />;
+  }
   const [clients, setClients] = useState<Client[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);

@@ -137,54 +137,34 @@ export const PROPOSAL_TEMPLATES = [
   },
 ];
 
-export const FALLBACK_PROPOSALS: CommercialProposal[] = [
-  {
-    id: 'prop-demo-1',
-    proposal_number: 'PROP-2026-001',
-    title: 'Proposition Pilote — Café Saint-Henri (Flow + Reels)',
-    client_name: 'Alexandre Bouchard',
-    client_email: 'alex@sainthenri.ca',
-    client_company: 'Café & Torréfacteur Saint-Henri',
-    token: 'prop_sh_2026_demo99',
-    scope_phases: PROPOSAL_TEMPLATES[0].scope_phases,
-    deliverables: PROPOSAL_TEMPLATES[0].deliverables,
-    subtotal_setup_cad: 2150.0,
-    tax_tps_cad: 107.5,
-    tax_tvq_cad: 214.46,
-    total_setup_cad: 2471.96,
-    total_monthly_cad: 149.0,
-    deposit_pct: 50.0,
-    deposit_amount_cad: 1235.98,
-    deposit_paid: true,
-    status: 'signed',
-    signer_name: 'Alexandre Bouchard',
-    signed_at: '2026-08-20T14:30:00Z',
-    terms_and_conditions: 'Paiement de 50% à la commande, solde à la livraison finale.',
-    created_at: '2026-08-18T10:00:00Z',
-  },
-  {
-    id: 'prop-demo-2',
-    proposal_number: 'PROP-2026-002',
-    title: 'Refonte Plateforme Framer & Campagne Ads — Pizzeria Napolitana',
-    client_name: 'Matteo Rossi',
-    client_email: 'matteo@napolitanamtl.com',
-    client_company: 'Pizzeria Napolitana Mile-End',
-    token: 'prop_pizz_2026_demo42',
-    scope_phases: PROPOSAL_TEMPLATES[1].scope_phases,
-    deliverables: PROPOSAL_TEMPLATES[1].deliverables,
-    subtotal_setup_cad: 4000.0,
-    tax_tps_cad: 200.0,
-    tax_tvq_cad: 399.0,
-    total_setup_cad: 4599.0,
-    total_monthly_cad: 0.0,
-    deposit_pct: 50.0,
-    deposit_amount_cad: 2299.5,
-    deposit_paid: false,
-    status: 'sent',
-    terms_and_conditions: 'Paiement de 50% à la signature par carte de crédit Stripe.',
-    created_at: '2026-08-25T11:00:00Z',
-  },
-];
+const LOCAL_PROPOSALS_KEY = 'minerva_commercial_proposals_cache';
+
+function getLocalProposals(): CommercialProposal[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_PROPOSALS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalProposal(prop: CommercialProposal) {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = getLocalProposals();
+    const filtered = list.filter((p) => p.id !== prop.id);
+    localStorage.setItem(LOCAL_PROPOSALS_KEY, JSON.stringify([prop, ...filtered]));
+  } catch {}
+}
+
+function removeLocalProposal(id: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = getLocalProposals();
+    localStorage.setItem(LOCAL_PROPOSALS_KEY, JSON.stringify(list.filter((p) => p.id !== id)));
+  } catch {}
+}
 
 export async function fetchProposals(): Promise<CommercialProposal[]> {
   try {
@@ -193,13 +173,13 @@ export async function fetchProposals(): Promise<CommercialProposal[]> {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error || !data || data.length === 0) {
-      return FALLBACK_PROPOSALS;
+    if (!error && data) {
+      return data as CommercialProposal[];
     }
-    return data as CommercialProposal[];
-  } catch {
-    return FALLBACK_PROPOSALS;
+  } catch (err) {
+    console.warn('[ProposalsService] Supabase query failed, checking local cache:', err);
   }
+  return getLocalProposals();
 }
 
 export async function fetchProposalByToken(token: string): Promise<CommercialProposal | null> {
@@ -210,13 +190,21 @@ export async function fetchProposalByToken(token: string): Promise<CommercialPro
       .eq('token', token)
       .maybeSingle();
 
-    if (error || !data) {
-      const match = FALLBACK_PROPOSALS.find((p) => p.token === token);
-      return match || FALLBACK_PROPOSALS[0];
+    if (!error && data) {
+      return data as CommercialProposal;
     }
-    return data as CommercialProposal;
+  } catch {}
+  return getLocalProposals().find((p) => p.token === token) || null;
+}
+
+export async function deleteProposal(id: string): Promise<boolean> {
+  try {
+    const { error } = await getSupabase().from('proposals').delete().eq('id', id);
+    removeLocalProposal(id);
+    return !error;
   } catch {
-    return FALLBACK_PROPOSALS[0];
+    removeLocalProposal(id);
+    return true;
   }
 }
 
@@ -237,7 +225,7 @@ export async function createProposal(input: {
   const proposalNumber = `PROP-2026-${String(Math.floor(Math.random() * 900) + 100)}`;
 
   const proposalObj: CommercialProposal = {
-    id: `prop-${Date.now()}`,
+    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `prop-${Date.now()}`,
     proposal_number: proposalNumber,
     title: input.title,
     client_name: input.client_name,
@@ -262,12 +250,15 @@ export async function createProposal(input: {
   };
 
   try {
-    const { data } = await getSupabase().from('proposals').insert([proposalObj]).select().single();
-    if (data) return data as CommercialProposal;
-    return proposalObj;
-  } catch {
-    return proposalObj;
-  }
+    const { data, error } = await getSupabase().from('proposals').insert([proposalObj]).select().single();
+    if (!error && data) {
+      saveLocalProposal(data as CommercialProposal);
+      return data as CommercialProposal;
+    }
+  } catch {}
+
+  saveLocalProposal(proposalObj);
+  return proposalObj;
 }
 
 export async function signCommercialProposal(

@@ -39,96 +39,26 @@ export function calculateCommissionSavings(
   };
 }
 
-export const FALLBACK_FLOW_RESTAURANTS: MinervaFlowRestaurant[] = [
-  {
-    id: 'flow-rest-1',
-    name: 'Café & Torréfacteur Saint-Henri',
-    type: 'cafe',
-    address: '3632 Rue Notre-Dame O, Montréal',
-    city: 'Montréal',
-    owner_name: 'Alexandre Bouchard',
-    owner_email: 'alex@sainthenri.ca',
-    owner_phone: '+1 (514) 932-0101',
-    mrr_plan_cad: 149.0,
-    orders_count_30d: 1420,
-    revenue_volume_30d: 28400.0,
-    commission_saved_30d: 7952.0,
-    health_score: 98,
-    status: 'active',
-    pos_connected: true,
-    qr_menu_active: true,
-    has_studio_upsell: true,
-    studio_upsell_notes: 'Pack 8 Reels Culinaires commandé + Ads Meta en cours.',
-    connected_at: '2026-03-10T10:00:00Z',
-    last_active_at: new Date().toISOString(),
-  },
-  {
-    id: 'flow-rest-2',
-    name: 'Pizzeria Napolitana Mile-End',
-    type: 'restaurant',
-    address: '189 Rue Saint-Viateur O, Montréal',
-    city: 'Montréal',
-    owner_name: 'Matteo Rossi',
-    owner_email: 'matteo@napolitanamtl.com',
-    owner_phone: '+1 (514) 279-8800',
-    mrr_plan_cad: 199.0,
-    orders_count_30d: 2180,
-    revenue_volume_30d: 65400.0,
-    commission_saved_30d: 18312.0,
-    health_score: 94,
-    status: 'active',
-    pos_connected: true,
-    qr_menu_active: true,
-    has_studio_upsell: false,
-    studio_upsell_notes: 'Fiche Google My Business à optimiser + Opportunité de refonte Framer.',
-    connected_at: '2026-04-18T14:30:00Z',
-    last_active_at: new Date().toISOString(),
-  },
-  {
-    id: 'flow-rest-3',
-    name: 'Bistro & Buvette Laurier',
-    type: 'bistro',
-    address: '1240 Avenue Laurier E, Montréal',
-    city: 'Montréal',
-    owner_name: 'Camille Gagnon',
-    owner_email: 'camille@buvettelaurier.ca',
-    owner_phone: '+1 (514) 526-9090',
-    mrr_plan_cad: 149.0,
-    orders_count_30d: 890,
-    revenue_volume_30d: 31150.0,
-    commission_saved_30d: 8722.0,
-    health_score: 72,
-    status: 'churn_risk',
-    pos_connected: true,
-    qr_menu_active: false,
-    has_studio_upsell: false,
-    studio_upsell_notes: 'Baisse de commandes en direct : proposer shooting vidéo menu printemps.',
-    connected_at: '2026-05-02T11:15:00Z',
-    last_active_at: new Date().toISOString(),
-  },
-  {
-    id: 'flow-rest-4',
-    name: 'Boulangerie & Pâtisserie L’Épi Doré',
-    type: 'boulangerie',
-    address: '450 Rue Rachel E, Montréal',
-    city: 'Montréal',
-    owner_name: 'Jean-Luc Moreau',
-    owner_email: 'jl@epidore.ca',
-    owner_phone: '+1 (514) 844-3322',
-    mrr_plan_cad: 149.0,
-    orders_count_30d: 1120,
-    revenue_volume_30d: 19600.0,
-    commission_saved_30d: 5488.0,
-    health_score: 96,
-    status: 'active',
-    pos_connected: true,
-    qr_menu_active: true,
-    has_studio_upsell: true,
-    studio_upsell_notes: 'Refonte Site Framer livrée avec succès.',
-    connected_at: '2026-06-12T09:00:00Z',
-    last_active_at: new Date().toISOString(),
-  },
-];
+const LOCAL_FLOW_KEY = 'minerva_flow_restaurants_cache';
+
+function getLocalFlow(): MinervaFlowRestaurant[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_FLOW_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalFlow(rest: MinervaFlowRestaurant) {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = getLocalFlow();
+    const filtered = list.filter((r) => r.id !== rest.id);
+    localStorage.setItem(LOCAL_FLOW_KEY, JSON.stringify([rest, ...filtered]));
+  } catch {}
+}
 
 export async function fetchFlowRestaurants(): Promise<MinervaFlowRestaurant[]> {
   try {
@@ -137,13 +67,38 @@ export async function fetchFlowRestaurants(): Promise<MinervaFlowRestaurant[]> {
       .select('*')
       .order('revenue_volume_30d', { ascending: false });
 
-    if (error || !data || data.length === 0) {
-      return FALLBACK_FLOW_RESTAURANTS;
+    if (!error && data) {
+      return data as MinervaFlowRestaurant[];
     }
-    return data as MinervaFlowRestaurant[];
-  } catch {
-    return FALLBACK_FLOW_RESTAURANTS;
+  } catch (err) {
+    console.warn('[MinervaFlow] Error querying restaurants remotely, checking local cache:', err);
   }
+  return getLocalFlow();
+}
+
+export async function createFlowRestaurant(input: Omit<MinervaFlowRestaurant, 'id' | 'connected_at' | 'last_active_at'>): Promise<MinervaFlowRestaurant> {
+  const newRest: MinervaFlowRestaurant = {
+    ...input,
+    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `flow-rest-${Date.now()}`,
+    connected_at: new Date().toISOString(),
+    last_active_at: new Date().toISOString(),
+  };
+
+  try {
+    const { data, error } = await getSupabase()
+      .from('minerva_flow_restaurants')
+      .insert([newRest])
+      .select()
+      .single();
+
+    if (!error && data) {
+      saveLocalFlow(data as MinervaFlowRestaurant);
+      return data as MinervaFlowRestaurant;
+    }
+  } catch {}
+
+  saveLocalFlow(newRest);
+  return newRest;
 }
 
 export function computeFlowTelemetrySummary(restaurants: MinervaFlowRestaurant[]): FlowTelemetrySummary {

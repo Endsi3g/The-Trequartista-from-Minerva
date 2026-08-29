@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   fetchTeamWorkloads,
-  FALLBACK_COMMISSIONS,
+  fetchTeamCommissions,
   computeRevOpsSummary,
   reassignTaskAssignee,
 } from '@/lib/services/revops-team';
@@ -10,13 +10,16 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const workloads = await fetchTeamWorkloads();
-    const summary = computeRevOpsSummary(workloads, FALLBACK_COMMISSIONS);
+    const [workloads, commissions] = await Promise.all([
+      fetchTeamWorkloads(),
+      fetchTeamCommissions(),
+    ]);
+    const summary = computeRevOpsSummary(workloads, commissions);
 
     return NextResponse.json({
       workloads,
       summary,
-      commissions: FALLBACK_COMMISSIONS,
+      commissions,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Erreur chargement RevOps workload';
