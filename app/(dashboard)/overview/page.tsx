@@ -159,18 +159,31 @@ export default function OverviewPage() {
   const [loading, setLoading] = useState(true);
 
   const [objectives, setObjectives] = useState([
-    { id: '1', label: 'Restructurer le partenariat (50/50 → commission 30%)', done: true },
-    { id: '2', label: 'Créer les SOPs & Training Courses (onboarding 30 min)', done: true },
-    { id: '3', label: 'Recruter 2–3 coéquipiers à la commission', done: true },
+    { id: '1', label: 'Restructurer le partenariat (50/50 → commission 30%)', done: false },
+    { id: '2', label: 'Créer les SOPs & Training Courses (onboarding 30 min)', done: false },
+    { id: '3', label: 'Recruter 2–3 coéquipiers à la commission', done: false },
     { id: '4', label: 'Fermer 1–2 clients', done: false },
     { id: '5', label: 'Onboarder Eli (partenariat vidéo)', done: false },
-    { id: '6', label: 'Lancer le test Reach + démo Flow', done: true },
+    { id: '6', label: 'Lancer le test Reach + démo Flow', done: false },
   ]);
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('minerva_team_objectives');
+      if (saved) {
+        setObjectives(JSON.parse(saved));
+      }
+    } catch {}
+  }, []);
+
   const toggleObjective = (id: string) => {
-    setObjectives((prev) =>
-      prev.map((obj) => (obj.id === id ? { ...obj, done: !obj.done } : obj))
-    );
+    setObjectives((prev) => {
+      const updated = prev.map((obj) => (obj.id === id ? { ...obj, done: !obj.done } : obj));
+      try {
+        localStorage.setItem('minerva_team_objectives', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
   };
 
   useSequenceShortcuts();
@@ -404,11 +417,17 @@ export default function OverviewPage() {
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div className="p-3 rounded bg-zinc-50 border border-mv-border space-y-1">
-                    <span className="font-bold text-zinc-900">🤝 Modèle 100% Commission</span>
+                    <span className="font-bold text-zinc-900 flex items-center gap-1.5">
+                      <Target className="w-3.5 h-3.5 text-mv-green" />
+                      <span>Modèle 100% Commission</span>
+                    </span>
                     <p className="text-zinc-600 text-[11.5px]">Fin du 50/50 → Partenaire recentré sur la prospection (30% commission). Chacun gagne selon son travail réel.</p>
                   </div>
                   <div className="p-3 rounded bg-zinc-50 border border-mv-border space-y-1">
-                    <span className="font-bold text-zinc-900">🧠 Rôle Fondateur</span>
+                    <span className="font-bold text-zinc-900 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Rôle Fondateur</span>
+                    </span>
                     <p className="text-zinc-600 text-[11.5px]">Focus programmation &amp; architecture : 4h+ de code bloquées chaque jour. La tête qui réfléchit, l’équipe qui exécute.</p>
                   </div>
                 </div>
@@ -521,23 +540,29 @@ export default function OverviewPage() {
               <div className="bg-mv-surface border border-mv-border rounded-[6px] p-4 shadow-2xs space-y-2.5">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">Navigation Rapide</h3>
                 <div className="grid grid-cols-2 gap-1.5 text-xs">
-                  <Link href="/projects" className="p-2 rounded bg-zinc-50 hover:bg-zinc-100 border border-mv-border font-medium text-zinc-700 truncate">
-                    📁 Projets
+                  <Link href="/projects" className="p-2 rounded bg-zinc-50 hover:bg-zinc-100 border border-mv-border font-medium text-zinc-700 truncate flex items-center gap-1.5">
+                    <Target className="w-3.5 h-3.5 text-mv-green shrink-0" />
+                    <span>Projets</span>
                   </Link>
-                  <Link href="/tasks" className="p-2 rounded bg-zinc-50 hover:bg-zinc-100 border border-mv-border font-medium text-zinc-700 truncate">
-                    ✅ Tâches
+                  <Link href="/tasks" className="p-2 rounded bg-zinc-50 hover:bg-zinc-100 border border-mv-border font-medium text-zinc-700 truncate flex items-center gap-1.5">
+                    <CheckSquare className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <span>Tâches</span>
                   </Link>
-                  <Link href="/leads" className="p-2 rounded bg-zinc-50 hover:bg-zinc-100 border border-mv-border font-medium text-zinc-700 truncate">
-                    🤝 CRM Leads
+                  <Link href="/leads" className="p-2 rounded bg-zinc-50 hover:bg-zinc-100 border border-mv-border font-medium text-zinc-700 truncate flex items-center gap-1.5">
+                    <Target className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                    <span>CRM Leads</span>
                   </Link>
-                  <Link href="/academy" className="p-2 rounded bg-zinc-50 hover:bg-zinc-100 border border-mv-border font-medium text-zinc-700 truncate">
-                    🎓 SOPs Agence
+                  <Link href="/academy" className="p-2 rounded bg-zinc-50 hover:bg-zinc-100 border border-mv-border font-medium text-zinc-700 truncate flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>SOPs Agence</span>
                   </Link>
-                  <Link href="/content-planner" className="p-2 rounded bg-zinc-50 hover:bg-zinc-100 border border-mv-border font-medium text-zinc-700 truncate">
-                    🎬 Content Studio
+                  <Link href="/content-planner" className="p-2 rounded bg-zinc-50 hover:bg-zinc-100 border border-mv-border font-medium text-zinc-700 truncate flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                    <span>Content Studio</span>
                   </Link>
-                  <Link href="/company" className="p-2 rounded bg-zinc-50 hover:bg-zinc-100 border border-mv-border font-medium text-zinc-700 truncate">
-                    🏢 Company Wiki
+                  <Link href="/company" className="p-2 rounded bg-zinc-50 hover:bg-zinc-100 border border-mv-border font-medium text-zinc-700 truncate flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-zinc-700 shrink-0" />
+                    <span>Company Wiki</span>
                   </Link>
                 </div>
               </div>

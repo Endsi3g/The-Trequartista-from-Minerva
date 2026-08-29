@@ -14,7 +14,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Sécurité & Données',
     title: 'Isolation Row Level Security (RLS)',
     description: 'Toutes les tables PostgreSQL ont RLS activé et testé avec des profils authentifiés et anonymes.',
-    passed: true,
+    passed: false,
     critical: true,
   },
   {
@@ -23,7 +23,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Sécurité & Données',
     title: 'Protection Rate-Limiting & Brute Force',
     description: 'Middleware actif sur /login (5 req/min) et endpoints API publics (20 req/min) avec 429 Retry-After.',
-    passed: true,
+    passed: false,
     critical: true,
   },
   {
@@ -32,7 +32,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Sécurité & Données',
     title: 'Sanitisation des Variables d\'Environnement',
     description: 'Aucun caractère CRLF corrompu dans les clés API, tokens de service ou URL webhook.',
-    passed: true,
+    passed: false,
     critical: true,
   },
   {
@@ -41,7 +41,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Sécurité & Données',
     title: 'Validation des Entrées & Payloads API',
     description: 'Validation de schéma stricte avec typage TypeScript et garde-fous sur toutes les Server Actions et routes.',
-    passed: true,
+    passed: false,
     critical: false,
   },
 
@@ -52,7 +52,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Performance & Rapidité',
     title: 'Score Core Web Vitals (LCP < 2.5s, FID < 100ms, CLS < 0.1)',
     description: 'Chargement initial optimisé avec Turbopack, images Next/Image et streaming App Router.',
-    passed: true,
+    passed: false,
     critical: true,
   },
   {
@@ -61,7 +61,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Performance & Rapidité',
     title: 'Compression des Assets & Bundle Size',
     description: 'Tree-shaking actif, icônes importées chirurgicalement et absence de bibliothèques lourdes non utilisées.',
-    passed: true,
+    passed: false,
     critical: false,
   },
   {
@@ -70,7 +70,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Performance & Rapidité',
     title: 'Stratégie de Cache & Revalidation',
     description: 'Cache HTTP approprié sur les requêtes statiques et revalidation optimiste côté client.',
-    passed: true,
+    passed: false,
     critical: false,
   },
   {
@@ -79,7 +79,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Performance & Rapidité',
     title: 'Latence Supabase & Base de Données (< 150ms)',
     description: 'Indexation des clés étrangères et index composites sur les colonnes filtrées fréquemment.',
-    passed: true,
+    passed: false,
     critical: false,
   },
 
@@ -90,7 +90,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Architecture & Robustesse',
     title: 'Tolérance aux Pannes & Mode Dégradé',
     description: 'Fallbacks locaux en cas de coupure Supabase ou API Plane pour garantir zéro écran blanc.',
-    passed: true,
+    passed: false,
     critical: true,
   },
   {
@@ -99,7 +99,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Architecture & Robustesse',
     title: 'Gestion Centralisée des Erreurs & Error Boundaries',
     description: 'Présence de error.tsx et not-found.tsx sur chaque sous-segment de route critique.',
-    passed: true,
+    passed: false,
     critical: false,
   },
   {
@@ -108,7 +108,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Architecture & Robustesse',
     title: 'Synchronisation Bidirectionnelle Webhooks & MCP',
     description: 'Vérification de signature HMAC sur les webhooks ElevenLabs, Stripe et Plane.',
-    passed: true,
+    passed: false,
     critical: false,
   },
   {
@@ -117,7 +117,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Architecture & Robustesse',
     title: 'Typage TypeScript Strict (Zéro any)',
     description: 'Validation de conformité statique pnpm tsc sans avertissement bloquant.',
-    passed: true,
+    passed: false,
     critical: false,
   },
 
@@ -128,7 +128,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'UX & Responsive',
     title: 'Adaptabilité Multi-Écrans (Mobile, Tablette, Desktop)',
     description: 'Tiroir mobile fluide, barre inférieure tactile et mise en page responsive sans débordement horizontal.',
-    passed: true,
+    passed: false,
     critical: true,
   },
   {
@@ -137,7 +137,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'UX & Responsive',
     title: 'États de Chargement (Skeletons & Feedback)',
     description: 'Animations de chargement Skeleton harmonieuses et toasts informatifs sur chaque action asynchrone.',
-    passed: true,
+    passed: false,
     critical: false,
   },
   {
@@ -146,7 +146,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Accessibilité & SEO',
     title: 'Conformité ARIA & Navigation au Clavier',
     description: 'Focus traps sur les modales, raccourcis globaux (⌘K) et labels d\'accessibilité explicites.',
-    passed: true,
+    passed: false,
     critical: false,
   },
   {
@@ -155,7 +155,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'UX & Responsive',
     title: 'Palette Minerva & Cohérence Visuelle Tokens',
     description: 'Utilisation stricte des tokens CSS mv-green, mv-surface, mv-ink et polices brandées.',
-    passed: true,
+    passed: false,
     critical: false,
   },
 
@@ -166,7 +166,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Déploiement & Monitoring',
     title: 'Build de Production Vercel & Turbopack sans Erreur',
     description: 'Validation du bundle de production avec conformité App Router.',
-    passed: true,
+    passed: false,
     critical: true,
   },
   {
@@ -175,7 +175,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Déploiement & Monitoring',
     title: 'Journal d\'Audit & Télémétrie Opérationnelle',
     description: 'Traçabilité des actions sensibles dans audit_logs avec horodatage UTC et ID d\'acteur.',
-    passed: true,
+    passed: false,
     critical: false,
   },
   {
@@ -184,7 +184,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Accessibilité & SEO',
     title: 'Métadonnées OpenGraph & Manifest PWA',
     description: 'Balises meta optimisées pour le partage social et configuration PWA active.',
-    passed: true,
+    passed: false,
     critical: false,
   },
   {
@@ -193,7 +193,7 @@ export const STANDARD_20_POINT_QC: TechQaPoint[] = [
     category_label: 'Déploiement & Monitoring',
     title: 'Changelog & Documentation de Version',
     description: 'Entrée rédigée et synchronisée dans /changelog avant tout push majeur.',
-    passed: true,
+    passed: false,
     critical: false,
   },
 ];

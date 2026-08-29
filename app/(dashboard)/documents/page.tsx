@@ -70,13 +70,13 @@ const QUICK_STARTERS: {
 }[] = [
   {
     key: 'spec_framer',
-    title: '📄 Cahier des charges Framer',
+    title: 'Cahier des charges Framer',
     category: 'spec',
     icon: FileCode2,
     color: 'text-amber-600 bg-amber-50',
     defaultBlocks: [
       { id: 'b-1', type: 'heading_1', content: 'Cahier des Charges — Site Framer & Portails' },
-      { id: 'b-2', type: 'callout', content: '⚡ **Objectif** : Spécifications fonctionnelles, arborescence et charte graphique du nouveau site client.', calloutType: 'info' },
+      { id: 'b-2', type: 'callout', content: '**Objectif** : Spécifications fonctionnelles, arborescence et charte graphique du nouveau site client.', calloutType: 'info' },
       { id: 'b-3', type: 'heading_2', content: '1. Arborescence & Pages Cibles' },
       { id: 'b-4', type: 'bullet_list', content: 'Page d’accueil avec proposition de valeur claire et CTA d’audit' },
       { id: 'b-5', type: 'bullet_list', content: 'Section Tarifs transparents & simulation de ROI' },
@@ -87,13 +87,13 @@ const QUICK_STARTERS: {
   },
   {
     key: 'meeting_client',
-    title: '📝 Compte-rendu de Réunion Client',
+    title: 'Compte-rendu de Réunion Client',
     category: 'meeting_notes',
     icon: Calendar,
     color: 'text-purple-600 bg-purple-50',
     defaultBlocks: [
       { id: 'b-1', type: 'heading_1', content: 'Compte-Rendu — Réunion Stratégique Client' },
-      { id: 'b-2', type: 'callout', content: '👥 **Participants** : Équipe Minerva + Direction Client\n📅 **Date** : ' + new Date().toLocaleDateString('fr-CA'), calloutType: 'note' },
+      { id: 'b-2', type: 'callout', content: '**Participants** : Équipe Minerva + Direction Client\n**Date** : ' + new Date().toLocaleDateString('fr-CA'), calloutType: 'note' },
       { id: 'b-3', type: 'heading_2', content: '1. Décisions Validées' },
       { id: 'b-4', type: 'bullet_list', content: 'Validation du déploiement de la solution de commande directe' },
       { id: 'b-5', type: 'bullet_list', content: 'Date de lancement fixée sous 14 jours' },
@@ -104,13 +104,13 @@ const QUICK_STARTERS: {
   },
   {
     key: 'product_spec',
-    title: '💡 Dossier de Spécification Produit',
+    title: 'Dossier de Spécification Produit',
     category: 'product_brief',
     icon: Sparkles,
     color: 'text-blue-600 bg-blue-50',
     defaultBlocks: [
       { id: 'b-1', type: 'heading_1', content: 'Dossier Produit — Vision & Spécifications V1' },
-      { id: 'b-2', type: 'callout', content: '🎯 **Proposition de Valeur** : Solution clé en main 0% commission pour maximiser les marges nettes.', calloutType: 'tip' },
+      { id: 'b-2', type: 'callout', content: '**Proposition de Valeur** : Solution clé en main 0% commission pour maximiser les marges nettes.', calloutType: 'tip' },
       { id: 'b-3', type: 'heading_2', content: '1. Fonctionnalités Clés & Livrables' },
       { id: 'b-4', type: 'todo_list', content: 'Console de commande en ligne multi-appareils', checked: true },
       { id: 'b-5', type: 'todo_list', content: 'Notification sonore et impression automatique des bons en cuisine', checked: false },
@@ -118,13 +118,13 @@ const QUICK_STARTERS: {
   },
   {
     key: 'proposal_audit',
-    title: '📊 Proposition Commerciale & Audit',
+    title: 'Proposition Commerciale & Audit',
     category: 'proposal',
     icon: FileSpreadsheet,
     color: 'text-rose-600 bg-rose-50',
     defaultBlocks: [
       { id: 'b-1', type: 'heading_1', content: 'Proposition Commerciale & Audit Opérationnel' },
-      { id: 'b-2', type: 'callout', content: '💼 **Offre sur-mesure** : Déploiement accéléré et retour sur investissement sous 30 jours.', calloutType: 'warning' },
+      { id: 'b-2', type: 'callout', content: '**Offre sur-mesure** : Déploiement accéléré et retour sur investissement sous 30 jours.', calloutType: 'warning' },
       { id: 'b-3', type: 'heading_2', content: '1. Diagnostic des Pertes Actuelles' },
       { id: 'b-4', type: 'bullet_list', content: 'Commissions tierces estimées : ~1 800 $/mois' },
       { id: 'b-5', type: 'heading_2', content: '2. Forfait Recommandé & Tarification' },

@@ -152,7 +152,7 @@ export default function MinervaFlowSupervisionPage() {
           </div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-extrabold text-mv-ink font-mono" style={MONO}>
-              <AnimatedNumber value={summary?.total_revenue_processed_cad || 144550} formatDecimals={0} /> $
+              <AnimatedNumber value={summary?.total_revenue_processed_cad ?? 0} formatDecimals={0} /> $
             </span>
             <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
               Direct
@@ -169,7 +169,7 @@ export default function MinervaFlowSupervisionPage() {
           </div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-extrabold text-emerald-600 font-mono" style={MONO}>
-              <AnimatedNumber value={summary?.total_commissions_saved_cad || 40474} formatDecimals={0} /> $
+              <AnimatedNumber value={summary?.total_commissions_saved_cad ?? 0} formatDecimals={0} /> $
             </span>
             <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-1.5 py-0.5 rounded">
               ~28%
@@ -186,13 +186,13 @@ export default function MinervaFlowSupervisionPage() {
           </div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-extrabold text-mv-ink font-mono" style={MONO}>
-              <AnimatedNumber value={summary?.mrr_saas_cad || 646} formatDecimals={0} /> $
+              <AnimatedNumber value={summary?.mrr_saas_cad ?? 0} formatDecimals={0} /> $
             </span>
             <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
               / mois
             </span>
           </div>
-          <p className="text-[10.5px] text-mv-ink-faint mt-1">{summary?.active_restaurants || 4} établissements payants</p>
+          <p className="text-[10.5px] text-mv-ink-faint mt-1">{summary?.active_restaurants ?? 0} établissement{(summary?.active_restaurants ?? 0) > 1 ? 's' : ''} payant{(summary?.active_restaurants ?? 0) > 1 ? 's' : ''}</p>
         </div>
 
         {/* KPI 4: Opportunités Upsell Studio */}
@@ -203,7 +203,7 @@ export default function MinervaFlowSupervisionPage() {
           </div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-extrabold text-amber-600 font-mono" style={MONO}>
-              {summary?.upsell_opportunities_count || 2}
+              {summary?.upsell_opportunities_count ?? 0}
             </span>
             <span className="text-[11px] font-bold text-amber-800 bg-amber-100/70 px-1.5 py-0.5 rounded">
               À pitcher

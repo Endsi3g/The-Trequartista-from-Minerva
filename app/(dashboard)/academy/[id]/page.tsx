@@ -18,12 +18,11 @@ import {
   AlertTriangle,
   Lightbulb,
   ChevronRight,
-  UtensilsCrossed,
   Target,
   Building2,
-  Film,
   Zap,
   ExternalLink,
+  Info,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -41,6 +40,9 @@ import type { AcademySOP } from '@/lib/types';
 import { useToast } from '@/components/providers/ToastProvider';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { CaseStudyScriptStudio } from '@/components/academy/CaseStudyScriptStudio';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -59,11 +61,18 @@ export default function SopDetailPage() {
   const [copiedScript, setCopiedScript] = useState(false);
   const [creatingDoc, setCreatingDoc] = useState(false);
 
-  // Interactive Checklist steps
+  // Interactive Checklist steps with localStorage persistence
   const [checkedSteps, setCheckedSteps] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!rawId) return;
+    try {
+      const saved = localStorage.getItem(`minerva_sop_checklist_${rawId}`);
+      if (saved) {
+        setCheckedSteps(JSON.parse(saved));
+      }
+    } catch {}
+
     (async () => {
       setLoading(true);
       const supabase = createClient();
@@ -82,6 +91,18 @@ export default function SopDetailPage() {
       setLoading(false);
     })();
   }, [rawId]);
+
+  const handleStepToggle = (key: string, val: boolean) => {
+    setCheckedSteps((prev) => {
+      const updated = { ...prev, [key]: val };
+      if (rawId) {
+        try {
+          localStorage.setItem(`minerva_sop_checklist_${rawId}`, JSON.stringify(updated));
+        } catch {}
+      }
+      return updated;
+    });
+  };
 
   const toggleCompleted = async () => {
     if (!userId || !rawId) return;
@@ -128,14 +149,14 @@ export default function SopDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto space-y-4 py-6">
-        <SkeletonText className="w-32 h-2.5" />
-        <SkeletonText className="w-2/3 h-6" />
-        <Skeleton className="w-full h-48 rounded-2xl" />
-        <div className="space-y-2 pt-2">
-          <SkeletonText className="w-full" />
-          <SkeletonText className="w-full" />
-          <SkeletonText className="w-4/5" />
+      <div className="max-w-4xl mx-auto space-y-6 py-8">
+        <SkeletonText className="w-32 h-3" />
+        <SkeletonText className="w-2/3 h-8" />
+        <Skeleton className="w-full h-48 rounded-xl" />
+        <div className="space-y-3 pt-4">
+          <SkeletonText className="w-full h-4" />
+          <SkeletonText className="w-full h-4" />
+          <SkeletonText className="w-4/5 h-4" />
         </div>
       </div>
     );
@@ -144,14 +165,14 @@ export default function SopDetailPage() {
   if (!sop) {
     return (
       <PageFadeIn className="max-w-4xl mx-auto py-12 space-y-4">
-        <Link href="/academy" className="text-xs font-medium text-emerald-700 hover:underline flex items-center gap-1.5 w-fit">
+        <Link href="/academy" className="text-xs font-medium text-mv-green hover:underline flex items-center gap-1.5 w-fit">
           <ArrowLeft className="w-3.5 h-3.5" /> Retour à l’académie
         </Link>
-        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-2">
-          <BookOpen className="w-8 h-8 text-zinc-300 mx-auto" />
-          <p className="text-sm font-semibold text-zinc-800">SOP introuvable</p>
-          <p className="text-xs text-zinc-400">Ce guide a peut-être été déplacé ou archivé.</p>
-        </div>
+        <Card className="p-12 text-center space-y-3 bg-mv-surface border-mv-border rounded-xl">
+          <BookOpen className="w-8 h-8 text-mv-ink-faint mx-auto opacity-50" />
+          <p className="text-sm font-bold text-mv-ink">SOP introuvable</p>
+          <p className="text-xs text-mv-ink-soft">Ce guide a peut-être été déplacé ou archivé.</p>
+        </Card>
       </PageFadeIn>
     );
   }
@@ -187,183 +208,266 @@ export default function SopDetailPage() {
       ];
 
   return (
-    <PageFadeIn className="space-y-4 max-w-4xl mx-auto pb-16">
+    <PageFadeIn className="space-y-6 max-w-4xl mx-auto pb-16">
       {/* ── 1. Top Contextual Breadcrumb & Actions Bar ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium truncate min-w-0">
-          <Link href="/academy" className="hover:text-zinc-900 transition-colors flex items-center gap-1">
-            <ArrowLeft className="w-3 h-3 text-zinc-400" />
+      <div className="bg-mv-surface border border-mv-border rounded-xl p-3.5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs text-mv-ink-soft font-medium truncate min-w-0">
+          <Link href="/academy" className="hover:text-mv-ink transition-colors flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5 text-mv-ink-faint" />
             <span>Académie</span>
           </Link>
-          <ChevronRight className="w-3 h-3 text-zinc-400 shrink-0" />
-          <span className="text-zinc-600 truncate">{sop.category}</span>
-          <ChevronRight className="w-3 h-3 text-zinc-400 shrink-0" />
-          <span className="text-zinc-900 font-semibold truncate">{sop.title}</span>
+          <ChevronRight className="w-3.5 h-3.5 text-mv-ink-faint shrink-0" />
+          <span className="text-mv-ink-soft truncate">{sop.category}</span>
+          <ChevronRight className="w-3.5 h-3.5 text-mv-ink-faint shrink-0" />
+          <span className="text-mv-ink font-bold truncate">{sop.title}</span>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleSharePublic}
-            className="h-7 px-2.5 text-xs font-medium border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-md transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            className="text-xs bg-mv-surface border-mv-border text-mv-ink hover:bg-black/[0.04] gap-1.5 cursor-pointer"
             title="Copier le lien public accessible sans compte"
           >
-            <Share2 className="w-3.5 h-3.5 text-zinc-500" />
-            <span>Partager le lien public</span>
-          </button>
+            <Share2 className="w-3.5 h-3.5 text-mv-ink-soft" />
+            <span>Partager</span>
+          </Button>
 
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleCreateProspectDoc}
             disabled={creatingDoc}
-            className="h-7 px-2.5 text-xs font-medium border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-md transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
+            className="text-xs bg-mv-surface border-mv-border text-mv-ink hover:bg-black/[0.04] gap-1.5 cursor-pointer disabled:opacity-50"
             title="Créer un document vierge dans /documents"
           >
-            <FileText className="w-3.5 h-3.5 text-emerald-600" />
-            <span>+ Créer doc prospect</span>
-          </button>
+            <FileText className="w-3.5 h-3.5 text-mv-green" />
+            <span>+ Doc prospect</span>
+          </Button>
 
-          <button
+          <Button
+            size="sm"
             onClick={toggleCompleted}
             disabled={saving}
             className={cn(
-              'h-7 px-3 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50',
+              'text-xs font-semibold gap-1.5 cursor-pointer transition-all',
               completed
-                ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
+                : 'bg-mv-green hover:bg-mv-green/90 text-white shadow-xs'
             )}
           >
             {completed ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <Circle className="w-3.5 h-3.5" />}
             <span>{completed ? 'SOP Complétée' : 'Marquer comme lu'}</span>
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* ── 2. Visual Header Card ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-6 shadow-2xs space-y-3">
+      <Card className="bg-mv-surface border-mv-border rounded-xl p-6 sm:p-8 shadow-xs space-y-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="bg-zinc-100 text-zinc-700 text-[10.5px] font-semibold px-2.5 py-0.5 rounded border border-zinc-200/60">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="neutral" className="text-xs font-semibold">
               {sop.category}
-            </span>
+            </Badge>
             {(sop.is_featured || isMasterSop) && (
-              <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-200 uppercase tracking-wider">
+              <Badge variant="green" className="text-xs font-bold uppercase tracking-wider">
                 FONDATRICE
-              </span>
+              </Badge>
             )}
-            <span className="text-[11px] font-mono text-zinc-400 flex items-center gap-1" style={MONO}>
-              <Clock className="w-3 h-3 text-zinc-400" />
+            <span className="text-xs font-mono text-mv-ink-faint flex items-center gap-1.5" style={MONO}>
+              <Clock className="w-3.5 h-3.5 text-mv-ink-faint" />
               <span>{sop.read_time_min || 5} min de lecture</span>
             </span>
           </div>
 
-          <div className="text-[11px] text-zinc-500 flex items-center gap-1.5">
-            <span className="text-zinc-400">Rédigé par :</span>
-            <strong className="text-zinc-800">{sop.author || 'Équipe Minerva'}</strong>
+          <div className="text-xs text-mv-ink-soft flex items-center gap-1.5">
+            <span className="text-mv-ink-faint">Rédigé par :</span>
+            <strong className="text-mv-ink font-semibold">{sop.author || 'Équipe Minerva'}</strong>
           </div>
         </div>
 
-        <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 tracking-tight leading-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-mv-ink tracking-tight leading-tight">
           {sop.title}
         </h1>
 
         {sop.description && (
-          <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed border-l-2 border-emerald-600 pl-3 py-0.5 bg-emerald-50/30 rounded-r">
+          <p className="text-xs sm:text-sm text-mv-ink-soft leading-relaxed border-l-2 border-mv-green pl-3.5 py-1 bg-mv-cream-soft rounded-r-lg">
             {sop.description}
           </p>
         )}
 
-        {/* Quick Action Buttons for Pillars */}
+        {/* Quick Pillar Action Buttons */}
         <div className="pt-2 flex items-center gap-2 flex-wrap text-xs">
           {(isMasterSop || isPillar1) && (
             <Link
-              href="/minerva-flow"
-              className="px-2.5 py-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              href="/flow"
+              className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <UtensilsCrossed className="w-3 h-3 text-amber-600" />
-              <span>Ouvrir Démo Minerva-Flow (0%)</span>
-              <ExternalLink className="w-2.5 h-2.5 opacity-60" />
-            </Link>
-          )}
-
-          {(isMasterSop || isPillar1) && (
-            <Link
-              href="/audits/new"
-              className="px-2.5 py-1 rounded bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200 font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Zap className="w-3 h-3 text-zinc-600" />
-              <span>Calculateur Audit Fuite de Marge</span>
-              <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+              <Zap className="w-3.5 h-3.5 text-amber-600" />
+              <span>Minerva Flow (SaaS)</span>
+              <ExternalLink className="w-3 h-3 opacity-60" />
             </Link>
           )}
 
           {(isMasterSop || isPillar2) && (
             <Link
               href="/leads"
-              className="px-2.5 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200/80 font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <Target className="w-3 h-3 text-blue-600" />
-              <span>Ouvrir CRM Leads (Reach QC)</span>
-              <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+              <Target className="w-3.5 h-3.5 text-blue-600" />
+              <span>CRM Leads (Reach QC)</span>
+              <ExternalLink className="w-3 h-3 opacity-60" />
             </Link>
           )}
 
           {(isMasterSop || isPillar3) && (
             <Link
               href="/projects"
-              className="px-2.5 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <Building2 className="w-3 h-3 text-emerald-600" />
+              <Building2 className="w-3.5 h-3.5 text-emerald-600" />
               <span>Projets & Prototypes J+7</span>
-              <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+              <ExternalLink className="w-3 h-3 opacity-60" />
             </Link>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* ── 3. Embedded Video Player (if present) ── */}
       {sop.video_url && (
-        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-4 shadow-2xs space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-zinc-900">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+        <Card className="bg-mv-surface border-mv-border rounded-xl p-5 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-mv-ink">
+            <Sparkles className="w-4 h-4 text-mv-green" />
             <span>Démonstration Vidéo & Walkthrough</span>
           </div>
           <VideoAssetPlayer src={sop.video_url} title={sop.title} />
-        </div>
+        </Card>
       )}
 
-      {/* ── 4. Main Markdown Content & Visual Callouts ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-6 shadow-2xs space-y-6">
-        <div className="prose prose-zinc prose-sm max-w-none text-xs sm:text-[13px] leading-relaxed text-zinc-700">
-          {sop.content_markdown ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{sop.content_markdown}</ReactMarkdown>
-          ) : sop.description ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{sop.description}</ReactMarkdown>
-          ) : (
-            <p className="text-zinc-400 italic">Aucun contenu détaillé pour cette SOP pour le moment.</p>
-          )}
+      {/* ── 4. Main Markdown Content (Refined Notion/Stripe Typography) ── */}
+      <Card className="bg-mv-surface border-mv-border rounded-xl p-6 sm:p-10 shadow-xs space-y-8">
+        <div className="space-y-6 text-mv-ink leading-relaxed">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              h1: ({ children }) => (
+                <h1 className="text-2xl font-bold font-display text-mv-ink tracking-tight pt-6 pb-2 border-b border-mv-border first:pt-0">
+                  {children}
+                </h1>
+              ),
+              h2: ({ children }) => (
+                <div className="pt-8 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-4 rounded-full bg-mv-green" />
+                    <h2 className="text-lg font-bold font-display text-mv-ink tracking-tight">
+                      {children}
+                    </h2>
+                  </div>
+                </div>
+              ),
+              h3: ({ children }) => (
+                <h3 className="text-sm font-bold text-mv-ink pt-4 pb-1">
+                  {children}
+                </h3>
+              ),
+              p: ({ children }) => (
+                <p className="text-[13.5px] leading-relaxed text-zinc-700 my-2.5">
+                  {children}
+                </p>
+              ),
+              ul: ({ children }) => (
+                <ul className="space-y-2 my-3 pl-5 list-disc text-[13px] text-zinc-700">
+                  {children}
+                </ul>
+              ),
+              ol: ({ children }) => (
+                <ol className="space-y-2 my-3 pl-5 list-decimal text-[13px] text-zinc-700">
+                  {children}
+                </ol>
+              ),
+              li: ({ children }) => (
+                <li className="leading-relaxed pl-1">{children}</li>
+              ),
+              blockquote: ({ children }) => (
+                <div className="p-4 rounded-xl bg-mv-cream-soft border-l-4 border-mv-green border my-4 space-y-1 text-[13px] text-zinc-800">
+                  <div className="flex items-center gap-1.5 font-bold text-mv-green text-xs mb-1">
+                    <Info className="w-3.5 h-3.5" />
+                    <span>Point Clé & Directive</span>
+                  </div>
+                  {children}
+                </div>
+              ),
+              table: ({ children }) => (
+                <div className="my-6 overflow-x-auto rounded-xl border border-mv-border shadow-2xs">
+                  <table className="w-full text-left text-xs border-collapse divide-y divide-mv-border">
+                    {children}
+                  </table>
+                </div>
+              ),
+              thead: ({ children }) => (
+                <thead className="bg-zinc-100/80 font-bold text-mv-ink tracking-wider uppercase text-[10.5px]">
+                  {children}
+                </thead>
+              ),
+              tbody: ({ children }) => (
+                <tbody className="divide-y divide-mv-border bg-white">{children}</tbody>
+              ),
+              tr: ({ children }) => (
+                <tr className="hover:bg-zinc-50/80 transition-colors">{children}</tr>
+              ),
+              th: ({ children }) => (
+                <th className="px-4 py-3 font-bold text-zinc-800">{children}</th>
+              ),
+              td: ({ children }) => (
+                <td className="px-4 py-3 text-zinc-700 text-[12px] leading-normal">{children}</td>
+              ),
+              hr: () => <hr className="my-8 border-mv-border" />,
+              code: ({ className, children, ...props }) => {
+                const isInline = !className;
+                if (isInline) {
+                  return (
+                    <code className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-900 border border-zinc-200 text-xs font-mono" style={MONO}>
+                      {children}
+                    </code>
+                  );
+                }
+                return (
+                  <pre className="p-4 rounded-xl bg-zinc-950 text-zinc-100 text-xs font-mono overflow-x-auto my-4 border border-zinc-800" style={MONO}>
+                    <code>{children}</code>
+                  </pre>
+                );
+              },
+            }}
+          >
+            {sop.content_markdown || sop.description || 'Aucun contenu.'}
+          </ReactMarkdown>
         </div>
 
         {/* ── 5. Actionable Outreach Script Callout ── */}
-        <div className="bg-zinc-50 border border-zinc-200 rounded-[6px] p-4 space-y-2.5">
+        <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-900">
-              <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+            <div className="flex items-center gap-2 text-xs font-bold text-mv-ink">
+              <Lightbulb className="w-4 h-4 text-amber-500" />
               <span>Modèle de Script de Prospection / Outreach Réel</span>
             </div>
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => handleCopyOutreachScript(sampleOutreachScript)}
-              className="h-6 px-2 text-[11px] font-medium border border-zinc-300 bg-white hover:bg-zinc-100 rounded text-zinc-700 transition-colors flex items-center gap-1 cursor-pointer"
+              className="text-xs bg-white border-zinc-300 text-zinc-800 hover:bg-zinc-100 gap-1.5 cursor-pointer"
             >
-              {copiedScript ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-zinc-500" />}
+              {copiedScript ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-zinc-500" />}
               <span>{copiedScript ? 'Copié !' : 'Copier le script'}</span>
-            </button>
+            </Button>
           </div>
 
-          <pre className="p-3 bg-white border border-zinc-200 rounded text-[11px] font-mono text-zinc-700 whitespace-pre-wrap leading-relaxed">
+          <pre className="p-4 bg-white border border-zinc-200 rounded-xl text-xs font-mono text-zinc-800 whitespace-pre-wrap leading-relaxed shadow-2xs" style={MONO}>
             {sampleOutreachScript}
           </pre>
         </div>
 
-        {/* ── 6. Studio de Scripting Cas Client 60s (Mes Inspirations) ── */}
+        {/* ── 6. Studio de Scripting Cas Client 60s ── */}
         {(isMasterSop || isPillar4) && (
           <div className="pt-2">
             <CaseStudyScriptStudio
@@ -373,43 +477,47 @@ export default function SopDetailPage() {
           </div>
         )}
 
-        {/* ── 7. Step-by-step Interactive Action Checklist ── */}
-        <div className="bg-emerald-50/40 border border-emerald-200/80 rounded-[6px] p-4 space-y-3">
+        {/* ── 7. Interactive Action Checklist (Starts 0/N, Unchecked, Persistent) ── */}
+        <div className="bg-emerald-50/40 border border-emerald-200 rounded-xl p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-900">
+            <div className="flex items-center gap-2 text-xs font-bold text-emerald-950">
               <ListChecks className="w-4 h-4 text-emerald-700" />
-              <span>Checklist d’Exécution & Contrôle Qualité ({Object.values(checkedSteps).filter(Boolean).length}/{checklistItems.length})</span>
+              <span>
+                Checklist d’Exécution & Contrôle Qualité ({Object.values(checkedSteps).filter(Boolean).length}/{checklistItems.length})
+              </span>
             </div>
             {Object.values(checkedSteps).filter(Boolean).length === checklistItems.length && (
-              <span className="text-[11px] text-emerald-800 font-bold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <Badge variant="green" className="text-xs font-semibold gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Prêt pour exécution</span>
-              </span>
+              </Badge>
             )}
           </div>
 
-          <div className="space-y-2 text-xs text-zinc-700">
-            {checklistItems.map((step, idx) => (
-              <label
-                key={idx}
-                className="flex items-start gap-2.5 p-2 rounded bg-white border border-emerald-100 cursor-pointer hover:bg-emerald-50/60 transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={!!checkedSteps[`step-${idx}`]}
-                  onChange={(e) =>
-                    setCheckedSteps((prev) => ({ ...prev, [`step-${idx}`]: e.target.checked }))
-                  }
-                  className="w-3.5 h-3.5 mt-0.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer"
-                />
-                <span className={cn('font-medium leading-relaxed', checkedSteps[`step-${idx}`] && 'line-through text-zinc-400')}>
-                  {step}
-                </span>
-              </label>
-            ))}
+          <div className="space-y-2 text-xs text-zinc-800">
+            {checklistItems.map((step, idx) => {
+              const stepKey = `step-${idx}`;
+              const isChecked = !!checkedSteps[stepKey];
+              return (
+                <label
+                  key={idx}
+                  className="flex items-start gap-3 p-3 rounded-lg bg-white border border-emerald-100 cursor-pointer hover:bg-emerald-50/60 transition-colors shadow-2xs"
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={(e) => handleStepToggle(stepKey, e.target.checked)}
+                    className="w-4 h-4 mt-0.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer"
+                  />
+                  <span className={cn('font-medium leading-relaxed', isChecked && 'line-through text-zinc-400')}>
+                    {step}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         </div>
-      </div>
+      </Card>
     </PageFadeIn>
   );
 }
