@@ -2291,6 +2291,20 @@ export async function revokeClientInvite(inviteId: string): Promise<boolean> {
 }
 
 export async function fetchInviteByToken(token: string): Promise<(ClientInvite & { client_name: string }) | null> {
+  // 1. Try server API route first (bypasses RLS for anonymous guests)
+  try {
+    const res = await fetch(`/api/portal/invites/verify?token=${encodeURIComponent(token.trim())}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json?.valid && json.invite) {
+        return json.invite as (ClientInvite & { client_name: string });
+      }
+    }
+  } catch (apiErr) {
+    console.warn('[fetchInviteByToken] Server API error, attempting fallback:', apiErr);
+  }
+
+  // 2. Direct client fallback
   const { data, error } = await getSupabase()
     .from('client_invites')
     .select('*, client:clients(name)')
@@ -2305,6 +2319,24 @@ export async function fetchInviteByToken(token: string): Promise<(ClientInvite &
 }
 
 export async function redeemClientInvite(token: string, userId: string): Promise<string | null> {
+  // 1. Try server API route first
+  try {
+    const res = await fetch('/api/portal/invites/redeem', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token.trim(), userId }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json?.success) {
+        return json.clientId || 'ok';
+      }
+    }
+  } catch (apiErr) {
+    console.warn('[redeemClientInvite] Server API error, attempting fallback:', apiErr);
+  }
+
+  // 2. Direct client fallback
   const invite = await fetchInviteByToken(token);
   if (!invite) return null;
 
@@ -2496,6 +2528,20 @@ export async function fetchTeamInvites(): Promise<TeamInvite[]> {
 }
 
 export async function fetchTeamInviteByToken(token: string): Promise<TeamInvite | null> {
+  // 1. Try server API route first (bypasses RLS for anonymous guests)
+  try {
+    const res = await fetch(`/api/team/invites/verify?token=${encodeURIComponent(token.trim())}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json?.valid && json.invite) {
+        return json.invite as TeamInvite;
+      }
+    }
+  } catch (apiErr) {
+    console.warn('[fetchTeamInviteByToken] Server API error, attempting fallback:', apiErr);
+  }
+
+  // 2. Direct client fallback
   const { data, error } = await getSupabase()
     .from('team_invites')
     .select('*')
@@ -2509,6 +2555,22 @@ export async function fetchTeamInviteByToken(token: string): Promise<TeamInvite 
 }
 
 export async function redeemTeamInvite(token: string, userId: string): Promise<boolean> {
+  // 1. Try server API route first
+  try {
+    const res = await fetch('/api/team/invites/redeem', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token.trim(), userId }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json?.success) return true;
+    }
+  } catch (apiErr) {
+    console.warn('[redeemTeamInvite] Server API error, attempting fallback:', apiErr);
+  }
+
+  // 2. Direct client fallback
   const invite = await fetchTeamInviteByToken(token);
   if (!invite) return false;
 

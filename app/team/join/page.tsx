@@ -47,7 +47,9 @@ function JoinForm() {
         setInvalid(true);
       } else {
         setInvite({ role: inv.role, department: inv.department, custom_role_id: inv.custom_role_id, workspace: inv.workspace });
-        if (inv.custom_role_id) {
+        if ((inv as any).custom_role_name) {
+          setCustomRoleName((inv as any).custom_role_name);
+        } else if (inv.custom_role_id) {
           const roles = await fetchRoles();
           setCustomRoleName(roles.find((r) => r.id === inv.custom_role_id)?.name || null);
         }
