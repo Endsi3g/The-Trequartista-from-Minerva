@@ -249,7 +249,7 @@ export default function NewContactPage() {
                 ) : (
                   <Sparkles className="w-3 h-3 text-pink-600" />
                 )}
-                {fetchingIg ? 'Importation…' : '⚡ Importer depuis Instagram'}
+                {fetchingIg ? 'Importation…' : 'Importer depuis Instagram'}
               </button>
             </div>
             <div className="relative">

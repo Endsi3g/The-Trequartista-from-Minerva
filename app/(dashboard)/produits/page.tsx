@@ -289,7 +289,8 @@ export default function ProduitsMinervaPage() {
                   : 'text-zinc-500 hover:text-zinc-800'
               )}
             >
-              <span>🚀 Roadmap Produits</span>
+              <Zap className="w-3.5 h-3.5 text-mv-green" />
+              <span>Roadmap Produits</span>
               <span className="px-1 py-0.2 rounded bg-zinc-200 text-[10px] text-zinc-700">{items.length}</span>
             </button>
 
@@ -303,7 +304,8 @@ export default function ProduitsMinervaPage() {
                   : 'text-zinc-500 hover:text-zinc-800'
               )}
             >
-              <span>💡 Demandes Clients</span>
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Demandes Clients</span>
               <span className="px-1 py-0.2 rounded bg-emerald-100 text-[10px] text-emerald-800 font-bold">{requests.length}</span>
             </button>
           </div>

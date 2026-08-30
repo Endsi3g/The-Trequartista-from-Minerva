@@ -638,7 +638,7 @@ The Minerva Growth Team`;
             {/* Copy CTA */}
             <div className="flex items-center justify-between pt-1 text-xs">
               <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
-                💡 Enregistrez votre écran avec Loom, Tana ou OBS en montrant la fiche Google Maps.
+                Enregistrez votre écran avec Loom, Tana ou OBS en montrant la fiche Google Maps.
               </span>
 
               <Button

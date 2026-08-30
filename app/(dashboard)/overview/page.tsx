@@ -315,7 +315,7 @@ export default function OverviewPage() {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20" style={MONO}>
-                🧭 Tu viens d’arriver ?
+                Tu viens d’arriver ?
               </span>
               <span className="text-xs text-zinc-400 font-medium hidden sm:inline">5 minutes pour tout comprendre</span>
             </div>

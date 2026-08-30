@@ -109,7 +109,7 @@ export default function LeadDetailPage() {
 
     const text =
       entryType === 'call'
-        ? `📞 Appel (${callDuration} min) — ${callOutcome}${newNoteText.trim() ? ` : ${newNoteText.trim()}` : ''}`
+        ? `Appel (${callDuration} min) — ${callOutcome}${newNoteText.trim() ? ` : ${newNoteText.trim()}` : ''}`
         : newNoteText.trim();
 
     const newNote: LeadNote = {

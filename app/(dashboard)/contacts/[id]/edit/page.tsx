@@ -376,7 +376,7 @@ export default function EditContactPage() {
                 ) : (
                   <Sparkles className="w-3 h-3 text-pink-600" />
                 )}
-                {fetchingIg ? 'Importation…' : '⚡ Actualiser depuis Instagram'}
+                {fetchingIg ? 'Importation…' : 'Actualiser depuis Instagram'}
               </button>
             </div>
             <div className="relative">
