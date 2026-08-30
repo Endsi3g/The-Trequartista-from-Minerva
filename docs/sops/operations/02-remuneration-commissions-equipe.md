@@ -18,10 +18,13 @@ Chez Minerva, nous croyons à un modèle équitable où la rémunération est di
 
 ## 2. Structure Détaillée par Rôle
 
-| Rôle | Base de Calcul | Taux de Commission | Exemple Concret |
+| Rôle | Base de Calcul | Taux de Commission / Forfait | Exemple Concret |
 | :--- | :--- | :--- | :--- |
 | 📡 **Prospecteur** | Valeur du contrat / deal fermé | **30%** du montant total | Contrat agence ou setup à 3 000 $ → **900 $ CAD** |
 | 🧑‍💼 **Account Manager** | MRR récurrent du client géré | **15%** du MRR mensuel | 5 clients à 350 $/mois MRR → **262,50 $/mois** récurrents |
+| 💻 **Lead Développeur Full-Stack** | Forfait sprint ou % du projet sur-mesure | **25% à 30%** du projet build | Projet custom à 5 000 $ → **1 250 $ à 1 500 $ CAD** |
+| 🤖 **Ingénieur IA & Automatisation** | Forfait par pipeline / workflow déployé | Variable (selon complexité) | Setup workflow Voice AI + CRM → Forfait convenu |
+| 🎨 **Architecte Web & Framer** | Forfait par site web / portail client | Variable (défini au devis) | Vitrine Framer livrée sous 7j → Forfait projet |
 | 🎬 **Créateur de contenu** | Forfait par projet ou livrable | Variable (défini au brief) | Lot de 4 vidéos montées → Tarif convenu au projet |
 | 🛠️ **Support & QA** | Forfait par tâche ou ticket P0/P1 | Variable (défini par lot) | Résolution de tickets de test / validation |
 
@@ -36,6 +39,14 @@ Chez Minerva, nous croyons à un modèle équitable où la rémunération est di
 ---
 
 ## 4. Fiches de Rôles & Attentes Hebdomadaires
+
+### 💻 Fiche Lead Développeur Full-Stack :
+- **Missions cibles** : Développer et livrer les prototypes J+7 fonctionnels, maintenir les Server Actions & RLS Supabase, passer la checklist QC 20-points (100% de conformité).
+- **Règles d'or** : Zéro code non testé en prod ; documenter chaque module avec une vidéo de 3 minutes ; respecter les tokens du design system Minerva.
+
+### 🤖 Fiche Ingénieur IA & Automatisation :
+- **Missions cibles** : Connecter les flux de prospection Reach, configurer les webhooks temps réel, brancher les agents vocaux ElevenLabs et les intégrations CRM/Stripe.
+- **Règles d'or** : Fiabilité à 99.9% sur les déclencheurs ; gestion d'erreur avec fallbacks locaux et alertes automatiques.
 
 ### 📡 Fiche Prospecteur :
 - **KPIs cibles** : 10 nouveaux prospects identifiés/semaine, 5 prises de contact initiales/semaine, 1 démo/meeting booké par semaine.

@@ -279,16 +279,51 @@ export default function TeamInvitePage() {
 
             <div>
               <label htmlFor="department" className="block text-[11px] font-bold text-mv-ink mb-1.5">
-                Département de rattachement
+                Département / Rôle Spécialisé
               </label>
               <input
                 id="department"
                 type="text"
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
-                placeholder="Tech & IA, Marketing, Ventes…"
+                placeholder="Tech & IA, Lead Développeur, Ingénieur IA…"
                 className="w-full h-8 px-3 rounded-[4px] bg-white border border-mv-border text-[11.5px] text-mv-ink placeholder:text-zinc-400 focus:outline-none focus:border-mv-green transition-colors"
               />
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {[
+                  'Tech & IA',
+                  'Lead Développeur Full-Stack',
+                  'Ingénieur IA & Automatisation',
+                  'Architecte Web & Framer',
+                  'Prospection & Sales',
+                  'Account Management',
+                  'Création de Contenu',
+                  'Support & QA',
+                ].map((deptLabel) => (
+                  <button
+                    key={deptLabel}
+                    type="button"
+                    onClick={() => {
+                      setDepartment(deptLabel);
+                      if (deptLabel.toLowerCase().includes('tech') || deptLabel.toLowerCase().includes('dev') || deptLabel.toLowerCase().includes('ia') || deptLabel.toLowerCase().includes('framer')) {
+                        setWorkspace('tech');
+                      } else if (deptLabel.toLowerCase().includes('prospect') || deptLabel.toLowerCase().includes('sales')) {
+                        setWorkspace('prospection');
+                      } else if (deptLabel.toLowerCase().includes('account') || deptLabel.toLowerCase().includes('support')) {
+                        setWorkspace('managing');
+                      }
+                    }}
+                    className={cn(
+                      'text-[10px] px-2 py-0.5 rounded border transition-colors cursor-pointer font-medium',
+                      department === deptLabel
+                        ? 'bg-zinc-900 text-white border-zinc-900'
+                        : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border-zinc-200'
+                    )}
+                  >
+                    {deptLabel}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <button

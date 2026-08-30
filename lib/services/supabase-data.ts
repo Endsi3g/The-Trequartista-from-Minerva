@@ -1488,13 +1488,16 @@ Comprendre l'agence, ton rôle et les outils en **30 minutes chrono**. Tout est 
 
 ## 🎯 Min 5–15 : Ton Rôle & Attentes
 
-### Les 4 Rôles Disponibles :
+### Les Rôles Disponibles :
 | Rôle | Mission Principale | Rémunération |
 | :--- | :--- | :--- |
 | 📡 **Prospecteur** | Identifier et contacter des prospects qualifiés, booker des meetings de démo | **30% du deal fermé** (ex: deal à 3 000 $ → 900 $) |
 | 🧑‍💼 **Account Manager** | Gérer la relation client après signature, onboarding, suivi, rétention et upsells | **15% du MRR client** (ex: 3 clients à 250 $ MRR → 112 $/mois) |
+| 💻 **Lead Développeur Full-Stack** | Architecture technique, livraison des prototypes J+7, intégrations Next.js & Supabase | Forfait par sprint / **25-30% du projet build** |
+| 🤖 **Ingénieur IA & Automatisation** | Conception des pipelines Reach, webhooks, connecteurs MCP et agents vocaux | Forfait par automatisation ou flux IA |
+| 🎨 **Architecte Web & Expert Framer** | Conception UI/UX, intégrations Framer ultrarapides, animations & charte graphique | Forfait par projet web / vitrine |
 | 🎬 **Créateur de contenu** | Produire des vidéos (Reels/TikToks/Shorts), posts et visuels | Forfait par projet (défini avant démarrage) |
-| 🛠️ **Support & QA** | Répondre aux tickets, tester les nouvelles features, documenter les bugs | Forfait par tâche / ticket |
+| 🛠️ **Support & QA** | Répondre aux tickets, tester les 20 points de conformité QC, documenter les bugs | Forfait par tâche / ticket |
 
 ---
 
@@ -1527,7 +1530,7 @@ Comprendre l'agence, ton rôle et les outils en **30 minutes chrono**. Tout est 
     category: 'Rôles & Rémunération',
     read_time_min: 15,
     author: 'Direction Minerva',
-    description: 'Grille de commissions transparentes (30% prospecteur, 15% MRR account manager) et modalités de paiement.',
+    description: 'Grille de commissions transparentes (30% prospecteur, 15% MRR account manager, forfaits tech & delivery) et modalités de paiement.',
     is_featured: true,
     is_essential: true,
     pillar: 'transversal',
@@ -1551,10 +1554,13 @@ Chez Minerva, nous croyons à un modèle équitable où la rémunération est di
 
 ## 2. Structure Détaillée par Rôle
 
-| Rôle | Base de Calcul | Taux de Commission | Exemple Concret |
+| Rôle | Base de Calcul | Taux de Commission / Forfait | Exemple Concret |
 | :--- | :--- | :--- | :--- |
 | 📡 **Prospecteur** | Valeur du contrat / deal fermé | **30%** du montant total | Contrat agence ou setup à 3 000 $ → **900 $ CAD** |
 | 🧑‍💼 **Account Manager** | MRR récurrent du client géré | **15%** du MRR mensuel | 5 clients à 350 $/mois MRR → **262,50 $/mois** récurrents |
+| 💻 **Lead Développeur Full-Stack** | Forfait sprint ou % du projet sur-mesure | **25% à 30%** du projet build | Projet custom à 5 000 $ → **1 250 $ à 1 500 $ CAD** |
+| 🤖 **Ingénieur IA & Automatisation** | Forfait par pipeline / workflow déployé | Variable (selon complexité) | Setup workflow Voice AI + CRM → Forfait convenu |
+| 🎨 **Architecte Web & Framer** | Forfait par site web / portail client | Variable (défini au devis) | Vitrine Framer livrée sous 7j → Forfait projet |
 | 🎬 **Créateur de contenu** | Forfait par projet ou livrable | Variable (défini au brief) | Lot de 4 vidéos montées → Tarif convenu au projet |
 | 🛠️ **Support & QA** | Forfait par tâche ou ticket P0/P1 | Variable (défini par lot) | Résolution de tickets de test / validation |
 

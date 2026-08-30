@@ -28,13 +28,16 @@ Comprendre l'agence, ton rôle et les outils en **30 minutes chrono**. Tout est 
 
 ## 🎯 Min 5–15 : Ton Rôle & Attentes
 
-### Les 4 Rôles Disponibles :
+### Les Rôles Disponibles :
 | Rôle | Mission Principale | Rémunération |
 | :--- | :--- | :--- |
 | 📡 **Prospecteur** | Identifier et contacter des prospects qualifiés, booker des meetings de démo | **30% du deal fermé** (ex: deal à 3 000 $ → 900 $) |
 | 🧑‍💼 **Account Manager** | Gérer la relation client après signature, onboarding, suivi, rétention et upsells | **15% du MRR client** (ex: 3 clients à 250 $ MRR → 112 $/mois) |
+| 💻 **Lead Développeur Full-Stack** | Architecture technique, livraison des prototypes J+7, intégrations Next.js & Supabase | Forfait par sprint / **25-30% du projet build** |
+| 🤖 **Ingénieur IA & Automatisation** | Conception des pipelines Reach, webhooks, connecteurs MCP et agents vocaux | Forfait par automatisation ou flux IA |
+| 🎨 **Architecte Web & Expert Framer** | Conception UI/UX, intégrations Framer ultrarapides, animations & charte graphique | Forfait par projet web / vitrine |
 | 🎬 **Créateur de contenu** | Produire des vidéos (Reels/TikToks/Shorts), posts et visuels | Forfait par projet (défini avant démarrage) |
-| 🛠️ **Support & QA** | Répondre aux tickets, tester les nouvelles features, documenter les bugs | Forfait par tâche / ticket |
+| 🛠️ **Support & QA** | Répondre aux tickets, tester les 20 points de conformité QC, documenter les bugs | Forfait par tâche / ticket |
 
 ### Ce qu'on attend de toi :
 - **Autonomie** : Tu n'as pas besoin de micro-management.
