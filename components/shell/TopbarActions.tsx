@@ -111,7 +111,7 @@ export function TopbarActions() {
       const result = await Notification.requestPermission();
       setNotifPermission(result);
       if (result === 'granted') {
-        new Notification('Minerva Trequartista', {
+        new Notification('Minerva', {
           body: 'Les notifications sont activées. Vous recevrez les alertes importantes ici.',
           icon: '/icon-192.png',
         });

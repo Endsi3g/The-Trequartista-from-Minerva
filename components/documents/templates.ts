@@ -178,7 +178,7 @@ export const AGENCY_TEMPLATES: AgencyTemplate[] = [
       { id: 'sop-7', type: 'bullet_list', content: 'Informations de facturation et contrat signé' },
       { id: 'sop-8', type: 'bullet_list', content: 'Assets de marque du client (logo SVG, typographies, palette)' },
       { id: 'sop-9', type: 'heading_2', content: '3. Étapes d\'Exécution Chronologiques' },
-      { id: 'sop-10', type: 'todo_list', content: 'Étape 1 : Créer la fiche client sur Minerva Trequartista (/clients)', checked: false },
+      { id: 'sop-10', type: 'todo_list', content: 'Étape 1 : Créer la fiche client sur Minerva (/clients)', checked: false },
       { id: 'sop-11', type: 'todo_list', content: 'Étape 2 : Générer le lien d\'invitation sécurisé pour le portail client', checked: false },
       { id: 'sop-12', type: 'todo_list', content: 'Étape 3 : Configurer les canaux de communication dédiés', checked: false },
       { id: 'sop-13', type: 'todo_list', content: 'Étape 4 : Programmer la session de cadrage 45 min', checked: false },

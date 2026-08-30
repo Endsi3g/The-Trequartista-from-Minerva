@@ -401,7 +401,7 @@ export default function AcademyPage() {
               id: 'sop-ai-06-rag-vector-search',
               step: '06',
               title: 'RAG Avancé & pgvector',
-              focus: 'Vector Search Supabase, Chunking, FTS & RRF Hybride',
+              focus: 'Vector Search pgvector, Chunking, FTS & RRF Hybride',
               duration: '25 min',
               icon: Database,
               color: 'text-teal-700 bg-teal-50 border-teal-200',

@@ -4,13 +4,15 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Clock, ArrowLeft, User, Zap, AlertTriangle } from 'lucide-react';
+import { Shield, Clock, ArrowLeft, User, Zap, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { fetchAuditLogs } from '@/lib/services/supabase-data';
 import { useSupabaseRealtime } from '@/components/providers/SupabaseRealtimeProvider';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AuditLog } from '@/lib/types';
+import { useCurrentUser } from '@/hooks/use-current-user';
 
 export default function AuditLogsPage() {
+  const { role, loading: userLoading } = useCurrentUser();
   const [filterCategory, setFilterCategory] = useState<'all' | 'action' | 'alert' | 'system'>('all');
   const [dbLogs, setDbLogs] = useState<AuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +38,16 @@ export default function AuditLogsPage() {
     if (filterCategory === 'system') return log.actor_name.includes('Système') || log.actor_name.includes('Trigger') || log.table_name === 'leads';
     return !log.actor_name.includes('Système') && !log.action.includes('alert');
   });
+
+  if (!userLoading && role === 'client') {
+    return (
+      <div className="max-w-lg mx-auto py-16 text-center space-y-3">
+        <ShieldAlert className="w-8 h-8 text-mv-amber mx-auto" />
+        <p className="text-sm font-bold text-mv-ink">Réservé à l&apos;équipe Minerva.</p>
+        <Link href="/overview" className="text-xs text-mv-green hover:underline">Retour à l&apos;aperçu</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

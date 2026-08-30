@@ -80,7 +80,7 @@ export default function PortalRequestsPage() {
             </h1>
             <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Minerva-Flow & Supabase Realtime
+              Minerva-Flow & synchronisation en direct
             </span>
           </div>
           <p className="text-xs sm:text-sm text-zinc-500">
