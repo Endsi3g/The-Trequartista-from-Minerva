@@ -90,6 +90,8 @@ export default function TeamInvitePage() {
       await handleCopy(invite.token, 'team');
       toastSuccess('Lien collaborateur permanent généré & copié', 'Valide indéfiniment (révocable manuellement par l’admin).');
       await loadData();
+    } else {
+      toastError('Erreur de génération', 'Impossible de générer le lien. Vérifiez votre session.');
     }
   };
 

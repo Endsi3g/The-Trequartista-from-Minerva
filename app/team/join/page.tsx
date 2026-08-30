@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { fetchTeamInviteByToken, redeemTeamInvite, fetchRoles } from '@/lib/services/supabase-data';
 
 const ROLE_LABELS: Record<string, string> = { admin: 'Admin', member: 'Membre' };
-const WORKSPACE_LABELS: Record<string, string> = { prospection: 'Prospection', managing: 'Managing' };
+const WORKSPACE_LABELS: Record<string, string> = { prospection: 'Prospection', managing: 'Managing', tech: 'Tech & Ingénierie' };
 
 // Where a freshly redeemed invite lands -- straight on the assigned
 // workspace's daily-driver page instead of the generic /onboarding wizard,
@@ -16,6 +16,7 @@ const WORKSPACE_LABELS: Record<string, string> = { prospection: 'Prospection', m
 function workspaceHomeRoute(workspace: string | null): string {
   if (workspace === 'prospection') return '/leads';
   if (workspace === 'managing') return '/tasks';
+  if (workspace === 'tech') return '/tech';
   return '/overview';
 }
 

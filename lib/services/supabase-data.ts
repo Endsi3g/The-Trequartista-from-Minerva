@@ -2439,19 +2439,34 @@ export async function createTeamInvite(
 ): Promise<TeamInvite | null> {
   const token = Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => b.toString(16).padStart(2, '0')).join('');
   const permanentExpiry = new Date(Date.now() + 10 * 365 * 24 * 3600 * 1000).toISOString();
-  const { data, error } = await getSupabase()
+  
+  const payload = {
+    token,
+    role,
+    department,
+    created_by: createdBy,
+    custom_role_id: customRoleId || null,
+    workspace: workspace || null,
+    expires_at: permanentExpiry,
+  };
+
+  let { data, error } = await getSupabase()
     .from('team_invites')
-    .insert([{
-      token,
-      role,
-      department,
-      created_by: createdBy,
-      custom_role_id: customRoleId || null,
-      workspace: workspace || null,
-      expires_at: permanentExpiry,
-    }])
+    .insert([payload])
     .select()
     .single();
+
+  // If remote DB has a strict legacy check constraint on workspace, retry with workspace = null
+  if (error && (error.code === '23514' || error.message?.includes('workspace_check'))) {
+    console.warn('[Supabase] Retrying invite insert without workspace column check...');
+    const retryRes = await getSupabase()
+      .from('team_invites')
+      .insert([{ ...payload, workspace: null }])
+      .select()
+      .single();
+    data = retryRes.data;
+    error = retryRes.error;
+  }
 
   if (error) {
     console.error('[Supabase] Error creating team invite:', error);
@@ -2503,10 +2518,16 @@ export async function redeemTeamInvite(token: string, userId: string): Promise<b
   if (invite.custom_role_id) profileUpdate.custom_role_id = invite.custom_role_id;
   if (invite.workspace) profileUpdate.workspace = invite.workspace;
 
-  const [{ error: profileError }, { error: inviteError }] = await Promise.all([
+  let [{ error: profileError }, { error: inviteError }] = await Promise.all([
     supabase.from('profiles').update(profileUpdate).eq('id', userId),
     supabase.from('team_invites').update({ used_at: new Date().toISOString(), used_by: userId }).eq('token', token),
   ]);
+
+  if (profileError && (profileError.code === '23514' || profileError.message?.includes('workspace_check'))) {
+    delete profileUpdate.workspace;
+    const retryRes = await supabase.from('profiles').update(profileUpdate).eq('id', userId);
+    profileError = retryRes.error;
+  }
 
   if (profileError || inviteError) {
     console.error('[Supabase] Error redeeming team invite:', profileError || inviteError);
