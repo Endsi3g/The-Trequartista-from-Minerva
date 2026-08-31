@@ -12,6 +12,8 @@ import { OfflineStatusIndicator } from '@/components/ui/OfflineStatusIndicator';
 import { PwaInstallBanner } from '@/components/pwa/PwaInstallBanner';
 import { SidebarStateProvider, useSidebarState } from './SidebarState';
 
+import { AiAssistantSpeedDial } from './AiAssistantSpeedDial';
+
 interface AppShellProps {
   children: React.ReactNode;
 }
@@ -61,6 +63,9 @@ function AppShellInner({ children }: AppShellProps) {
 
         {/* Global Keyboard Shortcuts Modal Helper */}
         <ShortcutsModal />
+
+        {/* Universal Floating AI Assistant SpeedDial */}
+        <AiAssistantSpeedDial />
 
         {/* Smart Guided PWA Installation Banner */}
         <PwaInstallBanner />

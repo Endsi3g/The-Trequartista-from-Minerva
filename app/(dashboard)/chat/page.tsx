@@ -24,6 +24,7 @@ import {
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useTeamChatThread } from '@/hooks/use-team-chat-thread';
+import { AudioVoicePlayer } from '@/components/chat/AudioVoicePlayer';
 import {
   fetchProjects,
   fetchClients,
@@ -650,8 +651,8 @@ interface MentionItem {
 
                               {/* Audio Voice Note Attachment */}
                               {m.attachment_type === 'audio' && m.attachment_url && (
-                                <div className="mb-1.5 flex items-center gap-2 bg-black/10 p-1.5 rounded-[4px]">
-                                  <audio controls src={m.attachment_url} className="h-7 w-48 text-xs" />
+                                <div className="mb-1.5">
+                                  <AudioVoicePlayer src={m.attachment_url} className={isOwn ? 'bg-white/20 border-white/30 text-white' : ''} />
                                 </div>
                               )}
 

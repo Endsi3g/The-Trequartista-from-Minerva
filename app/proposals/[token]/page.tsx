@@ -207,6 +207,15 @@ export default function PublicProposalPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="px-2.5 py-1.5 rounded-md bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs no-print"
+              title="Imprimer ou enregistrer en PDF"
+            >
+              <Download size={13} className="text-zinc-500" />
+              <span>Imprimer / PDF</span>
+            </button>
             <Badge variant={signedSuccess ? 'green' : 'amber'}>
               {signedSuccess ? '● Proposition Signée' : '● En Attente de Signature'}
             </Badge>

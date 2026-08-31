@@ -4,6 +4,20 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-31 (v2.16.0) — Widget Flottant IA Universel (⌘J), Lecteur Audio Chat & Impression PDF Devis
+
+Mise en production des fonctionnalités de productivité avancée, audio et PDF officiel :
+
+- **Widget Flottant IA Universel (`AiAssistantSpeedDial`)** :
+  - Bouton d'accès flottant et raccourci clavier global `⌘J` / `Ctrl+J` accessible depuis TOUTES les pages de l'application.
+  - Suggestions d'actions rapides (Composio, propositions commerciales, onboarding Flow/OS Lite, checklist QA 20-points).
+- **Lecteur Audio Enrichi pour le Chat d'Équipe (`AudioVoicePlayer`)** :
+  - Nouveau composant avec timeline interactive, waveform de progression, boutons lecture/pause et sélecteur de vitesse (1x, 1.5x, 2x).
+- **Export & Impression PDF Haute Définition** :
+  - Bouton `[ 📄 Imprimer / PDF ]` intégré dans l'en-tête des propositions commerciales officielles (`/proposals/[token]`) et factures (`/invoices/[id]`).
+
+---
+
 ## 2026-08-31 (v2.15.0) — Intégration Composio pour l'Assistant IA, Nouveaux Outils MCP & Tutoriel Équipe SOP-AI-04
 
 Mise en production de l'intégration Composio pour l'IA d'agence et du guide de configuration d'équipe :
