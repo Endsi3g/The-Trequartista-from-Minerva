@@ -27,6 +27,8 @@ import {
   Trash2,
   AlertCircle,
   CheckSquare,
+  Phone,
+  Instagram,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useCurrentUser } from '@/hooks/use-current-user';
@@ -63,6 +65,8 @@ interface TeamMember {
   avatar_url: string | null;
   created_at: string;
   custom_role_id?: string | null;
+  phone?: string | null;
+  instagram_url?: string | null;
 }
 
 const VIEW_TABS = [
@@ -122,11 +126,23 @@ export default function TeamPage() {
   const loadTeam = async () => {
     try {
       const supabase = createClient();
-      const { data } = await supabase
+      // `phone`/`instagram_url` ship in a migration that may not be
+      // deployed yet -- fall back to the base column set rather than
+      // 400ing the whole team directory until it lands.
+      let { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, role, department, avatar_url, created_at, custom_role_id')
+        .select('id, full_name, email, role, department, avatar_url, created_at, custom_role_id, phone, instagram_url')
         .eq('approved', true)
         .order('created_at', { ascending: true });
+      if (error) {
+        const fallback = await supabase
+          .from('profiles')
+          .select('id, full_name, email, role, department, avatar_url, created_at, custom_role_id')
+          .eq('approved', true)
+          .order('created_at', { ascending: true });
+        data = fallback.data as typeof data;
+        error = fallback.error;
+      }
 
       if (data && data.length > 0) {
         setMembers(data);
@@ -605,7 +621,7 @@ export default function TeamPage() {
 
                         {isExpanded && (
                           <tr className="bg-zinc-50/50 border-b border-zinc-100">
-                            <td colSpan={7} className="py-2.5 px-8 text-xs text-zinc-600">
+                            <td colSpan={7} className="py-2.5 px-8 text-xs text-zinc-600 space-y-2">
                               <div className="flex items-center justify-between gap-4 flex-wrap">
                                 <div>
                                   <span className="text-[10px] uppercase text-zinc-400 font-mono" style={MONO}>
@@ -633,6 +649,25 @@ export default function TeamPage() {
                                 >
                                   Voir les revues de performance →
                                 </Link>
+                              </div>
+                              <div className="flex items-center gap-4 flex-wrap">
+                                {member.phone ? (
+                                  <a href={`tel:${member.phone}`} className="inline-flex items-center gap-1.5 text-emerald-700 hover:underline font-medium">
+                                    <Phone className="w-3 h-3" />
+                                    <span>{member.phone}</span>
+                                  </a>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 text-amber-600 font-medium">
+                                    <AlertCircle className="w-3 h-3" />
+                                    <span>Aucun numéro de téléphone</span>
+                                  </span>
+                                )}
+                                {member.instagram_url && (
+                                  <a href={member.instagram_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-emerald-700 hover:underline font-medium">
+                                    <Instagram className="w-3 h-3" />
+                                    <span>Instagram</span>
+                                  </a>
+                                )}
                               </div>
                             </td>
                           </tr>

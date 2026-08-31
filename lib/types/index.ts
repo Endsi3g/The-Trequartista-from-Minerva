@@ -8,6 +8,8 @@ export interface Profile {
   role: Role;
   job_title: string;
   department: string;
+  phone?: string | null;
+  instagram_url?: string | null;
   created_at: string;
 }
 
@@ -316,6 +318,8 @@ export interface TeamMemberSummary {
   full_name: string;
   email: string;
   avatar_url: string | null;
+  phone?: string | null;
+  instagram_url?: string | null;
 }
 
 export type DocumentBlockType =

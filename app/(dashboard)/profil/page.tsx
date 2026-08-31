@@ -18,9 +18,12 @@ import {
   Twitter,
   Linkedin,
   Github,
+  Instagram,
+  Phone,
   MapPin,
   Building,
   Camera,
+  AlertTriangle,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/providers/ToastProvider';
@@ -45,6 +48,8 @@ export default function ProfilePage() {
   const [twitter, setTwitter] = useState('');
   const [linkedin, setLinkedin] = useState('');
   const [github, setGithub] = useState('');
+  const [phone, setPhone] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
 
   // Load real user from Supabase on mount
   useEffect(() => {
@@ -55,11 +60,23 @@ export default function ProfilePage() {
         if (user) {
           setUserId(user.id);
           setEmail(user.email || '');
-          const { data: profile } = await supabase
+          // `phone`/`instagram_url` ship in a migration that may not be
+          // deployed yet -- an explicit select naming a missing column
+          // 400s the whole query, so try the widened select first and
+          // fall back to the base column set rather than losing every
+          // other field on this page until the migration lands.
+          let { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('full_name, role, department, avatar_url, username, bio, location, website, twitter, linkedin, github')
+            .select('full_name, role, department, avatar_url, username, bio, location, website, twitter, linkedin, github, phone, instagram_url')
             .eq('id', user.id)
             .single();
+          if (profileError) {
+            ({ data: profile } = await supabase
+              .from('profiles')
+              .select('full_name, role, department, avatar_url, username, bio, location, website, twitter, linkedin, github')
+              .eq('id', user.id)
+              .single());
+          }
           if (profile) {
             setFullName(profile.full_name || user.user_metadata?.full_name || '');
             setRole(profile.role || 'member');
@@ -72,6 +89,8 @@ export default function ProfilePage() {
             setTwitter(profile.twitter || '');
             setLinkedin(profile.linkedin || '');
             setGithub(profile.github || '');
+            setPhone((profile as { phone?: string | null }).phone || '');
+            setInstagramUrl((profile as { instagram_url?: string | null }).instagram_url || '');
           } else {
             setFullName(user.user_metadata?.full_name || '');
             setAvatarUrl(`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.email || 'MV')}&backgroundColor=059669&fontColor=ffffff`);
@@ -169,10 +188,16 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!phone.trim()) {
+      toastError('Numéro de téléphone requis', "Ajoutez un numéro de téléphone pour que l'équipe puisse vous joindre facilement.");
+      return;
+    }
+
     setSaving(true);
     setSavedSuccess(false);
 
-    const { error } = await supabase.from('profiles').update({
+    const payload: Record<string, unknown> = {
       full_name: fullName,
       role: role,
       department: department || null,
@@ -184,8 +209,24 @@ export default function ProfilePage() {
       twitter: twitter || null,
       linkedin: linkedin || null,
       github: github || null,
+      phone: phone.trim(),
+      instagram_url: instagramUrl.trim() || null,
       updated_at: new Date().toISOString(),
-    }).eq('id', userId);
+    };
+
+    let { error } = await supabase.from('profiles').update(payload).eq('id', userId);
+
+    // The `phone`/`instagram_url` migration may not be deployed yet --
+    // retry once without those two fields rather than losing the whole
+    // save (same pending-migration pattern as addClient/updateClient).
+    if (error && (error.message?.includes('phone') || error.message?.includes('instagram_url'))) {
+      delete payload.phone;
+      delete payload.instagram_url;
+      ({ error } = await supabase.from('profiles').update(payload).eq('id', userId));
+      if (!error) {
+        toastError('Coordonnées non enregistrées', "Le téléphone/Instagram n'est pas encore disponible côté serveur -- réessayez plus tard.");
+      }
+    }
 
     setSaving(false);
 
@@ -370,6 +411,49 @@ export default function ProfilePage() {
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="Seattle, WA"
                     className="w-full p-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink font-semibold focus:outline-none focus:border-mv-green"
+                  />
+                </div>
+              </div>
+            </Card>
+
+            <Card
+              header={
+                <div>
+                  <h3 className="font-extrabold text-sm text-mv-ink font-display">Coordonnées</h3>
+                  <p className="text-[11px] text-mv-ink-soft mt-0.5">Pour que l'équipe puisse vous joindre facilement</p>
+                </div>
+              }
+            >
+              <div className="space-y-4 text-xs">
+                {!phone.trim() && (
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    <span>Un numéro de téléphone est requis pour rester joignable par l'équipe.</span>
+                  </div>
+                )}
+                <div>
+                  <label className="block font-bold text-mv-ink mb-1.5 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-mv-green" /> Numéro de téléphone
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="514 555-0123"
+                    className="w-full p-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-mv-ink mb-1.5 flex items-center gap-1.5">
+                    <Instagram className="w-3.5 h-3.5 text-mv-ink-soft" /> Instagram (optionnel)
+                  </label>
+                  <input
+                    type="url"
+                    value={instagramUrl}
+                    onChange={(e) => setInstagramUrl(e.target.value)}
+                    placeholder="https://instagram.com/votre_compte"
+                    className="w-full p-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green"
                   />
                 </div>
               </div>

@@ -1247,13 +1247,18 @@ export async function fetchTeamInviteByToken(token: string): Promise<TeamInvite 
   return data as TeamInvite;
 }
 
-export async function redeemTeamInvite(token: string, userId: string): Promise<boolean> {
+export async function redeemTeamInvite(
+  token: string,
+  userId: string,
+  phone?: string,
+  instagramUrl?: string
+): Promise<boolean> {
   // 1. Try server API route first
   try {
     const res = await fetch('/api/team/invites/redeem', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: token.trim(), userId }),
+      body: JSON.stringify({ token: token.trim(), userId, phone, instagramUrl }),
     });
     if (res.ok) {
       const json = await res.json();
@@ -1272,6 +1277,8 @@ export async function redeemTeamInvite(token: string, userId: string): Promise<b
   if (invite.department) profileUpdate.department = invite.department;
   if (invite.custom_role_id) profileUpdate.custom_role_id = invite.custom_role_id;
   if (invite.workspace) profileUpdate.workspace = invite.workspace;
+  if (phone) profileUpdate.phone = phone;
+  if (instagramUrl) profileUpdate.instagram_url = instagramUrl;
 
   let [{ error: profileError }, { error: inviteError }] = await Promise.all([
     supabase.from('profiles').update(profileUpdate).eq('id', userId),
@@ -2917,20 +2924,43 @@ export async function getOrCreateDmChannel(userIdA: string, userIdB: string): Pr
 export async function fetchTeamMembers(excludeUserId?: string): Promise<TeamMemberSummary[]> {
   return withTimeout(
     (async () => {
-      let query = getSupabase()
+      const supabase = getSupabase();
+
+      // The `phone`/`instagram_url` columns ship in a migration that may
+      // not be deployed yet (see CLAUDE.md's pending-migrations note) --
+      // PostgREST 400s on an explicit select naming a column that doesn't
+      // exist yet, so fall back to the base column set instead of breaking
+      // every /chat and team-directory load until the migration lands.
+      let widenedQuery = supabase
         .from('profiles')
-        .select('id, full_name, email, avatar_url')
+        .select('id, full_name, email, avatar_url, phone, instagram_url')
         .eq('approved', true)
         .in('role', ['admin', 'member'])
         .order('full_name', { ascending: true });
-      if (excludeUserId) query = query.neq('id', excludeUserId);
-      const { data, error } = await query;
+      if (excludeUserId) widenedQuery = widenedQuery.neq('id', excludeUserId);
+      let { data, error } = await widenedQuery;
+
+      if (error) {
+        let fallbackQuery = supabase
+          .from('profiles')
+          .select('id, full_name, email, avatar_url')
+          .eq('approved', true)
+          .in('role', ['admin', 'member'])
+          .order('full_name', { ascending: true });
+        if (excludeUserId) fallbackQuery = fallbackQuery.neq('id', excludeUserId);
+        const fallback = await fallbackQuery;
+        data = fallback.data as typeof data;
+        error = fallback.error;
+      }
+
       if (error || !data) return [];
       return data.map((m) => ({
         id: m.id,
         full_name: m.full_name || 'Membre',
         email: m.email,
         avatar_url: m.avatar_url,
+        phone: (m as { phone?: string | null }).phone ?? null,
+        instagram_url: (m as { instagram_url?: string | null }).instagram_url ?? null,
       })) as TeamMemberSummary[];
     })(),
     []
