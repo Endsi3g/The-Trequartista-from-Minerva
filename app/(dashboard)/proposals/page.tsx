@@ -131,7 +131,7 @@ export default function ProposalsDashboardPage() {
     setDeliverables(deliverables.filter((_, i) => i !== index));
   };
 
-  const handleDeliverableChange = (index: number, field: keyof ProposalDeliverableItem, value: any) => {
+  const handleDeliverableChange = (index: number, field: keyof ProposalDeliverableItem, value: string | number) => {
     const updated = [...deliverables];
     updated[index] = { ...updated[index], [field]: value };
     setDeliverables(updated);

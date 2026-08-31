@@ -22,10 +22,11 @@ export async function GET(req: NextRequest) {
       invoices,
       summary,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API /api/invoices GET] Error:', error);
+    const msg = error instanceof Error ? error.message : 'Erreur lors de la récupération des factures';
     return NextResponse.json(
-      { error: error?.message || 'Erreur lors de la récupération des factures' },
+      { error: msg },
       { status: 500 }
     );
   }
@@ -69,10 +70,11 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(created, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API /api/invoices POST] Error:', error);
+    const msg = error instanceof Error ? error.message : 'Erreur lors de la création de la facture';
     return NextResponse.json(
-      { error: error?.message || 'Erreur lors de la création de la facture' },
+      { error: msg },
       { status: 500 }
     );
   }

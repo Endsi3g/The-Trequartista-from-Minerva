@@ -15,10 +15,11 @@ export async function GET(
     }
 
     return NextResponse.json(invoice);
-  } catch (error: any) {
-    console.error('[API /api/invoices/[id] GET] Error:', error);
+  } catch (error: unknown) {
+    console.error('[API /api/invoices/[id] handler] Error:', error);
+    const msg = error instanceof Error ? error.message : 'Erreur serveur';
     return NextResponse.json(
-      { error: error?.message || 'Erreur lors de la récupération de la facture' },
+      { error: msg },
       { status: 500 }
     );
   }
@@ -56,10 +57,11 @@ export async function PATCH(
     }
 
     return NextResponse.json({ error: 'Aucune action valide fournie.' }, { status: 400 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API /api/invoices/[id] PATCH] Error:', error);
+    const msg = error instanceof Error ? error.message : 'Erreur lors de la mise à jour';
     return NextResponse.json(
-      { error: error?.message || 'Erreur lors de la mise à jour' },
+      { error: msg },
       { status: 500 }
     );
   }
@@ -81,10 +83,11 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true, message: 'Facture supprimée avec succès.' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API /api/invoices/[id] DELETE] Error:', error);
+    const msg = error instanceof Error ? error.message : 'Erreur lors de la suppression';
     return NextResponse.json(
-      { error: error?.message || 'Erreur lors de la suppression' },
+      { error: msg },
       { status: 500 }
     );
   }

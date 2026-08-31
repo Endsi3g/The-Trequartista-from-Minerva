@@ -216,15 +216,26 @@ export default function ChatPage() {
     }
   };
 
-  const mentionSuggestions = useMemo(() => {
+interface MentionItem {
+  id: string;
+  full_name: string;
+  email?: string;
+  avatar_url?: string | null;
+  isAll?: boolean;
+}
+
+  const mentionSuggestions = useMemo<MentionItem[]>(() => {
     if (mentionQuery === null) return [];
     const q = mentionQuery.toLowerCase();
-    const specials: { id: string; full_name: string; isAll?: boolean }[] = [];
+    const specials: MentionItem[] = [];
     if ('all'.includes(q) || 'tout'.includes(q) || 'equipe'.includes(q) || 'everyone'.includes(q) || q === '') {
       specials.push({ id: '__all__', full_name: 'all', isAll: true });
       specials.push({ id: '__equipe__', full_name: 'equipe', isAll: true });
     }
-    const memberMatches = members.filter((m) => m.full_name.toLowerCase().includes(q)).slice(0, 6);
+    const memberMatches: MentionItem[] = members
+      .filter((m) => m.full_name.toLowerCase().includes(q))
+      .slice(0, 6)
+      .map((m) => ({ id: m.id, full_name: m.full_name, email: m.email, avatar_url: m.avatar_url }));
     return [...specials, ...memberMatches];
   }, [mentionQuery, members]);
 
@@ -234,7 +245,7 @@ export default function ChatPage() {
     setMentionQuery(match ? match[1] : null);
   };
 
-  const insertMention = (nameOrMember: string | TeamMemberSummary | { id: string; full_name: string }) => {
+  const insertMention = (nameOrMember: string | MentionItem) => {
     const name = typeof nameOrMember === 'string' ? nameOrMember : nameOrMember.full_name;
     setDraft((prev) => prev.replace(/@([\wÀ-ÿ]*)$/, `@${name} `));
     setMentionQuery(null);
@@ -846,7 +857,7 @@ export default function ChatPage() {
                     <div className="relative border border-mv-border focus-within:border-mv-green focus-within:ring-1 focus-within:ring-mv-green/20 rounded-[6px] bg-zinc-50/50 transition-all">
                       {mentionSuggestions.length > 0 && (
                         <div className="absolute bottom-full left-2 mb-1 w-64 bg-white border border-zinc-200 rounded-[6px] shadow-mv-md py-1 z-10">
-                          {mentionSuggestions.map((m: any) => (
+                          {mentionSuggestions.map((m) => (
                             <button
                               key={m.id}
                               type="button"

@@ -30,9 +30,11 @@ import { STANDARD_20_POINT_QC, saveTechQaAudit } from '@/lib/services/tech';
 import type { TechQaPoint, TechQaAudit, TechQaCategory } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
+import type { LucideIcon } from 'lucide-react';
+
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
-const CATEGORIES: { key: TechQaCategory | 'all'; label: string; icon: any; count: number }[] = [
+const CATEGORIES: { key: TechQaCategory | 'all'; label: string; icon: LucideIcon; count: number }[] = [
   { key: 'all', label: 'Tous', icon: ShieldCheck, count: 20 },
   { key: 'security_rls', label: '🔒 Sécurité & RLS', icon: Lock, count: 4 },
   { key: 'performance', label: '⚡ Performance', icon: Zap, count: 4 },

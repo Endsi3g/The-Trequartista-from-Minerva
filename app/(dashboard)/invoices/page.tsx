@@ -167,7 +167,7 @@ export default function InvoicesHubPage() {
     setLineItems(lineItems.filter((_, i) => i !== index));
   };
 
-  const updateLineItem = (index: number, field: 'description' | 'quantity' | 'unit_price_cad', value: any) => {
+  const updateLineItem = (index: number, field: 'description' | 'quantity' | 'unit_price_cad', value: string | number) => {
     const updated = [...lineItems];
     updated[index] = { ...updated[index], [field]: value };
     setLineItems(updated);
