@@ -310,7 +310,7 @@ export default function PublicSopSharePage() {
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-800">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>Minerva Trequartista — Systèmes &amp; Ingénierie</span>
+                <span>Minerva — Systèmes &amp; Ingénierie</span>
               </div>
               <p className="text-[11.5px] text-zinc-500">
                 Agence-studio hybride à Montréal · Tous droits réservés © {new Date().getFullYear()}

@@ -271,14 +271,6 @@ export default function IntegrationsPage() {
             </p>
           </div>
         </div>
-
-        <Link
-          href="/plane"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-mv-ink hover:bg-black text-white transition-colors shrink-0 shadow-mv-sm"
-        >
-          <span>Accéder au Hub Plane</span>
-          <ExternalLink size={13} />
-        </Link>
       </div>
 
       {/* 2-Column Layout (Shadcnblocks inspiration) */}

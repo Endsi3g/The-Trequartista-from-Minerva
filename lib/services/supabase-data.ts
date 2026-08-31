@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, PlaneSyncLog } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, PlaneSyncLog } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 import { markdownToBlocks } from '@/lib/utils/markdown-to-blocks';
 
@@ -2625,7 +2625,7 @@ export async function restoreDocumentVersion(documentId: string, version: Docume
 // 18. CHAT D'ÉQUIPE — canaux par projet/client
 // ----------------------------------------------------
 export async function fetchTeamChatMessages(
-  channelType: 'project' | 'client' | 'member',
+  channelType: 'project' | 'client' | 'dm' | 'topic',
   channelId: string
 ): Promise<TeamChatMessage[]> {
   return withTimeout(
@@ -2659,11 +2659,12 @@ export async function fetchTeamChatMessages(
 }
 
 export async function sendTeamChatMessage(
-  channelType: 'project' | 'client' | 'member',
+  channelType: 'project' | 'client' | 'dm' | 'topic',
   channelId: string,
   senderId: string,
   body: string,
-  attachment?: TeamChatAttachment | null
+  attachment?: TeamChatAttachment | null,
+  parentMessageId?: string | null
 ): Promise<TeamChatMessage | null> {
   const safeSenderId = UUID_REGEX.test(senderId) ? senderId : null;
   try {
@@ -2677,6 +2678,7 @@ export async function sendTeamChatMessage(
         attachment_url: attachment?.url || null,
         attachment_type: attachment?.type || null,
         attachment_name: attachment?.name || null,
+        parent_message_id: parentMessageId || null,
       }])
       .select()
       .single();
@@ -2698,8 +2700,68 @@ export async function sendTeamChatMessage(
     attachment_url: attachment?.url || null,
     attachment_type: attachment?.type || null,
     attachment_name: attachment?.name || null,
+    parent_message_id: parentMessageId || null,
     created_at: new Date().toISOString(),
   };
+}
+
+// ── Reactions ──
+export async function fetchReactionsForMessages(messageIds: string[]): Promise<TeamChatReaction[]> {
+  if (messageIds.length === 0) return [];
+  const { data, error } = await getSupabase()
+    .from('team_chat_reactions')
+    .select('*')
+    .in('message_id', messageIds);
+  if (error || !data) return [];
+  return data as TeamChatReaction[];
+}
+
+// Toggle semantics: adding the same emoji twice from the same user removes
+// it, matching how every chat product's reaction picker behaves.
+export async function toggleReaction(messageId: string, userId: string, emoji: string): Promise<boolean> {
+  const supabase = getSupabase();
+  const { data: existing } = await supabase
+    .from('team_chat_reactions')
+    .select('id')
+    .eq('message_id', messageId)
+    .eq('user_id', userId)
+    .eq('emoji', emoji)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase.from('team_chat_reactions').delete().eq('id', existing.id);
+    return !error;
+  }
+  const { error } = await supabase.from('team_chat_reactions').insert([{ message_id: messageId, user_id: userId, emoji }]);
+  return !error;
+}
+
+// ── Mentions ──
+export async function createMentions(messageId: string, mentionedUserIds: string[]): Promise<void> {
+  if (mentionedUserIds.length === 0) return;
+  await getSupabase()
+    .from('team_chat_mentions')
+    .insert(mentionedUserIds.map((mentioned_user_id) => ({ message_id: messageId, mentioned_user_id })));
+}
+
+export async function fetchUnreadMentionsCount(userId: string): Promise<number> {
+  const { count, error } = await getSupabase()
+    .from('team_chat_mentions')
+    .select('id', { count: 'exact', head: true })
+    .eq('mentioned_user_id', userId)
+    .is('read_at', null);
+  if (error || count === null) return 0;
+  return count;
+}
+
+export async function markMentionsReadForMessages(userId: string, messageIds: string[]): Promise<void> {
+  if (messageIds.length === 0) return;
+  await getSupabase()
+    .from('team_chat_mentions')
+    .update({ read_at: new Date().toISOString() })
+    .eq('mentioned_user_id', userId)
+    .is('read_at', null)
+    .in('message_id', messageIds);
 }
 
 // Resolves the single, canonical DM channel between two team members,
