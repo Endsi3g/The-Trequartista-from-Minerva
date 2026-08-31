@@ -7,6 +7,7 @@ import {
   Cpu,
   FolderKanban,
   ShieldCheck,
+  ShieldAlert,
   Zap,
   Activity,
   Layers,
@@ -37,11 +38,13 @@ import { SystemHealthMonitor } from '@/components/tech/SystemHealthMonitor';
 import { fetchTechQaAudits } from '@/lib/services/tech';
 import { fetchProjects, fetchTasks, fetchDocuments } from '@/lib/services/supabase-data';
 import type { TechQaAudit, Project, Task, TeamDocument } from '@/lib/types';
+import { useCurrentUser } from '@/hooks/use-current-user';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
 export function TechDashboard() {
+  const { role, workspace, loading: userLoading } = useCurrentUser();
   const [activeTab, setActiveTab] = useState<'overview' | 'qa' | 'infra' | 'docs'>('overview');
   const [audits, setAudits] = useState<TechQaAudit[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -69,6 +72,16 @@ export function TechDashboard() {
   useEffect(() => {
     loadData();
   }, []);
+
+  if (!userLoading && !(role === 'admin' || workspace === 'tech')) {
+    return (
+      <div className="max-w-lg mx-auto py-16 text-center space-y-3">
+        <ShieldAlert className="w-8 h-8 text-mv-amber mx-auto" />
+        <p className="text-sm font-bold text-mv-ink">Réservé à l&apos;équipe Tech.</p>
+        <Link href="/overview" className="text-xs text-mv-green hover:underline">Retour à l&apos;aperçu</Link>
+      </div>
+    );
+  }
 
   const latestAudit = audits[0] || null;
   const latestScore = latestAudit?.score_percentage ?? 100;
