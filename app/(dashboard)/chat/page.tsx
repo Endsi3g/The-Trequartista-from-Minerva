@@ -242,6 +242,13 @@ export default function ChatPage() {
       setReplyingTo(null);
       setMentionQuery(null);
       if (sent.id) notifyMentions(sent.id, sentText);
+      if (active?.type === 'coach') {
+        fetch('/api/coach-bot/reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: sentText }),
+        }).catch(() => {});
+      }
     }
   };
 

@@ -27,6 +27,7 @@ import {
   Filter,
   Sparkles,
   CalendarClock,
+  Ghost,
 } from 'lucide-react';
 import {
   fetchTeamWorkloads,
@@ -40,9 +41,11 @@ import {
   fetchWeeklyCheckinsForWeek,
   fetchLatestAvailabilityPoll,
   fetchAvailabilityVotes,
+  fetchCoachWeeklyReports,
+  fetchCoachGhostStatuses,
 } from '@/lib/services/supabase-data';
 import { getIsoWeekStart } from '@/lib/utils/dates';
-import type { TeamMemberWorkload, TeamCommission, RevOpsSummary, Task, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote } from '@/lib/types';
+import type { TeamMemberWorkload, TeamCommission, RevOpsSummary, Task, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote, CoachWeeklyReport, CoachGhostStatus } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -71,18 +74,22 @@ export default function TeamWorkloadPage() {
   const [checkins, setCheckins] = useState<(WeeklyCheckinResponse & { member_name: string })[]>([]);
   const [latestPoll, setLatestPoll] = useState<AvailabilityPoll | null>(null);
   const [latestPollVotes, setLatestPollVotes] = useState<(AvailabilityVote & { member_name: string })[]>([]);
+  const [weeklyReports, setWeeklyReports] = useState<CoachWeeklyReport[]>([]);
+  const [ghostStatuses, setGhostStatuses] = useState<CoachGhostStatus[]>([]);
 
   const loadData = async () => {
     setLoading(true);
     try {
       const today = new Date().toISOString().slice(0, 10);
-      const [wlData, commData, tasksData, standupData, checkinData, poll] = await Promise.all([
+      const [wlData, commData, tasksData, standupData, checkinData, poll, weeklyReportData, ghostData] = await Promise.all([
         fetchTeamWorkloads(),
         fetchTeamCommissions(),
         fetchTasks(),
         fetchStandupResponsesForDate(today),
         fetchWeeklyCheckinsForWeek(getIsoWeekStart(new Date())),
         fetchLatestAvailabilityPoll(),
+        fetchCoachWeeklyReports(getIsoWeekStart(new Date())),
+        fetchCoachGhostStatuses(),
       ]);
       setWorkloads(wlData);
       setCommissions(commData);
@@ -92,6 +99,8 @@ export default function TeamWorkloadPage() {
       setCheckins(checkinData);
       setLatestPoll(poll);
       setLatestPollVotes(poll ? await fetchAvailabilityVotes(poll.id) : []);
+      setWeeklyReports(weeklyReportData);
+      setGhostStatuses(ghostData);
     } catch {
       toastError('Erreur de chargement', 'Impossible de récupérer la charge de travail.');
     } finally {
@@ -415,6 +424,20 @@ export default function TeamWorkloadPage() {
             </div>
           </div>
 
+          {ghostStatuses.length > 0 && (
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 border border-amber-200">
+              <Ghost className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+              <div className="text-xs">
+                <p className="font-bold text-amber-800">
+                  {ghostStatuses.length} membre{ghostStatuses.length > 1 ? 's' : ''} silencieux détecté{ghostStatuses.length > 1 ? 's' : ''}
+                </p>
+                <p className="text-amber-700 text-[11px] mt-0.5">
+                  {ghostStatuses.map((g) => g.member_name).join(', ')} -- relancé{ghostStatuses.length > 1 ? 's' : ''} automatiquement par Coach Minerva.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card className="p-4 bg-mv-surface border-mv-border rounded-xl space-y-2.5">
               <span className="text-[10.5px] font-bold text-mv-ink-faint uppercase tracking-wider">
@@ -486,6 +509,30 @@ export default function TeamWorkloadPage() {
                     </div>
                   );
                 })}
+              </div>
+            </Card>
+          )}
+
+          {weeklyReports.length > 0 && (
+            <Card className="p-4 bg-mv-surface border-mv-border rounded-xl space-y-2.5">
+              <span className="text-[10.5px] font-bold text-mv-ink-faint uppercase tracking-wider">
+                Rapport hebdomadaire (taux de réponse & tendance)
+              </span>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {weeklyReports.map((r) => (
+                  <div key={r.id} className="p-2.5 rounded-lg border border-mv-border bg-white text-xs space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-mv-ink flex items-center gap-1.5">
+                        {r.member_name}
+                        {r.is_ghosting && <Ghost className="w-3 h-3 text-amber-600" />}
+                      </span>
+                      <Badge variant={r.response_rate_pct >= 70 ? 'green' : r.response_rate_pct >= 40 ? 'amber' : 'red'} className="text-[10px]">
+                        {r.response_rate_pct}% ({r.standups_answered}/{r.standups_total})
+                      </Badge>
+                    </div>
+                    {r.trend_summary && <p className="text-mv-ink-soft text-[11px]">{r.trend_summary}</p>}
+                  </div>
+                ))}
               </div>
             </Card>
           )}

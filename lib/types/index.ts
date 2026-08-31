@@ -365,6 +365,35 @@ export interface AvailabilityVote {
   created_at: string;
 }
 
+export interface CoachMemberMemory {
+  user_id: string;
+  summary: string;
+  updated_at: string;
+}
+
+export interface CoachWeeklyReport {
+  id: string;
+  week_start: string;
+  user_id: string;
+  member_name?: string;
+  standups_answered: number;
+  standups_total: number;
+  response_rate_pct: number;
+  trend_summary: string | null;
+  is_ghosting: boolean;
+  created_at: string;
+}
+
+export interface CoachGhostStatus {
+  user_id: string;
+  member_name?: string;
+  consecutive_missed_checkins: number;
+  last_activity_at: string | null;
+  is_ghosting: boolean;
+  last_nudged_at: string | null;
+  updated_at: string;
+}
+
 export type DocumentBlockType =
   | 'paragraph'
   | 'heading_1'

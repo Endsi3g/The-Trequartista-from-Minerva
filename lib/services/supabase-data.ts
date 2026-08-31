@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote, CoachMemberMemory, CoachWeeklyReport, CoachGhostStatus } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 import { markdownToBlocks } from '@/lib/utils/markdown-to-blocks';
 
@@ -2899,6 +2899,34 @@ export async function submitAvailabilityVote(pollId: string, userId: string, slo
     .from('availability_votes')
     .upsert([{ poll_id: pollId, user_id: userId, slot_index: slotIndex }], { onConflict: 'poll_id,user_id' });
   return !error;
+}
+
+export async function fetchCoachMemberMemory(userId: string): Promise<CoachMemberMemory | null> {
+  const { data, error } = await getSupabase().from('coach_member_memory').select('*').eq('user_id', userId).maybeSingle();
+  if (error || !data) return null;
+  return data as CoachMemberMemory;
+}
+
+export async function fetchCoachWeeklyReports(weekStart: string): Promise<CoachWeeklyReport[]> {
+  const { data, error } = await getSupabase()
+    .from('coach_weekly_reports')
+    .select('*')
+    .eq('week_start', weekStart)
+    .order('response_rate_pct', { ascending: true });
+  if (error || !data) return [];
+  const names = await fetchProfileNamesForCoach(data.map((r) => r.user_id));
+  return data.map((r) => ({ ...r, member_name: names.get(r.user_id) || 'Membre' })) as CoachWeeklyReport[];
+}
+
+export async function fetchCoachGhostStatuses(): Promise<CoachGhostStatus[]> {
+  const { data, error } = await getSupabase()
+    .from('coach_ghost_status')
+    .select('*')
+    .eq('is_ghosting', true)
+    .order('updated_at', { ascending: false });
+  if (error || !data) return [];
+  const names = await fetchProfileNamesForCoach(data.map((r) => r.user_id));
+  return data.map((r) => ({ ...r, member_name: names.get(r.user_id) || 'Membre' })) as CoachGhostStatus[];
 }
 
 // ── Reactions ──

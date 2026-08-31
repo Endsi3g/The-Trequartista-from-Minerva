@@ -118,8 +118,15 @@ export async function GET(req: Request) {
       priority: t.priority,
     }));
 
+    const { data: memory } = await supabase
+      .from('coach_member_memory')
+      .select('summary')
+      .eq('user_id', member.id)
+      .maybeSingle();
+    const memoryLine = memory?.summary ? `Ce qu'on sait déjà de ce membre : "${memory.summary}". ` : '';
+
     const openQuestion = await generateGeminiText(
-      `Tu es "Coach Minerva", le coach IA interne d'une agence de marketing/automatisation. Rédige UNE seule question ouverte, courte (1 phrase, en français, tutoiement), pour le check-in hebdomadaire de ${member.full_name || 'ce membre'}, qui termine la semaine avec ${snapshot.length} tâche(s) encore active(s). Réponds uniquement avec la question, sans guillemets ni préambule.`,
+      `Tu es "Coach Minerva", le coach IA interne d'une agence de marketing/automatisation. ${memoryLine}Rédige UNE seule question ouverte, courte (1 phrase, en français, tutoiement), pour le check-in hebdomadaire de ${member.full_name || 'ce membre'}, qui termine la semaine avec ${snapshot.length} tâche(s) encore active(s). Réponds uniquement avec la question, sans guillemets ni préambule.`,
       FALLBACK_QUESTIONS[new Date().getDate() % FALLBACK_QUESTIONS.length]
     );
 
@@ -143,5 +150,59 @@ export async function GET(req: Request) {
     posted++;
   }
 
-  return NextResponse.json({ posted, members: members.length, pollId });
+  // ── Weekly admin report: response rate, AI trend summary, ghost flag --
+  // computed for everyone regardless of whether their check-in was just
+  // posted above or already existed from an earlier run this week. ──
+  const weekEnd = new Date(`${weekStart}T00:00:00Z`);
+  weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
+  const weekEndStr = weekEnd.toISOString().slice(0, 10);
+
+  let reportsGenerated = 0;
+  for (const member of members) {
+    const [{ data: weekStandups }, { data: ghostStatus }] = await Promise.all([
+      supabase
+        .from('standup_responses')
+        .select('date, open_answer')
+        .eq('user_id', member.id)
+        .gte('date', weekStart)
+        .lte('date', weekEndStr),
+      supabase.from('coach_ghost_status').select('is_ghosting').eq('user_id', member.id).maybeSingle(),
+    ]);
+
+    const standupsTotal = weekStandups?.length || 0;
+    const standupsAnswered = (weekStandups || []).filter((s) => s.open_answer).length;
+    const responseRatePct = standupsTotal > 0 ? Math.round((standupsAnswered / standupsTotal) * 100) : 100;
+
+    const verbatimAnswers = (weekStandups || [])
+      .filter((s) => s.open_answer)
+      .map((s) => `${s.date} : ${s.open_answer}`)
+      .join('\n');
+
+    const trendSummary = await generateGeminiText(
+      verbatimAnswers
+        ? `Tu es "Coach Minerva". Voici les réponses de ${member.full_name || 'ce membre'} aux check-ins quotidiens cette semaine :\n${verbatimAnswers}\n\nRésume en 2 phrases courtes, en français, le ton général et les blocages ou signaux d'alerte récurrents (charge, moral, obstacles). Pas de flatterie, reste factuel. Réponds uniquement avec le résumé.`
+        : `Tu es "Coach Minerva". ${member.full_name || 'Ce membre'} n'a répondu à aucun check-in cette semaine. Écris UNE phrase courte, factuelle, en français, notant l'absence de réponse -- sans supposer de raison.`,
+      standupsAnswered > 0
+        ? `${standupsAnswered}/${standupsTotal} check-ins complétés cette semaine.`
+        : "Aucune réponse aux check-ins cette semaine."
+    );
+
+    await supabase.from('coach_weekly_reports').upsert(
+      [
+        {
+          week_start: weekStart,
+          user_id: member.id,
+          standups_answered: standupsAnswered,
+          standups_total: standupsTotal,
+          response_rate_pct: responseRatePct,
+          trend_summary: trendSummary,
+          is_ghosting: !!ghostStatus?.is_ghosting,
+        },
+      ],
+      { onConflict: 'user_id,week_start' }
+    );
+    reportsGenerated++;
+  }
+
+  return NextResponse.json({ posted, members: members.length, pollId, reportsGenerated });
 }
