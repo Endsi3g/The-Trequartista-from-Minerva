@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, PlaneSyncLog } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, PlaneSyncLog, HelpChatMessage } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 import { markdownToBlocks } from '@/lib/utils/markdown-to-blocks';
 
@@ -1616,6 +1616,34 @@ export async function deleteHelpArticle(id: string): Promise<boolean> {
     return false;
   }
   return true;
+}
+
+// ── 1:1 AI help chatbot (chantier 6) ──
+// Sending a question goes through /api/help-chat (needs the Gemini key
+// server-side); these two just read back what's already persisted --
+// RLS already scopes fetchHelpChatMessages to the caller's own rows
+// (or an admin), so no API route is needed for reads.
+export async function fetchHelpChatMessages(userId: string): Promise<HelpChatMessage[]> {
+  const { data, error } = await getSupabase()
+    .from('help_chat_messages')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
+  if (error || !data) return [];
+  return data as HelpChatMessage[];
+}
+
+export async function fetchAllHelpChatMessagesForAdmin(): Promise<HelpChatMessage[]> {
+  const { data, error } = await getSupabase().from('help_chat_messages').select('*').order('created_at', { ascending: false });
+  if (error || !data) return [];
+  const names = await fetchProfileNamesForHelpChat(data.map((r) => r.user_id));
+  return (data as HelpChatMessage[]).map((r) => ({ ...r, user_name: names.get(r.user_id) || 'Membre' }));
+}
+
+async function fetchProfileNamesForHelpChat(userIds: string[]): Promise<Map<string, string>> {
+  if (userIds.length === 0) return new Map();
+  const { data } = await getSupabase().from('profiles').select('id, full_name').in('id', Array.from(new Set(userIds)));
+  return new Map((data || []).map((p: { id: string; full_name: string | null }) => [p.id, p.full_name || 'Membre']));
 }
 
 // ── 17. In-App Changelog ────────────────────────────────────────────────────

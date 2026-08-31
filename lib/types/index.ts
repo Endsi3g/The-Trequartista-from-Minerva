@@ -94,6 +94,16 @@ export interface HelpArticle {
   updated_at: string;
 }
 
+// 1:1 AI help chatbot on /help (chantier 6).
+export interface HelpChatMessage {
+  id: string;
+  user_id: string;
+  user_name?: string;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
+}
+
 export interface ChangelogEntry {
   id: string;
   title: string;
