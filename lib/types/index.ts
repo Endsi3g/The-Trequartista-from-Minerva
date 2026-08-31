@@ -266,7 +266,7 @@ export interface ProjectAttachment {
 
 export interface TeamChatMessage {
   id: string;
-  channel_type: 'project' | 'client' | 'member';
+  channel_type: 'project' | 'client' | 'dm' | 'topic';
   channel_id: string;
   sender_id: string | null;
   sender_name?: string;
@@ -275,6 +275,23 @@ export interface TeamChatMessage {
   attachment_url?: string | null;
   attachment_type?: 'image' | 'audio' | 'gif' | 'file' | null;
   attachment_name?: string | null;
+  parent_message_id?: string | null;
+  created_at: string;
+}
+
+export interface TeamChatReaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  emoji: string;
+  created_at: string;
+}
+
+export interface TeamChatMention {
+  id: string;
+  message_id: string;
+  mentioned_user_id: string;
+  read_at: string | null;
   created_at: string;
 }
 
