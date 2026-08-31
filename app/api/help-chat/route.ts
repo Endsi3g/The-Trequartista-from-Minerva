@@ -45,8 +45,13 @@ export async function POST(req: Request) {
     const response = await client.models.generateContent({ model: GEMINI_MODEL, contents: prompt });
     answer = response.text?.trim() || "Je n'ai pas pu générer de réponse -- reformule ta question ou demande directement à l'équipe via /chat.";
   } catch (err) {
-    console.error('[help-chat] Gemini call failed:', err);
-    return NextResponse.json({ error: "L'IA n'a pas pu répondre pour l'instant. Réessaie dans un moment." }, { status: 502 });
+    try {
+      const fallbackResponse = await client.models.generateContent({ model: 'gemini-3.6-flash', contents: prompt });
+      answer = fallbackResponse.text?.trim() || "Je n'ai pas pu générer de réponse -- reformule ta question ou demande directement à l'équipe via /chat.";
+    } catch (fallbackErr) {
+      console.error('[help-chat] Gemini call failed:', err, fallbackErr);
+      return NextResponse.json({ error: "L'IA n'a pas pu répondre pour l'instant. Réessaie dans un moment." }, { status: 502 });
+    }
   }
 
   await authed.from('help_chat_messages').insert([
