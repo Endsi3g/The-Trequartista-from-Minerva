@@ -43,7 +43,7 @@ export function QualityChecklistRunner({
   const { toastSuccess, toastError } = useToast();
   const [points, setPoints] = useState<TechQaPoint[]>(STANDARD_20_POINT_QC);
   const [selectedCategory, setSelectedCategory] = useState<TechQaCategory | 'all'>('all');
-  const [projectName, setProjectName] = useState('Minerva Trequartista — Release v2.4');
+  const [projectName, setProjectName] = useState('Minerva — Release v2.4');
   const [targetUrl, setTargetUrl] = useState('https://app.minerva.agency');
   const [environment, setEnvironment] = useState<'production' | 'staging' | 'preview'>('production');
   const [saving, setSaving] = useState(false);

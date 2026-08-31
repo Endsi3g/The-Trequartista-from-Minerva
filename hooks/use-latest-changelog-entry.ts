@@ -15,13 +15,16 @@ const DEFAULT_LATEST_ENTRY: LatestChangelogEntry = {
   version: '2.2.0',
 };
 
-// Powers the auto changelog banner -- the single most recent published entry
+// Powers the auto changelog banner -- the single most recent published entry.
+// Returns null until the fetch settles so the banner never renders against a
+// placeholder id that would never match what a dismiss actually stores.
 export function useLatestChangelogEntry(): LatestChangelogEntry | null {
-  const [entry, setEntry] = useState<LatestChangelogEntry | null>(DEFAULT_LATEST_ENTRY);
+  const [entry, setEntry] = useState<LatestChangelogEntry | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      let resolved: LatestChangelogEntry = DEFAULT_LATEST_ENTRY;
       try {
         const supabase = createClient();
         const { data } = await supabase
@@ -30,10 +33,11 @@ export function useLatestChangelogEntry(): LatestChangelogEntry | null {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (!cancelled && data) setEntry(data);
+        if (data) resolved = data;
       } catch {
         // Fallback to default v2.2.0 release
       }
+      if (!cancelled) setEntry(resolved);
     })();
     return () => {
       cancelled = true;

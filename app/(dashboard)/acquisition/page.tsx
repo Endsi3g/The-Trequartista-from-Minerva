@@ -106,7 +106,7 @@ const SMS_STATUS_CONFIG: Record<
 
 export default function AcquisitionDashboardPage() {
   const router = useRouter();
-  const { role, loading: userLoading } = useCurrentUser();
+  const { role, workspace, loading: userLoading } = useCurrentUser();
   const { toastSuccess, toastError, toastInfo } = useToast();
 
   const [period, setPeriod] = useState<PeriodKey>('30j');
@@ -170,12 +170,12 @@ export default function AcquisitionDashboardPage() {
     return `Il y a ${diffDays} j`;
   };
 
-  if (!userLoading && role !== 'admin') {
+  if (!userLoading && !(role === 'admin' || workspace === 'prospection')) {
     return (
       <div className="max-w-lg mx-auto py-16 text-center space-y-3">
-        <ShieldAlert className="w-8 h-8 text-amber-500 mx-auto" />
-        <p className="text-sm font-bold text-zinc-900">Réservé aux administrateurs.</p>
-        <Link href="/overview" className="text-xs text-emerald-600 hover:underline">
+        <ShieldAlert className="w-8 h-8 text-mv-amber mx-auto" />
+        <p className="text-sm font-bold text-mv-ink">Réservé aux administrateurs et à l&apos;espace Prospection.</p>
+        <Link href="/overview" className="text-xs text-mv-green hover:underline">
           Retour à l&apos;aperçu
         </Link>
       </div>

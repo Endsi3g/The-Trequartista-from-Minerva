@@ -39,7 +39,8 @@ import { cn } from '@/lib/utils';
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
 export default function TeamWorkloadPage() {
-  const { role, loading: userLoading } = useCurrentUser();
+  const { role, workspace, loading: userLoading } = useCurrentUser();
+  const isAdmin = role === 'admin';
   const { toastSuccess, toastError, toastInfo } = useToast();
 
   const [workloads, setWorkloads] = useState<TeamMemberWorkload[]>([]);
@@ -117,6 +118,16 @@ export default function TeamWorkloadPage() {
       setReassigning(false);
     }
   };
+
+  if (!userLoading && !(isAdmin || workspace === 'managing')) {
+    return (
+      <div className="max-w-lg mx-auto py-16 text-center space-y-3">
+        <ShieldAlert className="w-8 h-8 text-mv-amber mx-auto" />
+        <p className="text-sm font-bold text-mv-ink">Réservé aux administrateurs et à l&apos;espace Managing.</p>
+        <Link href="/overview" className="text-xs text-mv-green hover:underline">Retour à l&apos;aperçu</Link>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

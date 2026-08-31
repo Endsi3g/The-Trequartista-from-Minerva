@@ -249,9 +249,9 @@ export default function ProduitsMinervaPage() {
   if (!userLoading && role !== 'admin') {
     return (
       <div className="max-w-lg mx-auto py-16 text-center space-y-3">
-        <ShieldAlert className="w-8 h-8 text-amber-500 mx-auto" />
-        <p className="text-sm font-bold text-zinc-900">Réservé aux administrateurs.</p>
-        <Link href="/overview" className="text-xs text-emerald-600 hover:underline">
+        <ShieldAlert className="w-8 h-8 text-mv-amber mx-auto" />
+        <p className="text-sm font-bold text-mv-ink">Réservé aux administrateurs.</p>
+        <Link href="/overview" className="text-xs text-mv-green hover:underline">
           Retour à l&apos;aperçu
         </Link>
       </div>
