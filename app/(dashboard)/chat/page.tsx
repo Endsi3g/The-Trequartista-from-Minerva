@@ -177,21 +177,26 @@ export default function ChatPage() {
     fetchReactionsForMessages(messages.map((m) => m.id)).then(setReactions);
   };
 
-  // Resolves @FullName mentions in a message body against the current
-  // channel's known team members -- notifies via the existing push route,
-  // same mechanism task reminders already use.
+  // Resolves @FullName or @all mentions in a message body against the current
+  // channel's known team members -- notifies via the existing push route and native notifications.
   const notifyMentions = async (messageId: string, body: string) => {
-    const mentioned = members.filter((m) => body.includes(`@${m.full_name}`));
-    if (mentioned.length === 0) return;
-    await createMentions(messageId, mentioned.map((m) => m.id));
+    const isAll = /@(all|equipe|everyone|tous)/i.test(body);
+    const targetUserIds = isAll
+      ? members.map((m) => m.id)
+      : members.filter((m) => body.toLowerCase().includes(`@${m.full_name.toLowerCase()}`)).map((m) => m.id);
+
+    if (targetUserIds.length === 0) return;
+    await createMentions(messageId, targetUserIds);
     fetch('/api/push/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title: `${fullName || 'Un collègue'} vous a mentionné`,
+        title: isAll
+          ? `📢 ${fullName || 'Un collègue'} a mentionné toute l'équipe`
+          : `💬 ${fullName || 'Un collègue'} vous a mentionné`,
         body: body.slice(0, 120),
         url: '/chat',
-        userIds: mentioned.map((m) => m.id),
+        userIds: targetUserIds,
       }),
     }).catch(() => {});
   };
@@ -203,17 +208,24 @@ export default function ChatPage() {
     const sent = await send(draft, undefined, replyingTo || undefined);
     setSending(false);
     if (sent) {
+      const sentText = draft;
       setDraft('');
       setReplyingTo(null);
       setMentionQuery(null);
-      if (sent.id) notifyMentions(sent.id, draft);
+      if (sent.id) notifyMentions(sent.id, sentText);
     }
   };
 
   const mentionSuggestions = useMemo(() => {
     if (mentionQuery === null) return [];
     const q = mentionQuery.toLowerCase();
-    return members.filter((m) => m.full_name.toLowerCase().includes(q)).slice(0, 6);
+    const specials: { id: string; full_name: string; isAll?: boolean }[] = [];
+    if ('all'.includes(q) || 'tout'.includes(q) || 'equipe'.includes(q) || 'everyone'.includes(q) || q === '') {
+      specials.push({ id: '__all__', full_name: 'all', isAll: true });
+      specials.push({ id: '__equipe__', full_name: 'equipe', isAll: true });
+    }
+    const memberMatches = members.filter((m) => m.full_name.toLowerCase().includes(q)).slice(0, 6);
+    return [...specials, ...memberMatches];
   }, [mentionQuery, members]);
 
   const handleDraftChange = (value: string) => {
@@ -222,8 +234,9 @@ export default function ChatPage() {
     setMentionQuery(match ? match[1] : null);
   };
 
-  const insertMention = (member: TeamMemberSummary) => {
-    setDraft((prev) => prev.replace(/@([\wÀ-ÿ]*)$/, `@${member.full_name} `));
+  const insertMention = (nameOrMember: string | TeamMemberSummary | { id: string; full_name: string }) => {
+    const name = typeof nameOrMember === 'string' ? nameOrMember : nameOrMember.full_name;
+    setDraft((prev) => prev.replace(/@([\wÀ-ÿ]*)$/, `@${name} `));
     setMentionQuery(null);
   };
 
@@ -645,7 +658,43 @@ export default function ChatPage() {
                                 </a>
                               )}
 
-                              {m.body && <p>{m.body}</p>}
+                              {m.body && (
+                                <p className="whitespace-pre-wrap">
+                                  {m.body.split(/(@[\wÀ-ÿ]+)/g).map((part, pIdx) => {
+                                    if (/^@(all|equipe|everyone|tous)$/i.test(part)) {
+                                      return (
+                                        <span
+                                          key={pIdx}
+                                          className={cn(
+                                            'inline-flex items-center px-1.5 py-0.2 rounded font-mono font-bold text-[11px] mx-0.5 shadow-2xs',
+                                            isOwn
+                                              ? 'bg-white text-emerald-800'
+                                              : 'bg-emerald-600 text-white'
+                                          )}
+                                        >
+                                          📢 {part}
+                                        </span>
+                                      );
+                                    }
+                                    if (/^@[\wÀ-ÿ]+/i.test(part)) {
+                                      return (
+                                        <span
+                                          key={pIdx}
+                                          className={cn(
+                                            'inline-flex items-center px-1 py-0.2 rounded font-semibold text-[11.5px] mx-0.5',
+                                            isOwn
+                                              ? 'bg-white/30 text-white'
+                                              : 'bg-zinc-200/80 text-zinc-900'
+                                          )}
+                                        >
+                                          {part}
+                                        </span>
+                                      );
+                                    }
+                                    return <span key={pIdx}>{part}</span>;
+                                  })}
+                                </p>
+                              )}
                             </div>
 
                             {/* Hover actions: react / reply */}
@@ -796,16 +845,31 @@ export default function ChatPage() {
                     )}
                     <div className="relative border border-mv-border focus-within:border-mv-green focus-within:ring-1 focus-within:ring-mv-green/20 rounded-[6px] bg-zinc-50/50 transition-all">
                       {mentionSuggestions.length > 0 && (
-                        <div className="absolute bottom-full left-2 mb-1 w-56 bg-white border border-zinc-200 rounded-[6px] shadow-mv-md py-1 z-10">
-                          {mentionSuggestions.map((m) => (
+                        <div className="absolute bottom-full left-2 mb-1 w-64 bg-white border border-zinc-200 rounded-[6px] shadow-mv-md py-1 z-10">
+                          {mentionSuggestions.map((m: any) => (
                             <button
                               key={m.id}
                               type="button"
                               onClick={() => insertMention(m)}
                               className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-zinc-50 cursor-pointer"
                             >
-                              <UserAvatar name={m.full_name} src={m.avatar_url || ''} size="xs" className="w-4 h-4 text-[8px]" />
-                              <span className="text-[12px] text-zinc-800">{m.full_name}</span>
+                              {m.isAll ? (
+                                <div className="w-5 h-5 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] shrink-0 font-bold font-mono">
+                                  📢
+                                </div>
+                              ) : (
+                                <UserAvatar name={m.full_name} src={m.avatar_url || ''} size="xs" className="w-5 h-5 text-[8px]" />
+                              )}
+                              <div className="min-w-0">
+                                <span className="text-[12px] font-medium text-zinc-900">
+                                  @{m.full_name}
+                                </span>
+                                {m.isAll && (
+                                  <span className="text-[10px] text-zinc-400 font-mono block">
+                                    Notifier toute l'équipe
+                                  </span>
+                                )}
+                              </div>
                             </button>
                           ))}
                         </div>

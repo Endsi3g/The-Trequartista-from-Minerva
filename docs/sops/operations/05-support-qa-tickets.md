@@ -19,7 +19,7 @@
 
 ## 2. Processus de Traitement d'un Ticket
 
-1. **Réception & Qualification** : Vérifier la reproductibilité du bug et assigner le niveau de priorité (P0/P1/P2) dans le tableau de tâches (`/tasks` ou Plane).
+1. **Réception & Qualification** : Vérifier la reproductibilité du bug et assigner le niveau de priorité (P0/P1/P2) dans le tableau de tâches (`/tasks`).
 2. **Investigation & Reproduction** : Consigner les étapes exactes pour reproduire le bug (navigateur, OS, URL, compte client).
 3. **Résolution ou Escalade** : Si le bug touche au code source ou à la base de données, assigner au fondateur avec les logs.
 4. **Documentation** : Enrichir la base de connaissances interne ou les SOPs si le bug révèle un cas d'usage récurrent.

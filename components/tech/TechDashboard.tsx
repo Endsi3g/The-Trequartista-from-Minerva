@@ -737,10 +737,8 @@ export function TechDashboard() {
 
                     {/* Task Rows */}
                     {techTasks.length > 0 ? (
-                      techTasks.slice(0, 8).map((task) => {
-                        const taskIdStr = task.plane_sequence_id
-                          ? `PL-${task.plane_sequence_id}`
-                          : `TK-${task.id.slice(0, 4).toUpperCase()}`;
+                      techTasks.slice(0, 8).map((task, idx) => {
+                        const taskIdStr = `TK-${String(idx + 1).padStart(2, '0')}`;
 
                         return (
                           <tr key={task.id} className="hover:bg-zinc-50/70 transition-colors group">

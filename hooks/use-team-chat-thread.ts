@@ -83,6 +83,30 @@ export function useTeamChatThread(
       setDbMessages(await fetchTeamChatMessages(channelType, channelId));
       setLoading(false);
     })();
+
+    // Postgres changes listener for rock-solid channel persistence
+    const { createClient } = require('@/lib/supabase/client');
+    const supabase = createClient();
+    const pgChannel = supabase
+      .channel(`pg-team-chat-${channelId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'team_chat_messages', filter: `channel_id=eq.${channelId}` },
+        (payload: any) => {
+          const newRow = payload.new as TeamChatMessage;
+          if (newRow) {
+            setDbMessages((prev) => {
+              if (prev.some((m) => m.id === newRow.id)) return prev;
+              return [...prev, newRow];
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(pgChannel).catch(() => {});
+    };
   }, [channelType, channelId]);
 
   const messages = useMemo(() => {

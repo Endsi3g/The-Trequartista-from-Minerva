@@ -4,6 +4,28 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-31 (v2.13.0) — Chat Canaux & Mentions @all Équipe, Retrait Total de Plane, Nouveaux Tutos GitHub/Framer/Features & Nettoyage Workspaces
+
+Mise en production des améliorations de communication d'équipe, épuration technique et nouveaux tutoriels :
+
+- **Canaux de Messagerie (`#général`, `#annonces`) & Mentions Équipe (`/chat`)** :
+  - Canaux thématiques connectés en Postgres Realtime avec synchronisation immédiate et persistance optimiste.
+  - Autocomplétion intelligente sur `@all`, `@equipe`, `@everyone` et sur les collaborateurs individuels.
+  - Mise en valeur visuelle dorée/émeraude des badges de mention dans les bulles de messages.
+  - Déclenchement automatique de **notifications natives prioritaires** pour toute l'équipe lors d'un `@all` / `@equipe`.
+- **Retrait Total de Plane & Épuration Technique** :
+  - Suppression de toutes les références, badges, colonnes et outils Plane (`/tasks`, `/integrations`, `/tech`, `/api/mcp`).
+  - Nettoyage du serveur MCP pour se concentrer sur les outils réels (leads, CRM, clients, SOPs).
+  - Épuration des widgets superflus et simplification du flux d'ingénierie.
+- **Nouveaux Tutoriels & SOPs Développeurs dans l'Académie (`/academy`)** :
+  - **SOP-DEV-01** : Maîtriser GitHub & le Flux de Travail Git chez Minerva (Branches, PRs, Turbopack, Résolution de conflits).
+  - **SOP-DEV-02** : Créer et Déployer un Site Framer Haute Conversion pour Clients (Design System, Webhooks ROI, SEO).
+  - **SOP-DEV-03** : Guide de Création de Nouvelles Fonctionnalités à Travers les Apps Minerva (Schéma Supabase -> Typescript -> Tailwind -> App Router).
+- **Nettoyage des Guides par Workspace** :
+  - Alignement strict des SOPs par espace (Prospection, Managing, Tech) sans contenu obsolète ou hors sujet.
+
+---
+
 ## 2026-08-31 (v2.12.0) — Console Tech Haute Densité, Matrice QA 20-Points, Grille d'Intégrations & Notifications Natives
 
 Mise en production de la refonte DevOps et du système de notifications temps réel :

@@ -470,6 +470,51 @@ function withComputedBlocks(sop: AcademySOP): AcademySOP {
   return { ...sop, content_json: { blocks: markdownToBlocks(sop.content_markdown) } };
 }
 
+const FALLBACK_DEV_SOPS: AcademySOP[] = [
+  {
+    id: 'sop-dev-01-github',
+    title: 'Guide Pratique : Maîtriser GitHub & le Flux de Travail Git chez Minerva',
+    description: 'Protocole de collaboration Git, branches feature/fix, commits conventionnels et validation stricte TypeScript.',
+    category: 'Outils & Systèmes',
+    pillar: 'transversal',
+    content_markdown: '# SOP-DEV-01 — Guide Pratique : Maîtriser GitHub & le Flux de Travail Git chez Minerva\n\n## 1. Principes Fondamentaux\n- Branche main toujours déployable.\n- Branches de travail au format feat/..., fix/..., chantierX-...\n- Validation stricte avant commit : npx tsc --noEmit.\n\n## 2. Cycle de Travail\n1. git checkout main && git pull origin main\n2. git checkout -b feat/ma-feature\n3. npm run dev\n4. Commit conventionnel : feat(module): description\n5. Validation TypeScript\n6. git push -u origin feat/ma-feature',
+    author: 'Kael Belceus & Lead Tech',
+    read_time_min: 10,
+    is_essential: true,
+    is_featured: true,
+    is_onboarding_step: true,
+    sort_order: 1,
+  },
+  {
+    id: 'sop-dev-02-framer',
+    title: 'Guide Pratique : Créer & Déployer un Site Framer Haute Conversion pour Clients',
+    description: 'Architecture de page client, design tokens Minerva, intégration de formulaires webhooks et publication en ligne.',
+    category: 'Design Framer',
+    pillar: 'agency',
+    content_markdown: '# SOP-DEV-02 — Guide Pratique : Créer & Déployer un Site Framer Haute Conversion pour Clients\n\n## 1. Structure Standard\n1. Hero Section avec CTA\n2. Preuve Sociale & Avis\n3. Menu & Offres Phares\n4. Galerie Bento Grid\n5. Témoignages & Avis Google\n6. Formulaire connecté & Footer\n\n## 2. Webhooks Minerva\n- Envoi POST vers /api/webhooks/roi-event\n- Payload : clientId, name, email, phone, channel, value',
+    author: 'Kael Belceus & UI/UX Architect',
+    read_time_min: 12,
+    is_essential: true,
+    is_featured: true,
+    is_onboarding_step: false,
+    sort_order: 2,
+  },
+  {
+    id: 'sop-dev-03-features',
+    title: 'Guide Pratique : Créer de Nouvelles Fonctionnalités à Travers les Apps Minerva',
+    description: 'Guide technique pas-à-pas pour implémenter de nouvelles fonctionnalités : Schéma Supabase, Typescript, Tailwind et App Router.',
+    category: 'IA & Ingénierie',
+    pillar: 'transversal',
+    content_markdown: '# SOP-DEV-03 — Guide Pratique : Créer de Nouvelles Fonctionnalités à Travers les Apps Minerva\n\n## 1. The 6-Step Loop\n1. Schéma Postgres & RLS dans supabase/migrations/\n2. Typage TypeScript Strict dans lib/types/index.ts\n3. Service de Données dans lib/services/supabase-data.ts\n4. Composants UI haute densité\n5. Route App Router dans app/(dashboard)/...\n6. Raccourcis Clavier & Realtime',
+    author: 'Kael Belceus & Lead Architect',
+    read_time_min: 15,
+    is_essential: true,
+    is_featured: true,
+    is_onboarding_step: false,
+    sort_order: 3,
+  },
+];
+
 // ----------------------------------------------------
 export async function fetchAcademySops(): Promise<AcademySOP[]> {
   return withTimeout(
@@ -480,10 +525,18 @@ export async function fetchAcademySops(): Promise<AcademySOP[]> {
         .order('sort_order', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false });
 
-      if (error || !data) return [];
-      return (data as AcademySOP[]).map(withComputedBlocks);
+      if (error || !data || data.length === 0) {
+        return FALLBACK_DEV_SOPS.map(withComputedBlocks);
+      }
+
+      // If DB has items, ensure our 3 dev SOPs are also present if not in DB yet
+      const dbSops = (data as AcademySOP[]).map(withComputedBlocks);
+      const existingTitles = new Set(dbSops.map((s) => s.title));
+      const missingDevSops = FALLBACK_DEV_SOPS.filter((s) => !existingTitles.has(s.title)).map(withComputedBlocks);
+
+      return [...dbSops, ...missingDevSops];
     })(),
-    []
+    FALLBACK_DEV_SOPS.map(withComputedBlocks)
   );
 }
 

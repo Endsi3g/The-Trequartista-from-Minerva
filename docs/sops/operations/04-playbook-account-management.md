@@ -10,7 +10,7 @@
 ## 1. Cycle d'Onboarding Client (J0 à J7)
 
 - **[ ] J0 — Message de bienvenue** : Accuser réception de la signature et envoyer les accès initiaux.
-- **[ ] J0 — Création de la fiche projet** : Créer le dossier client dans l'application Minerva et sur Plane.
+- **[ ] J0 — Création de la fiche projet** : Créer le dossier client dans l'application Minerva.
 - **[ ] J1 — Session de Kickoff (30 min)** : Valider les priorités de lancement, recueillir les assets de marque et le menu du restaurant.
 - **[ ] J2 — Partage d'accès aux outils** : Configurer les comptes Minerva Flow et Framer.
 - **[ ] J3 — Première livraison visible (Quick Win)** : Livrer le prototype interactif ou la structure de page pour sécuriser la confiance.

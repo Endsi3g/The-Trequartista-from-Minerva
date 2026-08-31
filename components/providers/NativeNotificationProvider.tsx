@@ -122,12 +122,22 @@ export function NativeNotificationProvider({ children }: { children: React.React
           if (newMsg.sender_id === currentUserId) return;
 
           const sender = newMsg.sender_name || 'Un collègue';
-          const snippet = newMsg.body
-            ? newMsg.body.slice(0, 80) + (newMsg.body.length > 80 ? '...' : '')
+          const body = newMsg.body || '';
+          const isAllMention = /@(all|equipe|everyone|tous)/i.test(body);
+          const isDirectMention = currentUserName && body.toLowerCase().includes(`@${currentUserName.toLowerCase()}`);
+
+          const title = isAllMention
+            ? `📢 Mention d'Équipe (@all) par ${sender}`
+            : isDirectMention
+            ? `🔔 ${sender} vous a mentionné`
+            : `💬 Message de ${sender}`;
+
+          const snippet = body
+            ? body.slice(0, 80) + (body.length > 80 ? '...' : '')
             : 'Nouveau message reçu';
 
           notifyUser(
-            `💬 Message de ${sender}`,
+            title,
             snippet,
             '/chat'
           );

@@ -59,7 +59,7 @@ Chez Minerva, nous ne développons plus de logiciel comme en 2020. L'ingénieur 
 > Aucune donnée fictive (fake clients, fake MRR, fake metrics) ne doit être introduite dans l'application.
 
 - **États Vides Honnêtes** : Si une table est vide, l'interface affiche explicitement : *« Aucun élément pour le moment »* avec un CTA d'action réel.
-- **Dégradation Gracieuse** : Si une intégration tierce (ex: Twilio, Stripe, Plane, Brevo) n'a pas ses clés d'API configurées dans l'environnement, l'interface et les API doivent intercepter l'erreur proprement et indiquer *« Service non configuré »* sans planter la page ni simuler un faux succès.
+- **Dégradation Gracieuse** : Si une intégration tierce (ex: Twilio, Stripe, Brevo, ElevenLabs) n'a pas ses clés d'API configurées dans l'environnement, l'interface et les API doivent intercepter l'erreur proprement et indiquer *« Service non configuré »* sans planter la page ni simuler un faux succès.
 
 ---
 

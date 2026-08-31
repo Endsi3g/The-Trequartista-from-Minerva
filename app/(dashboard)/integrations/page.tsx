@@ -409,30 +409,30 @@ export default function IntegrationsPage() {
 
         {/* Colonne Droite (Featured Hub + Grille 2-Colonnes) */}
         <div className="space-y-3">
-          {/* Featured Core Hub : Plane Project Management (52px) */}
+          {/* Featured Core Hub : GitHub & Framer Studio (52px) */}
           <div className="border border-zinc-200 rounded-lg p-2.5 bg-white shadow-xs flex items-center justify-between gap-3 h-[52px]">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-md bg-zinc-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                <Kanban className="w-4 h-4 text-emerald-400" />
+                <Zap className="w-4 h-4 text-emerald-400" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xs font-bold text-zinc-900 truncate">Plane Project Management</h2>
+                  <h2 className="text-xs font-bold text-zinc-900 truncate">GitHub & Framer Studio</h2>
                   <span className="text-[9.5px] font-mono px-1 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded font-medium">
-                    Native & MCP
+                    Core Minerva
                   </span>
                 </div>
                 <p className="text-[11px] text-zinc-400 truncate max-w-md">
-                  Tickets, cycles de développement, backlog technique et synchronisation d’agents IA.
+                  Déploiement continu, hébergement Framer, webhooks et automatisations d'acquisition.
                 </p>
               </div>
             </div>
 
             <Link
-              href="/tasks"
+              href="/tech"
               className="h-6 px-2.5 text-[11px] font-medium border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800 rounded-md inline-flex items-center gap-1 shrink-0 shadow-2xs transition-colors"
             >
-              <span>Ouvrir dans Tasks</span>
+              <span>Console Tech</span>
               <ArrowRight size={10} />
             </Link>
           </div>
