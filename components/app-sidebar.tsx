@@ -315,10 +315,7 @@ export function AppSidebar() {
       : []),
   ];
 
-  // "Croissance" -- admin-only, except Acquisition/Audits which a
-  // Prospection-workspace member also gets (Produits Minerva stays
-  // strictly admin-only, it's an internal roadmap tool not part of the
-  // prospection funnel).
+  // "Croissance" -- Acquisition/Audits IA for Prospection & Admin members
   const growthItems: NavItem[] = [
     ...(isAdmin || workspace === 'prospection'
       ? [
@@ -326,8 +323,6 @@ export function AppSidebar() {
           { key: 'audits', label: 'Audits IA', href: '/audits', icon: ClipboardCheck } as NavItem,
         ]
       : []),
-    { key: 'flow', label: 'Minerva Flow (SaaS)', href: '/flow', icon: Utensils, isNew: true },
-    ...(isAdmin ? [{ key: 'produits', label: 'Produits Minerva', href: '/produits', icon: Rocket } as NavItem] : []),
   ];
 
   // "Tech Workspace" specific sections
@@ -351,8 +346,7 @@ export function AppSidebar() {
   ];
 
   const techProductItems: NavItem[] = [
-    { key: 'flow', label: 'Minerva Flow (SaaS)', href: '/flow', icon: Utensils, isNew: true },
-    { key: 'produits', label: 'Produits Minerva', href: '/produits', icon: Rocket },
+    { key: 'produits', label: 'Roadmap & Specs Produits', href: '/produits', icon: Rocket },
     { key: 'integrations', label: 'Intégrations & Webhooks', href: '/integrations', icon: Sparkles },
   ];
 

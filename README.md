@@ -1,6 +1,6 @@
 <div align="center">
 
-# Minerva Trequartista (v2.13.0)
+# Minerva Trequartista (v2.16.0)
 
 **Système d'exploitation de livraison client, de suivi du ROI et d'excellence opérationnelle de l'agence Minerva**
 
@@ -9,7 +9,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16.3-14170f?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-14170f?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Auth-14170f?style=flat-square&logo=supabase)](https://supabase.com/)
-[![License](https://img.shields.io/badge/Release-v2.13.0-14170f?style=flat-square)](https://github.com/Endsi3g/The-Trequartista-from-Minerva)
+[![License](https://img.shields.io/badge/Release-v2.16.0-14170f?style=flat-square)](https://github.com/Endsi3g/The-Trequartista-from-Minerva)
 
 <br />
 
