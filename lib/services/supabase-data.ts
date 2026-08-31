@@ -40,7 +40,11 @@ export async function fetchClients(): Promise<Client[]> {
     (async () => {
       const { data, error } = await getSupabase()
         .from('clients')
-        .select('*, account_manager:profiles(full_name)')
+        // Explicit FK name required -- clients has two relationships to
+        // profiles (this one, and profiles.client_id for the client-portal
+        // account), so PostgREST can't infer which one "profiles(...)"
+        // means and rejects the query with PGRST201.
+        .select('*, account_manager:profiles!clients_account_manager_id_fkey(full_name)')
         .order('created_at', { ascending: false });
 
       if (error || !data) {
