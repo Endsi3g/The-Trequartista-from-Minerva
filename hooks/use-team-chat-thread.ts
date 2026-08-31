@@ -15,32 +15,50 @@ const ATTACHMENT_MARKER = '__mv_attachment__';
 interface AttachmentEnvelope {
   marker: typeof ATTACHMENT_MARKER;
   body: string | null;
-  attachment: TeamChatAttachment;
+  attachment: TeamChatAttachment | null;
+  parentMessageId: string | null;
 }
-function encodeBroadcastContent(body: string, attachment?: TeamChatAttachment | null): string {
-  if (!attachment) return body;
-  const envelope: AttachmentEnvelope = { marker: ATTACHMENT_MARKER, body: body || null, attachment };
+function encodeBroadcastContent(
+  body: string,
+  attachment?: TeamChatAttachment | null,
+  parentMessageId?: string | null
+): string {
+  if (!attachment && !parentMessageId) return body;
+  const envelope: AttachmentEnvelope = {
+    marker: ATTACHMENT_MARKER,
+    body: body || null,
+    attachment: attachment || null,
+    parentMessageId: parentMessageId || null,
+  };
   return JSON.stringify(envelope);
 }
-function decodeBroadcastContent(content: string): { body: string | null; attachment: TeamChatAttachment | null } {
+function decodeBroadcastContent(content: string): {
+  body: string | null;
+  attachment: TeamChatAttachment | null;
+  parentMessageId: string | null;
+} {
   if (content.startsWith('{')) {
     try {
       const parsed = JSON.parse(content);
       if (parsed?.marker === ATTACHMENT_MARKER) {
-        return { body: parsed.body ?? null, attachment: parsed.attachment as TeamChatAttachment };
+        return {
+          body: parsed.body ?? null,
+          attachment: (parsed.attachment as TeamChatAttachment) || null,
+          parentMessageId: parsed.parentMessageId || null,
+        };
       }
     } catch {
       // Not an envelope -- fall through and treat as plain text.
     }
   }
-  return { body: content, attachment: null };
+  return { body: content, attachment: null, parentMessageId: null };
 }
 
 // Same broadcast-plus-persist pattern as use-client-chat-thread.ts, for
 // internal team channels scoped to a project, a client, or a 1-on-1 DM
 // between two members instead of the client<->Minerva Q&A thread.
 export function useTeamChatThread(
-  channelType: 'project' | 'client' | 'member',
+  channelType: 'project' | 'client' | 'dm' | 'topic',
   channelId: string | undefined,
   currentUserId: string,
   currentUserName: string
@@ -71,7 +89,7 @@ export function useTeamChatThread(
     const fromLive: TeamChatMessage[] = liveMessages
       .filter((m) => m.user.id !== currentUserId)
       .map((m) => {
-        const { body, attachment } = decodeBroadcastContent(m.content);
+        const { body, attachment, parentMessageId } = decodeBroadcastContent(m.content);
         return {
           id: m.id,
           channel_type: channelType,
@@ -83,6 +101,7 @@ export function useTeamChatThread(
           attachment_url: attachment?.url || null,
           attachment_type: attachment?.type || null,
           attachment_name: attachment?.name || null,
+          parent_message_id: parentMessageId,
           created_at: m.createdAt,
         };
       });
@@ -91,17 +110,21 @@ export function useTeamChatThread(
     );
   }, [dbMessages, liveMessages, currentUserId, channelType, channelId]);
 
-  const send = async (body: string, attachment?: TeamChatAttachment | null) => {
+  const send = async (
+    body: string,
+    attachment?: TeamChatAttachment | null,
+    parentMessageId?: string | null
+  ): Promise<TeamChatMessage | null> => {
     const trimmed = body.trim();
-    if (!trimmed && !attachment) return false;
-    if (!channelId) return false;
+    if (!trimmed && !attachment) return null;
+    if (!channelId) return null;
     const senderId = currentUserId || 'team-user';
-    const created = await sendTeamChatMessage(channelType, channelId, senderId, trimmed, attachment);
+    const created = await sendTeamChatMessage(channelType, channelId, senderId, trimmed, attachment, parentMessageId);
     if (created) {
       setDbMessages((prev) => [...prev, { ...created, sender_name: currentUserName || 'Moi' }]);
     }
-    if (isConnected) broadcast(encodeBroadcastContent(trimmed, attachment));
-    return true;
+    if (isConnected) broadcast(encodeBroadcastContent(trimmed, attachment, parentMessageId));
+    return created;
   };
 
   return { messages, loading, send };
