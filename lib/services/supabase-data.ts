@@ -541,6 +541,20 @@ const FALLBACK_DEV_SOPS: AcademySOP[] = [
     is_onboarding_step: true,
     sort_order: 5,
   },
+  {
+    id: 'sop-ai-04-composio',
+    title: 'Guide Pratique : Configurer & Connecter ses Outils avec Composio et l’Assistant IA',
+    description: 'Procédure pas-à-pas pour lier Gmail, Google Calendar, Notion, GitHub et Stripe à l’IA d’agence.',
+    category: 'Workflows IA',
+    pillar: 'transversal',
+    content_markdown: '# SOP-AI-04 — Guide Pratique : Configurer & Connecter ses Outils avec Composio et l’Assistant IA\n\n**Hub MCP :** https://connect.composio.dev/mcp\n\n## 1. Pourquoi connecter ses outils ?\n- Permet à l’IA de lire et résumer les emails de prospects (Gmail).\n- Planifier des rendez-vous sans conflit (Google Calendar).\n- Synchroniser les notes de cadrage et SOPs (Notion).\n- Automatiser la gestion de code et tickets (GitHub).\n\n## 2. Configuration Express\n1. Ouvrir https://connect.composio.dev/mcp ou /integrations.\n2. Autoriser vos outils avec vos identifiants d’agence.\n3. Utiliser l’Assistant IA pour automatiser vos tâches quotidiennes.',
+    author: 'Kael Belceus & AI Lead',
+    read_time_min: 7,
+    is_essential: true,
+    is_featured: true,
+    is_onboarding_step: true,
+    sort_order: 6,
+  },
 ];
 
 // ----------------------------------------------------

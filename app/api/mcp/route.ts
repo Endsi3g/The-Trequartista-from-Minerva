@@ -229,8 +229,61 @@ const handler = createMcpHandler(
         return { content: [{ type: 'text' as const, text: JSON.stringify(data ?? [], null, 2) }] };
       }
     );
+
+    server.registerTool(
+      'minerva_composio_list_apps',
+      {
+        title: 'Composio Connected Apps',
+        description: 'Liste les applications tierces connectées par l’équipe Minerva (Gmail, Google Calendar, Notion, GitHub, Stripe, etc.) via Composio.',
+        inputSchema: z.object({}).strict(),
+      },
+      async (_params, extra) => {
+        const clientId = extra.http?.authInfo?.clientId ?? 'unknown';
+        await logMcpEvent(clientId, { tool: 'minerva_composio_list_apps' });
+
+        try {
+          const { fetchConnectionStatuses } = await import('@/lib/services/composio');
+          const result = await fetchConnectionStatuses();
+          return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Erreur inconnue';
+          return { content: [{ type: 'text' as const, text: `Erreur Composio: ${message}` }], isError: true };
+        }
+      }
+    );
+
+    server.registerTool(
+      'minerva_composio_execute_action',
+      {
+        title: 'Exécuter Action Composio',
+        description: 'Exécute une action sur les outils connectés (Gmail, Google Calendar, Notion, GitHub, Drive) pour le compte de l’équipe Minerva.',
+        inputSchema: z
+          .object({
+            actionName: z.string().describe('Nom de l’action Composio (ex: GMAIL_SEND_EMAIL, GOOGLECALENDAR_CREATE_EVENT, NOTION_SEARCH_PAGE)'),
+            params: z.record(z.string(), z.unknown()).describe('Paramètres de l’action au format clé-valeur'),
+          })
+          .strict(),
+      },
+      async ({ actionName, params }, extra) => {
+        const clientId = extra.http?.authInfo?.clientId ?? 'unknown';
+        await logMcpEvent(clientId, { tool: 'minerva_composio_execute_action', actionName, params });
+
+        try {
+          const { getComposioClient, COMPOSIO_ENTITY_ID } = await import('@/lib/services/composio');
+          const composio = getComposioClient();
+          const result = await composio.tools.execute(actionName, {
+            user_id: COMPOSIO_ENTITY_ID,
+            arguments: params,
+          });
+          return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Erreur inconnue';
+          return { content: [{ type: 'text' as const, text: `Erreur Composio: ${message}` }], isError: true };
+        }
+      }
+    );
   },
-  { serverInfo: { name: 'minerva-trequartista', version: '1.0.0' } }
+  { serverInfo: { name: 'minerva-trequartista', version: '1.1.0' } }
 );
 
 const authHandler = withMcpAuth(handler, verifyToken, { required: true });

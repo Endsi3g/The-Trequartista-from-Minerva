@@ -4,6 +4,19 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-31 (v2.15.0) — Intégration Composio pour l'Assistant IA, Nouveaux Outils MCP & Tutoriel Équipe SOP-AI-04
+
+Mise en production de l'intégration Composio pour l'IA d'agence et du guide de configuration d'équipe :
+
+- **Accès de l'Assistant IA à Composio & Outils Connectés** :
+  - Enrichissement du modèle d'aide IA (`/help`, `/chat`) avec le contexte complet des intégrations Composio (Gmail, Google Calendar, Notion, GitHub, Stripe, ElevenLabs).
+  - Enregistrement de 2 nouveaux outils MCP (`minerva_composio_list_apps`, `minerva_composio_execute_action`) permettant aux agents de lister les connexions actives et d'exécuter des actions d'équipe.
+- **Nouveau Guide d'Équipe dans l'Académie (`/academy`)** :
+  - **SOP-AI-04** : *Guide Pratique — Configurer & Connecter ses Outils avec Composio et l’Assistant IA*.
+  - Guide pas-à-pas pour chaque membre afin de créer son compte, lier ses outils professionnels et déléguer des tâches à l'IA.
+
+---
+
 ## 2026-08-31 (v2.14.0) — Résolution Crash Workspace Prospection, Liens Écosystème (OS Lite / Flow), Master Migration SQL & Composio MCP
 
 Mise en production des correctifs de stabilité, de la master migration consolidée et des liens d'écosystème :
