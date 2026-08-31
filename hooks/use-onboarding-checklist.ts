@@ -37,11 +37,13 @@ export function useOnboardingChecklist() {
       const notifGranted =
         typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted';
 
-      // No SOPs published yet -> nothing to require. Once there are some,
-      // this only counts as done when every one of them has been completed.
-      // Real scoping to "SOPs tied to your specific tasks" needs task
-      // delegation (chantier équipe) to exist first — for now it's all SOPs.
-      const sopsAllDone = allSops.length === 0 || allSops.every((s) => completedSopIds.includes(s.id));
+      // Scoped to the curated onboarding path (academy_sops.is_onboarding_step)
+      // rather than every SOP in the library -- most SOPs are role-specific
+      // (AI engineering, prospection scripts, etc.) and shouldn't gate
+      // onboarding completion for a member who'll never touch that role.
+      const onboardingSops = allSops.filter((s) => s.is_onboarding_step);
+      const sopsAllDone =
+        onboardingSops.length === 0 || onboardingSops.every((s) => completedSopIds.includes(s.id));
 
       if (cancelled) return;
       setSteps([
@@ -65,7 +67,7 @@ export function useOnboardingChecklist() {
         },
         {
           key: 'sops',
-          label: 'Terminer les SOPs liées à tes tâches',
+          label: 'Compléter le parcours d’intégration de l’Académie',
           done: sopsAllDone,
           href: '/academy',
         },

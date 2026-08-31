@@ -3,8 +3,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, GraduationCap, User as UserIcon, Clock, ShieldAlert } from 'lucide-react';
@@ -12,7 +10,14 @@ import { addAcademySop } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useAppPermissions } from '@/components/providers/AppPermissionsProvider';
 import { VideoUploadField } from '@/components/media/VideoUploadField';
-import type { AcademySOP } from '@/lib/types';
+import { BlockEditor } from '@/components/documents/BlockEditor';
+import type { AcademySOP, DocumentBlock } from '@/lib/types';
+
+let blockIdCounter = 0;
+function newBlockId() {
+  blockIdCounter += 1;
+  return `block-${Date.now().toString(36)}-${blockIdCounter}`;
+}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <h2 className="text-[11px] font-extrabold text-mv-ink-soft uppercase tracking-widest mb-3">{children}</h2>;
@@ -29,7 +34,9 @@ export default function NewSopPage() {
   const [author, setAuthor] = useState('');
   const [readTime, setReadTime] = useState(5);
   const [description, setDescription] = useState('');
-  const [contentMarkdown, setContentMarkdown] = useState('');
+  const [blocks, setBlocks] = useState<DocumentBlock[]>([
+    { id: newBlockId(), type: 'paragraph', content: '' },
+  ]);
   const [videoUrl, setVideoUrl] = useState('');
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -37,13 +44,19 @@ export default function NewSopPage() {
     if (!title.trim()) return;
     setSaving(true);
 
+    // content_markdown is kept as a plain-text derivative for full-text
+    // search -- content_json (BlockEditor's native format) is the real
+    // source of truth for rendering/editing.
+    const plainTextContent = blocks.map((b) => b.content).filter(Boolean).join('\n\n');
+
     const created = await addAcademySop({
       title,
       category,
       read_time_min: Number(readTime),
       author,
       description,
-      content_markdown: contentMarkdown.trim() || undefined,
+      content_markdown: plainTextContent || undefined,
+      content_json: { blocks },
       video_url: videoUrl || undefined,
     });
 
@@ -165,17 +178,13 @@ export default function NewSopPage() {
           </div>
 
           <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm space-y-3">
-            <SectionLabel>Contenu détaillé (Markdown)</SectionLabel>
+            <SectionLabel>Contenu détaillé</SectionLabel>
             <p className="text-[11px] text-mv-ink-faint -mt-1">
-              Le corps complet de la SOP, tel qu&apos;il apparaîtra sur sa page — titres <code>##</code>, listes, tableaux et gras sont supportés.
+              Le corps complet de la SOP, tel qu&apos;il apparaîtra sur sa page. Tapez <code>/</code> pour insérer un titre, une liste, un tableau, un callout ou un bloc de code.
             </p>
-            <textarea
-              rows={14}
-              placeholder={'## Étape 1\n\nDétaillez la procédure ici…'}
-              value={contentMarkdown}
-              onChange={(e) => setContentMarkdown(e.target.value)}
-              className="w-full rounded-xl bg-mv-cream-soft border border-mv-border p-3.5 text-sm text-mv-ink font-mono leading-relaxed focus:outline-none focus:border-mv-green transition-colors resize-y"
-            />
+            <div className="rounded-xl bg-mv-cream-soft border border-mv-border p-3.5">
+              <BlockEditor blocks={blocks} onChange={setBlocks} />
+            </div>
           </div>
 
           <div className="flex gap-3">
@@ -210,11 +219,11 @@ export default function NewSopPage() {
             Voici comment cette SOP apparaîtra dans la bibliothèque de l&apos;académie une fois créée.
           </p>
 
-          {contentMarkdown.trim() && (
+          {blocks.some((b) => b.content.trim()) && (
             <div className="pt-3 border-t border-mv-border space-y-2">
               <span className="text-[10.5px] font-extrabold text-mv-ink-soft uppercase tracking-widest">Aperçu du contenu</span>
-              <div className="prose prose-zinc prose-sm max-w-none text-xs leading-relaxed text-mv-ink-soft max-h-72 overflow-y-auto">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{contentMarkdown}</ReactMarkdown>
+              <div className="text-xs leading-relaxed text-mv-ink-soft max-h-72 overflow-y-auto">
+                <BlockEditor blocks={blocks} onChange={() => {}} readOnly />
               </div>
             </div>
           )}

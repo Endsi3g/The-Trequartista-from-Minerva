@@ -531,6 +531,9 @@ export interface AcademySOP {
   is_featured?: boolean;
   is_essential?: boolean;
   content_markdown?: string;
+  content_json?: DocumentContentJson | null;
+  is_onboarding_step?: boolean;
+  sort_order?: number | null;
   pillar?: 'flow' | 'reach' | 'agency' | 'inspirations' | 'transversal';
 }
 

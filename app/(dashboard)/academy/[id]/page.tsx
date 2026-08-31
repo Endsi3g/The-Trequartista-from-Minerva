@@ -24,8 +24,7 @@ import {
   ExternalLink,
   Info,
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { BlockEditor } from '@/components/documents/BlockEditor';
 import { VideoAssetPlayer } from '@/components/media/VideoAssetPlayer';
 import { createClient } from '@/lib/supabase/client';
 import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
@@ -177,11 +176,14 @@ export default function SopDetailPage() {
     );
   }
 
-  const isMasterSop = sop.id === 'sop-anti-friction-master';
-  const isPillar1 = sop.id === 'sop-restaurant-margin-recovery';
-  const isPillar2 = sop.id === 'sop-minerva-reach-playbook';
-  const isPillar3 = sop.id === 'sop-agence-prototype-j7';
-  const isPillar4 = sop.id === 'sop-mes-inspirations-media';
+  // Matched by title rather than id -- these SOPs now live in the database
+  // with real UUID ids assigned on insert, not the old hardcoded string
+  // slugs this special-casing used to key off of.
+  const isMasterSop = sop.title.startsWith('Système Anti-Friction');
+  const isPillar1 = sop.title.startsWith('Pilier 1 (Flow)');
+  const isPillar2 = sop.title.startsWith('Pilier 2 (Reach)');
+  const isPillar3 = sop.title.startsWith('Pilier 3 (Agence)');
+  const isPillar4 = sop.title.startsWith('Pilier 4');
 
   const sampleOutreachScript = isPillar1
     ? `Bonjour [Prénom du Proprio],\n\nOn a analysé le menu de [Nom du Restaurant] sur Uber Eats. Sur votre [Plat Signature], vous perdez environ [X] $ par commande en commissions invisibles (estimé à ~[Perte Mensuelle] $/mois).\n\nOn a pris 5 minutes pour recréer vos 5 plats signature dans une interface de commande directe Minerva Flow à 0% de commission — c'est juste pour que vous visualisiez :\n👉 [Lien Démo Personnalisé]\n\nOn a un protocole test de 5 minutes sur imprimante sans risque. Seriez-vous dispo mardi ou mercredi entre 14h30 et 16h pour un café rapide ?\n\nBien à vous,\n[Votre Prénom] — Minerva`
@@ -345,103 +347,17 @@ export default function SopDetailPage() {
         </Card>
       )}
 
-      {/* ── 4. Main Markdown Content (Refined Notion/Stripe Typography) ── */}
+      {/* ── 4. Main Content (BlockEditor, same rendering as /documents) ── */}
       <Card className="bg-mv-surface border-mv-border rounded-xl p-6 sm:p-10 shadow-xs space-y-8">
-        <div className="space-y-6 text-mv-ink leading-relaxed">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              h1: ({ children }) => (
-                <h1 className="text-2xl font-bold font-display text-mv-ink tracking-tight pt-6 pb-2 border-b border-mv-border first:pt-0">
-                  {children}
-                </h1>
-              ),
-              h2: ({ children }) => (
-                <div className="pt-8 pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-4 rounded-full bg-mv-green" />
-                    <h2 className="text-lg font-bold font-display text-mv-ink tracking-tight">
-                      {children}
-                    </h2>
-                  </div>
-                </div>
-              ),
-              h3: ({ children }) => (
-                <h3 className="text-sm font-bold text-mv-ink pt-4 pb-1">
-                  {children}
-                </h3>
-              ),
-              p: ({ children }) => (
-                <p className="text-[13.5px] leading-relaxed text-zinc-700 my-2.5">
-                  {children}
-                </p>
-              ),
-              ul: ({ children }) => (
-                <ul className="space-y-2 my-3 pl-5 list-disc text-[13px] text-zinc-700">
-                  {children}
-                </ul>
-              ),
-              ol: ({ children }) => (
-                <ol className="space-y-2 my-3 pl-5 list-decimal text-[13px] text-zinc-700">
-                  {children}
-                </ol>
-              ),
-              li: ({ children }) => (
-                <li className="leading-relaxed pl-1">{children}</li>
-              ),
-              blockquote: ({ children }) => (
-                <div className="p-4 rounded-xl bg-mv-cream-soft border-l-4 border-mv-green border my-4 space-y-1 text-[13px] text-zinc-800">
-                  <div className="flex items-center gap-1.5 font-bold text-mv-green text-xs mb-1">
-                    <Info className="w-3.5 h-3.5" />
-                    <span>Point Clé & Directive</span>
-                  </div>
-                  {children}
-                </div>
-              ),
-              table: ({ children }) => (
-                <div className="my-6 overflow-x-auto rounded-xl border border-mv-border shadow-2xs">
-                  <table className="w-full text-left text-xs border-collapse divide-y divide-mv-border">
-                    {children}
-                  </table>
-                </div>
-              ),
-              thead: ({ children }) => (
-                <thead className="bg-zinc-100/80 font-bold text-mv-ink tracking-wider uppercase text-[10.5px]">
-                  {children}
-                </thead>
-              ),
-              tbody: ({ children }) => (
-                <tbody className="divide-y divide-mv-border bg-white">{children}</tbody>
-              ),
-              tr: ({ children }) => (
-                <tr className="hover:bg-zinc-50/80 transition-colors">{children}</tr>
-              ),
-              th: ({ children }) => (
-                <th className="px-4 py-3 font-bold text-zinc-800">{children}</th>
-              ),
-              td: ({ children }) => (
-                <td className="px-4 py-3 text-zinc-700 text-[12px] leading-normal">{children}</td>
-              ),
-              hr: () => <hr className="my-8 border-mv-border" />,
-              code: ({ className, children, ...props }) => {
-                const isInline = !className;
-                if (isInline) {
-                  return (
-                    <code className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-900 border border-zinc-200 text-xs font-mono" style={MONO}>
-                      {children}
-                    </code>
-                  );
-                }
-                return (
-                  <pre className="p-4 rounded-xl bg-zinc-950 text-zinc-100 text-xs font-mono overflow-x-auto my-4 border border-zinc-800" style={MONO}>
-                    <code>{children}</code>
-                  </pre>
-                );
-              },
-            }}
-          >
-            {sop.content_markdown || sop.description || 'Aucun contenu.'}
-          </ReactMarkdown>
+        <div className="text-mv-ink leading-relaxed">
+          {sop.content_json?.blocks && sop.content_json.blocks.length > 0 ? (
+            <BlockEditor blocks={sop.content_json.blocks} onChange={() => {}} readOnly />
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-mv-ink-faint py-8 justify-center">
+              <Info className="w-3.5 h-3.5" />
+              <span>Contenu pas encore rédigé pour cette SOP.</span>
+            </div>
+          )}
         </div>
 
         {/* ── 5. Actionable Outreach Script Callout ── */}

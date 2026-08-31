@@ -334,7 +334,7 @@ export default function OverviewPage() {
             <span>Vue d’ensemble</span>
           </Link>
           <Link
-            href="/academy/sop-ops-01-onboarding-30min"
+            href="/academy"
             className="px-3 py-1.5 rounded-[4px] bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm"
           >
             <Zap className="w-3 h-3 fill-current" />
@@ -394,7 +394,7 @@ export default function OverviewPage() {
                 <span className="text-xs text-zinc-400 font-mono" style={MONO}>Août–Septembre</span>
               </div>
               <Link
-                href="/academy/sop-ops-01-onboarding-30min"
+                href="/academy"
                 className="text-xs font-semibold text-emerald-400 hover:underline flex items-center gap-1"
               >
                 <span>Consulter le guide onboarding</span>

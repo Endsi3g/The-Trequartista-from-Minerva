@@ -23,7 +23,6 @@ import {
   Film,
   Building2,
   Filter,
-  CheckCircle2,
   Layers,
   Bot,
   Cpu,
@@ -31,21 +30,32 @@ import {
   Network,
   Code2,
   Database,
+  CheckCircle2,
+  Circle,
 } from 'lucide-react';
-import { fetchAcademySops, addDocument } from '@/lib/services/supabase-data';
+import { fetchAcademySops, addDocument, fetchCompletedSopIds } from '@/lib/services/supabase-data';
 import { SkeletonCards } from '@/components/ui/skeleton';
 import type { AcademySOP } from '@/lib/types';
 import { StorageBrowser } from '@/components/storage/StorageBrowser';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { useAppPermissions } from '@/components/providers/AppPermissionsProvider';
+import { useCurrentUser } from '@/hooks/use-current-user';
 import { cn } from '@/lib/utils';
+
+// SOPs no longer have stable hardcoded ids (they're real DB UUIDs now) --
+// look them up by their known, stable title prefix instead.
+function findSopIdByTitle(sops: AcademySOP[], titlePrefix: string): string | null {
+  return sops.find((s) => s.title.startsWith(titlePrefix))?.id || null;
+}
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
 export default function AcademyPage() {
   const router = useRouter();
   const { can } = useAppPermissions();
+  const { id: userId } = useCurrentUser();
   const [sops, setSops] = useState<AcademySOP[]>([]);
+  const [completedIds, setCompletedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -63,6 +73,31 @@ export default function AcademyPage() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchCompletedSopIds(userId).then(setCompletedIds);
+  }, [userId]);
+
+  const onboardingPath = useMemo(
+    () =>
+      sops
+        .filter((s) => s.is_onboarding_step)
+        .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999)),
+    [sops]
+  );
+  const onboardingDoneCount = onboardingPath.filter((s) => completedIds.includes(s.id)).length;
+
+  const pillarSopIds = useMemo(
+    () => ({
+      master: findSopIdByTitle(sops, 'Système Anti-Friction'),
+      flow: findSopIdByTitle(sops, 'Pilier 1 (Flow)'),
+      reach: findSopIdByTitle(sops, 'Pilier 2 (Reach)'),
+      agence: findSopIdByTitle(sops, 'Pilier 3 (Agence)'),
+      media: findSopIdByTitle(sops, 'Pilier 4'),
+    }),
+    [sops]
+  );
 
   // Keyboard shortcut: 'C' to create new SOP, '/' to focus search
   useEffect(() => {
@@ -100,25 +135,23 @@ export default function AcademyPage() {
         !q ||
         sop.title.toLowerCase().includes(q) ||
         sop.description.toLowerCase().includes(q) ||
-        sop.author.toLowerCase().includes(q);
+        sop.author.toLowerCase().includes(q) ||
+        (sop.content_markdown || '').toLowerCase().includes(q);
       const matchCategory = selectedCategory === 'all' || sop.category === selectedCategory;
       return matchSearch && matchCategory;
     });
   }, [sops, searchQuery, selectedCategory]);
 
-  // Distinguish Essential / Pillar SOPs from secondary SOPs
+  // Distinguish Essential / Pillar SOPs from secondary SOPs -- now a clean
+  // read of the real is_featured/is_essential DB columns (populated by the
+  // academy rebuild migration) instead of a heuristic guessing at fields
+  // that didn't actually exist in the database.
   const { essentialSops, secondarySops } = useMemo(() => {
     const essential: AcademySOP[] = [];
     const secondary: AcademySOP[] = [];
 
     filteredSops.forEach((sop) => {
-      if (
-        sop.is_featured ||
-        sop.is_essential ||
-        sop.id === 'sop-anti-friction-master' ||
-        sop.pillar ||
-        sop.category === 'Stratégie & Offre'
-      ) {
+      if (sop.is_featured || sop.is_essential) {
         essential.push(sop);
       } else {
         secondary.push(sop);
@@ -210,6 +243,63 @@ export default function AcademyPage() {
         </div>
       </div>
 
+      {/* ── 1.5 Parcours d'intégration : ordre suggéré pour un nouveau membre ── */}
+      {onboardingPath.length > 0 && (
+        <div className="bg-mv-surface border border-mv-border rounded-[8px] p-5 shadow-2xs space-y-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 bg-mv-green-tint text-mv-green border border-mv-green/30 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                  <GraduationCap className="w-3 h-3" />
+                  <span>Parcours d&apos;intégration</span>
+                </span>
+              </div>
+              <p className="text-xs text-mv-ink-soft">
+                L&apos;ordre suggéré pour un nouveau membre d&apos;équipe — {onboardingDoneCount}/{onboardingPath.length} complétées.
+              </p>
+            </div>
+            <div className="h-1.5 w-full sm:w-40 bg-black/[0.06] rounded-full overflow-hidden shrink-0">
+              <div
+                className="h-full bg-mv-green rounded-full transition-all duration-300"
+                style={{ width: `${(onboardingDoneCount / onboardingPath.length) * 100}%` }}
+              />
+            </div>
+          </div>
+          <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+            {onboardingPath.map((sop, idx) => {
+              const done = completedIds.includes(sop.id);
+              return (
+                <li key={sop.id}>
+                  <Link
+                    href={`/academy/${sop.id}`}
+                    className={cn(
+                      'flex items-start gap-2 p-3 rounded-[6px] border transition-colors h-full',
+                      done
+                        ? 'bg-mv-green-tint/40 border-mv-green/30'
+                        : 'bg-mv-cream-soft border-mv-border hover:border-mv-green/40'
+                    )}
+                  >
+                    {done ? (
+                      <CheckCircle2 className="w-4 h-4 text-mv-green shrink-0 mt-0.5" />
+                    ) : (
+                      <Circle className="w-4 h-4 text-mv-ink-faint shrink-0 mt-0.5" />
+                    )}
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-mono font-bold text-mv-ink-faint" style={MONO}>
+                        ÉTAPE {idx + 1}
+                      </span>
+                      <p className="text-[12px] font-semibold text-mv-ink leading-snug line-clamp-2">
+                        {sop.title}
+                      </p>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
       {/* ── 2. Hero Card: SOP Fondatrice Anti-Friction (Architecture d'Offre 4 Piliers) ── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 border border-zinc-800 rounded-[8px] p-5 sm:p-6 text-white shadow-md">
         <div className="relative z-10 space-y-4">
@@ -242,7 +332,7 @@ export default function AcademyPage() {
           {/* 4 Pillars Interactive Jump Pills */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
             <Link
-              href="/academy/sop-restaurant-margin-recovery"
+              href={pillarSopIds.flow ? `/academy/${pillarSopIds.flow}` : '/academy'}
               className="p-2.5 rounded-[6px] bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex flex-col gap-1 group cursor-pointer"
             >
               <div className="flex items-center justify-between">
@@ -256,7 +346,7 @@ export default function AcademyPage() {
             </Link>
 
             <Link
-              href="/academy/sop-minerva-reach-playbook"
+              href={pillarSopIds.reach ? `/academy/${pillarSopIds.reach}` : '/academy'}
               className="p-2.5 rounded-[6px] bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex flex-col gap-1 group cursor-pointer"
             >
               <div className="flex items-center justify-between">
@@ -270,7 +360,7 @@ export default function AcademyPage() {
             </Link>
 
             <Link
-              href="/academy/sop-agence-prototype-j7"
+              href={pillarSopIds.agence ? `/academy/${pillarSopIds.agence}` : '/academy'}
               className="p-2.5 rounded-[6px] bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex flex-col gap-1 group cursor-pointer"
             >
               <div className="flex items-center justify-between">
@@ -284,7 +374,7 @@ export default function AcademyPage() {
             </Link>
 
             <Link
-              href="/academy/sop-mes-inspirations-media"
+              href={pillarSopIds.media ? `/academy/${pillarSopIds.media}` : '/academy'}
               className="p-2.5 rounded-[6px] bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex flex-col gap-1 group cursor-pointer"
             >
               <div className="flex items-center justify-between">
@@ -309,7 +399,7 @@ export default function AcademyPage() {
             </div>
 
             <Link
-              href="/academy/sop-anti-friction-master"
+              href={pillarSopIds.master ? `/academy/${pillarSopIds.master}` : '/academy'}
               className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-[4px] bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-xs transition-colors shadow-sm cursor-pointer"
             >
               <Zap className="w-3.5 h-3.5 fill-current" />
@@ -353,7 +443,7 @@ export default function AcademyPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {[
             {
-              id: 'sop-ai-01-foundations',
+              titlePrefix: 'SOP-IA-01',
               step: '01',
               title: 'Fondations AI Engineering',
               focus: 'LLMs, Context Engineering, Tool Calling & Loops',
@@ -362,7 +452,7 @@ export default function AcademyPage() {
               color: 'text-blue-700 bg-blue-50 border-blue-200',
             },
             {
-              id: 'sop-ai-02-antigravity-expert',
+              titlePrefix: 'SOP-IA-02',
               step: '02',
               title: 'Guide Expert Antigravity',
               focus: 'Slash Commands, Subagents, Planning Mode & Skills',
@@ -371,7 +461,7 @@ export default function AcademyPage() {
               color: 'text-purple-700 bg-purple-50 border-purple-200',
             },
             {
-              id: 'sop-ai-03-claude-code-expert',
+              titlePrefix: 'SOP-IA-03',
               step: '03',
               title: 'Guide Expert Claude Code',
               focus: 'Terminal CLI, /compact, CLAUDE.md & Git Workflows',
@@ -380,7 +470,7 @@ export default function AcademyPage() {
               color: 'text-amber-700 bg-amber-50 border-amber-200',
             },
             {
-              id: 'sop-ai-04-minerva-mcp-server',
+              titlePrefix: 'SOP-IA-04',
               step: '04',
               title: 'Minerva MCP Server',
               focus: 'Protocole MCP v2, /api/mcp, Auth Tokens & Tools',
@@ -389,7 +479,7 @@ export default function AcademyPage() {
               color: 'text-emerald-700 bg-emerald-50 border-emerald-200',
             },
             {
-              id: 'sop-ai-05-workflow-dev-ai-first',
+              titlePrefix: 'SOP-IA-05',
               step: '05',
               title: 'Workflow Dev AI-First',
               focus: 'Spec-to-Code, Playwright QA, Migrations & Real Data',
@@ -398,20 +488,21 @@ export default function AcademyPage() {
               color: 'text-rose-700 bg-rose-50 border-rose-200',
             },
             {
-              id: 'sop-ai-06-rag-vector-search',
+              titlePrefix: 'SOP-IA-06',
               step: '06',
               title: 'RAG Avancé & pgvector',
-              focus: 'Vector Search Supabase, Chunking, FTS & RRF Hybride',
+              focus: 'Vector Search pgvector, Chunking, FTS & RRF Hybride',
               duration: '25 min',
               icon: Database,
               color: 'text-teal-700 bg-teal-50 border-teal-200',
             },
           ].map((item) => {
             const Icon = item.icon;
+            const sopId = findSopIdByTitle(sops, item.titlePrefix);
             return (
               <Link
-                key={item.id}
-                href={`/academy/${item.id}`}
+                key={item.titlePrefix}
+                href={sopId ? `/academy/${sopId}` : '/academy'}
                 className="group relative bg-white hover:bg-zinc-50/80 border border-mv-border rounded-[6px] p-3.5 transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between gap-3 cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-2">
@@ -512,7 +603,7 @@ export default function AcademyPage() {
             </span>
           </button>
 
-          {categories.slice(0, 5).map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
