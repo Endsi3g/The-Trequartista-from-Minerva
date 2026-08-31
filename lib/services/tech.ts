@@ -235,27 +235,9 @@ export async function fetchTechQaAudits(): Promise<TechQaAudit[]> {
     console.warn('[TechService] Failed to query tech_qa_audits remotely, using fallback:', err);
   }
 
-  // Fallback to local storage or seeded demo audit
-  const locals = getLocalAudits();
-  if (locals.length > 0) return locals;
-
-  const defaultAudit: TechQaAudit = {
-    id: 'audit-demo-master',
-    project_name: 'Minerva Trequartista v2.4 (Production)',
-    target_url: 'https://app.minerva.agency',
-    environment: 'production',
-    passed_points: 20,
-    total_points: 20,
-    score_percentage: 100,
-    status: 'passed',
-    checklist_data: STANDARD_20_POINT_QC,
-    auditor_name: 'Lead Tech Minerva',
-    notes: 'Validation complète du protocole 20-points pour la mise en ligne de la release v2.4.',
-    created_at: new Date(Date.now() - 3600 * 1000 * 24).toISOString(),
-    updated_at: new Date(Date.now() - 3600 * 1000 * 24).toISOString(),
-  };
-  saveLocalAudit(defaultAudit);
-  return [defaultAudit];
+  // Fallback to local storage cache of real audits only -- no fabricated
+  // demo record; an empty result renders the page's honest empty state.
+  return getLocalAudits();
 }
 
 export async function saveTechQaAudit(audit: Omit<TechQaAudit, 'id' | 'created_at' | 'updated_at'>): Promise<TechQaAudit> {

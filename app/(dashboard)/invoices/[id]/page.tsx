@@ -222,7 +222,7 @@ export default function InvoiceDetailPage() {
             <div className="space-y-1 sm:text-right">
               <span className="text-[10.5px] font-bold uppercase tracking-wider text-zinc-400">Projet Associé :</span>
               <div className="text-sm font-bold text-zinc-900">{invoice.project_name}</div>
-              <div className="text-xs text-zinc-500">Livraison continue Minerva Trequartista</div>
+              <div className="text-xs text-zinc-500">Livraison continue Minerva</div>
             </div>
           )}
         </div>
@@ -315,7 +315,7 @@ export default function InvoiceDetailPage() {
 
         {/* Footer Guarantee */}
         <div className="border-t border-zinc-100 pt-6 text-center text-[11px] text-zinc-400 space-y-1">
-          <p>Merci pour votre collaboration avec l&apos;équipe Minerva Trequartista.</p>
+          <p>Merci pour votre collaboration avec l&apos;équipe Minerva.</p>
           <p>Pour toute question comptable ou virement bancaire : finance@minerva.agency</p>
         </div>
       </div>

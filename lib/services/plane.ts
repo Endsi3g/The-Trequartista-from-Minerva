@@ -365,7 +365,7 @@ export async function syncTaskToPlane(task: Task): Promise<{
 
     const descriptionHtml = task.description
       ? `<p>${task.description.replace(/\n/g, '<br/>')}</p>`
-      : `<p>Tâche synchronisée depuis Minerva Trequartista (${task.client_name || task.project_name || 'Général'})</p>`;
+      : `<p>Tâche synchronisée depuis Minerva (${task.client_name || task.project_name || 'Général'})</p>`;
 
     if (task.plane_issue_id) {
       // Update existing issue

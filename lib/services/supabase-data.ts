@@ -1504,7 +1504,7 @@ Comprendre l'agence, ton rôle et les outils en **30 minutes chrono**. Tout est 
 ## 🛠️ Min 15–25 : Les Outils et l'Application
 
 ### Les Outils Clés :
-- **Minerva Trequartista (Cette Application)** : Le cockpit central de l'agence (CRM, Tâches, Réels, Académie, Facturation).
+- **Minerva (Cette Application)** : Le cockpit central de l'agence (CRM, Tâches, Réels, Académie, Facturation).
 - **Minerva Reach** : Application de prospection (recherche Google Maps, emails, pipeline).
 - **Minerva Flow** : Le cockpit vendu aux restaurateurs (opérations, inventaire, employés, revenus).
 - **Framer** : Plateforme de design et déploiement de sites web ultra-rapides.
@@ -1732,7 +1732,7 @@ Bonne journée,
 
 ## 3. Protocole de QA Avant Release
 
-Avant toute mise en production d'une fonctionnalité dans Minerva Trequartista, Flow ou Reach :
+Avant toute mise en production d'une fonctionnalité dans Minerva, Flow ou Reach :
 - [ ] Exécuter \`npx tsc --noEmit\` pour garantir zéro erreur de typage.
 - [ ] Exécuter les tests E2E \`npx playwright test\`.
 - [ ] Vérifier la bonne dégradation gracieuse en cas d'absence de variable d'environnement tierce.
