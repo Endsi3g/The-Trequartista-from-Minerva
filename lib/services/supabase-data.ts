@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 import { markdownToBlocks } from '@/lib/utils/markdown-to-blocks';
 
@@ -2748,7 +2748,7 @@ export async function restoreDocumentVersion(documentId: string, version: Docume
 // 18. CHAT D'ÉQUIPE — canaux par projet/client
 // ----------------------------------------------------
 export async function fetchTeamChatMessages(
-  channelType: 'project' | 'client' | 'dm' | 'topic',
+  channelType: 'project' | 'client' | 'dm' | 'topic' | 'coach',
   channelId: string
 ): Promise<TeamChatMessage[]> {
   return withTimeout(
@@ -2772,7 +2772,7 @@ export async function fetchTeamChatMessages(
         const sender = senderMap.get(row.sender_id);
         return {
           ...row,
-          sender_name: sender?.full_name || 'Membre',
+          sender_name: row.sender_id ? sender?.full_name || 'Membre' : 'Coach Minerva',
           sender_avatar: sender?.avatar_url || '',
         };
       }) as TeamChatMessage[];
@@ -2782,7 +2782,7 @@ export async function fetchTeamChatMessages(
 }
 
 export async function sendTeamChatMessage(
-  channelType: 'project' | 'client' | 'dm' | 'topic',
+  channelType: 'project' | 'client' | 'dm' | 'topic' | 'coach',
   channelId: string,
   senderId: string,
   body: string,
@@ -2826,6 +2826,79 @@ export async function sendTeamChatMessage(
     parent_message_id: parentMessageId || null,
     created_at: new Date().toISOString(),
   };
+}
+
+// ── Coach Minerva (bot IA d'équipe) ──
+export async function fetchProfileNamesForCoach(userIds: string[]): Promise<Map<string, string>> {
+  if (userIds.length === 0) return new Map();
+  const { data } = await getSupabase().from('profiles').select('id, full_name').in('id', userIds);
+  return new Map((data || []).map((p) => [p.id, p.full_name || 'Membre']));
+}
+
+function withMemberNames<T extends { user_id: string }>(rows: T[], names: Map<string, string>): (T & { member_name: string })[] {
+  return rows.map((r) => ({ ...r, member_name: names.get(r.user_id) || 'Membre' }));
+}
+
+export async function fetchStandupResponsesForDate(date: string): Promise<(StandupResponse & { member_name: string })[]> {
+  const { data, error } = await getSupabase()
+    .from('standup_responses')
+    .select('*')
+    .eq('date', date)
+    .order('created_at', { ascending: false });
+  if (error || !data) return [];
+  const names = await fetchProfileNamesForCoach(data.map((r) => r.user_id));
+  return withMemberNames(data as StandupResponse[], names);
+}
+
+export async function fetchWeeklyCheckinsForWeek(weekStart: string): Promise<(WeeklyCheckinResponse & { member_name: string })[]> {
+  const { data, error } = await getSupabase()
+    .from('checkin_weekly_responses')
+    .select('*')
+    .eq('week_start', weekStart)
+    .order('created_at', { ascending: false });
+  if (error || !data) return [];
+  const names = await fetchProfileNamesForCoach(data.map((r) => r.user_id));
+  return withMemberNames(data as WeeklyCheckinResponse[], names);
+}
+
+export async function recordCoachOpenAnswer(
+  table: 'standup_responses' | 'checkin_weekly_responses',
+  id: string,
+  answer: string
+): Promise<boolean> {
+  const { error } = await getSupabase().from(table).update({ open_answer: answer }).eq('id', id);
+  return !error;
+}
+
+export async function fetchLatestAvailabilityPoll(): Promise<AvailabilityPoll | null> {
+  const { data, error } = await getSupabase()
+    .from('availability_polls')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as AvailabilityPoll;
+}
+
+export async function fetchAvailabilityPollById(pollId: string): Promise<AvailabilityPoll | null> {
+  const { data, error } = await getSupabase().from('availability_polls').select('*').eq('id', pollId).maybeSingle();
+  if (error || !data) return null;
+  return data as AvailabilityPoll;
+}
+
+export async function fetchAvailabilityVotes(pollId: string): Promise<(AvailabilityVote & { member_name: string })[]> {
+  const { data, error } = await getSupabase().from('availability_votes').select('*').eq('poll_id', pollId);
+  if (error || !data) return [];
+  const names = await fetchProfileNamesForCoach(data.map((v) => v.user_id));
+  return withMemberNames(data as AvailabilityVote[], names);
+}
+
+export async function submitAvailabilityVote(pollId: string, userId: string, slotIndex: number): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('availability_votes')
+    .upsert([{ poll_id: pollId, user_id: userId, slot_index: slotIndex }], { onConflict: 'poll_id,user_id' });
+  return !error;
 }
 
 // ── Reactions ──
