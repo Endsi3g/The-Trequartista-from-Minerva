@@ -1,11 +1,15 @@
 -- ============================================================================
--- MINERVA TREQUARTISTA — MASTER DÉPLOIEMENT PRODUCTION CONSOLIDÉ (v2.13.0)
+-- MINERVA TREQUARTISTA — MASTER DÉPLOIEMENT PRODUCTION CONSOLIDÉ (v2.14.0)
 -- 
 -- Ce script unique regroupe l'intégralité du schéma de base de données,
 -- des tables, contraintes, triggers, politiques de sécurité RLS et données
 -- initiales de référence pour l'écosystème Minerva Trequartista.
 --
--- 100% Idempotent : Peut être exécuté en 1 clic dans l'éditeur SQL Supabase :
+-- 100% Idempotent & Auto-Migrant : Gère automatiquement les tables existantes
+-- et ajoute toutes les colonnes manquantes (IF NOT EXISTS) avant de créer
+-- les politiques RLS.
+--
+-- À copier-coller et exécuter en 1 clic dans l'éditeur SQL Supabase :
 -- https://supabase.com/dashboard/project/_/sql
 -- ============================================================================
 
@@ -26,6 +30,15 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     phone TEXT,
     job_title TEXT
 );
+
+ALTER TABLE public.profiles
+    ADD COLUMN IF NOT EXISTS email TEXT,
+    ADD COLUMN IF NOT EXISTS full_name TEXT NOT NULL DEFAULT '',
+    ADD COLUMN IF NOT EXISTS avatar_url TEXT,
+    ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'member',
+    ADD COLUMN IF NOT EXISTS workspace TEXT,
+    ADD COLUMN IF NOT EXISTS phone TEXT,
+    ADD COLUMN IF NOT EXISTS job_title TEXT;
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
@@ -84,6 +97,18 @@ CREATE TABLE IF NOT EXISTS public.clients (
     metadata JSONB DEFAULT '{}'::jsonb
 );
 
+ALTER TABLE public.clients
+    ADD COLUMN IF NOT EXISTS name TEXT,
+    ADD COLUMN IF NOT EXISTS company_name TEXT,
+    ADD COLUMN IF NOT EXISTS email TEXT,
+    ADD COLUMN IF NOT EXISTS phone TEXT,
+    ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Active',
+    ADD COLUMN IF NOT EXISTS industry TEXT,
+    ADD COLUMN IF NOT EXISTS mrr NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS portal_access_token TEXT,
+    ADD COLUMN IF NOT EXISTS notes TEXT,
+    ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
+
 ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Acces clients membres" ON public.clients;
@@ -109,6 +134,20 @@ CREATE TABLE IF NOT EXISTS public.leads (
     metadata JSONB DEFAULT '{}'::jsonb
 );
 
+ALTER TABLE public.leads
+    ADD COLUMN IF NOT EXISTS company_name TEXT,
+    ADD COLUMN IF NOT EXISTS contact_name TEXT,
+    ADD COLUMN IF NOT EXISTS email TEXT,
+    ADD COLUMN IF NOT EXISTS phone TEXT,
+    ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Nouveau',
+    ADD COLUMN IF NOT EXISTS stage TEXT DEFAULT 'nouveau',
+    ADD COLUMN IF NOT EXISTS mrr_value NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS one_time_value NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'prospection',
+    ADD COLUMN IF NOT EXISTS assigned_to UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS notes TEXT,
+    ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
+
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Acces leads membres" ON public.leads;
@@ -132,6 +171,18 @@ CREATE TABLE IF NOT EXISTS public.contacts (
     avatar_url TEXT
 );
 
+ALTER TABLE public.contacts
+    ADD COLUMN IF NOT EXISTS full_name TEXT,
+    ADD COLUMN IF NOT EXISTS role TEXT,
+    ADD COLUMN IF NOT EXISTS company TEXT,
+    ADD COLUMN IF NOT EXISTS email TEXT,
+    ADD COLUMN IF NOT EXISTS phone TEXT,
+    ADD COLUMN IF NOT EXISTS city TEXT DEFAULT 'Montréal',
+    ADD COLUMN IF NOT EXISTS circle TEXT DEFAULT 'Partenaire',
+    ADD COLUMN IF NOT EXISTS linkedin_url TEXT,
+    ADD COLUMN IF NOT EXISTS bio TEXT,
+    ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+
 ALTER TABLE public.contacts ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Acces contacts membres" ON public.contacts;
@@ -154,6 +205,18 @@ CREATE TABLE IF NOT EXISTS public.projects (
     client_visible BOOLEAN DEFAULT true,
     metadata JSONB DEFAULT '{}'::jsonb
 );
+
+ALTER TABLE public.projects
+    ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES public.clients(id) ON DELETE CASCADE,
+    ADD COLUMN IF NOT EXISTS client_name TEXT,
+    ADD COLUMN IF NOT EXISTS name TEXT,
+    ADD COLUMN IF NOT EXISTS current_stage TEXT DEFAULT 'Cadrage & Onboarding',
+    ADD COLUMN IF NOT EXISTS health TEXT DEFAULT 'On Track',
+    ADD COLUMN IF NOT EXISTS progress_pct INT DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS due_date DATE,
+    ADD COLUMN IF NOT EXISTS budget_cad NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS client_visible BOOLEAN DEFAULT true,
+    ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
 
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 
@@ -180,6 +243,20 @@ CREATE TABLE IF NOT EXISTS public.tasks (
     metadata JSONB DEFAULT '{}'::jsonb
 );
 
+ALTER TABLE public.tasks
+    ADD COLUMN IF NOT EXISTS title TEXT,
+    ADD COLUMN IF NOT EXISTS description TEXT,
+    ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'todo',
+    ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'medium',
+    ADD COLUMN IF NOT EXISTS project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS project_name TEXT,
+    ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES public.clients(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS client_name TEXT,
+    ADD COLUMN IF NOT EXISTS assignee_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS assignee_name TEXT,
+    ADD COLUMN IF NOT EXISTS due_date DATE,
+    ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
+
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Acces taches membres" ON public.tasks;
@@ -190,10 +267,10 @@ CREATE POLICY "Acces taches membres" ON public.tasks
 CREATE TABLE IF NOT EXISTS public.proposals (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     token TEXT UNIQUE NOT NULL DEFAULT encode(gen_random_bytes(16), 'hex'),
-    title TEXT NOT NULL,
+    title TEXT NOT NULL DEFAULT 'Proposition Commerciale',
     client_id UUID REFERENCES public.clients(id) ON DELETE SET NULL,
     lead_id UUID REFERENCES public.leads(id) ON DELETE SET NULL,
-    client_name TEXT NOT NULL,
+    client_name TEXT NOT NULL DEFAULT '',
     client_email TEXT,
     client_company TEXT,
     status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'opened', 'signed', 'rejected')),
@@ -213,6 +290,32 @@ CREATE TABLE IF NOT EXISTS public.proposals (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Assurer l'existence de toutes les colonnes sur les tables déjà existantes
+ALTER TABLE public.proposals
+    ADD COLUMN IF NOT EXISTS token TEXT DEFAULT encode(gen_random_bytes(16), 'hex'),
+    ADD COLUMN IF NOT EXISTS title TEXT DEFAULT 'Proposition Commerciale',
+    ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES public.clients(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS lead_id UUID REFERENCES public.leads(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS client_name TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS client_email TEXT,
+    ADD COLUMN IF NOT EXISTS client_company TEXT,
+    ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'draft',
+    ADD COLUMN IF NOT EXISTS setup_price_cad NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS mrr_cad NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS deposit_pct INT DEFAULT 50,
+    ADD COLUMN IF NOT EXISTS deposit_amount_cad NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS tax_tps_cad NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS tax_tvq_cad NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS total_due_now_cad NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS deliverables JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS signed_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS signer_name TEXT,
+    ADD COLUMN IF NOT EXISTS signer_ip TEXT,
+    ADD COLUMN IF NOT EXISTS signature_svg TEXT,
+    ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS proposals_token_unique_idx ON public.proposals(token) WHERE token IS NOT NULL;
 
 ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
 
@@ -237,7 +340,7 @@ CREATE TABLE IF NOT EXISTS public.invoices (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     invoice_number TEXT UNIQUE NOT NULL,
     client_id UUID REFERENCES public.clients(id) ON DELETE CASCADE,
-    client_name TEXT NOT NULL,
+    client_name TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'paid', 'overdue', 'cancelled')),
     issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
     due_date DATE NOT NULL DEFAULT (CURRENT_DATE + INTERVAL '30 days'),
@@ -248,6 +351,20 @@ CREATE TABLE IF NOT EXISTS public.invoices (
     notes TEXT,
     line_items JSONB DEFAULT '[]'::jsonb
 );
+
+ALTER TABLE public.invoices
+    ADD COLUMN IF NOT EXISTS invoice_number TEXT,
+    ADD COLUMN IF NOT EXISTS client_id UUID REFERENCES public.clients(id) ON DELETE CASCADE,
+    ADD COLUMN IF NOT EXISTS client_name TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'draft',
+    ADD COLUMN IF NOT EXISTS issue_date DATE DEFAULT CURRENT_DATE,
+    ADD COLUMN IF NOT EXISTS due_date DATE DEFAULT (CURRENT_DATE + INTERVAL '30 days'),
+    ADD COLUMN IF NOT EXISTS subtotal_cad NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS tax_tps_cad NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS tax_tvq_cad NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS total_cad NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS notes TEXT,
+    ADD COLUMN IF NOT EXISTS line_items JSONB DEFAULT '[]'::jsonb;
 
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 
@@ -261,18 +378,32 @@ CREATE TABLE IF NOT EXISTS public.team_commissions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     member_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    member_name TEXT NOT NULL,
+    member_name TEXT NOT NULL DEFAULT '',
     proposal_id UUID REFERENCES public.proposals(id) ON DELETE SET NULL,
-    client_name TEXT NOT NULL,
+    client_name TEXT NOT NULL DEFAULT '',
     commission_type TEXT NOT NULL CHECK (commission_type IN ('setup_direct', 'mrr_recurring', 'bonus_quota')),
-    base_deal_amount_cad NUMERIC NOT NULL,
-    commission_rate_pct NUMERIC NOT NULL,
+    base_deal_amount_cad NUMERIC NOT NULL DEFAULT 0,
+    commission_rate_pct NUMERIC NOT NULL DEFAULT 0,
     multiplier NUMERIC NOT NULL DEFAULT 1.0,
-    amount_cad NUMERIC NOT NULL,
+    amount_cad NUMERIC NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'paid')),
     paid_at TIMESTAMPTZ,
     notes TEXT
 );
+
+ALTER TABLE public.team_commissions
+    ADD COLUMN IF NOT EXISTS member_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    ADD COLUMN IF NOT EXISTS member_name TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS proposal_id UUID REFERENCES public.proposals(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS client_name TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS commission_type TEXT,
+    ADD COLUMN IF NOT EXISTS base_deal_amount_cad NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS commission_rate_pct NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS multiplier NUMERIC DEFAULT 1.0,
+    ADD COLUMN IF NOT EXISTS amount_cad NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending',
+    ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS notes TEXT;
 
 ALTER TABLE public.team_commissions ENABLE ROW LEVEL SECURITY;
 
@@ -294,6 +425,16 @@ CREATE TABLE IF NOT EXISTS public.team_chat_messages (
     parent_message_id UUID REFERENCES public.team_chat_messages(id) ON DELETE CASCADE
 );
 
+ALTER TABLE public.team_chat_messages
+    ADD COLUMN IF NOT EXISTS channel_type TEXT,
+    ADD COLUMN IF NOT EXISTS channel_id TEXT,
+    ADD COLUMN IF NOT EXISTS sender_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS body TEXT,
+    ADD COLUMN IF NOT EXISTS attachment_url TEXT,
+    ADD COLUMN IF NOT EXISTS attachment_type TEXT,
+    ADD COLUMN IF NOT EXISTS attachment_name TEXT,
+    ADD COLUMN IF NOT EXISTS parent_message_id UUID REFERENCES public.team_chat_messages(id) ON DELETE CASCADE;
+
 CREATE INDEX IF NOT EXISTS team_chat_channel_idx ON public.team_chat_messages(channel_type, channel_id, created_at);
 
 ALTER TABLE public.team_chat_messages ENABLE ROW LEVEL SECURITY;
@@ -310,6 +451,11 @@ CREATE TABLE IF NOT EXISTS public.team_presence (
     current_path TEXT,
     page_label TEXT
 );
+
+ALTER TABLE public.team_presence
+    ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'available',
+    ADD COLUMN IF NOT EXISTS current_path TEXT,
+    ADD COLUMN IF NOT EXISTS page_label TEXT;
 
 ALTER TABLE public.team_presence ENABLE ROW LEVEL SECURITY;
 
@@ -333,6 +479,19 @@ CREATE TABLE IF NOT EXISTS public.tech_qa_audits (
     notes TEXT,
     checklist_data JSONB DEFAULT '[]'::jsonb
 );
+
+ALTER TABLE public.tech_qa_audits
+    ADD COLUMN IF NOT EXISTS project_name TEXT DEFAULT 'Minerva — Release',
+    ADD COLUMN IF NOT EXISTS target_url TEXT DEFAULT 'https://app.minerva.agency',
+    ADD COLUMN IF NOT EXISTS environment TEXT DEFAULT 'production',
+    ADD COLUMN IF NOT EXISTS passed_points INT DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS total_points INT DEFAULT 20,
+    ADD COLUMN IF NOT EXISTS score_percentage INT DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending',
+    ADD COLUMN IF NOT EXISTS auditor_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS auditor_name TEXT DEFAULT 'Lead Tech',
+    ADD COLUMN IF NOT EXISTS notes TEXT,
+    ADD COLUMN IF NOT EXISTS checklist_data JSONB DEFAULT '[]'::jsonb;
 
 ALTER TABLE public.tech_qa_audits ENABLE ROW LEVEL SECURITY;
 
@@ -358,6 +517,16 @@ CREATE TABLE IF NOT EXISTS public.academy_sops (
     is_onboarding_step BOOLEAN DEFAULT false,
     sort_order INT
 );
+
+ALTER TABLE public.academy_sops
+    ADD COLUMN IF NOT EXISTS content_json JSONB,
+    ADD COLUMN IF NOT EXISTS is_essential BOOLEAN DEFAULT false,
+    ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false,
+    ADD COLUMN IF NOT EXISTS is_onboarding_step BOOLEAN DEFAULT false,
+    ADD COLUMN IF NOT EXISTS sort_order INT,
+    ADD COLUMN IF NOT EXISTS pillar TEXT,
+    ADD COLUMN IF NOT EXISTS read_time_min INT DEFAULT 10,
+    ADD COLUMN IF NOT EXISTS author TEXT DEFAULT 'Kael Belceus';
 
 ALTER TABLE public.academy_sops ENABLE ROW LEVEL SECURITY;
 
@@ -391,5 +560,5 @@ EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- ============================================================================
--- FIN DU MASTER SCRIPT CONSOLIDÉ (v2.13.0)
+-- FIN DU MASTER SCRIPT CONSOLIDÉ (v2.14.0)
 -- ============================================================================
