@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { fetchAcademySops, fetchCompletedSopIds } from '@/lib/services/supabase-data';
+import { fetchOnboardingStepSopIds, fetchCompletedSopIds } from '@/lib/services/supabase-data';
 
 export interface OnboardingStep {
   key: string;
@@ -27,10 +27,10 @@ export function useOnboardingChecklist() {
         return;
       }
 
-      const [{ data: profile }, { data: notion }, allSops, completedSopIds] = await Promise.all([
+      const [{ data: profile }, { data: notion }, onboardingSopIds, completedSopIds] = await Promise.all([
         supabase.from('profiles').select('full_name, avatar_url').eq('id', user.id).maybeSingle(),
         supabase.from('notion_config').select('id').eq('user_id', user.id).maybeSingle(),
-        fetchAcademySops(),
+        fetchOnboardingStepSopIds(),
         fetchCompletedSopIds(user.id),
       ]);
 
@@ -41,9 +41,12 @@ export function useOnboardingChecklist() {
       // rather than every SOP in the library -- most SOPs are role-specific
       // (AI engineering, prospection scripts, etc.) and shouldn't gate
       // onboarding completion for a member who'll never touch that role.
-      const onboardingSops = allSops.filter((s) => s.is_onboarding_step);
+      // onboardingSopIds is null on a real fetch error/timeout (as opposed
+      // to a genuinely empty list) -- treated as "not done" rather than
+      // silently marking the step complete for a member who's read nothing.
       const sopsAllDone =
-        onboardingSops.length === 0 || onboardingSops.every((s) => completedSopIds.includes(s.id));
+        onboardingSopIds !== null &&
+        (onboardingSopIds.length === 0 || onboardingSopIds.every((id) => completedSopIds.includes(id)));
 
       if (cancelled) return;
       setSteps([

@@ -93,7 +93,7 @@ export function markdownToBlocks(markdown: string): DocumentBlock[] {
     }
 
     // Headings
-    const h3 = line.match(/^###\s+(.*)/);
+    const h3 = line.match(/^#{3,6}\s+(.*)/);
     const h2 = line.match(/^##\s+(.*)/);
     const h1 = line.match(/^#\s+(.*)/);
     if (h3) {

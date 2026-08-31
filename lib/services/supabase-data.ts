@@ -487,6 +487,22 @@ export async function fetchAcademySops(): Promise<AcademySOP[]> {
   );
 }
 
+// Just the ids of the curated onboarding-path SOPs, returning null (rather
+// than fetchAcademySops' []) on a real query error -- so
+// useOnboardingChecklist can tell "no onboarding SOPs configured" apart
+// from "the fetch failed", which otherwise falsely marks onboarding
+// complete for a member who's read nothing. No withTimeout wrapper for
+// the same reason: a timeout is exactly the failure this needs to surface.
+export async function fetchOnboardingStepSopIds(): Promise<string[] | null> {
+  try {
+    const { data, error } = await getSupabase().from('academy_sops').select('id').eq('is_onboarding_step', true);
+    if (error || !data) return null;
+    return data.map((r) => r.id as string);
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchCompletedSopIds(userId: string): Promise<string[]> {
   return withTimeout(
     (async () => {
