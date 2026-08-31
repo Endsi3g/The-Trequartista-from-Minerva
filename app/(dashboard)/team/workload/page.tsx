@@ -25,6 +25,8 @@ import {
   ShieldAlert,
   CheckSquare,
   Filter,
+  Sparkles,
+  CalendarClock,
 } from 'lucide-react';
 import {
   fetchTeamWorkloads,
@@ -32,8 +34,15 @@ import {
   computeRevOpsSummary,
   reassignTaskAssignee,
 } from '@/lib/services/revops-team';
-import { fetchTasks } from '@/lib/services/supabase-data';
-import type { TeamMemberWorkload, TeamCommission, RevOpsSummary, Task } from '@/lib/types';
+import {
+  fetchTasks,
+  fetchStandupResponsesForDate,
+  fetchWeeklyCheckinsForWeek,
+  fetchLatestAvailabilityPoll,
+  fetchAvailabilityVotes,
+} from '@/lib/services/supabase-data';
+import { getIsoWeekStart } from '@/lib/utils/dates';
+import type { TeamMemberWorkload, TeamCommission, RevOpsSummary, Task, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -57,18 +66,32 @@ export default function TeamWorkloadPage() {
   const [targetMemberId, setTargetMemberId] = useState<string>('');
   const [reassigning, setReassigning] = useState(false);
 
+  // Coach Minerva admin review
+  const [standups, setStandups] = useState<(StandupResponse & { member_name: string })[]>([]);
+  const [checkins, setCheckins] = useState<(WeeklyCheckinResponse & { member_name: string })[]>([]);
+  const [latestPoll, setLatestPoll] = useState<AvailabilityPoll | null>(null);
+  const [latestPollVotes, setLatestPollVotes] = useState<(AvailabilityVote & { member_name: string })[]>([]);
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [wlData, commData, tasksData] = await Promise.all([
+      const today = new Date().toISOString().slice(0, 10);
+      const [wlData, commData, tasksData, standupData, checkinData, poll] = await Promise.all([
         fetchTeamWorkloads(),
         fetchTeamCommissions(),
         fetchTasks(),
+        fetchStandupResponsesForDate(today),
+        fetchWeeklyCheckinsForWeek(getIsoWeekStart(new Date())),
+        fetchLatestAvailabilityPoll(),
       ]);
       setWorkloads(wlData);
       setCommissions(commData);
       setAllTasks(tasksData);
       setSummary(computeRevOpsSummary(wlData, commData));
+      setStandups(standupData);
+      setCheckins(checkinData);
+      setLatestPoll(poll);
+      setLatestPollVotes(poll ? await fetchAvailabilityVotes(poll.id) : []);
     } catch {
       toastError('Erreur de chargement', 'Impossible de récupérer la charge de travail.');
     } finally {
@@ -376,6 +399,96 @@ export default function TeamWorkloadPage() {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* ── Coach Minerva — revue admin ── */}
+      {isAdmin && (
+        <div className="space-y-4 border-t border-mv-border pt-6">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-mv-ink">Coach Minerva</h2>
+              <p className="text-[11px] text-mv-ink-soft">Points quotidiens/hebdo et sondage de disponibilité, générés par le bot IA d'équipe.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="p-4 bg-mv-surface border-mv-border rounded-xl space-y-2.5">
+              <span className="text-[10.5px] font-bold text-mv-ink-faint uppercase tracking-wider">
+                Point du jour ({standups.length}/{workloads.length || 0})
+              </span>
+              {standups.length === 0 ? (
+                <p className="text-[11px] text-mv-ink-faint italic">Aucune réponse pour aujourd'hui.</p>
+              ) : (
+                <div className="space-y-2 max-h-72 overflow-y-auto">
+                  {standups.map((s) => (
+                    <div key={s.id} className="p-2.5 rounded-lg border border-mv-border bg-white text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-mv-ink">{s.member_name}</span>
+                        <span className="text-[10px] text-mv-ink-faint" style={MONO}>{s.task_snapshot.length} tâche(s)</span>
+                      </div>
+                      {s.open_answer ? (
+                        <p className="text-mv-ink-soft italic">« {s.open_answer} »</p>
+                      ) : (
+                        <p className="text-mv-ink-faint text-[10.5px]">Pas encore répondu à la question ouverte.</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            <Card className="p-4 bg-mv-surface border-mv-border rounded-xl space-y-2.5">
+              <span className="text-[10.5px] font-bold text-mv-ink-faint uppercase tracking-wider">
+                Point hebdo ({checkins.length}/{workloads.length || 0})
+              </span>
+              {checkins.length === 0 ? (
+                <p className="text-[11px] text-mv-ink-faint italic">Aucune réponse cette semaine.</p>
+              ) : (
+                <div className="space-y-2 max-h-72 overflow-y-auto">
+                  {checkins.map((c) => (
+                    <div key={c.id} className="p-2.5 rounded-lg border border-mv-border bg-white text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-mv-ink">{c.member_name}</span>
+                        <span className="text-[10px] text-mv-ink-faint" style={MONO}>{c.task_snapshot.length} tâche(s)</span>
+                      </div>
+                      {c.open_answer ? (
+                        <p className="text-mv-ink-soft italic">« {c.open_answer} »</p>
+                      ) : (
+                        <p className="text-mv-ink-faint text-[10.5px]">Pas encore répondu à la question ouverte.</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {latestPoll && (
+            <Card className="p-4 bg-mv-surface border-mv-border rounded-xl space-y-2.5">
+              <div className="flex items-center gap-2">
+                <CalendarClock className="w-3.5 h-3.5 text-mv-green" />
+                <span className="text-[10.5px] font-bold text-mv-ink-faint uppercase tracking-wider">{latestPoll.question}</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {latestPoll.proposed_slots.map((slot, idx) => {
+                  const votes = latestPollVotes.filter((v) => v.slot_index === idx);
+                  return (
+                    <div key={idx} className="p-2.5 rounded-lg border border-mv-border bg-white text-xs space-y-1">
+                      <p className="font-semibold text-mv-ink">{slot.label}</p>
+                      <p className="text-[10px] text-mv-ink-faint" style={MONO}>{votes.length} vote{votes.length > 1 ? 's' : ''}</p>
+                      {votes.length > 0 && (
+                        <p className="text-[10.5px] text-mv-ink-soft truncate">{votes.map((v) => v.member_name).join(', ')}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
         </div>
       )}
 
