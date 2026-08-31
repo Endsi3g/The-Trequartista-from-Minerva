@@ -4,6 +4,21 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-31 (v2.17.1) — Assainissement Codebase, Purge Stubs Obsolètes & Optimisation Dépôt
+
+Maintenance et assainissement complet de la codebase :
+
+- **Purge Définitive des Résidus de Plane** :
+  - Suppression du fichier stub obsolète `lib/services/plane.ts`.
+  - Retrait des fonctions orphelines de synchronisation (`updateTaskPlaneMeta`, `logPlaneSyncEvent`, `fetchPlaneSyncLogs`) dans `lib/services/supabase-data.ts`.
+  - Suppression des interfaces TypeScript inutilisées (`PlaneState`, `PlaneIssue`, `PlaneCycle`, `PlaneModule`, `PlaneSyncLog`, `PlaneSyncStats`) dans `lib/types/index.ts`.
+- **Nettoyage des Fichiers Temporaires & Médias** :
+  - Purge des captures d'écran résiduelles à la racine (`image*.png`) et suppression du dossier d'inspiration périmé (`inpsiration/`).
+- **Allègement du Bundle & Validation Stricte** :
+  - Validation stricte TypeScript sans avertissement et compilation Turbopack sans régression.
+
+---
+
 ## 2026-08-31 (v2.17.0) — Suite Notion AI Universelle (Streaming SSE, Commande `/ai`, Menu Sélection & Générateur SOPs)
 
 Mise en production de la suite complète **Notion AI native**, propulsée par **Google Gemini (3.6 Flash)** avec streaming SSE temps réel, intégrée à l'éditeur de blocs et à l'Académie :

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, PlaneSyncLog, HelpChatMessage } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 import { markdownToBlocks } from '@/lib/utils/markdown-to-blocks';
 
@@ -3737,83 +3737,3 @@ export async function convertContactToLead(contact: Contact, createdBy: string):
   });
   return lead;
 }
-
-// ----------------------------------------------------
-// 34. PLANE SYNCHRONIZATION & AUDIT LOGS
-// ----------------------------------------------------
-
-export async function updateTaskPlaneMeta(
-  taskId: string,
-  meta: {
-    plane_issue_id?: string | null;
-    plane_sequence_id?: string | null;
-    plane_state_id?: string | null;
-    plane_last_synced_at?: string | null;
-    plane_sync_status?: 'synced' | 'pending' | 'error' | null;
-  }
-): Promise<boolean> {
-  const updatePayload: Record<string, unknown> = {};
-  if (meta.plane_issue_id !== undefined) updatePayload.plane_issue_id = meta.plane_issue_id;
-  if (meta.plane_sequence_id !== undefined) updatePayload.plane_sequence_id = meta.plane_sequence_id;
-  if (meta.plane_state_id !== undefined) updatePayload.plane_state_id = meta.plane_state_id;
-  if (meta.plane_last_synced_at !== undefined) updatePayload.plane_last_synced_at = meta.plane_last_synced_at;
-  if (meta.plane_sync_status !== undefined) updatePayload.plane_sync_status = meta.plane_sync_status;
-
-  const { error } = await getSupabase().from('tasks').update(updatePayload).eq('id', taskId);
-  if (error) {
-    console.warn('[Supabase] Error updating task Plane metadata:', error);
-    return false;
-  }
-  return true;
-}
-
-export async function logPlaneSyncEvent(event: {
-  action: 'push_task' | 'pull_webhook' | 'manual_sync' | 'mcp_tool_call';
-  status: 'success' | 'error' | 'skipped';
-  task_id?: string | null;
-  plane_issue_id?: string | null;
-  payload?: Record<string, unknown> | null;
-  error_message?: string | null;
-}): Promise<boolean> {
-  try {
-    const { error } = await getSupabase().from('plane_sync_logs').insert([
-      {
-        action: event.action,
-        status: event.status,
-        task_id: event.task_id || null,
-        plane_issue_id: event.plane_issue_id || null,
-        payload: event.payload || {},
-        error_message: event.error_message || null,
-      },
-    ]);
-    if (error) {
-      console.warn('[Supabase] Warning logging Plane sync event (table may be pending migration):', error.message);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.warn('[Supabase] Error writing Plane sync log:', err);
-    return false;
-  }
-}
-
-export async function fetchPlaneSyncLogs(limit = 20): Promise<PlaneSyncLog[]> {
-  return withTimeout(
-    (async () => {
-      const { data, error } = await getSupabase()
-        .from('plane_sync_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (error || !data) {
-        return [];
-      }
-      return data as PlaneSyncLog[];
-    })(),
-    []
-  );
-}
-
-
-

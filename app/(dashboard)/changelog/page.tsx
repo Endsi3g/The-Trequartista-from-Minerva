@@ -13,6 +13,21 @@ import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 
 const STATIC_ENTRIES: ChangelogEntry[] = [
   {
+    id: 'v2-17-1',
+    version: '2.17.1',
+    title: 'Assainissement Codebase & Maintenance de Performance (v2.17.1)',
+    body: `Opération d'assainissement technique et d'optimisation de la codebase : suppression définitive de l'ensemble des stubs et types orphelins de Plane (decommissionné en v2.13), nettoyage des fonctions de synchronisation non utilisées, purge des captures d'écran et dossiers d'inspiration temporaires à la racine du projet, et validation stricte du typage TypeScript.`,
+    included_items: [
+      'Purge Définitive des Résidus de Plane : Suppression du fichier stub lib/services/plane.ts, retrait des types PlaneState, PlaneIssue, PlaneSyncLog et suppression des fonctions orphelines de synchronisation.',
+      'Nettoyage des Fichiers Temporaires : Purge des images racine et suppression du dossier d\'inspiration périmé pour un dépôt plus léger et plus lisible.',
+      'Typage Strict & Zéro Erreur : Validation stricte TypeScript sans warning et compilation Turbopack 100% propre.',
+    ],
+    image_url: '/changelog/minerva-flow-v2-5-0.png',
+    created_at: new Date().toISOString(),
+    created_by: 'system',
+    author_name: 'Minerva Core Team',
+  },
+  {
     id: 'v2-17-0',
     version: '2.17.0',
     title: 'Suite Notion AI Universelle — Streaming Temps Réel, Commande /ai, Menu Sélection & Générateur SOPs (v2.17.0)',
