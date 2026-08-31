@@ -25,6 +25,9 @@ import {
   ShieldAlert,
   CheckSquare,
   Filter,
+  Bot,
+  MessageCircleQuestion,
+  CalendarClock,
 } from 'lucide-react';
 import {
   fetchTeamWorkloads,
@@ -32,9 +35,16 @@ import {
   computeRevOpsSummary,
   reassignTaskAssignee,
 } from '@/lib/services/revops-team';
-import { fetchTasks } from '@/lib/services/supabase-data';
-import type { TeamMemberWorkload, TeamCommission, RevOpsSummary, Task } from '@/lib/types';
+import {
+  fetchTasks,
+  fetchStandupResponsesForDate,
+  fetchWeeklyCheckinsForWeek,
+  fetchLatestAvailabilityPoll,
+  fetchAvailabilityVotes,
+} from '@/lib/services/supabase-data';
+import type { TeamMemberWorkload, TeamCommission, RevOpsSummary, Task, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { getIsoWeekStart } from '@/lib/utils/dates';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
@@ -56,18 +66,33 @@ export default function TeamWorkloadPage() {
   const [targetMemberId, setTargetMemberId] = useState<string>('');
   const [reassigning, setReassigning] = useState(false);
 
+  // ── Coach Minerva admin review (chantier 5) ──
+  const [standups, setStandups] = useState<StandupResponse[]>([]);
+  const [weeklyCheckins, setWeeklyCheckins] = useState<WeeklyCheckinResponse[]>([]);
+  const [latestPoll, setLatestPoll] = useState<AvailabilityPoll | null>(null);
+  const [latestPollVotes, setLatestPollVotes] = useState<AvailabilityVote[]>([]);
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [wlData, commData, tasksData] = await Promise.all([
+      const today = new Date().toISOString().slice(0, 10);
+      const weekStart = getIsoWeekStart(new Date());
+      const [wlData, commData, tasksData, standupData, weeklyData, poll] = await Promise.all([
         fetchTeamWorkloads(),
         fetchTeamCommissions(),
         fetchTasks(),
+        fetchStandupResponsesForDate(today),
+        fetchWeeklyCheckinsForWeek(weekStart),
+        fetchLatestAvailabilityPoll(),
       ]);
       setWorkloads(wlData);
       setCommissions(commData);
       setAllTasks(tasksData);
       setSummary(computeRevOpsSummary(wlData, commData));
+      setStandups(standupData);
+      setWeeklyCheckins(weeklyData);
+      setLatestPoll(poll);
+      setLatestPollVotes(poll ? await fetchAvailabilityVotes(poll.id) : []);
     } catch {
       toastError('Erreur de chargement', 'Impossible de récupérer la charge de travail.');
     } finally {
@@ -365,6 +390,101 @@ export default function TeamWorkloadPage() {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* ── Coach Minerva (AI team-coach bot) — admin review ── */}
+      {role === 'admin' && (
+        <div className="space-y-4 border-t border-mv-border pt-8">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-mv-green-tint text-mv-green flex items-center justify-center">
+              <Bot className="w-4.5 h-4.5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold font-display tracking-tight text-mv-ink">Coach Minerva</h2>
+              <p className="text-xs text-mv-ink-soft">Check-ins quotidiens/hebdo et disponibilités d&apos;équipe, envoyés dans /chat.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <Card className="p-5 bg-mv-surface border-mv-border rounded-xl space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-mv-ink-faint uppercase tracking-wider">
+                <MessageCircleQuestion className="w-3.5 h-3.5" />
+                <span>Point quotidien — aujourd&apos;hui ({standups.length})</span>
+              </div>
+              {standups.length === 0 ? (
+                <p className="text-[11px] text-mv-ink-faint italic">Aucun point quotidien envoyé pour l&apos;instant aujourd&apos;hui.</p>
+              ) : (
+                <div className="space-y-2">
+                  {standups.map((s) => (
+                    <div key={s.id} className="p-2.5 rounded-lg border border-mv-border bg-white space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-mv-ink">{s.user_name}</span>
+                        <Badge variant={s.open_answer ? 'green' : 'neutral'} className="text-[10px]">
+                          {s.open_answer ? 'A répondu' : 'En attente'}
+                        </Badge>
+                      </div>
+                      <p className="text-[10.5px] text-mv-ink-faint">{s.task_snapshot.length} tâche(s) au moment du point</p>
+                      {s.open_answer && <p className="text-[11.5px] text-mv-ink-soft italic">&laquo;&nbsp;{s.open_answer}&nbsp;&raquo;</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            <Card className="p-5 bg-mv-surface border-mv-border rounded-xl space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-mv-ink-faint uppercase tracking-wider">
+                <CalendarClock className="w-3.5 h-3.5" />
+                <span>Check-in hebdo — cette semaine ({weeklyCheckins.length})</span>
+              </div>
+              {weeklyCheckins.length === 0 ? (
+                <p className="text-[11px] text-mv-ink-faint italic">Aucun check-in hebdo pour l&apos;instant cette semaine.</p>
+              ) : (
+                <div className="space-y-2">
+                  {weeklyCheckins.map((s) => (
+                    <div key={s.id} className="p-2.5 rounded-lg border border-mv-border bg-white space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-mv-ink">{s.user_name}</span>
+                        <Badge variant={s.open_answer ? 'green' : 'neutral'} className="text-[10px]">
+                          {s.open_answer ? 'A répondu' : 'En attente'}
+                        </Badge>
+                      </div>
+                      <p className="text-[10.5px] text-mv-ink-faint">{s.task_snapshot.length} tâche(s) active(s)</p>
+                      {s.open_answer && <p className="text-[11.5px] text-mv-ink-soft italic">&laquo;&nbsp;{s.open_answer}&nbsp;&raquo;</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {latestPoll && (
+            <Card className="p-5 bg-mv-surface border-mv-border rounded-xl space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-mv-ink-faint uppercase tracking-wider">
+                <CalendarClock className="w-3.5 h-3.5" />
+                <span>Sondage de disponibilité — appel d&apos;équipe</span>
+              </div>
+              <p className="text-xs text-mv-ink">{latestPoll.question}</p>
+              <div className="space-y-1.5">
+                {latestPoll.proposed_slots.map((slot, idx) => {
+                  const votesForSlot = latestPollVotes.filter((v) => v.slot_index === idx);
+                  return (
+                    <div key={idx} className="flex items-center justify-between p-2 rounded-lg border border-mv-border bg-white text-xs">
+                      <span className="text-mv-ink">{slot.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-mv-green" style={MONO}>{votesForSlot.length} vote{votesForSlot.length > 1 ? 's' : ''}</span>
+                        {votesForSlot.length > 0 && (
+                          <span className="text-[10.5px] text-mv-ink-faint truncate max-w-[220px]">
+                            {votesForSlot.map((v) => v.user_name).join(', ')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
         </div>
       )}
 

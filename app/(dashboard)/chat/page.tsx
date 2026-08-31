@@ -20,6 +20,7 @@ import {
   ChevronDown,
   ChevronUp,
   SmilePlus,
+  Bot,
 } from 'lucide-react';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { useCurrentUser } from '@/hooks/use-current-user';
@@ -33,8 +34,12 @@ import {
   fetchReactionsForMessages,
   toggleReaction,
   createMentions,
+  recordCoachOpenAnswer,
+  fetchAvailabilityPollById,
+  fetchAvailabilityVotes,
+  submitAvailabilityVote,
 } from '@/lib/services/supabase-data';
-import type { Project, Client, TeamMemberSummary, TeamChatReaction } from '@/lib/types';
+import type { Project, Client, TeamMemberSummary, TeamChatReaction, AvailabilityPoll, AvailabilityVote } from '@/lib/types';
 import { useToast } from '@/components/providers/ToastProvider';
 import { cn } from '@/lib/utils';
 import { PageFadeIn } from '@/components/ui/page-transition';
@@ -52,7 +57,7 @@ const TOPIC_CHANNELS: { slug: string; label: string; sublabel: string }[] = [
 ];
 
 type Channel = {
-  type: 'project' | 'client' | 'dm' | 'topic';
+  type: 'project' | 'client' | 'dm' | 'topic' | 'coach';
   id: string;
   label: string;
   sublabel: string;
@@ -62,7 +67,7 @@ type Channel = {
 };
 
 export default function ChatPage() {
-  const { id: userId, fullName, avatarUrl } = useCurrentUser();
+  const { id: userId, fullName, role } = useCurrentUser();
   const { toastError } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -81,6 +86,8 @@ export default function ChatPage() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({});
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [polls, setPolls] = useState<Record<string, AvailabilityPoll>>({});
+  const [pollVotes, setPollVotes] = useState<Record<string, AvailabilityVote[]>>({});
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -164,6 +171,34 @@ export default function ChatPage() {
     fetchReactionsForMessages(messages.map((m) => m.id)).then(setReactions);
   }, [messages]);
 
+  // Coach Minerva's weekly check-in posts a message with poll_id set --
+  // fetch each referenced poll + its votes so the chat can render inline
+  // slot buttons instead of sending the member to a separate page.
+  useEffect(() => {
+    const pollIds = Array.from(new Set(messages.map((m) => m.poll_id).filter((id): id is string => !!id)));
+    if (pollIds.length === 0) return;
+    pollIds.forEach(async (pollId) => {
+      if (!polls[pollId]) {
+        const poll = await fetchAvailabilityPollById(pollId);
+        if (poll) setPolls((prev) => ({ ...prev, [pollId]: poll }));
+      }
+      const votes = await fetchAvailabilityVotes(pollId);
+      setPollVotes((prev) => ({ ...prev, [pollId]: votes }));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
+  const handleVote = async (pollId: string, slotIndex: number) => {
+    if (!userId) return;
+    setPollVotes((prev) => {
+      const existing = prev[pollId] || [];
+      const withoutMine = existing.filter((v) => v.user_id !== userId);
+      return { ...prev, [pollId]: [...withoutMine, { id: `optimistic-${Date.now()}`, poll_id: pollId, user_id: userId, slot_index: slotIndex, created_at: new Date().toISOString() }] };
+    });
+    await submitAvailabilityVote(pollId, userId, slotIndex);
+    fetchAvailabilityVotes(pollId).then((votes) => setPollVotes((prev) => ({ ...prev, [pollId]: votes })));
+  };
+
   const handleToggleReaction = async (messageId: string, emoji: string) => {
     if (!userId) return;
     setReactionPickerFor(null);
@@ -207,6 +242,7 @@ export default function ChatPage() {
       setReplyingTo(null);
       setMentionQuery(null);
       if (sent.id) notifyMentions(sent.id, draft);
+      if (active?.type === 'coach' && userId) recordCoachOpenAnswer(userId, draft);
     }
   };
 
@@ -362,6 +398,24 @@ export default function ChatPage() {
               <p className="text-[11px] text-zinc-400 text-center py-8 font-mono">Chargement…</p>
             ) : (
               <>
+                {/* ── Coach Minerva (AI team-coach bot) ── */}
+                {(role === 'admin' || role === 'member') && userId && 'Coach Minerva'.toLowerCase().includes(q) && (
+                  <div className="py-1">
+                    <button
+                      onClick={() => setActive({ type: 'coach', id: userId, label: 'Coach Minerva', sublabel: 'Check-ins IA' })}
+                      className={cn(
+                        'w-full text-left px-3 h-8 flex items-center gap-2 text-[12px] transition-colors cursor-pointer',
+                        active?.type === 'coach'
+                          ? 'bg-zinc-100/90 text-zinc-900 font-semibold border-l-2 border-mv-green pl-2.5'
+                          : 'text-zinc-600 hover:bg-black/[0.025] hover:text-zinc-900'
+                      )}
+                    >
+                      <Bot className={cn('w-3.5 h-3.5 shrink-0', active?.type === 'coach' ? 'text-mv-green' : 'text-zinc-400')} />
+                      <span className="truncate">Coach Minerva</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* ── Topic Channels ── */}
                 <div className="py-1">
                   <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
@@ -584,7 +638,13 @@ export default function ChatPage() {
                         {!isOwn && (
                           <div className="w-6 shrink-0 pt-0.5">
                             {showHeader ? (
-                              <UserAvatar name={m.sender_name} src={m.sender_avatar} size="xs" className="w-6 h-6 text-[10px]" />
+                              m.sender_id === null ? (
+                                <div className="w-6 h-6 rounded-full bg-mv-green-tint flex items-center justify-center">
+                                  <Bot className="w-3.5 h-3.5 text-mv-green" />
+                                </div>
+                              ) : (
+                                <UserAvatar name={m.sender_name} src={m.sender_avatar} size="xs" className="w-6 h-6 text-[10px]" />
+                              )
                             ) : (
                               <div className="w-6" />
                             )}
@@ -645,7 +705,32 @@ export default function ChatPage() {
                                 </a>
                               )}
 
-                              {m.body && <p>{m.body}</p>}
+                              {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
+
+                              {/* Availability poll (Coach Minerva's weekly call scheduling) */}
+                              {m.poll_id && polls[m.poll_id] && (
+                                <div className="mt-2 space-y-1">
+                                  {polls[m.poll_id].proposed_slots.map((slot, idx) => {
+                                    const votesForPoll = pollVotes[m.poll_id!] || [];
+                                    const votesForSlot = votesForPoll.filter((v) => v.slot_index === idx);
+                                    const mine = votesForSlot.some((v) => v.user_id === userId);
+                                    return (
+                                      <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() => handleVote(m.poll_id!, idx)}
+                                        className={cn(
+                                          'w-full flex items-center justify-between px-2 py-1 rounded-[4px] text-[11.5px] border cursor-pointer transition-colors',
+                                          mine ? 'bg-mv-green text-white border-mv-green' : 'bg-white/70 border-black/10 text-zinc-800 hover:bg-white'
+                                        )}
+                                      >
+                                        <span>{slot.label}</span>
+                                        <span className="font-semibold ml-2">{votesForSlot.length}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
 
                             {/* Hover actions: react / reply */}
@@ -819,7 +904,7 @@ export default function ChatPage() {
                             handleSend();
                           }
                         }}
-                        placeholder={`Écrire dans #${active.label}... (@ pour mentionner, Entrée pour envoyer)`}
+                        placeholder={`Écrire dans ${active.type === 'topic' ? `#${active.label}` : active.label}... (@ pour mentionner, Entrée pour envoyer)`}
                         rows={2}
                         className="w-full text-[12.5px] p-2.5 bg-transparent text-zinc-900 placeholder:text-zinc-400 focus:outline-none resize-none"
                       />

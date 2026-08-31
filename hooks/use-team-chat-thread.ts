@@ -58,7 +58,7 @@ function decodeBroadcastContent(content: string): {
 // internal team channels scoped to a project, a client, or a 1-on-1 DM
 // between two members instead of the client<->Minerva Q&A thread.
 export function useTeamChatThread(
-  channelType: 'project' | 'client' | 'dm' | 'topic',
+  channelType: 'project' | 'client' | 'dm' | 'topic' | 'coach',
   channelId: string | undefined,
   currentUserId: string,
   currentUserName: string

@@ -14,6 +14,14 @@
     {
       "path": "/api/cron/contact-reminders",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/coach-bot-daily",
+      "schedule": "0 12 * * 1-5"
+    },
+    {
+      "path": "/api/cron/coach-bot-weekly",
+      "schedule": "0 14 * * 5"
     }
   ],
   "headers": [

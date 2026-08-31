@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, PlaneSyncLog } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, PlaneSyncLog, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
+import { getIsoWeekStart } from '@/lib/utils/dates';
 
 function getSupabase() {
   return createClient();
@@ -4027,7 +4028,7 @@ export async function restoreDocumentVersion(documentId: string, version: Docume
 // 18. CHAT D'ÉQUIPE — canaux par projet/client
 // ----------------------------------------------------
 export async function fetchTeamChatMessages(
-  channelType: 'project' | 'client' | 'dm' | 'topic',
+  channelType: 'project' | 'client' | 'dm' | 'topic' | 'coach',
   channelId: string
 ): Promise<TeamChatMessage[]> {
   return withTimeout(
@@ -4051,7 +4052,9 @@ export async function fetchTeamChatMessages(
         const sender = senderMap.get(row.sender_id);
         return {
           ...row,
-          sender_name: sender?.full_name || 'Membre',
+          // A NULL sender is only ever the bot -- 'coach' channels are the
+          // only place a message is inserted without a real sender_id.
+          sender_name: sender?.full_name || (row.sender_id ? 'Membre' : 'Coach Minerva'),
           sender_avatar: sender?.avatar_url || '',
         };
       }) as TeamChatMessage[];
@@ -4061,7 +4064,7 @@ export async function fetchTeamChatMessages(
 }
 
 export async function sendTeamChatMessage(
-  channelType: 'project' | 'client' | 'dm' | 'topic',
+  channelType: 'project' | 'client' | 'dm' | 'topic' | 'coach',
   channelId: string,
   senderId: string,
   body: string,
@@ -4214,6 +4217,94 @@ export async function fetchTeamMembers(excludeUserId?: string): Promise<TeamMemb
     })(),
     []
   );
+}
+
+// ----------------------------------------------------
+// 19. COACH MINERVA — bot IA coach d'équipe (chantier 5)
+// ----------------------------------------------------
+
+function withMemberNames<T extends { user_id: string }>(rows: T[], names: Map<string, string>): (T & { user_name: string })[] {
+  return rows.map((r) => ({ ...r, user_name: names.get(r.user_id) || 'Membre' }));
+}
+
+async function fetchProfileNames(userIds: string[]): Promise<Map<string, string>> {
+  if (userIds.length === 0) return new Map();
+  const { data } = await getSupabase().from('profiles').select('id, full_name').in('id', Array.from(new Set(userIds)));
+  return new Map((data || []).map((p: { id: string; full_name: string | null }) => [p.id, p.full_name || 'Membre']));
+}
+
+export async function fetchStandupResponsesForDate(date: string): Promise<StandupResponse[]> {
+  const { data, error } = await getSupabase().from('standup_responses').select('*').eq('date', date).order('created_at', { ascending: true });
+  if (error || !data) return [];
+  const names = await fetchProfileNames(data.map((r) => r.user_id));
+  return withMemberNames(data as StandupResponse[], names);
+}
+
+export async function fetchWeeklyCheckinsForWeek(weekStart: string): Promise<WeeklyCheckinResponse[]> {
+  const { data, error } = await getSupabase().from('checkin_weekly_responses').select('*').eq('week_start', weekStart).order('created_at', { ascending: true });
+  if (error || !data) return [];
+  const names = await fetchProfileNames(data.map((r) => r.user_id));
+  return withMemberNames(data as WeeklyCheckinResponse[], names);
+}
+
+export async function fetchAvailabilityPollById(pollId: string): Promise<AvailabilityPoll | null> {
+  const { data, error } = await getSupabase().from('availability_polls').select('*').eq('id', pollId).maybeSingle();
+  if (error || !data) return null;
+  return data as AvailabilityPoll;
+}
+
+export async function fetchLatestAvailabilityPoll(): Promise<AvailabilityPoll | null> {
+  const { data, error } = await getSupabase().from('availability_polls').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle();
+  if (error || !data) return null;
+  return data as AvailabilityPoll;
+}
+
+export async function fetchAvailabilityVotes(pollId: string): Promise<AvailabilityVote[]> {
+  const { data, error } = await getSupabase().from('availability_votes').select('*').eq('poll_id', pollId);
+  if (error || !data) return [];
+  const names = await fetchProfileNames(data.map((r) => r.user_id));
+  return withMemberNames(data as AvailabilityVote[], names);
+}
+
+export async function submitAvailabilityVote(pollId: string, userId: string, slotIndex: number): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from('availability_votes')
+    .upsert([{ poll_id: pollId, user_id: userId, slot_index: slotIndex }], { onConflict: 'poll_id,user_id' });
+  return !error;
+}
+
+// A reply typed into the Coach Minerva channel is captured as the open
+// answer for whichever daily/weekly prompt is still awaiting one -- so a
+// normal chat reply doubles as the structured response the admin view
+// reads, without a separate "answer this prompt" form. No-ops quietly if
+// there's no pending prompt (e.g. idle chit-chat in the coach channel).
+export async function recordCoachOpenAnswer(userId: string, body: string): Promise<void> {
+  const supabase = getSupabase();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data: pendingDaily } = await supabase
+    .from('standup_responses')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('date', today)
+    .is('open_answer', null)
+    .maybeSingle();
+  if (pendingDaily) {
+    await supabase.from('standup_responses').update({ open_answer: body }).eq('id', pendingDaily.id);
+    return;
+  }
+
+  const weekStart = getIsoWeekStart(new Date());
+  const { data: pendingWeekly } = await supabase
+    .from('checkin_weekly_responses')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('week_start', weekStart)
+    .is('open_answer', null)
+    .maybeSingle();
+  if (pendingWeekly) {
+    await supabase.from('checkin_weekly_responses').update({ open_answer: body }).eq('id', pendingWeekly.id);
+  }
 }
 
 // Uploads a chat attachment (image, voice note, GIF, or generic file) to
