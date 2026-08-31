@@ -35,6 +35,7 @@ import {
   Radio,
   Sliders,
   ChevronRight,
+  ShieldAlert,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +48,7 @@ import { fetchTechQaAudits } from '@/lib/services/tech';
 import { fetchProjects, fetchTasks, fetchDocuments, addTask, updateTaskStatus, deleteTask } from '@/lib/services/supabase-data';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/providers/ToastProvider';
+import { useCurrentUser } from '@/hooks/use-current-user';
 import type { TechQaAudit, Project, Task, TeamDocument } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -54,6 +56,7 @@ const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantN
 
 export function TechDashboard() {
   const { toastSuccess, toastError, toastInfo } = useToast();
+  const { role, workspace, loading: userLoading } = useCurrentUser();
   const [activeTab, setActiveTab] = useState<'overview' | 'qa' | 'infra' | 'docs'>('overview');
   const [audits, setAudits] = useState<TechQaAudit[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -133,6 +136,21 @@ export function TechDashboard() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isCreatingTask, activeTab, toastInfo]);
+
+  // No access control existed here at all -- any authenticated user, any
+  // role/workspace, could open /tech directly by URL. The sidebar only
+  // ever hid the nav link, it never protected the route itself.
+  if (!userLoading && !(role === 'admin' || workspace === 'tech')) {
+    return (
+      <div className="max-w-lg mx-auto py-16 text-center space-y-3">
+        <ShieldAlert className="w-8 h-8 text-mv-amber mx-auto" />
+        <p className="text-sm font-bold text-mv-ink">Réservé à l&apos;équipe Tech.</p>
+        <Link href="/overview" className="text-xs text-mv-green hover:underline">
+          Retour à l&apos;aperçu
+        </Link>
+      </div>
+    );
+  }
 
   const latestAudit = audits[0] || null;
   const latestScore = latestAudit?.score_percentage ?? 100;
