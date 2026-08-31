@@ -1,19 +1,9 @@
--- ============================================================================
--- MINERVA TREQUARTISTA — MASTER DÉPLOIEMENT PRODUCTION CONSOLIDÉ (v2.13.0)
--- 
--- Ce script unique regroupe l'intégralité du schéma de base de données,
--- des tables, contraintes, triggers, politiques de sécurité RLS et données
--- initiales de référence pour l'écosystème Minerva Trequartista.
---
--- 100% Idempotent : Peut être exécuté en 1 clic dans l'éditeur SQL Supabase :
--- https://supabase.com/dashboard/project/_/sql
--- ============================================================================
+-- Master Consolidated Production Migration (v2.13.0)
+-- See deploy_production_complete.sql for comments and full details.
 
--- ── 1. Extensions Requises ──────────────────────────────────────────────────
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- ── 2. Tables Utilisateurs & Profils ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -30,44 +20,16 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Lecture profils pour authentifies" ON public.profiles;
-CREATE POLICY "Lecture profils pour authentifies" ON public.profiles
-    FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Lecture profils pour authentifies" ON public.profiles FOR SELECT TO authenticated USING (true);
 
 DROP POLICY IF EXISTS "Modification profil personnel ou admin" ON public.profiles;
-CREATE POLICY "Modification profil personnel ou admin" ON public.profiles
-    FOR UPDATE TO authenticated
+CREATE POLICY "Modification profil personnel ou admin" ON public.profiles FOR UPDATE TO authenticated
     USING (auth.uid() = id OR (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin')
     WITH CHECK (auth.uid() = id OR (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin');
 
 DROP POLICY IF EXISTS "Insertion profil pour authentifies" ON public.profiles;
-CREATE POLICY "Insertion profil pour authentifies" ON public.profiles
-    FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
+CREATE POLICY "Insertion profil pour authentifies" ON public.profiles FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
 
--- Trigger synchronisation auth.users -> public.profiles
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-    INSERT INTO public.profiles (id, email, full_name, avatar_url, role)
-    VALUES (
-        NEW.id,
-        NEW.email,
-        COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
-        COALESCE(NEW.raw_user_meta_data->>'avatar_url', 'https://api.dicebear.com/7.x/initials/svg?seed=' || encode(digest(NEW.email, 'sha256'), 'hex')),
-        CASE WHEN NEW.email = 'kbelceus776@gmail.com' THEN 'admin' ELSE 'member' END
-    )
-    ON CONFLICT (id) DO UPDATE SET
-        email = EXCLUDED.email,
-        full_name = CASE WHEN profiles.full_name = '' THEN EXCLUDED.full_name ELSE profiles.full_name END;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-    AFTER INSERT ON auth.users
-    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
--- ── 3. Clients & CRM ────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.clients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -85,12 +47,9 @@ CREATE TABLE IF NOT EXISTS public.clients (
 );
 
 ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Acces clients membres" ON public.clients;
-CREATE POLICY "Acces clients membres" ON public.clients
-    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acces clients membres" ON public.clients FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
--- ── 4. Leads & Pipeline Commercial ──────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.leads (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -110,12 +69,9 @@ CREATE TABLE IF NOT EXISTS public.leads (
 );
 
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Acces leads membres" ON public.leads;
-CREATE POLICY "Acces leads membres" ON public.leads
-    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acces leads membres" ON public.leads FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
--- ── 5. Réseau & Contacts Professionnels ──────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.contacts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -133,12 +89,9 @@ CREATE TABLE IF NOT EXISTS public.contacts (
 );
 
 ALTER TABLE public.contacts ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Acces contacts membres" ON public.contacts;
-CREATE POLICY "Acces contacts membres" ON public.contacts
-    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acces contacts membres" ON public.contacts FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
--- ── 6. Projets & Livrables ──────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.projects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -156,12 +109,9 @@ CREATE TABLE IF NOT EXISTS public.projects (
 );
 
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Acces projets membres" ON public.projects;
-CREATE POLICY "Acces projets membres" ON public.projects
-    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acces projets membres" ON public.projects FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
--- ── 7. Tâches Équipe (Indépendant & Épuré) ──────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -181,12 +131,9 @@ CREATE TABLE IF NOT EXISTS public.tasks (
 );
 
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Acces taches membres" ON public.tasks;
-CREATE POLICY "Acces taches membres" ON public.tasks
-    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acces taches membres" ON public.tasks FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
--- ── 8. Propositions Commerciales & Signature Électronique ───────────────────
 CREATE TABLE IF NOT EXISTS public.proposals (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     token TEXT UNIQUE NOT NULL DEFAULT encode(gen_random_bytes(16), 'hex'),
@@ -215,22 +162,15 @@ CREATE TABLE IF NOT EXISTS public.proposals (
 );
 
 ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Acces propositions membres" ON public.proposals;
-CREATE POLICY "Acces propositions membres" ON public.proposals
-    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acces propositions membres" ON public.proposals FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Acces public propositions par token" ON public.proposals;
-CREATE POLICY "Acces public propositions par token" ON public.proposals
-    FOR SELECT TO anon USING (token IS NOT NULL);
+CREATE POLICY "Acces public propositions par token" ON public.proposals FOR SELECT TO anon USING (token IS NOT NULL);
 
 DROP POLICY IF EXISTS "Signature publique proposition" ON public.proposals;
-CREATE POLICY "Signature publique proposition" ON public.proposals
-    FOR UPDATE TO anon
-    USING (status IN ('sent', 'opened', 'draft'))
-    WITH CHECK (status = 'signed');
+CREATE POLICY "Signature publique proposition" ON public.proposals FOR UPDATE TO anon USING (status IN ('sent', 'opened', 'draft')) WITH CHECK (status = 'signed');
 
--- ── 9. Facturation & Devis ──────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.invoices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -250,12 +190,9 @@ CREATE TABLE IF NOT EXISTS public.invoices (
 );
 
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Acces factures membres" ON public.invoices;
-CREATE POLICY "Acces factures membres" ON public.invoices
-    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acces factures membres" ON public.invoices FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
--- ── 10. Commissions RevOps & Capacité d'Équipe ──────────────────────────────
 CREATE TABLE IF NOT EXISTS public.team_commissions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -275,12 +212,9 @@ CREATE TABLE IF NOT EXISTS public.team_commissions (
 );
 
 ALTER TABLE public.team_commissions ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Acces commissions membres" ON public.team_commissions;
-CREATE POLICY "Acces commissions membres" ON public.team_commissions
-    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acces commissions membres" ON public.team_commissions FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
--- ── 11. Messagerie d'Équipe & Canaux Thématiques ────────────────────────────
 CREATE TABLE IF NOT EXISTS public.team_chat_messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -294,30 +228,10 @@ CREATE TABLE IF NOT EXISTS public.team_chat_messages (
     parent_message_id UUID REFERENCES public.team_chat_messages(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS team_chat_channel_idx ON public.team_chat_messages(channel_type, channel_id, created_at);
-
 ALTER TABLE public.team_chat_messages ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Acces chat membres" ON public.team_chat_messages;
-CREATE POLICY "Acces chat membres" ON public.team_chat_messages
-    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acces chat membres" ON public.team_chat_messages FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
--- ── 12. Présence Temps Réel & Statut ────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.team_presence (
-    user_id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    status TEXT NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'busy', 'away', 'offline')),
-    current_path TEXT,
-    page_label TEXT
-);
-
-ALTER TABLE public.team_presence ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Acces presence membres" ON public.team_presence;
-CREATE POLICY "Acces presence membres" ON public.team_presence
-    FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
--- ── 13. Audits QA & Qualité Technique ───────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.tech_qa_audits (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -335,61 +249,5 @@ CREATE TABLE IF NOT EXISTS public.tech_qa_audits (
 );
 
 ALTER TABLE public.tech_qa_audits ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Acces audits QA membres" ON public.tech_qa_audits;
-CREATE POLICY "Acces audits QA membres" ON public.tech_qa_audits
-    FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
--- ── 14. Académie & SOPs de Référence ────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.academy_sops (
-    id TEXT PRIMARY KEY DEFAULT ('sop-' || encode(gen_random_bytes(6), 'hex')),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    title TEXT NOT NULL,
-    description TEXT,
-    category TEXT NOT NULL,
-    pillar TEXT CHECK (pillar IN ('flow', 'reach', 'agency', 'inspirations', 'transversal')),
-    content_markdown TEXT NOT NULL,
-    content_json JSONB,
-    read_time_min INT DEFAULT 10,
-    author TEXT DEFAULT 'Kael Belceus',
-    is_essential BOOLEAN DEFAULT false,
-    is_featured BOOLEAN DEFAULT false,
-    is_onboarding_step BOOLEAN DEFAULT false,
-    sort_order INT
-);
-
-ALTER TABLE public.academy_sops ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Acces academy membres" ON public.academy_sops;
-CREATE POLICY "Acces academy membres" ON public.academy_sops
-    FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
--- ── 15. Realtime Publication pour Synchronisation Instantanée ───────────────
-DO $$
-BEGIN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.team_chat_messages;
-EXCEPTION WHEN OTHERS THEN NULL;
-END $$;
-
-DO $$
-BEGIN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.tasks;
-EXCEPTION WHEN OTHERS THEN NULL;
-END $$;
-
-DO $$
-BEGIN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.team_presence;
-EXCEPTION WHEN OTHERS THEN NULL;
-END $$;
-
-DO $$
-BEGIN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.proposals;
-EXCEPTION WHEN OTHERS THEN NULL;
-END $$;
-
--- ============================================================================
--- FIN DU MASTER SCRIPT CONSOLIDÉ (v2.13.0)
--- ============================================================================
+CREATE POLICY "Acces audits QA membres" ON public.tech_qa_audits FOR ALL TO authenticated USING (true) WITH CHECK (true);

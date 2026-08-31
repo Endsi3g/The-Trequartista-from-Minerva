@@ -277,6 +277,17 @@ export default function IntegrationsPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <a
+            href="https://connect.composio.dev/mcp"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-7 px-2.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md inline-flex items-center gap-1.5 transition-colors shadow-xs"
+            title="Connexion directe au hub Composio MCP"
+          >
+            <Zap size={12} />
+            <span>Composio Connect MCP</span>
+            <ExternalLink size={10} />
+          </a>
           <Link
             href="/tech"
             className="h-7 px-2.5 text-xs font-medium border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-md inline-flex items-center gap-1.5 transition-colors shadow-2xs"
@@ -578,15 +589,26 @@ export default function IntegrationsPage() {
             </div>
 
             <div className="pt-2 flex items-center justify-between text-xs">
-              <a
-                href="https://app.composio.dev/settings"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-emerald-600 hover:underline inline-flex items-center gap-1 text-[11px]"
-              >
-                <span>Obtenir une clé sur Composio.dev</span>
-                <ExternalLink size={10} />
-              </a>
+              <div className="flex items-center gap-3">
+                <a
+                  href="https://connect.composio.dev/mcp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-600 font-semibold hover:underline inline-flex items-center gap-1 text-[11px]"
+                >
+                  <span>Hub Composio MCP Connect</span>
+                  <ExternalLink size={10} />
+                </a>
+                <a
+                  href="https://app.composio.dev/settings"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-zinc-500 hover:underline inline-flex items-center gap-1 text-[11px]"
+                >
+                  <span>Clés API</span>
+                  <ExternalLink size={10} />
+                </a>
+              </div>
               <Button
                 size="sm"
                 variant="outline"

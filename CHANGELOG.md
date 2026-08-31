@@ -4,6 +4,25 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-31 (v2.14.0) — Résolution Crash Workspace Prospection, Liens Écosystème (OS Lite / Flow), Master Migration SQL & Composio MCP
+
+Mise en production des correctifs de stabilité, de la master migration consolidée et des liens d'écosystème :
+
+- **Résolution du Crash Écran d'Accueil / Workspace Prospection (`/overview`)** :
+  - Déplacement de la condition `workspace === 'tech'` après l'ensemble des hooks React (`useState`, `useEffect`, `useRouter`) pour éliminer définitivement l'erreur *"Rendered more hooks than during the previous render"*.
+- **Liens & Tutoriels d'Écosystème pour Tous les Workspaces** :
+  - **Section "Apps & Portails" dans la barre latérale** : Accès direct en 1 clic vers **Minerva OS Lite** (`https://minerva-os-lite-desktop.vercel.app/today`) et **Minerva Flow SaaS** (`https://minerva-flow.vercel.app/login`).
+  - **SOP-APP-01** : *Guide Pratique — Utiliser & Déployer Minerva OS Lite (Prospection & Closing)*.
+  - **SOP-APP-02** : *Guide Pratique — Vendre, Onboarder & Administrer Minerva Flow (SaaS Client)*.
+- **Master Migration SQL Déploiement 1-Shot (`supabase/deploy_production_complete.sql`)** :
+  - Consolidation exhaustive de l'ensemble des tables (profils, clients, leads, contacts, projets, tâches, propositions, factures, commissions RevOps, chat temps réel, audits QA 20-points, SOPs Académie) en un fichier SQL unique, 100% idempotent.
+- **Connexion Hub Composio Hosted MCP** :
+  - Intégration du lien direct `https://connect.composio.dev/mcp` dans le bandeau d'intégrations et la modale de configuration.
+- **Documentation Centralisée** :
+  - Création de `GEMINI.md` et refonte complète de `README.md`.
+
+---
+
 ## 2026-08-31 (v2.13.0) — Chat Canaux & Mentions @all Équipe, Retrait Total de Plane, Nouveaux Tutos GitHub/Framer/Features & Nettoyage Workspaces
 
 Mise en production des améliorations de communication d'équipe, épuration technique et nouveaux tutoriels :

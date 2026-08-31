@@ -168,9 +168,6 @@ export default function OverviewPage() {
     setShowPriorityBanner(false);
   };
 
-  if (workspace === 'tech') {
-    return <TechDashboard />;
-  }
   const [clients, setClients] = useState<Client[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -229,6 +226,10 @@ export default function OverviewPage() {
       }
     })();
   }, []);
+
+  if (workspace === 'tech') {
+    return <TechDashboard />;
+  }
 
   const todayDateStr = new Date().toLocaleDateString('fr-CA', { weekday: 'long', month: 'long', day: 'numeric' });
 

@@ -35,6 +35,7 @@ import {
   FileCheck2,
   Terminal,
   Activity,
+  ExternalLink,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -503,6 +504,34 @@ export function AppSidebar() {
             )}
           </>
         )}
+
+        {/* ── Apps & Portails Écosystème ── */}
+        <NavSection label="Apps & Portails" defaultOpen>
+          <a
+            href="https://minerva-os-lite-desktop.vercel.app/today"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between rounded-[4px] px-2 h-7 text-[12px] font-medium text-zinc-600 hover:bg-black/[0.05] hover:text-zinc-900 transition-colors group"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Target size={13} className="text-emerald-600 shrink-0" />
+              <span className="truncate">Minerva OS Lite</span>
+            </div>
+            <ExternalLink size={10} className="text-zinc-400 opacity-60 group-hover:opacity-100 shrink-0" />
+          </a>
+          <a
+            href="https://minerva-flow.vercel.app/login"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between rounded-[4px] px-2 h-7 text-[12px] font-medium text-zinc-600 hover:bg-black/[0.05] hover:text-zinc-900 transition-colors group"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Utensils size={13} className="text-amber-600 shrink-0" />
+              <span className="truncate">Minerva Flow (SaaS)</span>
+            </div>
+            <ExternalLink size={10} className="text-zinc-400 opacity-60 group-hover:opacity-100 shrink-0" />
+          </a>
+        </NavSection>
 
         {/* Aujourd'hui -- recent items, not part of the static nav catalog
             so they don't carry a favorite star. */}
