@@ -1,17 +1,36 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import Link from 'next/link';
+import {
+  Search,
+  Zap,
+  Send,
+  ExternalLink,
+  Plug,
+  Kanban,
+  CheckCircle2,
+  AlertTriangle,
+  Radio,
+  Copy,
+  Check,
+  X,
+  Play,
+  ArrowRight,
+  ShieldCheck,
+  Layers,
+  Sparkles,
+} from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Zap, Send, ExternalLink, Plug, Kanban, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { fetchClients } from '@/lib/services/supabase-data';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { AnimatedNumber } from '@/components/ui/animated-number';
+import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
@@ -20,6 +39,8 @@ const LOGO_SLUG: Record<string, string> = {
   discord: 'discord',
   microsoft_teams: 'microsoft-teams',
   google_drive: 'google-drive',
+  googledrive: 'google-drive',
+  googledocs: 'google-docs',
   dropbox: 'dropbox',
   onedrive: 'onedrive',
   github: 'github',
@@ -30,20 +51,29 @@ const LOGO_SLUG: Record<string, string> = {
   stripe: 'stripe',
   brevo: 'brevo',
   calendly: 'calendly',
+  facebook: 'facebook',
+  linkedin: 'linkedin',
+  youtube: 'youtube',
+  google_search_console: 'google-search-console',
+  apify: 'apify',
+  elevenlabs: 'elevenlabs',
+  granola_mcp: 'granola',
 };
 
-function AppLogo({ slug, name }: { slug: string; name: string }) {
+function MicroAppLogo({ slug, name }: { slug: string; name: string }) {
   const [failed, setFailed] = useState(false);
   const iconSlug = LOGO_SLUG[slug] || slug;
+
   if (failed) {
     return (
-      <div className="w-11 h-11 rounded-xl bg-mv-cream-soft border border-mv-border flex items-center justify-center shrink-0">
-        <Zap className="w-5 h-5 text-mv-green" />
+      <div className="w-6 h-6 rounded bg-zinc-100 border border-zinc-200 flex items-center justify-center shrink-0">
+        <Zap className="w-3.5 h-3.5 text-emerald-600" />
       </div>
     );
   }
+
   return (
-    <div className="w-11 h-11 rounded-xl bg-mv-surface border border-mv-border flex items-center justify-center overflow-hidden shrink-0 p-2 shadow-mv-sm">
+    <div className="w-6 h-6 rounded bg-white border border-zinc-200 flex items-center justify-center overflow-hidden shrink-0 p-0.5 shadow-2xs">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={`https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/${iconSlug}/default.svg`}
@@ -80,6 +110,10 @@ export default function IntegrationsPage() {
   const [connectingSlug, setConnectingSlug] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('All integrations');
+  const [isEnvModalOpen, setIsEnvModalOpen] = useState(false);
+  const [copiedEnv, setCopiedEnv] = useState(false);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const loadStatuses = async () => {
     setLoading(true);
@@ -90,7 +124,7 @@ export default function IntegrationsPage() {
       setStatuses(data.statuses || {});
       setComposioError(data.error || null);
     } catch {
-      setComposioError('Impossible de contacter le serveur.');
+      setComposioError('Impossible de contacter le serveur Composio.');
     } finally {
       setLoading(false);
     }
@@ -98,6 +132,20 @@ export default function IntegrationsPage() {
 
   useEffect(() => {
     loadStatuses();
+  }, []);
+
+  // Keyboard shortcut '/' to focus search input
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT');
+      if (!isInput && e.key === '/') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const categories = useMemo(() => {
@@ -108,7 +156,10 @@ export default function IntegrationsPage() {
 
   const filteredApps = apps.filter((app) => {
     const matchesCategory = activeCategory === 'All integrations' || app.category === activeCategory;
-    const matchesQuery = !query || app.name.toLowerCase().includes(query.toLowerCase());
+    const matchesQuery =
+      !query ||
+      app.name.toLowerCase().includes(query.toLowerCase()) ||
+      app.description.toLowerCase().includes(query.toLowerCase());
     return matchesCategory && matchesQuery;
   });
 
@@ -126,9 +177,9 @@ export default function IntegrationsPage() {
         return;
       }
       window.open(data.redirectUrl, '_blank', 'noopener,noreferrer');
-      toastInfo('Fenêtre ouverte', 'Complétez la connexion dans le nouvel onglet.');
+      toastInfo('Fenêtre ouverte', 'Complétez la connexion OAuth dans le nouvel onglet.');
     } catch {
-      toastError('Erreur réseau', "Impossible de contacter le serveur.");
+      toastError('Erreur réseau', 'Impossible de contacter le serveur.');
     } finally {
       setConnectingSlug(null);
     }
@@ -147,16 +198,16 @@ export default function IntegrationsPage() {
         toastError('Déconnexion refusée', data.error || 'Erreur inconnue.');
         return;
       }
-      toastSuccess('Déconnecté');
+      toastSuccess('Déconnecté', 'L’intégration a été dissociée.');
       loadStatuses();
     } catch {
-      toastError('Erreur réseau', "Impossible de contacter le serveur.");
+      toastError('Erreur réseau', 'Impossible de contacter le serveur.');
     } finally {
       setConnectingSlug(null);
     }
   };
 
-  // Webhook tester
+  // Webhook tester state
   const [testWebhookUrl] = useState('http://localhost:3000/api/webhooks/roi-event');
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
   const [testClientId, setTestClientId] = useState<string | null>(null);
@@ -183,247 +234,370 @@ export default function IntegrationsPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        toastSuccess('Webhook ROI test réussi', `Métriques mises à jour avec succès.`);
+        toastSuccess('Webhook ROI test réussi', `Métriques recalculées pour le client avec succès.`);
       } else {
         toastError('Le webhook a échoué', data.error || 'Réponse inattendue du serveur.');
       }
     } catch {
-      toastError('Erreur réseau', "Impossible de contacter le serveur.");
+      toastError('Erreur réseau', 'Impossible de contacter le serveur.');
     } finally {
       setIsTestingWebhook(false);
     }
   };
 
+  const copyEnvSnippet = () => {
+    navigator.clipboard.writeText('COMPOSIO_API_KEY=votre_cle_api_ici');
+    setCopiedEnv(true);
+    toastSuccess('Copié !', 'Snippet copié dans le presse-papier.');
+    setTimeout(() => setCopiedEnv(false), 2000);
+  };
+
   const connectedCount = apps.filter((app) => statuses[app.slug]?.connected).length;
 
   return (
-    <PageFadeIn className="space-y-4 max-w-6xl mx-auto pb-12">
-      {/* ── Compact Header Bar ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-6 h-6 rounded-[4px] bg-zinc-100 border border-mv-border flex items-center justify-center text-zinc-900 shrink-0">
-            <Plug className="w-3.5 h-3.5" />
+    <PageFadeIn className="space-y-3 max-w-6xl mx-auto pb-12 font-sans">
+      {/* ── 1. En-tête Contextuel (Toolbar 40px) ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-0.5">
+        <div className="space-y-0.5">
+          <div className="text-xs text-zinc-400 font-mono flex items-center gap-1.5">
+            <span>Minerva</span>
+            <span>/</span>
+            <span>Tech & Ingénierie</span>
+            <span>/</span>
+            <span className="text-zinc-600">Intégrations</span>
           </div>
-          <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <h1 className="text-[15px] font-semibold text-mv-ink tracking-tight truncate">Intégrations</h1>
-            {!composioError && (
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] bg-emerald-50/60 border border-emerald-200/60 text-[10.5px] font-medium text-emerald-800" style={MONO}>
-                <span className="w-1.5 h-1.5 rounded-full bg-mv-green" />
-                Composio actif
-              </span>
+          <div className="flex items-center gap-2">
+            <h1 className="text-[16px] font-semibold text-zinc-900 tracking-tight">
+              Intégrations & Écosystème API
+            </h1>
+            <span className="text-[10px] font-mono text-zinc-500 bg-zinc-100 border border-zinc-200 px-1.5 py-0.2 rounded font-medium">
+              Composio + MCP
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link
+            href="/tech"
+            className="h-7 px-2.5 text-xs font-medium border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-md inline-flex items-center gap-1.5 transition-colors shadow-2xs"
+          >
+            <span>← Console Tech</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* ── 2. Ruban Métrique Connecté (Top Strip) ── */}
+      <div className="bg-white border border-zinc-200 rounded-md px-3 py-1.5 flex flex-wrap items-center justify-between gap-3 text-[11px] font-mono shadow-xs text-zinc-600">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-zinc-900" style={MONO}>
+              {loading ? '17' : apps.length}
+            </span>
+            <span className="text-zinc-400 uppercase">DISPONIBLES</span>
+          </div>
+          <span className="text-zinc-300">•</span>
+          <div className="flex items-center gap-1.5">
+            <span className={cn('font-bold', connectedCount > 0 ? 'text-emerald-600' : 'text-zinc-900')} style={MONO}>
+              {loading ? '0' : connectedCount}
+            </span>
+            <span className="text-zinc-400 uppercase">CONNECTÉES</span>
+          </div>
+          <span className="text-zinc-300">•</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-zinc-900" style={MONO}>
+              {categories.length || 6}
+            </span>
+            <span className="text-zinc-400 uppercase">CATÉGORIES</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span
+            className={cn(
+              'w-1.5 h-1.5 rounded-full',
+              composioError ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'
             )}
-          </div>
-        </div>
-        <p className="text-xs text-mv-ink-soft">Parcourez et connectez vos applications et services favoris.</p>
-      </div>
-
-      {/* ── KPI Ribbon ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
-        <div className="grid grid-cols-3 divide-x divide-mv-border">
-          <div className="px-3.5 py-2.5 h-16 flex flex-col justify-between hover:bg-black/[0.015] transition-colors">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">Disponibles</span>
-            <div className="text-[20px] font-semibold text-mv-ink tracking-tight leading-none" style={MONO}>
-              {loading ? '—' : <AnimatedNumber value={apps.length} />}
-            </div>
-          </div>
-          <div className="px-3.5 py-2.5 h-16 flex flex-col justify-between hover:bg-black/[0.015] transition-colors">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">Connectées</span>
-            <div className="text-[20px] font-semibold text-mv-green tracking-tight leading-none" style={MONO}>
-              {loading ? '—' : connectedCount}
-            </div>
-          </div>
-          <div className="px-3.5 py-2.5 h-16 flex flex-col justify-between hover:bg-black/[0.015] transition-colors">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">Catégories</span>
-            <div className="text-[20px] font-semibold text-mv-ink tracking-tight leading-none" style={MONO}>
-              {loading ? '—' : categories.length}
-            </div>
-          </div>
+          />
+          <span className={composioError ? 'text-amber-700' : 'text-emerald-700 font-medium'}>
+            {composioError ? 'COMPOSIO ENGINE EN ATTENTE' : 'COMPOSIO ENGINE CONNECTÉ'}
+          </span>
         </div>
       </div>
 
+      {/* ── 3. Bannière d'Alerte Actionable (Composio API Key) ── */}
       {composioError && (
-        <Card className="border-mv-amber/40 bg-mv-amber-bg">
-          <div className="flex items-start gap-3 text-xs">
-            <Zap className="w-4 h-4 text-mv-amber shrink-0 mt-0.5" />
-            <div>
-              <div className="font-bold text-mv-ink">Composio non disponible</div>
-              <div className="text-mv-ink-soft mt-0.5">{composioError}</div>
-            </div>
+        <div className="text-xs bg-zinc-50 border border-zinc-200 rounded-md px-3 py-1.5 flex items-center justify-between text-zinc-700 shadow-2xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <AlertTriangle size={13} className="text-amber-600 shrink-0" />
+            <span className="truncate">
+              ⚠️ Clé <code className="font-mono bg-zinc-200/70 px-1 py-0.2 rounded text-[11px] text-zinc-800">COMPOSIO_API_KEY</code> manquante ou inactive.
+            </span>
           </div>
-        </Card>
+          <button
+            onClick={() => setIsEnvModalOpen(true)}
+            className="text-[11px] font-medium text-emerald-700 hover:text-emerald-800 hover:underline inline-flex items-center gap-1 shrink-0 cursor-pointer ml-2"
+          >
+            <span>Configurer dans les variables d'environnement →</span>
+          </button>
+        </div>
       )}
 
-      {/* Plane Workspace Dedicated Integration Card */}
-      <div className="bg-mv-surface border border-mv-border rounded-2xl p-5 shadow-mv-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-start sm:items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-mv-green text-white flex items-center justify-center shadow-mv-sm shrink-0">
-            <Kanban className="w-6 h-6" />
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-base font-bold font-display text-mv-ink">Plane Project Management</h2>
-              <Badge variant="green" className="text-[10px] font-semibold">
-                Natif & MCP
-              </Badge>
-            </div>
-            <p className="text-xs text-mv-ink-soft leading-relaxed max-w-xl">
-              Gestionnaire de projet open-source synchronisé : suivi des tickets, sprints/cycles, modules, passerelle MCP pour agents IA et webhooks bidirectionnels.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* 2-Column Layout (Shadcnblocks inspiration) */}
-      <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8 items-start">
-        {/* Left Sidebar: Search & Categories */}
-        <div className="space-y-4">
+      {/* ── 4. Layout à 2 Colonnes (Sidebar Filtres + Grille Dense d'Apps) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-3.5 items-start">
+        {/* Colonne Gauche (Filtres & Recherche) */}
+        <div className="sticky top-4 border border-zinc-200 rounded-lg p-2.5 bg-white shadow-xs space-y-2">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-mv-ink-faint absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3 h-3 text-zinc-400 absolute left-2 top-1/2 -translate-y-1/2" />
             <input
+              ref={searchInputRef}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search..."
-              className="w-full pl-8 pr-3 py-2 text-xs rounded-xl bg-mv-surface border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green shadow-mv-sm"
+              placeholder="Filtrer (/)..."
+              className="w-full h-7 pl-6 pr-2 text-xs rounded-md bg-zinc-50 border border-zinc-200 text-zinc-900 focus:outline-hidden focus:border-emerald-500 font-mono"
             />
           </div>
 
-          <div className="bg-mv-surface border border-mv-border rounded-2xl p-2 shadow-mv-sm space-y-0.5">
+          <div className="space-y-0.5 pt-1">
             <button
               onClick={() => setActiveCategory('All integrations')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+              className={cn(
+                'w-full flex items-center justify-between px-2 py-1 rounded text-xs transition-colors cursor-pointer text-left',
                 activeCategory === 'All integrations'
-                  ? 'bg-mv-cream-soft text-mv-ink font-bold shadow-mv-sm border border-mv-border/80'
-                  : 'text-mv-ink-soft hover:text-mv-ink hover:bg-mv-cream-soft/50'
-              }`}
+                  ? 'bg-zinc-100 text-zinc-900 font-semibold'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
+              )}
             >
-              <span>Toutes les intégrations</span>
-              <span className="text-[10px] text-mv-ink-faint">{apps.length}</span>
+              <span className="flex items-center gap-1.5 truncate">
+                {activeCategory === 'All integrations' && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                )}
+                Toutes les intégrations
+              </span>
+              <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
+                ({apps.length || 17})
+              </span>
             </button>
 
-            {categories.map(([cat, count]) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                  activeCategory === cat
-                    ? 'bg-mv-cream-soft text-mv-ink font-bold shadow-mv-sm border border-mv-border/80'
-                    : 'text-mv-ink-soft hover:text-mv-ink hover:bg-mv-cream-soft/50'
-                }`}
-              >
-                <span>{cat}</span>
-                <span className="text-[10px] text-mv-ink-faint">{count}</span>
-              </button>
-            ))}
+            {categories.map(([cat, count]) => {
+              const isActive = activeCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={cn(
+                    'w-full flex items-center justify-between px-2 py-1 rounded text-xs transition-colors cursor-pointer text-left',
+                    isActive
+                      ? 'bg-zinc-100 text-zinc-900 font-semibold'
+                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
+                  )}
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    {isActive && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    )}
+                    {cat}
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
+                    ({count})
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Right Column: Cards List */}
+        {/* Colonne Droite (Featured Hub + Grille 2-Colonnes) */}
         <div className="space-y-3">
-          {loading ? (
-            <SkeletonRows count={4} />
-          ) : filteredApps.length === 0 ? (
-            <Card className="py-12 text-center text-xs text-mv-ink-soft">
-              Aucune intégration trouvée pour cette recherche.
-            </Card>
-          ) : (
-            filteredApps.map((app) => {
-              const status = statuses[app.slug];
-              const isConnected = status?.connected;
-              const isBusy = connectingSlug === app.slug;
+          {/* Featured Core Hub : Plane Project Management (52px) */}
+          <div className="border border-zinc-200 rounded-lg p-2.5 bg-white shadow-xs flex items-center justify-between gap-3 h-[52px]">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-md bg-zinc-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                <Kanban className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xs font-bold text-zinc-900 truncate">Plane Project Management</h2>
+                  <span className="text-[9.5px] font-mono px-1 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded font-medium">
+                    Native & MCP
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-400 truncate max-w-md">
+                  Tickets, cycles de développement, backlog technique et synchronisation d’agents IA.
+                </p>
+              </div>
+            </div>
 
-              return (
-                <div
-                  key={app.slug}
-                  className="bg-mv-surface border border-mv-border rounded-2xl p-4 sm:p-5 shadow-mv-sm hover:border-mv-green/50 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <AppLogo slug={app.slug} name={app.name} />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-extrabold text-sm text-mv-ink font-display">{app.name}</span>
-                        {isConnected && (
-                          <Badge variant="green" className="text-[10px] py-0">
-                            <span className="w-1.5 h-1.5 rounded-full bg-mv-green" />
-                            Connecté
-                          </Badge>
-                        )}
+            <Link
+              href="/tasks"
+              className="h-6 px-2.5 text-[11px] font-medium border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800 rounded-md inline-flex items-center gap-1 shrink-0 shadow-2xs transition-colors"
+            >
+              <span>Ouvrir dans Tasks</span>
+              <ArrowRight size={10} />
+            </Link>
+          </div>
+
+          {/* Grille des Intégrations (2 Colonnes — Hauteur 48px) */}
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-12 border border-zinc-200 rounded-lg bg-white p-2.5 animate-pulse" />
+              ))}
+            </div>
+          ) : filteredApps.length === 0 ? (
+            <div className="py-10 text-center text-xs text-zinc-400 border border-zinc-200 rounded-lg bg-white">
+              Aucune intégration trouvée pour cette recherche.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              {filteredApps.map((app) => {
+                const status = statuses[app.slug];
+                const isConnected = status?.connected;
+                const isBusy = connectingSlug === app.slug;
+
+                return (
+                  <div
+                    key={app.slug}
+                    className="border border-zinc-200 hover:border-zinc-300 rounded-lg p-2.5 bg-white flex items-center justify-between gap-2 shadow-xs transition-colors h-[48px]"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <MicroAppLogo slug={app.slug} name={app.name} />
+                      <div className="min-w-0">
+                        <div className="text-[12px] font-semibold text-zinc-900 truncate">
+                          {app.name}
+                        </div>
+                        <div className="text-[10.5px] text-zinc-400 truncate max-w-[170px]" title={app.description}>
+                          {app.description}
+                        </div>
                       </div>
-                      <p className="text-xs text-mv-ink-soft mt-0.5 line-clamp-1">{app.description}</p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {app.slug === 'notion' && (
+                        <Link
+                          href="/integrations/notion"
+                          className="h-6 px-1.5 text-[10.5px] font-mono text-zinc-600 hover:text-zinc-900 border border-zinc-200 rounded hover:bg-zinc-50 inline-flex items-center"
+                          title="Gérer les pages Notion"
+                        >
+                          <ExternalLink size={10} />
+                        </Link>
+                      )}
+
+                      {isConnected ? (
+                        <div className="flex items-center gap-1">
+                          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-mono px-2 py-0.5 rounded inline-flex items-center gap-1">
+                            <CheckCircle2 size={10} />
+                            <span>Connecté</span>
+                          </span>
+                          <button
+                            onClick={() => status.connectedAccountId && handleDisconnect(app.slug, status.connectedAccountId)}
+                            disabled={isBusy}
+                            className="h-6 px-1.5 text-[10px] text-zinc-400 hover:text-rose-600 transition-colors cursor-pointer"
+                            title="Déconnecter"
+                          >
+                            <X size={11} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleConnect(app.slug)}
+                          disabled={isBusy}
+                          className="h-6 px-2.5 text-[11px] font-medium border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 rounded-md shadow-2xs inline-flex items-center transition-colors cursor-pointer"
+                        >
+                          <span>{isBusy ? '...' : 'Connecter'}</span>
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                    {app.slug === 'notion' && (
-                      <Link href="/integrations/notion">
-                        <Button variant="outline" size="sm" icon={<ExternalLink className="w-3 h-3" />}>
-                          Pages
-                        </Button>
-                      </Link>
-                    )}
-
-                    {isConnected ? (
-                      <button
-                        onClick={() => status.connectedAccountId && handleDisconnect(app.slug, status.connectedAccountId)}
-                        disabled={isBusy}
-                        className="px-3 py-1.5 rounded-xl border border-mv-border bg-mv-cream-soft text-mv-ink-soft hover:text-mv-red hover:border-mv-red/40 text-xs font-bold transition-all cursor-pointer"
-                      >
-                        {isBusy ? '...' : 'Déconnecter'}
-                      </button>
-                    ) : (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        disabled={isBusy}
-                        onClick={() => handleConnect(app.slug)}
-                        className="bg-mv-ink hover:bg-black text-white"
-                      >
-                        {isBusy ? 'Connexion...' : 'Connecter'}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
 
-      {/* Webhook Test Section (Admin) */}
+      {/* ── 5. Console de Test Webhook Compacte (Bottom Strip — 40px) ── */}
       {isAdmin && (
-        <Card
-          header={
-            <div className="flex items-center gap-2">
-              <Send className="w-4 h-4 text-mv-green" />
-              <h3 className="font-extrabold text-sm text-mv-ink uppercase tracking-wider">
-                Testeur Webhook ROI Leads (/api/webhooks/roi-event)
-              </h3>
-            </div>
-          }
-        >
-          <div className="space-y-3 text-xs">
-            <p className="text-mv-ink-soft">
-              Simule un événement d&apos;attribution de lead entrant pour recalculer automatiquement les métriques ROI du client.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="text"
-                readOnly
-                value={testWebhookUrl}
-                className="flex-1 p-2.5 rounded-xl bg-mv-cream-soft border border-mv-border font-mono text-mv-ink text-xs"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={isTestingWebhook}
-                onClick={handleTestWebhook}
-                icon={<Zap className="w-3.5 h-3.5 text-mv-green" />}
+        <div className="bg-white border border-zinc-200 rounded-lg p-3 shadow-xs space-y-2 mt-4">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 font-mono flex items-center justify-between">
+            <span>⚡ TESTEUR WEBHOOK ROI LEADS (/api/webhooks/roi-event)</span>
+            <span className="text-[10px] text-zinc-400">Simulation d'attribution de lead</span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2 items-center">
+            <input
+              type="text"
+              readOnly
+              value={testWebhookUrl}
+              onClick={(e) => (e.target as HTMLInputElement).select()}
+              className="w-full sm:flex-1 h-7 text-xs font-mono bg-zinc-50 border border-zinc-200 rounded px-2.5 text-zinc-600 select-all focus:outline-hidden"
+            />
+            <Button
+              size="sm"
+              disabled={isTestingWebhook}
+              onClick={handleTestWebhook}
+              className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-md shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer w-full sm:w-auto justify-center"
+            >
+              <Play size={11} />
+              <span>{isTestingWebhook ? 'Envoi...' : 'Déclencher test'}</span>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modale de Configuration Composio API Key ── */}
+      {isEnvModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white border border-zinc-200 rounded-xl shadow-mv-lg max-w-md w-full p-4 space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
+              <span className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+                <Plug className="w-3.5 h-3.5 text-emerald-600" />
+                Configuration de Composio API Key
+              </span>
+              <button
+                onClick={() => setIsEnvModalOpen(false)}
+                className="text-zinc-400 hover:text-zinc-700 cursor-pointer"
               >
-                {isTestingWebhook ? 'Envoi...' : 'Déclencher test'}
+                <X size={14} />
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-600 leading-relaxed">
+              Pour activer les connexions automatiques à Gmail, Google Drive, Stripe et GitHub, ajoutez votre clé dans votre fichier <code className="font-mono text-zinc-800 bg-zinc-100 px-1 py-0.2 rounded">.env.local</code> ou les variables Vercel :
+            </p>
+
+            <div className="p-2.5 rounded bg-zinc-900 text-zinc-100 font-mono text-xs flex items-center justify-between">
+              <span className="truncate">COMPOSIO_API_KEY=votre_cle_api</span>
+              <button
+                onClick={copyEnvSnippet}
+                className="text-zinc-400 hover:text-white transition-colors cursor-pointer shrink-0 ml-2"
+                title="Copier le snippet"
+              >
+                {copiedEnv ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+              </button>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between text-xs">
+              <a
+                href="https://app.composio.dev/settings"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-600 hover:underline inline-flex items-center gap-1 text-[11px]"
+              >
+                <span>Obtenir une clé sur Composio.dev</span>
+                <ExternalLink size={10} />
+              </a>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsEnvModalOpen(false)}
+                className="h-7 text-xs"
+              >
+                Fermer
               </Button>
             </div>
           </div>
-        </Card>
+        </div>
       )}
     </PageFadeIn>
   );

@@ -6,6 +6,7 @@ import { ToastProvider } from '@/components/providers/ToastProvider';
 import { ConfirmProvider } from '@/components/providers/ConfirmProvider';
 import { CurrentUserProvider } from '@/components/providers/CurrentUserProvider';
 import { AppPermissionsProvider } from '@/components/providers/AppPermissionsProvider';
+import { NativeNotificationProvider } from '@/components/providers/NativeNotificationProvider';
 
 // v3 (2026-08-16): matched against Reach/Flow -- Playfair Display for
 // headings (font-display), Inter for body/UI. Dark mode removed (see
@@ -120,7 +121,9 @@ export default function RootLayout({
             <CurrentUserProvider>
               <AppPermissionsProvider>
                 <SupabaseRealtimeProvider>
-                  {children}
+                  <NativeNotificationProvider>
+                    {children}
+                  </NativeNotificationProvider>
                 </SupabaseRealtimeProvider>
               </AppPermissionsProvider>
             </CurrentUserProvider>

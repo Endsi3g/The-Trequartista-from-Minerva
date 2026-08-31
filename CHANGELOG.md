@@ -4,6 +4,28 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-31 (v2.12.0) — Console Tech Haute Densité, Matrice QA 20-Points, Grille d'Intégrations & Notifications Natives
+
+Mise en production de la refonte DevOps et du système de notifications temps réel :
+
+- **Console Tech & Ingénierie Haute Densité (`/tech`)** :
+  - Transformation monolithique inspirée de Vercel & Linear : ruban de télémétrie 4-colonnes, split-view 2-colonnes (2/3 projets et tâches, 1/3 accès DevOps).
+  - DataTable des tâches techniques avec **saisie inline ultra-rapide au clavier (touche `C`)** et raccourci global `⌘ + P` vers le QA Runner.
+- **Matrice Qualité QA 20-Points Obligatoire (`QualityChecklistRunner`)** :
+  - Data grid technique compacte de 34px par ligne avec sévérité critique bloquante.
+  - Actions en 1 clic (`[ Tester RLS ]`, `[ Ping API ]`, `[ PageSpeed ]`) avec auto-validation.
+  - Raccourcis clavier `⌘ + Shift + V` (Tout valider) et `⌘ + Entrée` (Enregistrer & déployer).
+- **Annuaires d'Intégrations & Écosystème API (`/integrations`)** :
+  - Grille 2-colonnes dense de 48px pour les 17 applications Composio avec logos vectoriels.
+  - Sidebar sticky avec champ de recherche rapide (raccourci `/`) et filtres de catégories.
+  - Featured hub Plane Project Management et micro-bandeau de configuration de `COMPOSIO_API_KEY`.
+  - Testeur compact de Webhook ROI Leads (`/api/webhooks/roi-event`).
+- **Système de Notifications Natives du Navigateur (`NativeNotificationProvider`)** :
+  - Intégration de la Web Notification API couplée à un carillon audio doux via Web Audio API.
+  - 4 déclencheurs temps réel via Supabase Realtime : nouveaux messages, tâches complétées, arrivées de membres et passage au statut disponible, avec filtrage des auto-notifications.
+
+---
+
 ## 2026-08-28 (v2.11.0) — Console RevOps, Équilibrage de Charge & Moteur de Commissions Commerciales
 
 Mise en production de la suite complète **RevOps, Gestion de Capacité d'Équipe & Commissions Hybrides** :
