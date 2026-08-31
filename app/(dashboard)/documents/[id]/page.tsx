@@ -45,6 +45,7 @@ import { useToast } from '@/components/providers/ToastProvider';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 import { BlockEditor } from '@/components/documents/BlockEditor';
+import { AiPageToolbar } from '@/components/documents/AiPageToolbar';
 import { DocumentVersionHistory } from '@/components/documents/DocumentVersionHistory';
 import { blocksToMarkdown, markdownToBlocks, blocksToPlainText, generateBlockId } from '@/components/documents/utils';
 import { cn } from '@/lib/utils';
@@ -492,16 +493,36 @@ export default function DocumentEditorPage() {
         </div>
       </div>
 
+      {/* ── 2.5 Notion AI Document-Level Actions ── */}
+      <div className="bg-gradient-to-r from-emerald-50/60 via-zinc-50/60 to-transparent dark:from-emerald-950/20 dark:via-zinc-900/40 p-3 rounded-[6px] border border-emerald-200/50 dark:border-emerald-800/40 flex items-center justify-between gap-4">
+        <AiPageToolbar
+          blocks={blocks}
+          documentTitle={title}
+          onApplyBlocks={(newBlocks, mode) => {
+            if (mode === 'prepend') {
+              handleBlocksChange([...newBlocks, ...blocks]);
+              toastSuccess('Contenu IA inséré en tête de page');
+            } else if (mode === 'append') {
+              handleBlocksChange([...blocks, ...newBlocks]);
+              toastSuccess('Contenu IA inséré en fin de page');
+            } else {
+              handleBlocksChange(newBlocks);
+              toastSuccess('Document remplacé par le contenu IA');
+            }
+          }}
+        />
+      </div>
+
       {/* ── 3. Main Document Canvas ── */}
-      <div className="bg-white border border-zinc-200 rounded-[6px] shadow-2xs p-6 md:p-10 min-h-[600px] text-zinc-900 print:border-0 print:p-0 print:shadow-none">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[6px] shadow-2xs p-6 md:p-10 min-h-[600px] text-zinc-900 dark:text-zinc-100 print:border-0 print:p-0 print:shadow-none">
         {viewMode === 'blocks' ? (
-          <BlockEditor blocks={blocks} onChange={handleBlocksChange} />
+          <BlockEditor blocks={blocks} onChange={handleBlocksChange} workspaceContext="documents" />
         ) : (
-          <div className="prose prose-zinc max-w-none space-y-4">
-            <h1 className="text-2xl font-bold font-display tracking-tight text-zinc-900 border-b border-zinc-200 pb-2">
+          <div className="prose prose-zinc dark:prose-invert max-w-none space-y-4">
+            <h1 className="text-2xl font-bold font-display tracking-tight text-zinc-900 dark:text-zinc-100 border-b border-zinc-200 dark:border-zinc-800 pb-2">
               {title}
             </h1>
-            <BlockEditor blocks={blocks} onChange={() => {}} readOnly={true} />
+            <BlockEditor blocks={blocks} onChange={() => {}} readOnly={true} workspaceContext="documents" />
           </div>
         )}
       </div>

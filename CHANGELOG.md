@@ -4,6 +4,25 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-08-31 (v2.17.0) — Suite Notion AI Universelle (Streaming SSE, Commande `/ai`, Menu Sélection & Générateur SOPs)
+
+Mise en production de la suite complète **Notion AI native**, propulsée par **Google Gemini (3.6 Flash)** avec streaming SSE temps réel, intégrée à l'éditeur de blocs et à l'Académie :
+
+- **Expérience Éditeur Notion AI (`BlockEditor`)** :
+  - **Commande Slash `/ai` & Déclencheur Espace** : Saisie d'invites IA directement dans le flux du document avec prévisualisation streaming en direct et conversion automatique Markdown $\leftrightarrow$ `DocumentBlock[]`.
+  - **Menu Flottant Contextuel sur Sélection (`AiSelectionMenu`)** : Raccourcis 1-clic (*Améliorer la rédaction*, *Raccourcir*, *Développer / Allonger*, *Corriger grammaire & orthographe*, *Changer le ton [Pro, Direct, Commercial, Pédagogique]*, *Traduire [EN, FR, ES]*, *Résumer*) + champ de prompt libre personnalisé.
+  - **Barre d'Action Post-Génération (`AiStreamingPreview`)** : Boutons interactifs *[ ✨ Conserver ]*, *[ ➕ Insérer en dessous ]*, *[ 🔄 Réessayer ]*, *[ ✂️ Plus court ]*, *[ 📝 Plus long ]*, *[ ✕ Rejeter ]*.
+- **Actions Globales de Page (`AiPageToolbar`)** :
+  - Barre d'actions en tête de document et de SOP : *[ ✨ Résumer la page ]* (synthèse exécutive en 5 bullets), *[ 📋 Extraire les tâches ]* (todos checklist interactifs) et *[ 🌐 Traduire ]*.
+  - Modale de prévisualisation live avec options d'insertion en 1 clic (*En tête de page*, *En fin de page*, *Créer un nouveau document*).
+- **Générateur Automatique de SOPs d'Académie (`AiSopGeneratorModal`)** :
+  - Assistant de rédaction de SOPs en 1 clic dans `/academy/new` appliquant automatiquement le standard Minerva (*Objectif stratégique*, *Prérequis & accès*, *Procédure pas-à-pas*, *Checklist de contrôle qualité*, *Pièges & Bonnes pratiques*).
+- **Backend de Streaming & Observabilité Supabase** :
+  - Nouvelle route API SSE `/api/ai/stream` avec gestion résiliente des tokens, interruptions et fallbacks.
+  - Table Supabase `ai_generation_logs` avec RLS pour tracer les actions, modèles, latences, longueurs et utilisateurs.
+
+---
+
 ## 2026-08-31 (v2.16.0) — Widget Flottant IA Universel (⌘J), Lecteur Audio Chat & Impression PDF Devis
 
 Mise en production des fonctionnalités de productivité avancée, audio et PDF officiel :

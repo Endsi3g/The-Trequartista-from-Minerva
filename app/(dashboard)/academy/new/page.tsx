@@ -11,6 +11,8 @@ import { useToast } from '@/components/providers/ToastProvider';
 import { useAppPermissions } from '@/components/providers/AppPermissionsProvider';
 import { VideoUploadField } from '@/components/media/VideoUploadField';
 import { BlockEditor } from '@/components/documents/BlockEditor';
+import { AiSopGeneratorModal } from '@/components/academy/AiSopGeneratorModal';
+import { Sparkles } from 'lucide-react';
 import type { AcademySOP, DocumentBlock } from '@/lib/types';
 
 let blockIdCounter = 0;
@@ -25,9 +27,10 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export default function NewSopPage() {
   const router = useRouter();
-  const { toastError } = useToast();
+  const { toastSuccess, toastError } = useToast();
   const { can, loading: permissionsLoading } = useAppPermissions();
   const [saving, setSaving] = useState(false);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<AcademySOP['category']>('Onboarding');
@@ -85,10 +88,33 @@ export default function NewSopPage() {
         <ArrowLeft className="w-3.5 h-3.5" /> Retour à l&apos;académie
       </Link>
 
-      <div>
-        <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">Nouvelle SOP</h1>
-        <p className="text-sm text-mv-ink-soft mt-1">Documente une procédure pour l&apos;équipe.</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-mv-ink tracking-tight font-display">Nouvelle SOP</h1>
+          <p className="text-sm text-mv-ink-soft mt-1">Documente une procédure pour l&apos;équipe.</p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setAiModalOpen(true)}
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Rédiger avec Notion AI</span>
+        </button>
       </div>
+
+      <AiSopGeneratorModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        onApply={(data) => {
+          setTitle(data.title);
+          setDescription(data.description);
+          setCategory(data.category);
+          setBlocks(data.blocks);
+          toastSuccess('SOP générée par l\'IA injectée dans le formulaire !');
+        }}
+      />
 
       <form onSubmit={handleCreate} className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
         <div className="space-y-6">

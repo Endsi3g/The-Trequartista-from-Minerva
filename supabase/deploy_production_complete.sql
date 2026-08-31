@@ -1,5 +1,5 @@
 -- ============================================================================
--- MINERVA TREQUARTISTA — MASTER DÉPLOIEMENT PRODUCTION CONSOLIDÉ (v2.14.0)
+-- MINERVA TREQUARTISTA — MASTER DÉPLOIEMENT PRODUCTION CONSOLIDÉ (v2.17.0)
 -- 
 -- Ce script unique regroupe l'intégralité du schéma de base de données,
 -- des tables, contraintes, triggers, politiques de sécurité RLS et données
@@ -534,7 +534,47 @@ DROP POLICY IF EXISTS "Acces academy membres" ON public.academy_sops;
 CREATE POLICY "Acces academy membres" ON public.academy_sops
     FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
--- ── 15. Realtime Publication pour Synchronisation Instantanée ───────────────
+-- ── 15. Télémétrie & Logs Notion AI ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.ai_generation_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    workspace TEXT DEFAULT 'general',
+    action TEXT NOT NULL,
+    model TEXT NOT NULL DEFAULT 'gemini-3.6-flash',
+    prompt_preview TEXT,
+    input_length INT DEFAULT 0,
+    output_length INT DEFAULT 0,
+    duration_ms INT DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'success',
+    error_message TEXT,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.ai_generation_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Members can insert AI logs" ON public.ai_generation_logs;
+CREATE POLICY "Members can insert AI logs"
+    ON public.ai_generation_logs
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Members can view own AI logs" ON public.ai_generation_logs;
+CREATE POLICY "Members can view own AI logs"
+    ON public.ai_generation_logs
+    FOR SELECT
+    TO authenticated
+    USING (
+        user_id = auth.uid()
+        OR EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.role IN ('admin', 'manager')
+        )
+    );
+
+-- ── 16. Realtime Publication pour Synchronisation Instantanée ───────────────
 DO $$
 BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.team_chat_messages;
@@ -560,5 +600,5 @@ EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- ============================================================================
--- FIN DU MASTER SCRIPT CONSOLIDÉ (v2.14.0)
+-- FIN DU MASTER SCRIPT CONSOLIDÉ (v2.17.0)
 -- ============================================================================

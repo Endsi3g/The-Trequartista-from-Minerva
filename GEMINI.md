@@ -1,6 +1,6 @@
 # Minerva Trequartista — Guide Technique & Directives IA (GEMINI.md)
 
-**Version du Système :** v2.13.0  
+**Version du Système :** v2.17.0  
 **Stack Principale :** Next.js 16 (App Router) • Supabase (PostgreSQL + RLS + Realtime) • Tailwind CSS • TypeScript Strict Mode
 
 ---
@@ -37,12 +37,14 @@ Le schéma complet de la base de données est consolidé en un script unique et 
 - `clients` : Comptes clients avec MRR et jeton de portail.
 - `leads` : Pipeline de vente avec étapes de conversion.
 - `projects` & `tasks` : Gestion des projets et tâches techniques.
+- `documents` : Documents et wikis avec hiérarchie de blocs `DocumentBlock[]`.
 - `proposals` : Propositions commerciales avec signature électronique (Canvas SVG) et acompte Stripe 50%.
 - `invoices` : Factures générées automatiquement avec TPS/TVQ.
 - `team_commissions` : Moteur de commissions RevOps (10% Setup + 5% MRR + multiplicateur quota 1.25x).
 - `team_chat_messages` : Messagerie d'équipe temps réel avec canaux thématiques (`#général`, `#annonces`) et mentions `@all`.
 - `tech_qa_audits` : Audits d'assurance qualité 20-points pré-déploiement.
 - `academy_sops` : Procédures opérationnelles standardisées et cours interactifs.
+- `ai_generation_logs` : Télémétrie et logs d'audit des opérations Notion AI (actions, modèles, durées, tokens).
 
 ---
 

@@ -25,6 +25,7 @@ import {
   Info,
 } from 'lucide-react';
 import { BlockEditor } from '@/components/documents/BlockEditor';
+import { AiPageToolbar } from '@/components/documents/AiPageToolbar';
 import { VideoAssetPlayer } from '@/components/media/VideoAssetPlayer';
 import { createClient } from '@/lib/supabase/client';
 import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
@@ -347,11 +348,37 @@ export default function SopDetailPage() {
         </Card>
       )}
 
+      {/* ── 3.5 Notion AI Actions on this SOP ── */}
+      {sop.content_json?.blocks && sop.content_json.blocks.length > 0 && (
+        <div className="bg-gradient-to-r from-emerald-50/60 via-zinc-50/60 to-transparent dark:from-emerald-950/20 dark:via-zinc-900/40 p-3 rounded-xl border border-emerald-200/50 dark:border-emerald-800/40 flex items-center justify-between gap-4">
+          <AiPageToolbar
+            blocks={sop.content_json.blocks}
+            documentTitle={sop.title}
+            onApplyBlocks={async (newBlocks) => {
+              // Create a new scratch document from AI extraction
+              try {
+                await addDocument(
+                  `Extrait IA : ${sop.title}`,
+                  userId || null,
+                  {
+                    category: 'sop',
+                    contentJson: { blocks: newBlocks },
+                  }
+                );
+                toastSuccess('Document d\'équipe créé avec le contenu IA extrait !');
+              } catch {
+                toastError('Erreur', 'Impossible de créer le document.');
+              }
+            }}
+          />
+        </div>
+      )}
+
       {/* ── 4. Main Content (BlockEditor, same rendering as /documents) ── */}
       <Card className="bg-mv-surface border-mv-border rounded-xl p-6 sm:p-10 shadow-xs space-y-8">
         <div className="text-mv-ink leading-relaxed">
           {sop.content_json?.blocks && sop.content_json.blocks.length > 0 ? (
-            <BlockEditor blocks={sop.content_json.blocks} onChange={() => {}} readOnly />
+            <BlockEditor blocks={sop.content_json.blocks} onChange={() => {}} readOnly workspaceContext="academy" />
           ) : (
             <div className="flex items-center gap-2 text-xs text-mv-ink-faint py-8 justify-center">
               <Info className="w-3.5 h-3.5" />

@@ -13,6 +13,24 @@ import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 
 const STATIC_ENTRIES: ChangelogEntry[] = [
   {
+    id: 'v2-17-0',
+    version: '2.17.0',
+    title: 'Suite Notion AI Universelle — Streaming Temps Réel, Commande /ai, Menu Sélection & Générateur SOPs (v2.17.0)',
+    body: `Mise en production de la suite complète Notion AI intégrée à l'éditeur de blocs de Minerva Trequartista, propulsée par Google Gemini avec streaming SSE fluide en temps réel. Cette version introduit la commande slash /ai, le déclencheur d'espace pour l'invite IA, un menu contextuel de sélection pour la réécriture et le changement de ton, des actions globales de résumé et extraction de tâches sur les documents et l'Académie, ainsi qu'un générateur de SOPs assisté par IA.`,
+    included_items: [
+      'Commande Slash /ai & Déclencheur Espace (BlockEditor) : Saisie instantanée d\'invites IA directement dans les documents d\'équipe avec prévisualisation streaming en direct et conversion automatique Markdown <-> Blocks.',
+      'Menu Contextuel Flottant sur Sélection (AiSelectionMenu) : Améliorer la rédaction, raccourcir, développer, corriger grammaire & orthographe, changer de ton (Professionnel, Direct, Persuasif, Pédagogique) et traduire (FR, EN, ES) en 1 clic.',
+      'Barre d\'Action Post-Génération Interactive (AiStreamingPreview) : Boutons Conserver, Insérer en dessous, Réessayer, Plus court, Plus long ou Rejeter la proposition.',
+      'Actions Globales de Page & SOPs (AiPageToolbar) : Résumé exécutif en 5 points clés, extraction automatique de la checklist de tâches (todos) et traduction de pages entières.',
+      'Générateur de SOPs IA dans l\'Académie (AiSopGeneratorModal) : Création instantanée de procédures complètes respectant le standard Minerva (Objectif, Prérequis, Pas-à-pas, Checklist QA, Pièges fréquents).',
+      'Télémétrie & Logs Supabase (ai_generation_logs) : Suivi des durées, tokens estimés, actions et statut de chaque génération avec politiques de sécurité RLS.',
+    ],
+    image_url: '/changelog/minerva-flow-v2-5-0.png',
+    created_at: new Date().toISOString(),
+    created_by: 'system',
+    author_name: 'Minerva Core Team',
+  },
+  {
     id: 'v2-5-0',
     version: '2.5.0',
     title: 'Minerva-Flow Expansion, Multi-Suppression & Toolkit Opérationnel (v2.5.0)',
