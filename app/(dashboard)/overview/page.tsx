@@ -22,6 +22,7 @@ import {
   Layers,
   HelpCircle,
   Filter,
+  X,
 } from 'lucide-react';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { fetchClients, fetchLeads, fetchProjects, fetchVoiceCalls, fetchTasks } from '@/lib/services/supabase-data';
@@ -33,6 +34,8 @@ import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 const HAIRLINE = 'border-mv-border';
+const WELCOME_BANNER_KEY = 'mv-overview-welcome-dismissed';
+const PRIORITY_BANNER_KEY = 'mv-overview-priority-dismissed';
 
 const STAGE_ORDER: { key: string; label: string }[] = [
   { key: 'nouveau', label: 'Nouveau' },
@@ -147,6 +150,23 @@ export default function OverviewPage() {
   const router = useRouter();
   const { fullName, workspace, role } = useCurrentUser();
   const [overviewTab, setOverviewTab] = useState<'metrics' | 'hub'>('metrics');
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
+  const [showPriorityBanner, setShowPriorityBanner] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!localStorage.getItem(WELCOME_BANNER_KEY)) setShowWelcomeBanner(true);
+    if (!localStorage.getItem(PRIORITY_BANNER_KEY)) setShowPriorityBanner(true);
+  }, []);
+
+  const dismissWelcomeBanner = () => {
+    localStorage.setItem(WELCOME_BANNER_KEY, '1');
+    setShowWelcomeBanner(false);
+  };
+  const dismissPriorityBanner = () => {
+    localStorage.setItem(PRIORITY_BANNER_KEY, '1');
+    setShowPriorityBanner(false);
+  };
 
   if (workspace === 'tech') {
     return <TechDashboard />;
@@ -307,7 +327,15 @@ export default function OverviewPage() {
   return (
     <PageFadeIn className="space-y-4 max-w-7xl mx-auto pb-10">
       {/* ── 0. Welcome & Orientation Banner (Notion Hub) ── */}
-      <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border border-zinc-800 rounded-[8px] p-4 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {showWelcomeBanner && (
+      <div className="relative bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border border-zinc-800 rounded-[8px] p-4 pr-9 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <button
+          onClick={dismissWelcomeBanner}
+          aria-label="Fermer la bannière"
+          className="absolute right-2 top-2 p-1 rounded text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-8 h-8 rounded-[6px] bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
             <Compass className="w-4 h-4" />
@@ -342,6 +370,7 @@ export default function OverviewPage() {
           </Link>
         </div>
       </div>
+      )}
 
       {/* ── 1. Discrete Context Bar & Tab Switcher ── */}
       <div className="flex items-center justify-between flex-wrap gap-x-4 gap-y-2">
@@ -384,7 +413,15 @@ export default function OverviewPage() {
       {overviewTab === 'hub' ? (
         <div className="space-y-4">
           {/* Priorité du mois Banner */}
-          <div className="bg-gradient-to-br from-zinc-900 via-zinc-850 to-zinc-900 border border-zinc-700/80 rounded-[8px] p-5 text-white shadow-sm space-y-3">
+          {showPriorityBanner && (
+          <div className="relative bg-gradient-to-br from-zinc-900 via-zinc-850 to-zinc-900 border border-zinc-700/80 rounded-[8px] p-5 pr-9 text-white shadow-sm space-y-3">
+            <button
+              onClick={dismissPriorityBanner}
+              aria-label="Fermer la bannière"
+              className="absolute right-2 top-2 p-1 rounded text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
@@ -405,6 +442,7 @@ export default function OverviewPage() {
               <strong>Objectif #1 :</strong> Finaliser les SOPs &amp; Training Courses pour garantir un <strong>onboarding en 30 minutes</strong> chrono pour tout nouveau membre d’équipe et recentrer le fondateur sur la programmation (4h+ de code/jour).
             </p>
           </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
             {/* Left Col (Span 2) */}
