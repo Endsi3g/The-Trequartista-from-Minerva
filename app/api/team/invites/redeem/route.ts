@@ -14,7 +14,7 @@ function getAdminClient() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { token, userId } = body;
+    const { token, userId, phone, instagramUrl } = body;
 
     if (!token || !userId) {
       return NextResponse.json({ success: false, error: 'Token ou identifiant utilisateur manquant' }, { status: 400 });
@@ -49,6 +49,11 @@ export async function POST(req: NextRequest) {
       custom_role_id: invite.custom_role_id,
       workspace: workspaceTarget,
     };
+    // Only ever set when actively filled -- avoids a 400 on the whole save
+    // if the `phone`/`instagram_url` migration hasn't landed live yet
+    // (same pattern as addClient/updateClient's optional-field stripping).
+    if (phone) profileUpdate.phone = phone;
+    if (instagramUrl) profileUpdate.instagram_url = instagramUrl;
 
     // 3. Update profile with resilient retry if workspace constraint check fails
     let { error: profileError } = await supabase
@@ -58,6 +63,15 @@ export async function POST(req: NextRequest) {
 
     if (profileError && (profileError.code === '23514' || profileError.message?.includes('workspace_check'))) {
       delete profileUpdate.workspace;
+      const retryRes = await supabase.from('profiles').update(profileUpdate).eq('id', userId);
+      profileError = retryRes.error;
+    }
+
+    // If the phone/instagram columns themselves aren't live yet, retry
+    // once without them rather than failing the whole invite redemption.
+    if (profileError && (profileError.code === 'PGRST204' || profileError.message?.includes('phone') || profileError.message?.includes('instagram_url'))) {
+      delete profileUpdate.phone;
+      delete profileUpdate.instagram_url;
       const retryRes = await supabase.from('profiles').update(profileUpdate).eq('id', userId);
       profileError = retryRes.error;
     }

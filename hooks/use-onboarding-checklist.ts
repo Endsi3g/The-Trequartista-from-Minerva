@@ -27,12 +27,20 @@ export function useOnboardingChecklist() {
         return;
       }
 
-      const [{ data: profile }, { data: notion }, allSops, completedSopIds] = await Promise.all([
-        supabase.from('profiles').select('full_name, avatar_url').eq('id', user.id).maybeSingle(),
+      const [profileResult, { data: notion }, allSops, completedSopIds] = await Promise.all([
+        supabase.from('profiles').select('full_name, avatar_url, phone').eq('id', user.id).maybeSingle(),
         supabase.from('notion_config').select('id').eq('user_id', user.id).maybeSingle(),
         fetchAcademySops(),
         fetchCompletedSopIds(user.id),
       ]);
+      // `phone` ships in a migration that may not be deployed yet -- an
+      // explicit select naming a missing column errors the whole query,
+      // so fall back to the base columns rather than losing the
+      // full_name/avatar_url "profile" step too.
+      let profile = profileResult.data;
+      if (profileResult.error) {
+        ({ data: profile } = await supabase.from('profiles').select('full_name, avatar_url').eq('id', user.id).maybeSingle());
+      }
 
       const notifGranted =
         typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted';
@@ -51,6 +59,12 @@ export function useOnboardingChecklist() {
           key: 'profile',
           label: 'Compléter ton profil (nom et photo)',
           done: !!(profile?.full_name && profile?.avatar_url),
+          href: '/profil',
+        },
+        {
+          key: 'contact',
+          label: 'Ajouter ton numéro de téléphone',
+          done: !!(profile as { phone?: string | null } | null)?.phone,
           href: '/profil',
         },
         {

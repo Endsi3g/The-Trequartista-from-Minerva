@@ -299,7 +299,7 @@ interface MentionItem {
       type: 'dm',
       id: dmChannelId,
       label: member.full_name,
-      sublabel: member.email,
+      sublabel: member.phone ? `${member.email} · ${member.phone}` : member.email,
       memberId: member.id,
     });
   };

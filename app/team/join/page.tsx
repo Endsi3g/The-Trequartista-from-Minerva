@@ -32,6 +32,8 @@ function JoinForm() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -76,7 +78,7 @@ function JoinForm() {
       return;
     }
 
-    const ok = await redeemTeamInvite(token, data.user.id);
+    const ok = await redeemTeamInvite(token, data.user.id, phone.trim(), instagramUrl.trim() || undefined);
     setLoading(false);
 
     if (!ok) {
@@ -152,6 +154,28 @@ function JoinForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-3.5 py-2.5 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:border-mv-green font-mono"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-mv-ink">Numéro de téléphone</label>
+          <input
+            type="tel"
+            required
+            placeholder="514 555-0123"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full px-3.5 py-2.5 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:border-mv-green"
+          />
+          <p className="text-[10.5px] text-mv-ink-faint">Pour que l'équipe puisse vous joindre facilement.</p>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-mv-ink">Instagram (optionnel)</label>
+          <input
+            type="url"
+            placeholder="https://instagram.com/votre_compte"
+            value={instagramUrl}
+            onChange={(e) => setInstagramUrl(e.target.value)}
+            className="w-full px-3.5 py-2.5 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:border-mv-green"
           />
         </div>
         <button
