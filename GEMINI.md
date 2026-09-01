@@ -8,7 +8,7 @@
 ## 1. Vue d'Ensemble & Écosystème Minerva
 
 Minerva Trequartista est l'ERP et système d'exploitation central de l'agence Minerva. Il communique avec 2 applications externes :
-1. **Minerva OS Lite (Desktop / Mobile)** : `https://minerva-os-lite-desktop.vercel.app/today`
+1. **Minerva Reach (Desktop / Mobile)** : `https://minerva-os-lite-desktop.vercel.app/today`
    - Application de routine quotidienne et de qualification de leads terrain.
 2. **Minerva Flow (SaaS Client)** : `https://minerva-flow.vercel.app/login`
    - Produit SaaS de commande en ligne et QR code vendu aux restaurateurs et commerçants.

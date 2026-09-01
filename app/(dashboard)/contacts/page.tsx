@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { ShareNetworkPanel } from '@/components/contacts/ShareNetworkPanel';
 import { fetchContacts } from '@/lib/services/supabase-data';
-import { CONTACT_STATUS_OPTIONS } from '@/lib/constants/contacts';
+import { CONTACT_STATUS_OPTIONS, STALE_CONTACT_REMINDER_DAYS } from '@/lib/constants/contacts';
 import type { Contact } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -19,8 +19,12 @@ const STATUS_MAP = Object.fromEntries(CONTACT_STATUS_OPTIONS.map((o) => [o.value
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
 function isFollowUpDue(contact: Contact): boolean {
-  if (!contact.follow_up_date) return false;
-  return new Date(contact.follow_up_date).getTime() <= Date.now();
+  if (contact.status !== 'a_contacter') return false;
+  if (contact.follow_up_date) return new Date(contact.follow_up_date).getTime() <= Date.now();
+  // No follow-up date set -- fall back to age since creation, otherwise a
+  // contact never manually scheduled is never flagged no matter how old.
+  const staleThreshold = Date.now() - STALE_CONTACT_REMINDER_DAYS * 24 * 60 * 60 * 1000;
+  return new Date(contact.created_at).getTime() <= staleThreshold;
 }
 
 export default function ContactsPage() {

@@ -1,3 +1,12 @@
+// A contact left at status 'a_contacter' with no manually-set follow_up_date
+// used to never trigger a reminder, no matter its age (the cron and the UI
+// due-badge both only checked follow_up_date). Contacts are rarely given an
+// explicit follow-up date at creation, so this made the reminder feature
+// silently inert for most of them. Both isFollowUpDue() below and the
+// contact-reminders cron treat "no date set" as due after this many days
+// since creation.
+export const STALE_CONTACT_REMINDER_DAYS = 7;
+
 export const SECTOR_OPTIONS = [
   'Restauration & Café',
   'Bâtiment & Rénovation',

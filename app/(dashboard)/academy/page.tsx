@@ -16,14 +16,7 @@ import {
   ChevronUp,
   FolderOpen,
   X,
-  Sparkles,
-  Zap,
-  Target,
-  UtensilsCrossed,
-  Film,
-  Building2,
   Filter,
-  Layers,
   Bot,
   Cpu,
   Terminal,
@@ -53,7 +46,8 @@ const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantN
 export default function AcademyPage() {
   const router = useRouter();
   const { can } = useAppPermissions();
-  const { id: userId } = useCurrentUser();
+  const { id: userId, workspace, role } = useCurrentUser();
+  const isTechCursusVisible = role === 'admin' || workspace === 'tech';
   const [sops, setSops] = useState<AcademySOP[]>([]);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,17 +81,6 @@ export default function AcademyPage() {
     [sops]
   );
   const onboardingDoneCount = onboardingPath.filter((s) => completedIds.includes(s.id)).length;
-
-  const pillarSopIds = useMemo(
-    () => ({
-      master: findSopIdByTitle(sops, 'Système Anti-Friction'),
-      flow: findSopIdByTitle(sops, 'Pilier 1 (Flow)'),
-      reach: findSopIdByTitle(sops, 'Pilier 2 (Reach)'),
-      agence: findSopIdByTitle(sops, 'Pilier 3 (Agence)'),
-      media: findSopIdByTitle(sops, 'Pilier 4'),
-    }),
-    [sops]
-  );
 
   // Keyboard shortcut: 'C' to create new SOP, '/' to focus search
   useEffect(() => {
@@ -300,117 +283,8 @@ export default function AcademyPage() {
         </div>
       )}
 
-      {/* ── 2. Hero Card: SOP Fondatrice Anti-Friction (Architecture d'Offre 4 Piliers) ── */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 border border-zinc-800 rounded-[8px] p-5 sm:p-6 text-white shadow-md">
-        <div className="relative z-10 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full">
-                <Sparkles className="w-3 h-3 text-emerald-400" />
-                <span>SOP Fondatrice & Stratégie Directrice</span>
-              </span>
-              <span className="text-[11px] font-mono text-zinc-400 flex items-center gap-1" style={MONO}>
-                <Clock className="w-3 h-3 text-zinc-400" />
-                <span>15 min</span>
-              </span>
-            </div>
-
-            <span className="text-[11px] text-zinc-400 font-medium">
-              Règle d’or : <span className="text-zinc-200 font-semibold">Donner d’abord, demander ensuite</span>
-            </span>
-          </div>
-
-          <div className="space-y-1.5 max-w-3xl">
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2">
-              <span>MINERVA — Système Anti-Friction : Architecture d’Offre Complète</span>
-            </h2>
-            <p className="text-xs sm:text-[13px] text-zinc-300 leading-relaxed">
-              Le framework directeur qui neutralise les 4 failles critiques (Friction de donnée, Rapport poussière, Peur opérationnelle, Absence de passerelle) à travers les 4 piliers de l’agence.
-            </p>
-          </div>
-
-          {/* 4 Pillars Interactive Jump Pills */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-            <Link
-              href={pillarSopIds.flow ? `/academy/${pillarSopIds.flow}` : '/academy'}
-              className="p-2.5 rounded-[6px] bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex flex-col gap-1 group cursor-pointer"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1">
-                  <UtensilsCrossed className="w-3 h-3 text-amber-400" />
-                  <span>1. Minerva Flow</span>
-                </span>
-                <ArrowRight className="w-2.5 h-2.5 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
-              </div>
-              <span className="text-[10px] text-zinc-400 line-clamp-1">Audit Public & Démo 0%</span>
-            </Link>
-
-            <Link
-              href={pillarSopIds.reach ? `/academy/${pillarSopIds.reach}` : '/academy'}
-              className="p-2.5 rounded-[6px] bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex flex-col gap-1 group cursor-pointer"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-blue-300 flex items-center gap-1">
-                  <Target className="w-3 h-3 text-blue-400" />
-                  <span>2. Minerva Reach</span>
-                </span>
-                <ArrowRight className="w-2.5 h-2.5 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
-              </div>
-              <span className="text-[10px] text-zinc-400 line-clamp-1">50 Leads QC & Playbook</span>
-            </Link>
-
-            <Link
-              href={pillarSopIds.agence ? `/academy/${pillarSopIds.agence}` : '/academy'}
-              className="p-2.5 rounded-[6px] bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex flex-col gap-1 group cursor-pointer"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-emerald-300 flex items-center gap-1">
-                  <Building2 className="w-3 h-3 text-emerald-400" />
-                  <span>3. Agence Sur Mesure</span>
-                </span>
-                <ArrowRight className="w-2.5 h-2.5 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
-              </div>
-              <span className="text-[10px] text-zinc-400 line-clamp-1">Audit 30m & Prototype J+7</span>
-            </Link>
-
-            <Link
-              href={pillarSopIds.media ? `/academy/${pillarSopIds.media}` : '/academy'}
-              className="p-2.5 rounded-[6px] bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex flex-col gap-1 group cursor-pointer"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-rose-300 flex items-center gap-1">
-                  <Film className="w-3 h-3 text-rose-400" />
-                  <span>4. Mes Inspirations</span>
-                </span>
-                <ArrowRight className="w-2.5 h-2.5 text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
-              </div>
-              <span className="text-[10px] text-zinc-400 line-clamp-1">Cas Clients 60s & Média</span>
-            </Link>
-          </div>
-
-          <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-white/10">
-            <div className="flex items-center gap-3 text-[11px] text-zinc-400 font-mono" style={MONO}>
-              <span className="flex items-center gap-1">
-                <Layers className="w-3 h-3 text-zinc-400" />
-                <span>Boucle d’Offre Unifiée</span>
-              </span>
-              <span>•</span>
-              <span>Matrice d’Exécution S1/M1</span>
-            </div>
-
-            <Link
-              href={pillarSopIds.master ? `/academy/${pillarSopIds.master}` : '/academy'}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-[4px] bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-xs transition-colors shadow-sm cursor-pointer"
-            >
-              <Zap className="w-3.5 h-3.5 fill-current" />
-              <span>Consulter le Master Framework Anti-Friction</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 2.5 Cursus Officiel : AI Engineering & Outils Agentiques ── */}
+      {/* ── 2. Cursus Officiel : AI Engineering & Outils Agentiques (Tech uniquement) ── */}
+      {isTechCursusVisible && (
       <div className="bg-mv-surface border border-mv-border rounded-[8px] p-5 shadow-2xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-mv-border/60 pb-3.5">
           <div className="space-y-1">
@@ -538,6 +412,7 @@ export default function AcademyPage() {
           })}
         </div>
       </div>
+      )}
 
       {/* ── 3. Compact & Navigable Toolbar (Search + Compact Filter Pills + Dropdown) ── */}
       <div className="bg-mv-surface border border-mv-border rounded-[6px] p-2.5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-2.5">

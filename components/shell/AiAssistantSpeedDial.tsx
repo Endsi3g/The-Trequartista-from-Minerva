@@ -14,7 +14,7 @@ interface Message {
 const QUICK_PROMPTS: { icon: typeof Workflow; label: string }[] = [
   { icon: Workflow, label: 'Comment lier mes comptes dans Composio ?' },
   { icon: ClipboardList, label: 'Comment créer un devis avec acompte 50% ?' },
-  { icon: Search, label: 'Comment qualifier un lead sur Minerva OS Lite ?' },
+  { icon: Search, label: 'Comment qualifier un lead sur Minerva Reach ?' },
   { icon: BookOpen, label: 'Comment lancer le contrôle QA 20-points ?' },
 ];
 
