@@ -509,7 +509,7 @@ export function AppSidebar() {
           >
             <div className="flex items-center gap-2 min-w-0">
               <Target size={13} className="text-emerald-600 shrink-0" />
-              <span className="truncate">Minerva OS Lite</span>
+              <span className="truncate">Minerva Reach</span>
             </div>
             <ExternalLink size={10} className="text-zinc-400 opacity-60 group-hover:opacity-100 shrink-0" />
           </a>

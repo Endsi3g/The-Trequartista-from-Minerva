@@ -24,7 +24,7 @@
 | Application | Description & Rôle | Lien d'Accès |
 | :--- | :--- | :--- |
 | **Minerva Trequartista** | ERP Central : Gestion de projets, CRM Leads, Facturation, Chat d'équipe, SOPs & Console Tech | [app.minerva.agency](https://app.minerva.agency) |
-| **Minerva OS Lite** | App de prospection & closing terrain : Routine quotidienne `/today`, qualification express de fiches commerces | [minerva-os-lite-desktop.vercel.app/today](https://minerva-os-lite-desktop.vercel.app/today) |
+| **Minerva Reach** | App de prospection & closing terrain : Routine quotidienne `/today`, qualification express de fiches commerces | [minerva-os-lite-desktop.vercel.app/today](https://minerva-os-lite-desktop.vercel.app/today) |
 | **Minerva Flow** | Produit SaaS client : Commande en ligne directe, QR code sur table et encaissement Stripe à 0% de commission | [minerva-flow.vercel.app/login](https://minerva-flow.vercel.app/login) |
 | **Composio Hosted MCP** | Hub d'outils et connecteurs API pour agents d'ingénierie et automatisations | [connect.composio.dev/mcp](https://connect.composio.dev/mcp) |
 

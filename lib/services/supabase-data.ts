@@ -519,11 +519,11 @@ const FALLBACK_DEV_SOPS: AcademySOP[] = [
   },
   {
     id: 'sop-app-01-os-lite',
-    title: 'Guide Pratique : Utiliser & Déployer Minerva OS Lite (Prospection & Closing)',
+    title: 'Guide Pratique : Utiliser & Déployer Minerva Reach (Prospection & Closing)',
     description: 'Workflow de prospection quotidienne, routine /today, qualification de leads locaux et closing.',
     category: 'Ventes & Prospection',
     pillar: 'reach',
-    content_markdown: '# SOP-APP-01 — Guide Pratique : Utiliser & Déployer Minerva OS Lite (Prospection & Closing)\n\n**Lien d’accès :** https://minerva-os-lite-desktop.vercel.app/today\n\n## 1. Rôle de Minerva OS Lite\n- Vue quotidienne condensée /today pour les commerciaux terrain.\n- Qualification express des fiches Google Maps / Instagram.\n- Déclenchement direct des propositions avec acompte 50% sur Minerva Trequartista.',
+    content_markdown: '# SOP-APP-01 — Guide Pratique : Utiliser & Déployer Minerva Reach (Prospection & Closing)\n\n**Lien d’accès :** https://minerva-os-lite-desktop.vercel.app/today\n\n## 1. Rôle de Minerva Reach\n- Vue quotidienne condensée /today pour les commerciaux terrain.\n- Qualification express des fiches Google Maps / Instagram.\n- Déclenchement direct des propositions avec acompte 50% sur Minerva Trequartista.',
     author: 'Kael Belceus & Closer Lead',
     read_time_min: 8,
     is_essential: true,
@@ -572,15 +572,16 @@ export async function fetchAcademySops(): Promise<AcademySOP[]> {
         .order('created_at', { ascending: false });
 
       if (error || !data || data.length === 0) {
+        // True fallback only: the DB is unreachable or genuinely empty.
+        // These items carry non-UUID ids and were never merged into a
+        // real, non-empty DB result -- doing so previously produced list
+        // cards whose /academy/{id} link could never resolve in
+        // fetchAcademySop() (id doesn't exist in academy_sops), showing
+        // "SOP introuvable" even though the SOP "existed" on the list.
         return FALLBACK_DEV_SOPS.map(withComputedBlocks);
       }
 
-      // If DB has items, ensure our 3 dev SOPs are also present if not in DB yet
-      const dbSops = (data as AcademySOP[]).map(withComputedBlocks);
-      const existingTitles = new Set(dbSops.map((s) => s.title));
-      const missingDevSops = FALLBACK_DEV_SOPS.filter((s) => !existingTitles.has(s.title)).map(withComputedBlocks);
-
-      return [...dbSops, ...missingDevSops];
+      return (data as AcademySOP[]).map(withComputedBlocks);
     })(),
     FALLBACK_DEV_SOPS.map(withComputedBlocks)
   );
@@ -2820,23 +2821,18 @@ export async function sendTeamChatMessage(
     if (!error && data) {
       return data as TeamChatMessage;
     }
+    // A CHECK-constraint violation here (Postgres code 23514) most often
+    // means channel_type='topic'/'coach' isn't allowed yet on the live DB
+    // -- i.e. the migration widening that constraint hasn't been deployed.
+    // Previously this silently fell back to a client-only optimistic
+    // message, which looked sent but vanished on refresh with no signal
+    // as to why. Real-data-only means an honest failure beats a fake one.
+    console.error('[Supabase] team_chat_messages insert failed -- message NOT persisted:', error);
+    return null;
   } catch (err) {
-    console.warn('[Supabase] Non-blocking error inserting team chat message, falling back to optimistic:', err);
+    console.error('[Supabase] team_chat_messages insert threw -- message NOT persisted:', err);
+    return null;
   }
-
-  // Resilient fallback: optimistic message so UI never freezes or fails
-  return {
-    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `msg-${Date.now()}`,
-    channel_type: channelType,
-    channel_id: channelId,
-    sender_id: safeSenderId,
-    body: body || null,
-    attachment_url: attachment?.url || null,
-    attachment_type: attachment?.type || null,
-    attachment_name: attachment?.name || null,
-    parent_message_id: parentMessageId || null,
-    created_at: new Date().toISOString(),
-  };
 }
 
 // ── Coach Minerva (bot IA d'équipe) ──

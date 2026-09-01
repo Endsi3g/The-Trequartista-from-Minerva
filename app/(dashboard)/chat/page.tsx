@@ -249,6 +249,8 @@ export default function ChatPage() {
           body: JSON.stringify({ message: sentText }),
         }).catch(() => {});
       }
+    } else {
+      toastError('Erreur', "Le message n'a pas pu être enregistré -- vérifie la connexion à Supabase et réessaie.");
     }
   };
 
@@ -315,7 +317,10 @@ interface MentionItem {
       toastError('Erreur', 'Impossible de téléverser ce fichier.');
       return;
     }
-    await send('', attachment);
+    const sent = await send('', attachment);
+    if (!sent) {
+      toastError('Erreur', "Le message n'a pas pu être enregistré -- vérifie la connexion à Supabase et réessaie.");
+    }
   };
 
   const startRecording = async () => {
@@ -342,7 +347,10 @@ interface MentionItem {
           toastError('Erreur', "Impossible d'envoyer la note vocale.");
           return;
         }
-        await send('', attachment);
+        const sent = await send('', attachment);
+        if (!sent) {
+          toastError('Erreur', "Le message n'a pas pu être enregistré -- vérifie la connexion à Supabase et réessaie.");
+        }
       };
 
       recorder.start();
