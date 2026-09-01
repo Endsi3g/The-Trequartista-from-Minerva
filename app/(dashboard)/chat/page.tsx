@@ -23,6 +23,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { UserAvatar } from '@/components/ui/user-avatar';
+import { LogoMark } from '@/components/shell/Logo';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useTeamChatThread } from '@/hooks/use-team-chat-thread';
 import { AudioVoicePlayer } from '@/components/chat/AudioVoicePlayer';
@@ -665,8 +666,8 @@ interface MentionItem {
                           <div className="w-6 shrink-0 pt-0.5">
                             {showHeader ? (
                               m.sender_id === null ? (
-                                <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                                  <Sparkles className="w-3 h-3" />
+                                <div className="w-6 h-6 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center overflow-hidden p-1">
+                                  <LogoMark size={14} />
                                 </div>
                               ) : (
                                 <UserAvatar name={m.sender_name} src={m.sender_avatar} size="xs" className="w-6 h-6 text-[10px]" />

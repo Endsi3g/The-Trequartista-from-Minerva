@@ -90,7 +90,25 @@ export async function POST(req: NextRequest) {
       })
       .eq('token', token.trim());
 
-    // 5. Translate custom role permissions if applicable
+    // 5. Post an automatic welcome message into #général, à la Coach
+    // Minerva (sender_id NULL, channel_type 'topic') -- best-effort, never
+    // blocks the redemption if it fails.
+    try {
+      const { data: newProfile } = await supabase.from('profiles').select('full_name').eq('id', userId).maybeSingle();
+      const GENERAL_CHANNEL_ID = '00000000-0000-0000-0000-000000000001';
+      await supabase.from('team_chat_messages').insert([
+        {
+          channel_type: 'topic',
+          channel_id: GENERAL_CHANNEL_ID,
+          sender_id: null,
+          body: `🎉 Bienvenue ${newProfile?.full_name || 'dans l’équipe'} chez Minerva ! N'hésite pas à te présenter ici.`,
+        },
+      ]);
+    } catch (welcomeErr) {
+      console.warn('[API Team Invite Redeem] Could not post welcome message:', welcomeErr);
+    }
+
+    // 6. Translate custom role permissions if applicable
     if (invite.custom_role_id) {
       try {
         const { data: roleData } = await supabase
