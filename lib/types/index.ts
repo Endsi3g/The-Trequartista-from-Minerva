@@ -276,7 +276,7 @@ export interface ProjectAttachment {
 
 export interface TeamChatMessage {
   id: string;
-  channel_type: 'project' | 'client' | 'dm' | 'topic';
+  channel_type: 'project' | 'client' | 'dm' | 'topic' | 'coach';
   channel_id: string;
   sender_id: string | null;
   sender_name?: string;
@@ -286,6 +286,7 @@ export interface TeamChatMessage {
   attachment_type?: 'image' | 'audio' | 'gif' | 'file' | null;
   attachment_name?: string | null;
   parent_message_id?: string | null;
+  poll_id?: string | null;
   created_at: string;
 }
 
@@ -316,6 +317,81 @@ export interface TeamMemberSummary {
   full_name: string;
   email: string;
   avatar_url: string | null;
+}
+
+export interface CoachTaskSnapshotItem {
+  id: string;
+  title: string;
+  due_date: string | null;
+  status: string;
+  priority: string | null;
+}
+
+export interface StandupResponse {
+  id: string;
+  user_id: string;
+  date: string;
+  task_snapshot: CoachTaskSnapshotItem[];
+  open_answer: string | null;
+  created_at: string;
+}
+
+export interface WeeklyCheckinResponse {
+  id: string;
+  user_id: string;
+  week_start: string;
+  task_snapshot: CoachTaskSnapshotItem[];
+  open_answer: string | null;
+  created_at: string;
+}
+
+export interface AvailabilityPollSlot {
+  label: string;
+  iso: string;
+}
+
+export interface AvailabilityPoll {
+  id: string;
+  created_by: string | null;
+  question: string;
+  proposed_slots: AvailabilityPollSlot[];
+  created_at: string;
+}
+
+export interface AvailabilityVote {
+  poll_id: string;
+  user_id: string;
+  slot_index: number;
+  created_at: string;
+}
+
+export interface CoachMemberMemory {
+  user_id: string;
+  summary: string;
+  updated_at: string;
+}
+
+export interface CoachWeeklyReport {
+  id: string;
+  week_start: string;
+  user_id: string;
+  member_name?: string;
+  standups_answered: number;
+  standups_total: number;
+  response_rate_pct: number;
+  trend_summary: string | null;
+  is_ghosting: boolean;
+  created_at: string;
+}
+
+export interface CoachGhostStatus {
+  user_id: string;
+  member_name?: string;
+  consecutive_missed_checkins: number;
+  last_activity_at: string | null;
+  is_ghosting: boolean;
+  last_nudged_at: string | null;
+  updated_at: string;
 }
 
 export type DocumentBlockType =

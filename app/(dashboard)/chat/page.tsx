@@ -20,6 +20,7 @@ import {
   ChevronDown,
   ChevronUp,
   SmilePlus,
+  Sparkles,
 } from 'lucide-react';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { useCurrentUser } from '@/hooks/use-current-user';
@@ -34,8 +35,11 @@ import {
   fetchReactionsForMessages,
   toggleReaction,
   createMentions,
+  fetchAvailabilityPollById,
+  fetchAvailabilityVotes,
+  submitAvailabilityVote,
 } from '@/lib/services/supabase-data';
-import type { Project, Client, TeamMemberSummary, TeamChatReaction } from '@/lib/types';
+import type { Project, Client, TeamMemberSummary, TeamChatReaction, AvailabilityPoll, AvailabilityVote } from '@/lib/types';
 import { useToast } from '@/components/providers/ToastProvider';
 import { cn } from '@/lib/utils';
 import { PageFadeIn } from '@/components/ui/page-transition';
@@ -53,7 +57,7 @@ const TOPIC_CHANNELS: { slug: string; label: string; sublabel: string }[] = [
 ];
 
 type Channel = {
-  type: 'project' | 'client' | 'dm' | 'topic';
+  type: 'project' | 'client' | 'dm' | 'topic' | 'coach';
   id: string;
   label: string;
   sublabel: string;
@@ -82,6 +86,8 @@ export default function ChatPage() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({});
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [polls, setPolls] = useState<Record<string, AvailabilityPoll>>({});
+  const [pollVotes, setPollVotes] = useState<Record<string, (AvailabilityVote & { member_name: string })[]>>({});
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -165,6 +171,28 @@ export default function ChatPage() {
     fetchReactionsForMessages(messages.map((m) => m.id)).then(setReactions);
   }, [messages]);
 
+  // Load poll data for any coach messages that announce an availability poll.
+  useEffect(() => {
+    const pollIds = Array.from(new Set(messages.map((m) => m.poll_id).filter((id): id is string => !!id && !polls[id])));
+    if (pollIds.length === 0) return;
+    pollIds.forEach(async (pollId) => {
+      const poll = await fetchAvailabilityPollById(pollId);
+      if (poll) setPolls((prev) => ({ ...prev, [pollId]: poll }));
+      const votes = await fetchAvailabilityVotes(pollId);
+      setPollVotes((prev) => ({ ...prev, [pollId]: votes }));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
+  const handleVotePoll = async (pollId: string, slotIndex: number) => {
+    if (!userId) return;
+    const ok = await submitAvailabilityVote(pollId, userId, slotIndex);
+    if (ok) {
+      const votes = await fetchAvailabilityVotes(pollId);
+      setPollVotes((prev) => ({ ...prev, [pollId]: votes }));
+    }
+  };
+
   const handleToggleReaction = async (messageId: string, emoji: string) => {
     if (!userId) return;
     setReactionPickerFor(null);
@@ -214,6 +242,13 @@ export default function ChatPage() {
       setReplyingTo(null);
       setMentionQuery(null);
       if (sent.id) notifyMentions(sent.id, sentText);
+      if (active?.type === 'coach') {
+        fetch('/api/coach-bot/reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: sentText }),
+        }).catch(() => {});
+      }
     }
   };
 
@@ -387,6 +422,26 @@ interface MentionItem {
               <p className="text-[11px] text-zinc-400 text-center py-8 font-mono">Chargement…</p>
             ) : (
               <>
+                {/* ── Coach Minerva (pinned) ── */}
+                {userId && (
+                  <div className="py-1 border-b border-mv-border/40">
+                    <button
+                      onClick={() => setActive({ type: 'coach', id: userId, label: 'Coach Minerva', sublabel: 'Assistant IA personnel' })}
+                      className={cn(
+                        'w-full text-left px-3 h-8 flex items-center justify-between text-[12px] transition-colors cursor-pointer',
+                        active?.type === 'coach'
+                          ? 'bg-zinc-100/90 text-zinc-900 font-semibold border-l-2 border-mv-green pl-2.5'
+                          : 'text-zinc-600 hover:bg-black/[0.025] hover:text-zinc-900'
+                      )}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Sparkles className={cn('w-3.5 h-3.5 shrink-0', active?.type === 'coach' ? 'text-mv-green' : 'text-zinc-400')} />
+                        <span className="truncate">Coach Minerva</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
+
                 {/* ── Topic Channels ── */}
                 <div className="py-1">
                   <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
@@ -609,7 +664,13 @@ interface MentionItem {
                         {!isOwn && (
                           <div className="w-6 shrink-0 pt-0.5">
                             {showHeader ? (
-                              <UserAvatar name={m.sender_name} src={m.sender_avatar} size="xs" className="w-6 h-6 text-[10px]" />
+                              m.sender_id === null ? (
+                                <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                                  <Sparkles className="w-3 h-3" />
+                                </div>
+                              ) : (
+                                <UserAvatar name={m.sender_name} src={m.sender_avatar} size="xs" className="w-6 h-6 text-[10px]" />
+                              )
                             ) : (
                               <div className="w-6" />
                             )}
@@ -706,6 +767,36 @@ interface MentionItem {
                                     return <span key={pIdx}>{part}</span>;
                                   })}
                                 </p>
+                              )}
+
+                              {/* Availability poll (Coach Minerva weekly call scheduling) */}
+                              {m.poll_id && polls[m.poll_id] && (
+                                <div className="mt-2 space-y-1">
+                                  {polls[m.poll_id].proposed_slots.map((slot, slotIdx) => {
+                                    const votesForSlot = (pollVotes[m.poll_id!] || []).filter((v) => v.slot_index === slotIdx);
+                                    const myVote = votesForSlot.some((v) => v.user_id === userId);
+                                    return (
+                                      <button
+                                        key={slotIdx}
+                                        type="button"
+                                        onClick={() => handleVotePoll(m.poll_id!, slotIdx)}
+                                        className={cn(
+                                          'w-full flex items-center justify-between px-2 py-1 rounded-[4px] text-[11px] font-medium transition-colors cursor-pointer',
+                                          myVote
+                                            ? 'bg-emerald-600 text-white'
+                                            : isOwn
+                                              ? 'bg-white/15 text-white hover:bg-white/25'
+                                              : 'bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                                        )}
+                                      >
+                                        <span>{slot.label}</span>
+                                        {votesForSlot.length > 0 && (
+                                          <span className="font-mono opacity-80">{votesForSlot.length}</span>
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
                               )}
                             </div>
 
