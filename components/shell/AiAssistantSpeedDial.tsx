@@ -27,7 +27,7 @@ export function AiAssistantSpeedDial() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Keyboard shortcut ⌘J or Ctrl+J to toggle speed dial
+  // Keyboard shortcut ⌘J ou Ctrl+J pour ouvrir/fermer le panneau
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
@@ -112,40 +112,40 @@ export function AiAssistantSpeedDial() {
           className={cn(
             'group relative flex items-center gap-2 px-3 h-9 rounded-full shadow-mv-lg transition-all duration-200 cursor-pointer border',
             isOpen
-              ? 'bg-zinc-900 text-white border-zinc-700'
-              : 'bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white border-emerald-500/30'
+              ? 'bg-mv-ink text-white border-mv-ink'
+              : 'bg-mv-green hover:bg-mv-green-dark text-white border-mv-green-dark/40'
           )}
           title="Assistant IA Minerva (⌘J)"
           aria-label="Ouvrir l'Assistant IA Minerva"
         >
-          <Sparkles className={cn('w-4 h-4 text-emerald-300 transition-transform duration-300', isOpen && 'rotate-90')} />
+          <Sparkles className={cn('w-4 h-4 text-white transition-transform duration-300', isOpen && 'rotate-90')} />
           <span className="text-xs font-bold tracking-tight pr-1">Assistant IA</span>
-          <kbd className="hidden sm:inline-flex text-[9px] font-mono bg-black/25 px-1 py-0.5 rounded text-white/80">
+          <kbd className="hidden sm:inline-flex text-[9px] font-mono bg-white/20 px-1 py-0.5 rounded text-white/90">
             ⌘J
           </kbd>
         </button>
       </div>
 
-      {/* ── Dark AI Panel (Notion-AI-style layout) ── */}
+      {/* ── AI Panel (layout Notion-AI, thème clair Minerva) ── */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:justify-end sm:p-6 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:justify-end sm:p-6 bg-black/20 backdrop-blur-xs transition-opacity animate-in fade-in duration-150">
           <div
             className={cn(
-              'w-full bg-zinc-950 border border-zinc-800 rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-3 duration-200 transition-[width,height]',
+              'w-full bg-mv-surface border border-mv-border rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-3 duration-200 transition-[width,height]',
               expanded ? 'sm:w-[640px] h-[85vh]' : 'sm:w-[420px] h-[560px]',
               'max-h-[85vh]'
             )}
           >
             {/* Header */}
-            <div className="px-4 h-12 flex items-center justify-between border-b border-zinc-800/80 shrink-0">
-              <div className="flex items-center gap-1.5 text-zinc-300">
+            <div className="px-4 h-12 flex items-center justify-between border-b border-mv-border shrink-0">
+              <div className="flex items-center gap-1.5 text-mv-ink-soft">
                 <span className="text-[13px] font-medium">Nouvelle discussion avec l&apos;IA</span>
-                <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
+                <ChevronDown className="w-3.5 h-3.5 text-mv-ink-faint" />
               </div>
               <div className="flex items-center gap-0.5">
                 <button
                   onClick={resetConversation}
-                  className="p-1.5 rounded-md text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-md text-mv-ink-faint hover:text-mv-ink hover:bg-mv-cream-soft transition-colors cursor-pointer"
                   title="Nouvelle discussion"
                   aria-label="Nouvelle discussion"
                 >
@@ -153,7 +153,7 @@ export function AiAssistantSpeedDial() {
                 </button>
                 <button
                   onClick={() => setExpanded((v) => !v)}
-                  className="hidden sm:inline-flex p-1.5 rounded-md text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                  className="hidden sm:inline-flex p-1.5 rounded-md text-mv-ink-faint hover:text-mv-ink hover:bg-mv-cream-soft transition-colors cursor-pointer"
                   title={expanded ? 'Réduire' : 'Agrandir'}
                   aria-label={expanded ? 'Réduire' : 'Agrandir'}
                 >
@@ -161,7 +161,7 @@ export function AiAssistantSpeedDial() {
                 </button>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1.5 rounded-md text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-md text-mv-ink-faint hover:text-mv-ink hover:bg-mv-cream-soft transition-colors cursor-pointer"
                   aria-label="Fermer"
                 >
                   <X className="w-4 h-4" />
@@ -171,12 +171,12 @@ export function AiAssistantSpeedDial() {
 
             {/* Body */}
             {messages.length === 0 ? (
-              /* Empty state: centered mascot + prompt list, à la Notion AI */
-              <div className="flex-1 flex flex-col items-center justify-end px-5 pb-6 gap-5 overflow-y-auto">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+              /* Empty state: mascotte centrée + prompts suggérés, à la Notion AI */
+              <div className="flex-1 flex flex-col items-center justify-end px-5 pb-6 gap-5 overflow-y-auto bg-mv-cream-soft/40">
+                <div className="w-16 h-16 rounded-full bg-mv-green-tint border border-mv-green/25 flex items-center justify-center text-mv-green shrink-0">
                   <Bot className="w-7 h-7" />
                 </div>
-                <h2 className="text-lg font-bold text-white text-center">Quelle est ta question aujourd&apos;hui ?</h2>
+                <h2 className="text-lg font-bold font-display text-mv-ink text-center">Quelle est ta question aujourd&apos;hui ?</h2>
                 <div className="w-full space-y-1">
                   {QUICK_PROMPTS.map((p, idx) => {
                     const Icon = p.icon;
@@ -184,9 +184,9 @@ export function AiAssistantSpeedDial() {
                       <button
                         key={idx}
                         onClick={() => handleSendMessage(p.label)}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-zinc-300 hover:bg-zinc-900 hover:text-white transition-colors cursor-pointer text-[13px]"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-mv-ink-soft hover:bg-mv-surface hover:text-mv-ink border border-transparent hover:border-mv-border transition-colors cursor-pointer text-[13px]"
                       >
-                        <Icon className="w-4 h-4 text-zinc-500 shrink-0" />
+                        <Icon className="w-4 h-4 text-mv-ink-faint shrink-0" />
                         <span className="truncate">{p.label}</span>
                       </button>
                     );
@@ -195,13 +195,13 @@ export function AiAssistantSpeedDial() {
               </div>
             ) : (
               /* Message history */
-              <div className="flex-1 p-3.5 space-y-3 overflow-y-auto text-xs">
+              <div className="flex-1 p-3.5 space-y-3 overflow-y-auto text-xs bg-mv-cream-soft/40">
                 {messages.map((m) => {
                   const isUser = m.role === 'user';
                   return (
                     <div key={m.id} className={cn('flex gap-2.5', isUser ? 'justify-end' : 'justify-start')}>
                       {!isUser && (
-                        <div className="w-6 h-6 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                        <div className="w-6 h-6 rounded-full bg-mv-green-tint border border-mv-green/25 text-mv-green flex items-center justify-center shrink-0 mt-0.5">
                           <Bot className="w-3.5 h-3.5" />
                         </div>
                       )}
@@ -209,16 +209,16 @@ export function AiAssistantSpeedDial() {
                         className={cn(
                           'max-w-[85%] rounded-lg p-2.5 space-y-1.5 leading-relaxed',
                           isUser
-                            ? 'bg-emerald-600 text-white rounded-br-none'
-                            : 'bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-bl-none'
+                            ? 'bg-mv-green text-white rounded-br-none'
+                            : 'bg-mv-surface border border-mv-border text-mv-ink rounded-bl-none shadow-2xs'
                         )}
                       >
                         <p className="whitespace-pre-wrap">{m.content}</p>
                         {m.sources && m.sources.length > 0 && (
-                          <div className="pt-1 border-t border-zinc-800 text-[10px] text-zinc-500 space-y-0.5">
-                            <span className="font-semibold block text-zinc-400">Sources Académie :</span>
+                          <div className="pt-1 border-t border-mv-border text-[10px] text-mv-ink-faint space-y-0.5">
+                            <span className="font-semibold block text-mv-ink-soft">Sources Académie :</span>
                             {m.sources.map((s) => (
-                              <span key={s.id} className="block text-emerald-400 truncate font-mono">
+                              <span key={s.id} className="block text-mv-green truncate font-mono">
                                 • {s.title}
                               </span>
                             ))}
@@ -226,7 +226,7 @@ export function AiAssistantSpeedDial() {
                         )}
                       </div>
                       {isUser && (
-                        <div className="w-6 h-6 rounded-full bg-zinc-800 text-zinc-400 flex items-center justify-center shrink-0 mt-0.5">
+                        <div className="w-6 h-6 rounded-full bg-mv-border text-mv-ink-soft flex items-center justify-center shrink-0 mt-0.5">
                           <User className="w-3.5 h-3.5" />
                         </div>
                       )}
@@ -234,8 +234,8 @@ export function AiAssistantSpeedDial() {
                   );
                 })}
                 {sending && (
-                  <div className="flex gap-2.5 items-center text-xs text-zinc-500">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0 animate-spin">
+                  <div className="flex gap-2.5 items-center text-xs text-mv-ink-faint">
+                    <div className="w-6 h-6 rounded-full bg-mv-green-tint text-mv-green flex items-center justify-center shrink-0 animate-spin">
                       <RefreshCw className="w-3 h-3" />
                     </div>
                     <span className="italic">L’IA réfléchit et consulte les SOPs…</span>
@@ -245,13 +245,13 @@ export function AiAssistantSpeedDial() {
               </div>
             )}
 
-            {/* Dark input bar, à la Notion AI */}
+            {/* Barre d'entrée, à la Notion AI, en thème clair */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSendMessage();
               }}
-              className="m-2.5 mt-0 bg-zinc-900 border border-zinc-800 rounded-xl shrink-0 focus-within:border-emerald-600/50 transition-colors"
+              className="m-2.5 mt-0 bg-mv-cream-soft border border-mv-border rounded-xl shrink-0 focus-within:border-mv-green/60 transition-colors"
             >
               <input
                 ref={inputRef}
@@ -259,14 +259,14 @@ export function AiAssistantSpeedDial() {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="Posez une question ou demandez une action…"
-                className="w-full h-10 px-3.5 pt-1 text-[13px] bg-transparent focus:outline-none text-white placeholder:text-zinc-500"
+                className="w-full h-10 px-3.5 pt-1 text-[13px] bg-transparent focus:outline-none text-mv-ink placeholder:text-mv-ink-faint"
                 disabled={sending}
               />
               <div className="flex items-center justify-between px-2 pb-1.5">
                 <div className="flex items-center gap-0.5">
                   <button
                     type="button"
-                    className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-md text-mv-ink-faint hover:text-mv-ink hover:bg-mv-border/50 transition-colors cursor-pointer"
                     title="Ajouter du contexte"
                     aria-label="Ajouter du contexte"
                   >
@@ -274,7 +274,7 @@ export function AiAssistantSpeedDial() {
                   </button>
                   <button
                     type="button"
-                    className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-md text-mv-ink-faint hover:text-mv-ink hover:bg-mv-border/50 transition-colors cursor-pointer"
                     title="Options"
                     aria-label="Options"
                   >
@@ -282,11 +282,11 @@ export function AiAssistantSpeedDial() {
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10.5px] font-medium text-zinc-500">Automatique</span>
+                  <span className="text-[10.5px] font-medium text-mv-ink-faint">Automatique</span>
                   <button
                     type="submit"
                     disabled={!draft.trim() || sending}
-                    className="w-6 h-6 rounded-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-30 disabled:hover:bg-emerald-600 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                    className="w-6 h-6 rounded-full bg-mv-green hover:bg-mv-green-dark disabled:opacity-30 disabled:hover:bg-mv-green text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
                     aria-label="Envoyer"
                   >
                     <Send className="w-3 h-3" />
