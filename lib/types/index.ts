@@ -103,7 +103,16 @@ export interface HelpChatMessage {
   user_name?: string;
   role: 'user' | 'assistant';
   content: string;
+  conversation_id?: string | null;
   created_at: string;
+}
+
+export interface AiConversation {
+  id: string;
+  user_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ChangelogEntry {
