@@ -4,6 +4,16 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-09-02 (v2.17.2) — Script de Déploiement Supabase Cross-Platform (Bash / macOS)
+
+Amélioration des scripts d'infrastructure et d'outillage développeur :
+
+- **Script Bash de Déploiement Supabase** :
+  - Création de `scripts/deploy-supabase.sh` compatible Unix/macOS/Linux avec support des migrations et du déploiement des Edge Functions (`launch-check-validator`, `roi-aggregator`, `webhook-validator`, `alert-dispatcher`).
+  - Raccordement de la commande `npm run deploy:supabase` dans `package.json` vers le script bash avec permissions d'exécution.
+
+---
+
 ## 2026-08-31 (v2.17.1) — Assainissement Codebase, Purge Stubs Obsolètes & Optimisation Dépôt
 
 Maintenance et assainissement complet de la codebase :
