@@ -1308,6 +1308,47 @@ export async function redeemTeamInvite(
     await syncCustomRolePermissionsToAppPermissions(userId);
   }
 
+  // Best-effort welcome message in #général (same as the server route's
+  // primary path) -- never blocks redemption if it fails.
+  try {
+    const { data: newProfile } = await supabase.from('profiles').select('full_name').eq('id', userId).maybeSingle();
+    const GENERAL_CHANNEL_ID = '00000000-0000-0000-0000-000000000001';
+    await supabase.from('team_chat_messages').insert([
+      {
+        channel_type: 'topic',
+        channel_id: GENERAL_CHANNEL_ID,
+        sender_id: null,
+        body: `🎉 Bienvenue ${newProfile?.full_name || 'dans l’équipe'} chez Minerva ! N'hésite pas à te présenter ici.`,
+      },
+    ]);
+  } catch (welcomeErr) {
+    console.warn('[redeemTeamInvite] Could not post welcome message:', welcomeErr);
+  }
+
+  // Personal push notification to admins (same as the server route's
+  // primary path) -- routed through /api/push/send since the VAPID
+  // private key can't be used client-side; the newly-signed-up member's
+  // own session is enough to authenticate that call.
+  try {
+    const { data: newProfile } = await supabase.from('profiles').select('full_name').eq('id', userId).maybeSingle();
+    const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
+    const adminIds = (admins || []).map((a) => a.id).filter((id) => id !== userId);
+    if (adminIds.length > 0) {
+      await fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: '👋 Nouveau membre',
+          body: `${newProfile?.full_name || 'Un nouveau membre'} vient de rejoindre l'équipe Minerva.`,
+          url: '/team',
+          userIds: adminIds,
+        }),
+      }).catch(() => {});
+    }
+  } catch (pushErr) {
+    console.warn('[redeemTeamInvite] Could not send admin push notification:', pushErr);
+  }
+
   return true;
 }
 
@@ -2784,7 +2825,11 @@ export async function fetchTeamChatMessages(
         const sender = senderMap.get(row.sender_id);
         return {
           ...row,
-          sender_name: row.sender_id ? sender?.full_name || 'Membre' : 'Coach Minerva',
+          sender_name: row.sender_id
+            ? sender?.full_name || 'Membre'
+            : channelType === 'coach'
+              ? 'Coach Minerva'
+              : 'Assistant Minerva',
           sender_avatar: sender?.avatar_url || '',
         };
       }) as TeamChatMessage[];

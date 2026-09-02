@@ -32,7 +32,7 @@ export default function NewChangelogEntryPage() {
       return;
     }
 
-    await addChangelogEntry({
+    const created = await addChangelogEntry({
       title: title.trim(),
       body: body.trim(),
       image_url: imageUrl || null,
@@ -40,6 +40,14 @@ export default function NewChangelogEntryPage() {
       included_items: includedItems.map((i) => i.trim()).filter(Boolean),
       created_by: user.id,
     });
+
+    if (created?.id) {
+      fetch('/api/changelog/announce', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entryId: created.id }),
+      }).catch(() => {});
+    }
 
     setSaving(false);
     router.push('/changelog');
