@@ -99,6 +99,43 @@ export interface PerformanceReview {
   created_at: string;
 }
 
+// Real-data leaderboard ("Classement") -- score is a weighted mix of the
+// universal tasks signal (every role) plus a role-specific bonus computed
+// only where a genuinely attributable table/column exists (see
+// lib/services/productivity.ts for the exact formula).
+export interface ProductivityScore {
+  id: string;
+  user_id: string;
+  member_name?: string;
+  member_avatar_url?: string | null;
+  workspace?: string | null;
+  period_month: string;
+  tasks_points: number;
+  role_bonus_points: number;
+  total_points: number;
+  current_rank: number | null;
+  previous_rank: number | null;
+  breakdown: {
+    tasks_completed_on_time?: number;
+    tasks_completed_other?: number;
+    tasks_overdue_now?: number;
+    leads_won?: number;
+    qa_audits_passed?: number;
+    qa_audits_warning?: number;
+  };
+  computed_at: string;
+}
+
+export interface ProductivityMilestone {
+  id: string;
+  user_id: string;
+  member_name?: string;
+  milestone_key: 'rank_1' | 'top_3' | 'personal_best';
+  period_month: string;
+  details: Record<string, unknown>;
+  achieved_at: string;
+}
+
 export interface HelpArticle {
   id: string;
   question: string;

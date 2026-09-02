@@ -36,6 +36,7 @@ import {
   Terminal,
   Activity,
   ExternalLink,
+  Trophy,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -311,6 +312,7 @@ export function AppSidebar() {
   // member (previously admin-only outright).
   const teamItems: NavItem[] = [
     { key: 'team', label: 'Équipe', href: '/team', icon: UsersRound },
+    { key: 'classement', label: 'Classement', href: '/classement', icon: Trophy },
     ...(isAdmin || workspace === 'managing'
       ? [{ key: 'workload', label: 'Charge de travail', href: '/team/workload', icon: Gauge } as NavItem]
       : []),
