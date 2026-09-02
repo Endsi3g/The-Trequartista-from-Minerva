@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Terminal,
   Cpu,
@@ -57,7 +58,11 @@ const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantN
 export function TechDashboard() {
   const { toastSuccess, toastError, toastInfo } = useToast();
   const { role, workspace, loading: userLoading } = useCurrentUser();
-  const [activeTab, setActiveTab] = useState<'overview' | 'qa' | 'infra' | 'docs'>('overview');
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<'overview' | 'qa' | 'infra' | 'docs'>(
+    initialTab === 'qa' || initialTab === 'infra' || initialTab === 'docs' ? initialTab : 'overview'
+  );
   const [audits, setAudits] = useState<TechQaAudit[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);

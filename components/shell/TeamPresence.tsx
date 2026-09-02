@@ -25,7 +25,7 @@ function statusMeta(value: unknown) {
 
 export function TeamPresence() {
   const pathname = usePathname();
-  const { role } = useCurrentUser();
+  const { role, fullName } = useCurrentUser();
   const isTeam = role === 'admin' || role === 'member';
 
   const [myStatus, setMyStatus] = useState<TeamStatus>('available');
@@ -37,10 +37,24 @@ export function TeamPresence() {
   }, []);
 
   const changeStatus = (value: TeamStatus) => {
+    const previous = myStatus;
     setMyStatus(value);
     try {
       localStorage.setItem(STATUS_KEY, value);
     } catch {}
+    // Setting "En réunion" notifies the whole team -- best-effort, silently
+    // no-ops if VAPID isn't configured (checked server-side by the route).
+    if (value === 'meeting' && previous !== 'meeting') {
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: '🔴 En réunion',
+          body: `${fullName || 'Un collègue'} est actuellement en réunion.`,
+          url: '/overview',
+        }),
+      }).catch(() => {});
+    }
   };
 
   // Custom status is only ever spread into the internal presence room's

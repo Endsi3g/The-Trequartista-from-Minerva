@@ -184,6 +184,9 @@ export function QualityChecklistRunner({
             >
               {scorePct === 100 ? '✓ Prêt pour Déploiement' : criticalFailed ? 'Bloquant si Critique' : 'En Attente'}
             </span>
+            <p className="w-full text-[11px] text-zinc-500 mt-0.5">
+              Checklist de validation avant mise en production : coche chaque point pour un projet ou un livrable, puis enregistre l'audit -- l'historique reste consultable pour tracer ce qui a été vérifié et quand.
+            </p>
           </div>
 
           <div className="flex items-center gap-3 self-end sm:self-auto">

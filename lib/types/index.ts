@@ -36,6 +36,7 @@ export interface Client {
   account_manager_name?: string;
   created_at: string;
   current_focus?: string | null;
+  stripe_customer_id?: string | null;
 }
 
 export interface ClientMrrHistoryEntry {
@@ -82,6 +83,19 @@ export interface Department {
   name: string;
   color: string;
   created_by: string | null;
+  created_at: string;
+}
+
+export interface PerformanceReview {
+  id: string;
+  member_id: string;
+  member_name?: string;
+  reviewer_id: string | null;
+  reviewer_name?: string;
+  period: string;
+  rating: number;
+  strengths: string | null;
+  improvements: string | null;
   created_at: string;
 }
 
@@ -145,6 +159,11 @@ export interface Task {
   plane_state_id?: string | null;
   plane_last_synced_at?: string | null;
   plane_sync_status?: 'synced' | 'pending' | 'error' | null;
+  // Copied from the parent project's department at creation time (not a
+  // live foreign key -- a task's department doesn't silently change if
+  // the project is reassigned later). Null for tasks not tied to an
+  // internal/company project.
+  department?: string | null;
 }
 
 export interface TaskSubitem {
@@ -254,7 +273,7 @@ export interface ClientRoiMetrics {
 
 export interface Project {
   id: string;
-  client_id: string;
+  client_id: string | null;
   client_name: string;
   name: string;
   current_stage: 'Onboarding' | 'Design Framer' | 'Launch Check' | 'Live Production';
@@ -264,6 +283,9 @@ export interface Project {
   assignees: string[];
   budget_cad?: number | null;
   client_visible?: boolean;
+  // Set on internal/company projects (no client_id) to scope them to a
+  // department -- tasks created under the project inherit this value.
+  department?: string | null;
 }
 
 export interface ProjectAttachment {
@@ -1094,6 +1116,8 @@ export interface Invoice {
   tax_tvq_cad: number;
   total_cad: number;
   stripe_payment_link_url?: string | null;
+  stripe_invoice_id?: string | null;
+  stripe_hosted_invoice_url?: string | null;
   notes?: string | null;
   terms?: string | null;
   created_by?: string | null;
