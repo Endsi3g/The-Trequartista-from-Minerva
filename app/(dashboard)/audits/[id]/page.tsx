@@ -130,7 +130,7 @@ export default function AuditDetailPage() {
 
   const handleGenerateProposal = async () => {
     setGeneratingProposal(true);
-    const res = await fetch(`/api/proposals/${audit.id}/generate`, {
+    const res = await fetch(`/api/proposals/generate/${audit.id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(recipientEmail ? { recipientEmail } : {}),

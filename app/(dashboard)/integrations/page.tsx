@@ -66,14 +66,14 @@ function MicroAppLogo({ slug, name }: { slug: string; name: string }) {
 
   if (failed) {
     return (
-      <div className="w-6 h-6 rounded bg-zinc-100 border border-zinc-200 flex items-center justify-center shrink-0">
+      <div className="w-6 h-6 rounded bg-mv-cream-soft border border-mv-border flex items-center justify-center shrink-0">
         <Zap className="w-3.5 h-3.5 text-emerald-600" />
       </div>
     );
   }
 
   return (
-    <div className="w-6 h-6 rounded bg-white border border-zinc-200 flex items-center justify-center overflow-hidden shrink-0 p-0.5 shadow-2xs">
+    <div className="w-6 h-6 rounded bg-white border border-mv-border flex items-center justify-center overflow-hidden shrink-0 p-0.5 shadow-2xs">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={`https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/${iconSlug}/default.svg`}
@@ -259,18 +259,18 @@ export default function IntegrationsPage() {
       {/* ── 1. En-tête Contextuel (Toolbar 40px) ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-0.5">
         <div className="space-y-0.5">
-          <div className="text-xs text-zinc-400 font-mono flex items-center gap-1.5">
+          <div className="text-xs text-mv-ink-faint font-mono flex items-center gap-1.5">
             <span>Minerva</span>
             <span>/</span>
             <span>Tech & Ingénierie</span>
             <span>/</span>
-            <span className="text-zinc-600">Intégrations</span>
+            <span className="text-mv-ink-soft">Intégrations</span>
           </div>
           <div className="flex items-center gap-2">
-            <h1 className="text-[16px] font-semibold text-zinc-900 tracking-tight">
+            <h1 className="text-[16px] font-semibold text-mv-ink tracking-tight">
               Intégrations & Écosystème API
             </h1>
-            <span className="text-[10px] font-mono text-zinc-500 bg-zinc-100 border border-zinc-200 px-1.5 py-0.2 rounded font-medium">
+            <span className="text-[10px] font-mono text-mv-ink-faint bg-mv-cream-soft border border-mv-border px-1.5 py-0.2 rounded font-medium">
               Composio + MCP
             </span>
           </div>
@@ -290,7 +290,7 @@ export default function IntegrationsPage() {
           </a>
           <Link
             href="/tech"
-            className="h-7 px-2.5 text-xs font-medium border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-md inline-flex items-center gap-1.5 transition-colors shadow-2xs"
+            className="h-7 px-2.5 text-xs font-medium border border-mv-border hover:bg-mv-cream-soft text-mv-ink-soft rounded-md inline-flex items-center gap-1.5 transition-colors shadow-2xs"
           >
             <span>← Console Tech</span>
           </Link>
@@ -298,27 +298,27 @@ export default function IntegrationsPage() {
       </div>
 
       {/* ── 2. Ruban Métrique Connecté (Top Strip) ── */}
-      <div className="bg-white border border-zinc-200 rounded-md px-3 py-1.5 flex flex-wrap items-center justify-between gap-3 text-[11px] font-mono shadow-xs text-zinc-600">
+      <div className="bg-white border border-mv-border rounded-md px-3 py-1.5 flex flex-wrap items-center justify-between gap-3 text-[11px] font-mono shadow-xs text-mv-ink-soft">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-1.5">
-            <span className="font-bold text-zinc-900" style={MONO}>
+            <span className="font-bold text-mv-ink" style={MONO}>
               {loading ? '17' : apps.length}
             </span>
-            <span className="text-zinc-400 uppercase">DISPONIBLES</span>
+            <span className="text-mv-ink-faint uppercase">DISPONIBLES</span>
           </div>
-          <span className="text-zinc-300">•</span>
+          <span className="text-mv-ink-faint">•</span>
           <div className="flex items-center gap-1.5">
-            <span className={cn('font-bold', connectedCount > 0 ? 'text-emerald-600' : 'text-zinc-900')} style={MONO}>
+            <span className={cn('font-bold', connectedCount > 0 ? 'text-emerald-600' : 'text-mv-ink')} style={MONO}>
               {loading ? '0' : connectedCount}
             </span>
-            <span className="text-zinc-400 uppercase">CONNECTÉES</span>
+            <span className="text-mv-ink-faint uppercase">CONNECTÉES</span>
           </div>
-          <span className="text-zinc-300">•</span>
+          <span className="text-mv-ink-faint">•</span>
           <div className="flex items-center gap-1.5">
-            <span className="font-bold text-zinc-900" style={MONO}>
+            <span className="font-bold text-mv-ink" style={MONO}>
               {categories.length || 6}
             </span>
-            <span className="text-zinc-400 uppercase">CATÉGORIES</span>
+            <span className="text-mv-ink-faint uppercase">CATÉGORIES</span>
           </div>
         </div>
 
@@ -337,7 +337,7 @@ export default function IntegrationsPage() {
 
       {/* ── 3. Bannière d'Alerte Actionable (Composio API Key) ── */}
       {composioError && (
-        <div className="text-xs bg-zinc-50 border border-zinc-200 rounded-md px-3 py-1.5 flex items-center justify-between text-zinc-700 shadow-2xs">
+        <div className="text-xs bg-mv-cream-soft border border-mv-border rounded-md px-3 py-1.5 flex items-center justify-between text-mv-ink-soft shadow-2xs">
           <div className="flex items-center gap-2 min-w-0">
             <AlertTriangle size={13} className="text-amber-600 shrink-0" />
             <span className="truncate">
@@ -356,16 +356,16 @@ export default function IntegrationsPage() {
       {/* ── 4. Layout à 2 Colonnes (Sidebar Filtres + Grille Dense d'Apps) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-3.5 items-start">
         {/* Colonne Gauche (Filtres & Recherche) */}
-        <div className="sticky top-4 border border-zinc-200 rounded-lg p-2.5 bg-white shadow-xs space-y-2">
+        <div className="sticky top-4 border border-mv-border rounded-lg p-2.5 bg-white shadow-xs space-y-2">
           <div className="relative">
-            <Search className="w-3 h-3 text-zinc-400 absolute left-2 top-1/2 -translate-y-1/2" />
+            <Search className="w-3 h-3 text-mv-ink-faint absolute left-2 top-1/2 -translate-y-1/2" />
             <input
               ref={searchInputRef}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Filtrer (/)..."
-              className="w-full h-7 pl-6 pr-2 text-xs rounded-md bg-zinc-50 border border-zinc-200 text-zinc-900 focus:outline-hidden focus:border-emerald-500 font-mono"
+              className="w-full h-7 pl-6 pr-2 text-xs rounded-md bg-mv-cream-soft border border-mv-border text-mv-ink focus:outline-hidden focus:border-emerald-500 font-mono"
             />
           </div>
 
@@ -375,8 +375,8 @@ export default function IntegrationsPage() {
               className={cn(
                 'w-full flex items-center justify-between px-2 py-1 rounded text-xs transition-colors cursor-pointer text-left',
                 activeCategory === 'All integrations'
-                  ? 'bg-zinc-100 text-zinc-900 font-semibold'
-                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
+                  ? 'bg-mv-cream-soft text-mv-ink font-semibold'
+                  : 'text-mv-ink-soft hover:text-mv-ink hover:bg-mv-cream-soft'
               )}
             >
               <span className="flex items-center gap-1.5 truncate">
@@ -385,7 +385,7 @@ export default function IntegrationsPage() {
                 )}
                 Toutes les intégrations
               </span>
-              <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
+              <span className="text-[10px] font-mono text-mv-ink-faint" style={MONO}>
                 ({apps.length || 17})
               </span>
             </button>
@@ -399,8 +399,8 @@ export default function IntegrationsPage() {
                   className={cn(
                     'w-full flex items-center justify-between px-2 py-1 rounded text-xs transition-colors cursor-pointer text-left',
                     isActive
-                      ? 'bg-zinc-100 text-zinc-900 font-semibold'
-                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
+                      ? 'bg-mv-cream-soft text-mv-ink font-semibold'
+                      : 'text-mv-ink-soft hover:text-mv-ink hover:bg-mv-cream-soft'
                   )}
                 >
                   <span className="flex items-center gap-1.5 truncate">
@@ -409,7 +409,7 @@ export default function IntegrationsPage() {
                     )}
                     {cat}
                   </span>
-                  <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
+                  <span className="text-[10px] font-mono text-mv-ink-faint" style={MONO}>
                     ({count})
                   </span>
                 </button>
@@ -421,19 +421,19 @@ export default function IntegrationsPage() {
         {/* Colonne Droite (Featured Hub + Grille 2-Colonnes) */}
         <div className="space-y-3">
           {/* Featured Core Hub : GitHub & Framer Studio (52px) */}
-          <div className="border border-zinc-200 rounded-lg p-2.5 bg-white shadow-xs flex items-center justify-between gap-3 h-[52px]">
+          <div className="border border-mv-border rounded-lg p-2.5 bg-white shadow-xs flex items-center justify-between gap-3 h-[52px]">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-md bg-zinc-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
                 <Zap className="w-4 h-4 text-emerald-400" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xs font-bold text-zinc-900 truncate">GitHub & Framer Studio</h2>
+                  <h2 className="text-xs font-bold text-mv-ink truncate">GitHub & Framer Studio</h2>
                   <span className="text-[9.5px] font-mono px-1 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded font-medium">
                     Core Minerva
                   </span>
                 </div>
-                <p className="text-[11px] text-zinc-400 truncate max-w-md">
+                <p className="text-[11px] text-mv-ink-faint truncate max-w-md">
                   Déploiement continu, hébergement Framer, webhooks et automatisations d'acquisition.
                 </p>
               </div>
@@ -441,7 +441,7 @@ export default function IntegrationsPage() {
 
             <Link
               href="/tech"
-              className="h-6 px-2.5 text-[11px] font-medium border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800 rounded-md inline-flex items-center gap-1 shrink-0 shadow-2xs transition-colors"
+              className="h-6 px-2.5 text-[11px] font-medium border border-mv-border bg-white hover:bg-mv-cream-soft text-mv-ink rounded-md inline-flex items-center gap-1 shrink-0 shadow-2xs transition-colors"
             >
               <span>Console Tech</span>
               <ArrowRight size={10} />
@@ -452,11 +452,11 @@ export default function IntegrationsPage() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-12 border border-zinc-200 rounded-lg bg-white p-2.5 animate-pulse" />
+                <div key={i} className="h-12 border border-mv-border rounded-lg bg-white p-2.5 animate-pulse" />
               ))}
             </div>
           ) : filteredApps.length === 0 ? (
-            <div className="py-10 text-center text-xs text-zinc-400 border border-zinc-200 rounded-lg bg-white">
+            <div className="py-10 text-center text-xs text-mv-ink-faint border border-mv-border rounded-lg bg-white">
               Aucune intégration trouvée pour cette recherche.
             </div>
           ) : (
@@ -469,15 +469,15 @@ export default function IntegrationsPage() {
                 return (
                   <div
                     key={app.slug}
-                    className="border border-zinc-200 hover:border-zinc-300 rounded-lg p-2.5 bg-white flex items-center justify-between gap-2 shadow-xs transition-colors h-[48px]"
+                    className="border border-mv-border hover:border-mv-border rounded-lg p-2.5 bg-white flex items-center justify-between gap-2 shadow-xs transition-colors h-[48px]"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <MicroAppLogo slug={app.slug} name={app.name} />
                       <div className="min-w-0">
-                        <div className="text-[12px] font-semibold text-zinc-900 truncate">
+                        <div className="text-[12px] font-semibold text-mv-ink truncate">
                           {app.name}
                         </div>
-                        <div className="text-[10.5px] text-zinc-400 truncate max-w-[170px]" title={app.description}>
+                        <div className="text-[10.5px] text-mv-ink-faint truncate max-w-[170px]" title={app.description}>
                           {app.description}
                         </div>
                       </div>
@@ -487,7 +487,7 @@ export default function IntegrationsPage() {
                       {app.slug === 'notion' && (
                         <Link
                           href="/integrations/notion"
-                          className="h-6 px-1.5 text-[10.5px] font-mono text-zinc-600 hover:text-zinc-900 border border-zinc-200 rounded hover:bg-zinc-50 inline-flex items-center"
+                          className="h-6 px-1.5 text-[10.5px] font-mono text-mv-ink-soft hover:text-mv-ink border border-mv-border rounded hover:bg-mv-cream-soft inline-flex items-center"
                           title="Gérer les pages Notion"
                         >
                           <ExternalLink size={10} />
@@ -503,7 +503,7 @@ export default function IntegrationsPage() {
                           <button
                             onClick={() => status.connectedAccountId && handleDisconnect(app.slug, status.connectedAccountId)}
                             disabled={isBusy}
-                            className="h-6 px-1.5 text-[10px] text-zinc-400 hover:text-rose-600 transition-colors cursor-pointer"
+                            className="h-6 px-1.5 text-[10px] text-mv-ink-faint hover:text-rose-600 transition-colors cursor-pointer"
                             title="Déconnecter"
                           >
                             <X size={11} />
@@ -513,7 +513,7 @@ export default function IntegrationsPage() {
                         <button
                           onClick={() => handleConnect(app.slug)}
                           disabled={isBusy}
-                          className="h-6 px-2.5 text-[11px] font-medium border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 rounded-md shadow-2xs inline-flex items-center transition-colors cursor-pointer"
+                          className="h-6 px-2.5 text-[11px] font-medium border border-mv-border bg-white hover:bg-mv-cream-soft text-mv-ink-soft rounded-md shadow-2xs inline-flex items-center transition-colors cursor-pointer"
                         >
                           <span>{isBusy ? '...' : 'Connecter'}</span>
                         </button>
@@ -529,10 +529,10 @@ export default function IntegrationsPage() {
 
       {/* ── 5. Console de Test Webhook Compacte (Bottom Strip — 40px) ── */}
       {isAdmin && (
-        <div className="bg-white border border-zinc-200 rounded-lg p-3 shadow-xs space-y-2 mt-4">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 font-mono flex items-center justify-between">
+        <div className="bg-white border border-mv-border rounded-lg p-3 shadow-xs space-y-2 mt-4">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-mv-ink-faint font-mono flex items-center justify-between">
             <span>⚡ TESTEUR WEBHOOK ROI LEADS (/api/webhooks/roi-event)</span>
-            <span className="text-[10px] text-zinc-400">Simulation d'attribution de lead</span>
+            <span className="text-[10px] text-mv-ink-faint">Simulation d'attribution de lead</span>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 items-center">
@@ -541,7 +541,7 @@ export default function IntegrationsPage() {
               readOnly
               value={testWebhookUrl}
               onClick={(e) => (e.target as HTMLInputElement).select()}
-              className="w-full sm:flex-1 h-7 text-xs font-mono bg-zinc-50 border border-zinc-200 rounded px-2.5 text-zinc-600 select-all focus:outline-hidden"
+              className="w-full sm:flex-1 h-7 text-xs font-mono bg-mv-cream-soft border border-mv-border rounded px-2.5 text-mv-ink-soft select-all focus:outline-hidden"
             />
             <Button
               size="sm"
@@ -559,29 +559,29 @@ export default function IntegrationsPage() {
       {/* ── Modale de Configuration Composio API Key ── */}
       {isEnvModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white border border-zinc-200 rounded-xl shadow-mv-lg max-w-md w-full p-4 space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
-              <span className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+          <div className="bg-white border border-mv-border rounded-xl shadow-mv-lg max-w-md w-full p-4 space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-mv-border">
+              <span className="text-xs font-bold text-mv-ink flex items-center gap-1.5">
                 <Plug className="w-3.5 h-3.5 text-emerald-600" />
                 Configuration de Composio API Key
               </span>
               <button
                 onClick={() => setIsEnvModalOpen(false)}
-                className="text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                className="text-mv-ink-faint hover:text-mv-ink-soft cursor-pointer"
               >
                 <X size={14} />
               </button>
             </div>
 
-            <p className="text-xs text-zinc-600 leading-relaxed">
-              Pour activer les connexions automatiques à Gmail, Google Drive, Stripe et GitHub, ajoutez votre clé dans votre fichier <code className="font-mono text-zinc-800 bg-zinc-100 px-1 py-0.2 rounded">.env.local</code> ou les variables Vercel :
+            <p className="text-xs text-mv-ink-soft leading-relaxed">
+              Pour activer les connexions automatiques à Gmail, Google Drive, Stripe et GitHub, ajoutez votre clé dans votre fichier <code className="font-mono text-mv-ink bg-mv-cream-soft px-1 py-0.2 rounded">.env.local</code> ou les variables Vercel :
             </p>
 
             <div className="p-2.5 rounded bg-zinc-900 text-zinc-100 font-mono text-xs flex items-center justify-between">
               <span className="truncate">COMPOSIO_API_KEY=votre_cle_api</span>
               <button
                 onClick={copyEnvSnippet}
-                className="text-zinc-400 hover:text-white transition-colors cursor-pointer shrink-0 ml-2"
+                className="text-mv-ink-faint hover:text-white transition-colors cursor-pointer shrink-0 ml-2"
                 title="Copier le snippet"
               >
                 {copiedEnv ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
@@ -603,7 +603,7 @@ export default function IntegrationsPage() {
                   href="https://app.composio.dev/settings"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-zinc-500 hover:underline inline-flex items-center gap-1 text-[11px]"
+                  className="text-mv-ink-faint hover:underline inline-flex items-center gap-1 text-[11px]"
                 >
                   <span>Clés API</span>
                   <ExternalLink size={10} />

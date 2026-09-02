@@ -337,7 +337,7 @@ export function AppSidebar() {
 
   const techSprintItems: NavItem[] = [
     { key: 'projects', label: 'Projets & Livrables', href: '/projects', icon: FolderKanban },
-    { key: 'audits', label: 'Contrôle Qualité & QA', href: '/audits', icon: ClipboardCheck },
+    { key: 'audits', label: 'Contrôle Qualité & QA', href: '/overview?tab=qa', icon: ClipboardCheck },
   ];
 
   const techKnowledgeItems: NavItem[] = [
