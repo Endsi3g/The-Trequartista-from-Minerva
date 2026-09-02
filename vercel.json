@@ -22,6 +22,10 @@
     {
       "path": "/api/cron/coach-bot-weekly",
       "schedule": "0 14 * * 5"
+    },
+    {
+      "path": "/api/cron/stripe-mrr-sync",
+      "schedule": "0 11 * * *"
     }
   ],
   "headers": [

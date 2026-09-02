@@ -36,6 +36,7 @@ export interface Client {
   account_manager_name?: string;
   created_at: string;
   current_focus?: string | null;
+  stripe_customer_id?: string | null;
 }
 
 export interface ClientMrrHistoryEntry {
@@ -1102,6 +1103,8 @@ export interface Invoice {
   tax_tvq_cad: number;
   total_cad: number;
   stripe_payment_link_url?: string | null;
+  stripe_invoice_id?: string | null;
+  stripe_hosted_invoice_url?: string | null;
   notes?: string | null;
   terms?: string | null;
   created_by?: string | null;

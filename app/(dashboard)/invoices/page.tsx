@@ -96,6 +96,52 @@ export default function InvoicesHubPage() {
     loadData();
   }, []);
 
+  const [syncingStripe, setSyncingStripe] = useState(false);
+
+  const handleSyncStripe = async () => {
+    setSyncingStripe(true);
+    try {
+      const res = await fetch('/api/stripe/sync-invoices', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 501) {
+        toastError('Stripe non configuré', data.error || "Ajoute STRIPE_SECRET_KEY pour activer la synchronisation.");
+      } else if (res.ok) {
+        toastSuccess('Synchronisation Stripe terminée', `${data.created || 0} facture(s) importée(s), ${data.updated || 0} mise(s) à jour.`);
+        await loadData();
+      } else {
+        toastError('Erreur', data.error || 'La synchronisation a échoué.');
+      }
+    } catch {
+      toastError('Erreur réseau', 'La synchronisation a échoué.');
+    } finally {
+      setSyncingStripe(false);
+    }
+  };
+
+  const handleSendViaStripe = async (invoiceId: string) => {
+    setActionLoading(invoiceId);
+    try {
+      const res = await fetch('/api/stripe/create-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoiceId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 501) {
+        toastError('Stripe non configuré', data.error || "Ajoute STRIPE_SECRET_KEY pour activer l'envoi via Stripe.");
+      } else if (res.ok) {
+        toastSuccess('Facture envoyée via Stripe', 'Le client recevra un courriel avec le lien de paiement.');
+        await loadData();
+      } else {
+        toastError('Erreur', data.error || "Impossible d'envoyer cette facture via Stripe.");
+      }
+    } catch {
+      toastError('Erreur réseau', "L'envoi a échoué.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleUpdateStatus = async (id: string, status: InvoiceStatus) => {
     setActionLoading(id);
     try {
@@ -286,6 +332,16 @@ export default function InvoicesHubPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <Button
+            onClick={handleSyncStripe}
+            disabled={syncingStripe}
+            variant="outline"
+            className="gap-1.5 text-xs font-semibold cursor-pointer"
+          >
+            <RefreshCw size={14} className={cn(syncingStripe && 'animate-spin')} />
+            <span>{syncingStripe ? 'Synchronisation…' : 'Synchroniser Stripe'}</span>
+          </Button>
+
           <Button
             onClick={() => {
               setModalType('quote');
@@ -575,15 +631,39 @@ export default function InvoicesHubPage() {
                             <Printer size={15} />
                           </Link>
 
+                          {inv.stripe_hosted_invoice_url ? (
+                            <a
+                              href={inv.stripe_hosted_invoice_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 text-mv-ink-soft hover:text-blue-600 rounded-md hover:bg-black/[0.05] transition-colors"
+                              title="Ouvrir la facture Stripe"
+                            >
+                              <CreditCard size={15} />
+                            </a>
+                          ) : inv.type !== 'quote' && !isPaid ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleSendViaStripe(inv.id)}
+                              disabled={actionLoading === inv.id}
+                              title="Envoyer cette facture via Stripe"
+                              className="h-7 px-2 text-[11px] gap-1 text-blue-700 hover:bg-blue-50 cursor-pointer"
+                            >
+                              <CreditCard size={12} />
+                              <span className="hidden sm:inline">Envoyer via Stripe</span>
+                            </Button>
+                          ) : null}
+
                           {inv.stripe_payment_link_url && (
                             <a
                               href={inv.stripe_payment_link_url}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="p-1.5 text-mv-ink-soft hover:text-blue-600 rounded-md hover:bg-black/[0.05] transition-colors"
-                              title="Ouvrir le lien Stripe"
+                              title="Ouvrir le lien de paiement Stripe"
                             >
-                              <CreditCard size={15} />
+                              <ArrowUpRight size={15} />
                             </a>
                           )}
 
