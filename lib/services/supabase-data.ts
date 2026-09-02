@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote, CoachMemberMemory, CoachWeeklyReport, CoachGhostStatus, AiConversation, PerformanceReview } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote, CoachMemberMemory, CoachWeeklyReport, CoachGhostStatus, AiConversation, PerformanceReview, ProductivityScore, ProductivityMilestone } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 import { markdownToBlocks } from '@/lib/utils/markdown-to-blocks';
 
@@ -1800,6 +1800,53 @@ export async function addPerformanceReview(review: {
     return null;
   }
   return data as PerformanceReview;
+}
+
+// ── 16a-3. Productivity Leaderboard ("Classement") ──────────────────────────
+
+// periodMonth: 'YYYY-MM-01' string. Defaults to the current calendar month.
+export async function fetchProductivityLeaderboard(periodMonth?: string): Promise<ProductivityScore[]> {
+  const month = periodMonth || `${new Date().toISOString().slice(0, 7)}-01`;
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('productivity_scores')
+        .select('*, member:profiles!productivity_scores_user_id_fkey(full_name, avatar_url, workspace)')
+        .eq('period_month', month)
+        .order('total_points', { ascending: false });
+      if (error || !data) return [];
+      return data.map((row: Record<string, unknown>) => {
+        const member = row.member as { full_name?: string; avatar_url?: string | null; workspace?: string | null } | null;
+        return {
+          ...row,
+          member_name: member?.full_name || 'Membre',
+          member_avatar_url: member?.avatar_url ?? null,
+          workspace: member?.workspace ?? null,
+        };
+      }) as ProductivityScore[];
+    })(),
+    []
+  );
+}
+
+export async function fetchProductivityMilestones(periodMonth?: string, limit = 20): Promise<ProductivityMilestone[]> {
+  return withTimeout(
+    (async () => {
+      let query = getSupabase()
+        .from('productivity_milestones')
+        .select('*, member:profiles!productivity_milestones_user_id_fkey(full_name)')
+        .order('achieved_at', { ascending: false })
+        .limit(limit);
+      if (periodMonth) query = query.eq('period_month', periodMonth);
+      const { data, error } = await query;
+      if (error || !data) return [];
+      return data.map((row: Record<string, unknown>) => ({
+        ...row,
+        member_name: (row.member as { full_name?: string } | null)?.full_name || 'Membre',
+      })) as ProductivityMilestone[];
+    })(),
+    []
+  );
 }
 
 // ── 16b. Help / FAQ ──────────────────────────────────────────────────────────
