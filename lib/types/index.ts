@@ -86,6 +86,19 @@ export interface Department {
   created_at: string;
 }
 
+export interface PerformanceReview {
+  id: string;
+  member_id: string;
+  member_name?: string;
+  reviewer_id: string | null;
+  reviewer_name?: string;
+  period: string;
+  rating: number;
+  strengths: string | null;
+  improvements: string | null;
+  created_at: string;
+}
+
 export interface HelpArticle {
   id: string;
   question: string;

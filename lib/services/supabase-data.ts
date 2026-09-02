@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote, CoachMemberMemory, CoachWeeklyReport, CoachGhostStatus } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote, CoachMemberMemory, CoachWeeklyReport, CoachGhostStatus, PerformanceReview } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 import { markdownToBlocks } from '@/lib/utils/markdown-to-blocks';
 
@@ -1700,6 +1700,44 @@ export async function deleteDepartment(id: string): Promise<boolean> {
     return false;
   }
   return true;
+}
+
+// ── 16a-2. Performance Reviews ──────────────────────────────────────────────
+
+export async function fetchPerformanceReviews(memberId?: string): Promise<PerformanceReview[]> {
+  return withTimeout(
+    (async () => {
+      let query = getSupabase()
+        .from('performance_reviews')
+        .select('*, member:profiles!performance_reviews_member_id_fkey(full_name), reviewer:profiles!performance_reviews_reviewer_id_fkey(full_name)')
+        .order('created_at', { ascending: false });
+      if (memberId) query = query.eq('member_id', memberId);
+      const { data, error } = await query;
+      if (error || !data) return [];
+      return data.map((row: Record<string, unknown>) => ({
+        ...row,
+        member_name: (row.member as { full_name?: string } | null)?.full_name,
+        reviewer_name: (row.reviewer as { full_name?: string } | null)?.full_name,
+      })) as PerformanceReview[];
+    })(),
+    []
+  );
+}
+
+export async function addPerformanceReview(review: {
+  member_id: string;
+  reviewer_id: string;
+  period: string;
+  rating: number;
+  strengths?: string | null;
+  improvements?: string | null;
+}): Promise<PerformanceReview | null> {
+  const { data, error } = await getSupabase().from('performance_reviews').insert([review]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding performance review:', error);
+    return null;
+  }
+  return data as PerformanceReview;
 }
 
 // ── 16b. Help / FAQ ──────────────────────────────────────────────────────────
