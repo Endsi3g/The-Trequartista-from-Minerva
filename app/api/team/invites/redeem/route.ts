@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import webpush from 'web-push';
 
 export const dynamic = 'force-dynamic';
+
+const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
 
 function getAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -106,6 +110,44 @@ export async function POST(req: NextRequest) {
       ]);
     } catch (welcomeErr) {
       console.warn('[API Team Invite Redeem] Could not post welcome message:', welcomeErr);
+    }
+
+    // 5.5. Personal push notification to admins -- the #général message
+    // above is easy to miss if an admin isn't actively watching chat, and
+    // Kael specifically asked for both. Best-effort, never blocks
+    // redemption; silently no-ops if VAPID isn't configured.
+    if (vapidPublicKey && vapidPrivateKey) {
+      try {
+        webpush.setVapidDetails('mailto:equipe@minervaflow.com', vapidPublicKey, vapidPrivateKey);
+        const { data: newProfile } = await supabase.from('profiles').select('full_name').eq('id', userId).maybeSingle();
+        const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
+        const adminIds = (admins || []).map((a) => a.id).filter((id) => id !== userId);
+        if (adminIds.length > 0) {
+          const { data: adminSubs } = await supabase
+            .from('push_subscriptions')
+            .select('id, endpoint, p256dh, auth_key')
+            .in('user_id', adminIds);
+          const payload = JSON.stringify({
+            title: '👋 Nouveau membre',
+            body: `${newProfile?.full_name || 'Un nouveau membre'} vient de rejoindre l'équipe Minerva.`,
+            url: '/team',
+          });
+          const staleIds: string[] = [];
+          await Promise.all(
+            (adminSubs || []).map(async (sub) => {
+              try {
+                await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth_key } }, payload);
+              } catch (pushErr: unknown) {
+                const statusCode = (pushErr as { statusCode?: number })?.statusCode;
+                if (statusCode === 404 || statusCode === 410) staleIds.push(sub.id);
+              }
+            })
+          );
+          if (staleIds.length) await supabase.from('push_subscriptions').delete().in('id', staleIds);
+        }
+      } catch (pushErr) {
+        console.warn('[API Team Invite Redeem] Could not send admin push notification:', pushErr);
+      }
     }
 
     // 6. Translate custom role permissions if applicable

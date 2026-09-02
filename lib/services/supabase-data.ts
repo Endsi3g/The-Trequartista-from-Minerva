@@ -1320,6 +1320,30 @@ export async function redeemTeamInvite(
     console.warn('[redeemTeamInvite] Could not post welcome message:', welcomeErr);
   }
 
+  // Personal push notification to admins (same as the server route's
+  // primary path) -- routed through /api/push/send since the VAPID
+  // private key can't be used client-side; the newly-signed-up member's
+  // own session is enough to authenticate that call.
+  try {
+    const { data: newProfile } = await supabase.from('profiles').select('full_name').eq('id', userId).maybeSingle();
+    const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
+    const adminIds = (admins || []).map((a) => a.id).filter((id) => id !== userId);
+    if (adminIds.length > 0) {
+      await fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: '👋 Nouveau membre',
+          body: `${newProfile?.full_name || 'Un nouveau membre'} vient de rejoindre l'équipe Minerva.`,
+          url: '/team',
+          userIds: adminIds,
+        }),
+      }).catch(() => {});
+    }
+  } catch (pushErr) {
+    console.warn('[redeemTeamInvite] Could not send admin push notification:', pushErr);
+  }
+
   return true;
 }
 
