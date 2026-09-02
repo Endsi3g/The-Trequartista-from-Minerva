@@ -29,7 +29,7 @@ export function ProcessFlowDiagram({ steps, height = 480 }: ProcessFlowDiagramPr
     n.push({
       id: 'after-label',
       position: { x: COL_WIDTH + 120, y: -60 },
-      data: { label: 'APRÈS MINERVA OS' },
+      data: { label: 'APRÈS MINERVA (OPTIMISÉ)' },
       style: { background: 'transparent', border: 'none', fontWeight: 800, fontSize: 12, color: '#059669', width: COL_WIDTH },
       draggable: false,
       selectable: false,

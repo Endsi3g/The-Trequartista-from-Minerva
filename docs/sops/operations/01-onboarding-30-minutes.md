@@ -18,7 +18,7 @@ Comprendre l'agence, ton rôle et les outils en **30 minutes chrono**. Tout est 
 - **Qui on est :** Minerva est une agence-studio hybride basée à Montréal. On combine design, automatisation IA et solutions logicielles sur mesure pour les entrepreneurs et les restaurants.
 - **Notre écosystème :**
   - **Minerva (Agence)** : Design, stratégie, sites web Framer, intégration de systèmes.
-  - **Minerva OS** : Noyau technique propriétaire — automatisation et dashboards IA.
+  - **Minerva Trequartista** : ERP central et OS d'agence — CRM, projets, facturation, charge d'équipe.
   - **Minerva Reach** : Solution logicielle de prospection automatisée pour le Québec.
   - **Minerva Flow** : Cockpit de gestion pour restaurants et cafés.
 - **Notre modèle :** **100% commission**. Pas de salaire fixe. Chacun gagne selon son travail réel. Plus tu performes, plus tu gagnes.

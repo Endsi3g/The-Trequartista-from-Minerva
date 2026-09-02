@@ -43,11 +43,22 @@ function findSopIdByTitle(sops: AcademySOP[], titlePrefix: string): string | nul
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
+const TECH_IA_CATEGORIES = [
+  'IA & Ingénierie',
+  'Workflows IA',
+  'Développement',
+  'Tech',
+  'Tech & Ingénierie',
+  'Design Framer',
+  'Framer & Design',
+];
+
 export default function AcademyPage() {
   const router = useRouter();
   const { can } = useAppPermissions();
   const { id: userId, workspace, role } = useCurrentUser();
   const isTechCursusVisible = role === 'admin' || workspace === 'tech';
+  const isTechAllowed = role === 'admin' || workspace === 'tech';
   const [sops, setSops] = useState<AcademySOP[]>([]);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,12 +84,17 @@ export default function AcademyPage() {
     fetchCompletedSopIds(userId).then(setCompletedIds);
   }, [userId]);
 
+  const visibleSopsByWorkspace = useMemo(() => {
+    if (isTechAllowed) return sops;
+    return sops.filter((s) => !TECH_IA_CATEGORIES.includes(s.category));
+  }, [sops, isTechAllowed]);
+
   const onboardingPath = useMemo(
     () =>
-      sops
+      visibleSopsByWorkspace
         .filter((s) => s.is_onboarding_step)
         .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999)),
-    [sops]
+    [visibleSopsByWorkspace]
   );
   const onboardingDoneCount = onboardingPath.filter((s) => completedIds.includes(s.id)).length;
 
@@ -101,11 +117,11 @@ export default function AcademyPage() {
   }, [can, router]);
 
   const categoryCounts = useMemo(() => {
-    return sops.reduce<Record<string, number>>((acc, sop) => {
+    return visibleSopsByWorkspace.reduce<Record<string, number>>((acc, sop) => {
       acc[sop.category] = (acc[sop.category] || 0) + 1;
       return acc;
     }, {});
-  }, [sops]);
+  }, [visibleSopsByWorkspace]);
 
   const categories = useMemo(() => {
     return Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]);
@@ -113,7 +129,7 @@ export default function AcademyPage() {
 
   const filteredSops = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    return sops.filter((sop) => {
+    return visibleSopsByWorkspace.filter((sop) => {
       const matchSearch =
         !q ||
         sop.title.toLowerCase().includes(q) ||
@@ -123,7 +139,7 @@ export default function AcademyPage() {
       const matchCategory = selectedCategory === 'all' || sop.category === selectedCategory;
       return matchSearch && matchCategory;
     });
-  }, [sops, searchQuery, selectedCategory]);
+  }, [visibleSopsByWorkspace, searchQuery, selectedCategory]);
 
   // Distinguish Essential / Pillar SOPs from secondary SOPs -- now a clean
   // read of the real is_featured/is_essential DB columns (populated by the

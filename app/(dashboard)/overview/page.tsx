@@ -30,6 +30,7 @@ import type { Client, Lead, Project, VoiceCall, Task } from '@/lib/types';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { TechDashboard } from '@/components/tech/TechDashboard';
+import { ManagingOverview } from '@/components/dashboard/ManagingOverview';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -233,6 +234,10 @@ export default function OverviewPage() {
 
   if (workspace === 'tech') {
     return <TechDashboard />;
+  }
+
+  if (workspace === 'managing') {
+    return <ManagingOverview clients={clients} projects={projects} tasks={tasks} userName={fullName || ''} />;
   }
 
   const todayDateStr = new Date().toLocaleDateString('fr-CA', { weekday: 'long', month: 'long', day: 'numeric' });

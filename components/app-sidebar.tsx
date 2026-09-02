@@ -37,6 +37,8 @@ import {
   Activity,
   ExternalLink,
   Trophy,
+  Calendar,
+  Briefcase,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -285,6 +287,7 @@ export function AppSidebar() {
   // "Principal" -- daily-use, personal-scope items
   const mainMenuItems: NavItem[] = [
     { key: 'overview', label: 'Accueil', href: '/overview', icon: LayoutDashboard },
+    { key: 'booking', label: 'Rendez-Vous', href: '/booking', icon: Calendar },
     { key: 'voice-agent', label: 'Agent Vocal IA', href: '/voice-agent', icon: PhoneCall },
     { key: 'tasks', label: 'Tâches', href: '/tasks', icon: CheckSquare, count: counts.myTasks ?? undefined },
     { key: 'documents', label: 'Documents', href: '/documents', icon: FileText },
@@ -312,6 +315,7 @@ export function AppSidebar() {
   // member (previously admin-only outright).
   const teamItems: NavItem[] = [
     { key: 'team', label: 'Équipe', href: '/team', icon: UsersRound },
+    { key: 'roles', label: 'Rôles & Rémunérations', href: '/team/roles', icon: Briefcase },
     { key: 'classement', label: 'Classement', href: '/classement', icon: Trophy },
     ...(isAdmin || workspace === 'managing'
       ? [{ key: 'workload', label: 'Charge de travail', href: '/team/workload', icon: Gauge } as NavItem]

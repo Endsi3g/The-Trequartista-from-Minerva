@@ -81,7 +81,7 @@ export default async function Image() {
             Usage Exclusif In-House
           </div>
           <div style={{ color: '#6e7668', fontSize: '18px' }}>
-            minervaflow.com • Powered by Minerva OS
+            minervaflow.com • Powered by Minerva Trequartista
           </div>
         </div>
       </div>

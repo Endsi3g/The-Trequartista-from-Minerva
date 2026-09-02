@@ -135,6 +135,110 @@ export const PROPOSAL_TEMPLATES = [
       },
     ],
   },
+  {
+    id: 'ecommerce-and-ai-pack',
+    title: 'Offre E-Commerce & Automatisation IA — Boutique & Assistant Support',
+    deliverables: [
+      {
+        id: 'del-1',
+        title: 'Boutique E-Commerce Shopify / Next.js Haute Conversion',
+        category: 'Développement Web',
+        description: 'Design sur-mesure, catalogue produits, paiement Stripe/Apple Pay et tunnel d’achat optimisé.',
+        price_cad: 4500.0,
+      },
+      {
+        id: 'del-2',
+        title: 'Agent IA Support Client & Intégrations Automatisées',
+        category: 'IA & Systèmes',
+        description: 'Assistant IA connecté aux stocks et commandes (WhatsApp/Web), séquences de relance paniers.',
+        price_cad: 1200.0,
+      },
+    ],
+    total_monthly_cad: 299.0,
+    scope_phases: [
+      {
+        phase_number: 1,
+        title: 'Architecture & Cadrage IA',
+        duration_weeks: 1,
+        description: 'Cartographie des flux de données, arborescence e-commerce et prompt engineering de l’assistant.',
+        deliverables: ['Schéma d’intégration', 'Base de connaissances IA'],
+      },
+      {
+        phase_number: 2,
+        title: 'Développement Web & Entraînement IA',
+        duration_weeks: 2,
+        description: 'Intégration du catalogue, tests de paiements et validation des réponses de l’agent virtuel.',
+        deliverables: ['Boutique en staging', 'Simulations d’achats'],
+      },
+      {
+        phase_number: 3,
+        title: 'Déploiement en Production & Formation',
+        duration_weeks: 1,
+        description: 'Bascule DNS, activation des flux automatiques et session de formation pour l’équipe.',
+        deliverables: ['Site en production', 'Guide vidéo de gestion'],
+      },
+    ],
+  },
+  {
+    id: 'elite-retainer-pack',
+    title: 'Offre Retainer Agence Élite 360 — Production Vidéo, Ads & Systèmes',
+    deliverables: [
+      {
+        id: 'del-1',
+        title: 'Accompagnement Retainer Mensuel Élite (Contrat 6 Mois)',
+        category: 'Retainer Stratégique',
+        description: '16 vidéos 4K par mois, gestion continue des campagnes Ads Meta/Google, maintenance technique & CRO.',
+        price_cad: 2500.0,
+      },
+      {
+        id: 'del-2',
+        title: 'Setup Initial & Audit de Croissance Complet',
+        category: 'Stratégie & Audit',
+        description: 'Audit concurrentiel, refonte des tunnels de vente et configuration des tableaux de bord ROI.',
+        price_cad: 950.0,
+      },
+    ],
+    total_monthly_cad: 2500.0,
+    scope_phases: [
+      {
+        phase_number: 1,
+        title: 'Sprint Initial d’Audit & Production Batch 1',
+        duration_weeks: 2,
+        description: 'Tournage des 8 premières vidéos vedettes et restructuration des campagnes Ads.',
+        deliverables: ['8 vidéos 4K livrées', 'Nouvelles campagnes actives'],
+      },
+      {
+        phase_number: 2,
+        title: 'Itération Hebdomadaire & Rituels de Croissance',
+        duration_weeks: 4,
+        description: 'Publication hebdomadaire, optimisation du ROAS et reporting mensuel avec la direction.',
+        deliverables: ['Reporting ROI bi-mensuel', '8 vidéos additionnelles'],
+      },
+    ],
+  },
+];
+
+export const STANDARD_CONTRACT_CLAUSES = [
+  {
+    title: '1. Objet et Portée du Contrat',
+    content: "Le présent contrat de services professionnels régit la fourniture des livrables et prestations décrits au devis par Minerva Studio & Agence au profit du Client identifié. Toute prestation additionnelle non mentionnée fera l'objet d'un avenant écrit préalable.",
+  },
+  {
+    title: '2. Modalités Financières, Acompte et Taxes',
+    content: "Un acompte initial obligatoire de cinquante pour cent (50%) non remboursable est exigible dès la signature électronique pour déclencher la phase de cadrage. Le solde de cinquante pour cent (50%) est payable à la livraison finale. Les taxes applicables au Québec (TPS 5% et TVQ 9.975%) sont appliquées sur l'ensemble des montants en dollars canadiens (CAD).",
+  },
+  {
+    title: '3. Propriété Intellectuelle et Droits d’Auteur',
+    content: "Tous les droits de propriété intellectuelle sur les créations visuelles, montages vidéo, codes sources et configurations personnalisées demeurent la propriété exclusive de Minerva jusqu'au règlement intégral et complet de toutes les factures dues. Dès encaissement complet, les droits d'exploitation commerciale sont transférés au Client pour son usage direct.",
+  },
+  {
+    title: '4. Cycles de Révision et Approbations',
+    content: "Chaque livrable intermédiaire bénéficie d'un maximum de deux (2) cycles de révision inclus dans le forfait, devant être soumis par écrit dans un délai de sept (7) jours ouvrables suivant la présentation. À défaut de retour écrit dans ce délai, le livrable est réputé définitivement accepté et validé.",
+  },
+  {
+    title: '5. Droit Applicable et Juridiction Compétente',
+    content: "Le présent contrat est régi et interprété conformément aux lois en vigueur dans la province de Québec et aux lois fédérales du Canada qui s'y appliquent. En cas de différend non résolu à l'amiable, les parties attribuent compétence exclusive aux tribunaux du district judiciaire de Montréal.",
+  },
 ];
 
 const LOCAL_PROPOSALS_KEY = 'minerva_commercial_proposals_cache';

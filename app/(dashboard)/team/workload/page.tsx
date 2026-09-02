@@ -348,7 +348,7 @@ export default function TeamWorkloadPage() {
                           'h-full rounded-full transition-all duration-300',
                           isOverloaded ? 'bg-red-500' : isOptimal ? 'bg-mv-green' : 'bg-blue-500'
                         )}
-                        style={{ width: `${member.utilization_pct}%` }}
+                        style={{ width: `${Math.min(100, member.utilization_pct)}%` }}
                       />
                     </div>
                   </div>
@@ -390,10 +390,8 @@ export default function TeamWorkloadPage() {
                               type="button"
                               onClick={() => {
                                 const found = allTasks.find((t) => t.id === d.id);
-                                if (found) {
-                                  setSelectedTask(found);
-                                  setShowReassignModal(true);
-                                }
+                                setSelectedTask(found || ({ id: d.id, title: d.title, status: (d.status as Task['status']) || 'todo' } as Task));
+                                setShowReassignModal(true);
                               }}
                               className="text-[10.5px] text-mv-green hover:underline shrink-0 font-semibold cursor-pointer"
                             >

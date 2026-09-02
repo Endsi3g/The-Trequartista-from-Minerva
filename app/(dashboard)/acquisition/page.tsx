@@ -196,8 +196,28 @@ export default function AcquisitionDashboardPage() {
           </h1>
         </div>
 
-        {/* Right Controls */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href="/acquisition/ads"
+            className="h-7 px-2.5 bg-mv-green hover:bg-emerald-700 text-white text-xs font-semibold rounded-md flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+          >
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>Campagnes Ads</span>
+          </Link>
+          <Link
+            href="/acquisition/organic"
+            className="h-7 px-2.5 bg-mv-surface hover:bg-zinc-100 text-zinc-900 border border-mv-border text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Target className="w-3.5 h-3.5" />
+            <span>Organique &amp; SEO</span>
+          </Link>
+          <Link
+            href="/audits"
+            className="h-7 px-2.5 bg-mv-surface hover:bg-zinc-100 text-zinc-900 border border-mv-border text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <FileSearch className="w-3.5 h-3.5" />
+            <span>Audits Clients</span>
+          </Link>
           {/* Link to Review Engine 297/mo */}
           <Link href="/acquisition/review-engine">
             <button

@@ -255,12 +255,12 @@ export default function CompanyPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded bg-emerald-800 text-white flex items-center justify-center text-xs font-bold">2</div>
-                    <h3 className="text-sm font-bold text-mv-ink">Minerva OS</h3>
+                    <h3 className="text-sm font-bold text-mv-ink">Minerva Trequartista</h3>
                   </div>
-                  <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">Noyau Technique</span>
+                  <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">ERP & Cockpit Agence</span>
                 </div>
                 <p className="text-xs text-mv-ink-soft leading-relaxed">
-                  Le moteur technique propriétaire — systèmes de gestion, flux d’automatisation IA et tableaux de bord connectés en temps réel.
+                  Le centre de contrôle et ERP d’agence — gestion de projets, CRM, finance, charge d’équipe et télémétrie en temps réel.
                 </p>
               </div>
 
@@ -304,7 +304,7 @@ export default function CompanyPage() {
                 <p className="text-[11px] text-mv-ink-faint">Design sur mesure, menu dynamique, module réservation, galerie et SEO local.</p>
               </div>
               <div className="p-3.5 rounded bg-mv-cream-soft border border-mv-border space-y-1">
-                <p className="text-xs font-bold text-mv-ink">2. Intégration Minerva OS</p>
+                <p className="text-xs font-bold text-mv-ink">2. Tableaux de Bord Trequartista</p>
                 <p className="text-[11px] text-mv-ink-faint">Tableaux de bord des ventes, centralisation des avis Google, alertes automatiques.</p>
               </div>
               <div className="p-3.5 rounded bg-mv-cream-soft border border-mv-border space-y-1">

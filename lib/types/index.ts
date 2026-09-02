@@ -109,6 +109,8 @@ export interface ProductivityScore {
   member_name?: string;
   member_avatar_url?: string | null;
   workspace?: string | null;
+  department?: string | null;
+  role?: string | null;
   period_month: string;
   tasks_points: number;
   role_bonus_points: number;

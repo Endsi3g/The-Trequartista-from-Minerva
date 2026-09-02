@@ -21,6 +21,7 @@ import {
   ChevronUp,
   SmilePlus,
   Sparkles,
+  ArrowLeft,
 } from 'lucide-react';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { LogoMark } from '@/components/shell/Logo';
@@ -67,6 +68,13 @@ type Channel = {
   clientId?: string;
 };
 
+const DEFAULT_CHANNEL: Channel = {
+  type: 'topic',
+  id: TOPIC_CHANNELS[0].slug,
+  label: TOPIC_CHANNELS[0].label,
+  sublabel: TOPIC_CHANNELS[0].sublabel,
+};
+
 export default function ChatPage() {
   const { id: userId, fullName, avatarUrl } = useCurrentUser();
   const { toastError } = useToast();
@@ -74,8 +82,9 @@ export default function ChatPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [members, setMembers] = useState<TeamMemberSummary[]>([]);
   const [loadingChannels, setLoadingChannels] = useState(true);
-  const [active, setActive] = useState<Channel | null>(null);
+  const [active, setActive] = useState<Channel | null>(DEFAULT_CHANNEL);
   const [resolvingMemberId, setResolvingMemberId] = useState<string | null>(null);
+  const [showMobileChannels, setShowMobileChannels] = useState(false);
   const [filterQuery, setFilterQuery] = useState('');
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
@@ -118,24 +127,8 @@ export default function ChatPage() {
         setClients(c);
         setMembers(m);
 
-        // Auto-select first active channel on load to prevent empty screen
-        if (p.length > 0) {
-          setActive({
-            type: 'project',
-            id: p[0].id,
-            label: p[0].name,
-            sublabel: p[0].client_name || '',
-            projectId: p[0].id,
-          });
-        } else if (c.length > 0) {
-          setActive({
-            type: 'client',
-            id: c[0].id,
-            label: c[0].name,
-            sublabel: c[0].industry || '',
-            clientId: c[0].id,
-          });
-        }
+        // Keep default channel active if already set
+        setActive((prev) => prev || DEFAULT_CHANNEL);
       } finally {
         setLoadingChannels(false);
       }
@@ -305,6 +298,7 @@ interface MentionItem {
       sublabel: member.phone ? `${member.email} · ${member.phone}` : member.email,
       memberId: member.id,
     });
+    setShowMobileChannels(false);
   };
 
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -401,7 +395,7 @@ interface MentionItem {
       {/* ── Monolithic Split-Pane Container ── */}
       <div className="flex-1 bg-white border border-mv-border rounded-[6px] overflow-hidden flex shadow-2xs min-h-0">
         {/* ── Left Column: Channels & Threads Navigation (280px) ── */}
-        <div className="w-[280px] shrink-0 border-r border-mv-border bg-white flex flex-col min-h-0">
+        <div className={cn('shrink-0 border-r border-mv-border bg-white flex flex-col min-h-0', showMobileChannels ? 'w-full flex' : 'hidden md:flex md:w-[280px]')}>
           {/* Quick Search Header */}
           <div className="p-2.5 border-b border-mv-border">
             <div className="relative">
@@ -435,7 +429,10 @@ interface MentionItem {
                 {userId && (
                   <div className="py-1 border-b border-mv-border/40">
                     <button
-                      onClick={() => setActive({ type: 'coach', id: userId, label: 'Coach Minerva', sublabel: 'Assistant IA personnel' })}
+                      onClick={() => {
+                        setActive({ type: 'coach', id: userId, label: 'Coach Minerva', sublabel: 'Assistant IA personnel' });
+                        setShowMobileChannels(false);
+                      }}
                       className={cn(
                         'w-full text-left px-3 h-8 flex items-center justify-between text-[12px] transition-colors cursor-pointer',
                         active?.type === 'coach'
@@ -461,7 +458,10 @@ interface MentionItem {
                     return (
                       <button
                         key={t.slug}
-                        onClick={() => setActive({ type: 'topic', id: t.slug, label: t.label, sublabel: t.sublabel })}
+                        onClick={() => {
+                          setActive({ type: 'topic', id: t.slug, label: t.label, sublabel: t.sublabel });
+                          setShowMobileChannels(false);
+                        }}
                         className={cn(
                           'w-full text-left px-3 h-8 flex items-center justify-between text-[12px] transition-colors cursor-pointer',
                           isSelected
@@ -489,15 +489,16 @@ interface MentionItem {
                       return (
                         <button
                           key={p.id}
-                          onClick={() =>
+                          onClick={() => {
                             setActive({
                               type: 'project',
                               id: p.id,
                               label: p.name,
                               sublabel: p.client_name || 'Projet',
                               projectId: p.id,
-                            })
-                          }
+                            });
+                            setShowMobileChannels(false);
+                          }}
                           className={cn(
                             'w-full text-left px-3 h-8 flex items-center justify-between text-[12px] transition-colors cursor-pointer',
                             isSelected
@@ -531,15 +532,16 @@ interface MentionItem {
                       return (
                         <button
                           key={c.id}
-                          onClick={() =>
+                          onClick={() => {
                             setActive({
                               type: 'client',
                               id: c.id,
                               label: c.name,
                               sublabel: c.industry || 'Client',
                               clientId: c.id,
-                            })
-                          }
+                            });
+                            setShowMobileChannels(false);
+                          }}
                           className={cn(
                             'w-full text-left px-3 h-8 flex items-center justify-between text-[12px] transition-colors cursor-pointer',
                             isSelected
@@ -602,18 +604,31 @@ interface MentionItem {
         </div>
 
         {/* ── Right Column: Active Discussion Thread ── */}
-        <div className="flex-1 flex flex-col min-w-0 bg-white">
+        <div className={cn('flex-1 flex flex-col min-w-0 bg-white', showMobileChannels ? 'hidden md:flex' : 'flex')}>
           {!active ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center px-6">
               <MessageSquare className="w-7 h-7 text-zinc-300" />
               <p className="text-xs font-semibold text-zinc-700">Sélectionnez une discussion</p>
               <p className="text-[11px] text-zinc-400">Choisissez un projet, un client ou un collègue dans la colonne de gauche.</p>
+              <button
+                onClick={() => setShowMobileChannels(true)}
+                className="md:hidden mt-2 px-3 py-1.5 rounded bg-zinc-900 text-white text-xs font-semibold cursor-pointer"
+              >
+                Voir les canaux
+              </button>
             </div>
           ) : (
             <>
               {/* ── Channel Header (44px) ── */}
               <div className="h-11 px-4 border-b border-mv-border flex items-center justify-between shrink-0 bg-white">
                 <div className="flex items-center gap-2 min-w-0">
+                  <button
+                    onClick={() => setShowMobileChannels(true)}
+                    className="md:hidden p-1 -ml-1.5 mr-0.5 text-zinc-500 hover:text-zinc-900 rounded cursor-pointer"
+                    title="Retour aux canaux"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
                   <span className="font-semibold text-[13.5px] text-mv-ink truncate">
                     {active.type === 'topic' ? `#${active.label}` : active.label}
                   </span>

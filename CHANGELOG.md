@@ -4,7 +4,39 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
-## 2026-09-02 (v2.17.2) — Script de Déploiement Supabase Cross-Platform (Bash / macOS)
+## 2026-09-02 (v2.18.0) — Refonte Intégrale Minerva Trequartista (Clients & MRR, Contrats Réels, Booking In-App, Rôles & Rémunérations, Ergonomie Mobile & Purge Minerva OS)
+
+Mise en production de la refonte globale de l'ERP d'agence Minerva Trequartista :
+
+- **Nouveau Module de Booking Hybride In-App (`/booking` & `/book/[id]`)** :
+  - Configuration interactive des plages horaires de disponibilité hebdomadaires par collaborateur.
+  - Planification de réunions internes d'équipe et 1-on-1 avec statuts en temps réel.
+  - Page publique de réservation client (`/book/[id]`) sans authentification requise, avec sélecteur de créneaux dynamiques et confirmation instantanée avec lien Google Meet.
+  - Service `lib/services/booking.ts` avec persistance hybride (Supabase + cache local résilient).
+- **Fiches de Postes, Rituels & Rémunérations (`/team/roles`)** :
+  - Page dédiée présentant les 4 départements officiels : *Ventes & Prospection (Closers/SDR)*, *Création & Vidéo (Creators/Monteurs)*, *Tech & Systèmes (Devs/Intégrateurs)*, *Opérations & Managing (Account Managers/Ops)*.
+  - Fiches de missions détaillées, rituels quotidiens/hebdomadaires obligatoires et KPIs chiffrés.
+  - Modèle de rémunération transparent avec Simulateur interactif de commissions hybrides RevOps (10% setup, 5% MRR récurrent, multiplicateur quota x1.25).
+- **Refonte Business (Clients, MRR & Devis Réels)** :
+  - Page `/clients` modernisée avec conformité design system Minerva, ventilation avancée du MRR et affichage adaptatif en cartes tactiles sur mobile (< 640px).
+  - 4 modèles d'offres et contrats d'agence réalistes intégrés dans `lib/services/proposals.ts` (*Pack Flow & 8 Reels*, *Site Framer & Ads*, *E-Commerce & Agent IA*, *Retainer Élite 360*).
+  - Intégration des clauses juridiques québécoises standardisées (Loi protection consommateur, propriété intellectuelle conditionnelle, limite 2 révisions, juridiction Montréal, acompte 50% non-remboursable).
+- **Recentrage de l'Acquisition & Sous-Pages Dédiées** :
+  - `/acquisition/ads` : Cockpit de pilotage des campagnes payantes (Meta Ads, Google Search, TikTok Ads : budgets, CPL, leads et ROAS).
+  - `/acquisition/organic` : Cockpit de croissance naturelle (SEO local Google Maps Montréal, portée vidéo organique, taux de réponse outbound).
+  - Sous-navigation unifiée dans le Hub `/acquisition` et lien vers le générateur d'audits clients.
+- **Cockpit Managing Exécutif (`/overview`)** :
+  - Vue dédiée pour le workspace `managing` axée sur la gouvernance, l'équilibrage d'équipe, la rétention LTV et la santé globale de l'agence.
+- **Réparations & Assainissement des Flux Prioritaires** :
+  - Charge de travail (`/team/workload`) : stabilisation du calcul des capacités et du flux de réattribution de tâches.
+  - Leaderboard (`/classement`) : affichage continu de l'ensemble des membres de `profiles` même avec un score de départ de 0 point.
+  - Chat d'équipe (`/chat`) : sélection fiable des canaux `#général` et `#annonces`, et support responsive complet sur mobile avec bascule fluide entre liste des canaux et discussion.
+  - Académie (`/academy`) : cloisonnement strict masquant les SOPs Tech/IA dans les workspaces Prospection et Managing, et élimination des 404s.
+  - Purge intégrale de la marque : élimination définitive de toute mention obsolète de « Minerva OS » au profit du trio officiel (**Minerva Reach**, **Minerva Flow**, **Minerva Trequartista**).
+- **Base de Données & Master Script Consolidé** :
+  - Mise à jour de `supabase/deploy_production_complete.sql` (v2.18.0) intégrant les tables `member_availabilities` et `bookings` avec politiques RLS et Realtime.
+
+---
 
 Amélioration des scripts d'infrastructure et d'outillage développeur :
 

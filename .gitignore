@@ -35,3 +35,9 @@ yarn-error.log*
 .vercel
 .env*
 package-lock.json
+
+# agent scratchdirs
+.agents/*
+!.agents/skills/
+ORIGINAL_REQUEST.md
+PROJECT.md

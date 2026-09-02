@@ -1,4 +1,4 @@
-# SOP-APP-01 — Guide Pratique : Utiliser & Déployer Minerva OS Lite (Prospection & Closing)
+# SOP-APP-01 — Guide Pratique : Utiliser & Déployer Minerva Reach (Prospection & Closing)
 
 **URL de l'application :** [https://minerva-os-lite-desktop.vercel.app/today](https://minerva-os-lite-desktop.vercel.app/today)  
 **Dernière mise à jour :** 31 août 2026  
@@ -7,9 +7,9 @@
 
 ---
 
-## 1. Rôle de Minerva OS Lite dans l'Écosystème
+## 1. Rôle de Minerva Reach dans l'Écosystème
 
-Minerva OS Lite est l'application ultra-légère conçue pour le terrain et la routine quotidienne des commerciaux :
+Minerva Reach est l'application conçue pour le terrain et la routine quotidienne des commerciaux :
 - **Vue Aujourd'hui (`/today`)** : Tableau de bord quotidien condensé des actions prioritaires, objectifs d'appels et relances.
 - **Extracteur & Qualification de Leads** : Module rapide pour qualifier les fiches commerces (Google Maps, Instagram, avis clients).
 - **Mode Focus Sans Friction** : Interface rapide permettant d'exécuter 30 à 50 contacts par session.

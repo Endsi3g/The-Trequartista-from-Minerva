@@ -455,17 +455,20 @@ export default function ProposalsDashboardPage() {
             <form onSubmit={handleCreateProposalSubmit} className="p-6 overflow-y-auto space-y-6">
               {/* Quick Template Picker */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-mv-ink flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Modèles d'offres pré-configurés</span>
+                <label className="text-xs font-bold text-mv-ink flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Modèles d'offres & contrats agence réels</span>
+                  </span>
+                  <span className="text-[10px] text-mv-green font-semibold bg-mv-green/10 px-2 py-0.5 rounded">4 Modèles Prêts</span>
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => handleApplyTemplate('flow-and-reels-pack')}
                     className="p-2.5 rounded-xl border border-mv-border bg-mv-cream-soft hover:border-mv-green text-left transition-colors cursor-pointer"
                   >
-                    <span className="font-bold text-xs text-mv-ink block">Pack Flow & 8 Reels 4K</span>
+                    <span className="font-bold text-xs text-mv-ink block">1. Pack Flow & 8 Reels 4K</span>
                     <span className="text-[10.5px] text-mv-ink-soft">2 150 $ Setup + 149 $/mo</span>
                   </button>
                   <button
@@ -473,8 +476,24 @@ export default function ProposalsDashboardPage() {
                     onClick={() => handleApplyTemplate('framer-and-ads-pack')}
                     className="p-2.5 rounded-xl border border-mv-border bg-mv-cream-soft hover:border-mv-green text-left transition-colors cursor-pointer"
                   >
-                    <span className="font-bold text-xs text-mv-ink block">Site Framer & Ads 5 km</span>
+                    <span className="font-bold text-xs text-mv-ink block">2. Site Framer & Ads 5 km</span>
                     <span className="text-[10.5px] text-mv-ink-soft">4 000 $ Setup clé en main</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyTemplate('ecommerce-and-ai-pack')}
+                    className="p-2.5 rounded-xl border border-mv-border bg-mv-cream-soft hover:border-mv-green text-left transition-colors cursor-pointer"
+                  >
+                    <span className="font-bold text-xs text-mv-ink block">3. E-Commerce & Agent IA</span>
+                    <span className="text-[10.5px] text-mv-ink-soft">5 700 $ Setup + 299 $/mo</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyTemplate('elite-retainer-pack')}
+                    className="p-2.5 rounded-xl border border-mv-border bg-mv-cream-soft hover:border-mv-green text-left transition-colors cursor-pointer"
+                  >
+                    <span className="font-bold text-xs text-mv-ink block">4. Retainer Mensuel Élite 360</span>
+                    <span className="text-[10.5px] text-mv-ink-soft">3 450 $ Setup + 2 500 $/mo</span>
                   </button>
                 </div>
               </div>

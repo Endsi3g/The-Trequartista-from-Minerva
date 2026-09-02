@@ -107,9 +107,16 @@ export default function ClassementPage() {
                   <div className="text-2xl mb-2">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</div>
                   <UserAvatar src={s.member_avatar_url} name={s.member_name} size="lg" className="mx-auto mb-2" />
                   <div className="font-bold text-sm text-mv-ink truncate">{s.member_name}</div>
-                  {s.workspace && (
-                    <div className="text-[10.5px] text-mv-ink-faint mt-0.5">{WORKSPACE_LABELS[s.workspace] || s.workspace}</div>
-                  )}
+                  <div className="flex items-center justify-center gap-1.5 mt-1 flex-wrap">
+                    {s.department && (
+                      <Badge variant="green" className="text-[10px] px-1.5 py-0 font-medium">
+                        {s.department}
+                      </Badge>
+                    )}
+                    {s.workspace && (
+                      <span className="text-[10.5px] text-mv-ink-faint">{WORKSPACE_LABELS[s.workspace] || s.workspace}</span>
+                    )}
+                  </div>
                   <div className="text-xl font-bold text-mv-ink mt-2 font-mono" style={{ fontVariantNumeric: 'tabular-nums' }}>
                     {s.total_points}
                   </div>
@@ -168,9 +175,21 @@ function RankRow({ score }: { score: ProductivityScore }) {
       </div>
       <UserAvatar src={score.member_avatar_url} name={score.member_name} size="sm" />
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold text-mv-ink truncate">{score.member_name}</div>
-        <div className="text-[10.5px] text-mv-ink-faint">
-          {score.breakdown.tasks_completed_on_time || 0} tâches à temps
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-mv-ink truncate">{score.member_name}</span>
+          {score.department && (
+            <Badge variant="green" className="text-[9.5px] px-1.5 py-0 font-medium shrink-0">
+              {score.department}
+            </Badge>
+          )}
+          {score.role && (
+            <span className="text-[10.5px] text-mv-ink-faint capitalize">{score.role}</span>
+          )}
+        </div>
+        <div className="text-[10.5px] text-mv-ink-faint mt-0.5">
+          {(score.breakdown.tasks_completed_on_time || 0) > 0
+            ? `${score.breakdown.tasks_completed_on_time} tâches à temps`
+            : 'Membre actif — 0 tâche complétée'}
           {(score.breakdown.leads_won || 0) > 0 && ` · ${score.breakdown.leads_won} lead(s) gagné(s)`}
           {(score.breakdown.qa_audits_passed || 0) > 0 && ` · ${score.breakdown.qa_audits_passed} audit(s) QA`}
         </div>

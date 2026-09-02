@@ -519,7 +519,7 @@ const FALLBACK_DEV_SOPS: AcademySOP[] = [
     sort_order: 3,
   },
   {
-    id: 'sop-app-01-os-lite',
+    id: 'sop-app-01-reach',
     title: 'Guide Pratique : Utiliser & Déployer Minerva Reach (Prospection & Closing)',
     description: 'Workflow de prospection quotidienne, routine /today, qualification de leads locaux et closing.',
     category: 'Ventes & Prospection',
@@ -621,8 +621,13 @@ export async function fetchAcademySop(id: string): Promise<AcademySOP | null> {
   return withTimeout(
     (async () => {
       const { data, error } = await getSupabase().from('academy_sops').select('*').eq('id', id).maybeSingle();
-      if (error || !data) return null;
-      return withComputedBlocks(data as AcademySOP);
+      if (!error && data) {
+        return withComputedBlocks(data as AcademySOP);
+      }
+      const fallback = FALLBACK_DEV_SOPS.find(
+        (s) => s.id === id || (id === 'sop-app-01-os-lite' && s.id === 'sop-app-01-reach') || s.title.includes(id)
+      );
+      return fallback ? withComputedBlocks(fallback) : null;
     })(),
     null
   );
@@ -1809,21 +1814,116 @@ export async function fetchProductivityLeaderboard(periodMonth?: string): Promis
   const month = periodMonth || `${new Date().toISOString().slice(0, 7)}-01`;
   return withTimeout(
     (async () => {
-      const { data, error } = await getSupabase()
-        .from('productivity_scores')
-        .select('*, member:profiles!productivity_scores_user_id_fkey(full_name, avatar_url, workspace)')
-        .eq('period_month', month)
-        .order('total_points', { ascending: false });
-      if (error || !data) return [];
-      return data.map((row: Record<string, unknown>) => {
-        const member = row.member as { full_name?: string; avatar_url?: string | null; workspace?: string | null } | null;
+      const supabase = getSupabase();
+      const [{ data: profiles }, { data: scoresData }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, full_name, email, avatar_url, workspace, department, role')
+          .order('full_name', { ascending: true }),
+        supabase
+          .from('productivity_scores')
+          .select('*')
+          .eq('period_month', month),
+      ]);
+
+      const scoreMap = new Map<string, Record<string, unknown>>();
+      if (scoresData) {
+        for (const s of scoresData) {
+          if (s.user_id) scoreMap.set(s.user_id, s);
+        }
+      }
+
+      const allProfiles = profiles || [];
+      if (allProfiles.length === 0 && scoresData && scoresData.length > 0) {
+        return scoresData.map((row: Record<string, unknown>, idx: number) => ({
+          id: String(row.id || `ps-${idx}`),
+          user_id: String(row.user_id || ''),
+          member_name: 'Membre',
+          member_avatar_url: null,
+          workspace: null,
+          department: null,
+          role: null,
+          period_month: month,
+          tasks_points: Number(row.tasks_points || 0),
+          role_bonus_points: Number(row.role_bonus_points || 0),
+          total_points: Number(row.total_points || 0),
+          current_rank: idx + 1,
+          previous_rank: row.previous_rank ? Number(row.previous_rank) : null,
+          breakdown: (row.breakdown as ProductivityScore['breakdown']) || {},
+          computed_at: String(row.computed_at || new Date().toISOString()),
+        }));
+      }
+
+      const mergedScores: ProductivityScore[] = allProfiles.map((p) => {
+        const existing = scoreMap.get(p.id);
+        const memberName = p.full_name?.trim() || p.email?.split('@')[0] || 'Membre';
+
+        if (existing) {
+          return {
+            id: String(existing.id || `ps-${p.id}`),
+            user_id: p.id,
+            member_name: memberName,
+            member_avatar_url: p.avatar_url ?? (existing.member_avatar_url as string | null) ?? null,
+            workspace: p.workspace ?? (existing.workspace as string | null) ?? null,
+            department: p.department ?? null,
+            role: p.role ?? null,
+            period_month: month,
+            tasks_points: Number(existing.tasks_points || 0),
+            role_bonus_points: Number(existing.role_bonus_points || 0),
+            total_points: Number(existing.total_points || 0),
+            current_rank: existing.current_rank ? Number(existing.current_rank) : null,
+            previous_rank: existing.previous_rank ? Number(existing.previous_rank) : null,
+            breakdown: (existing.breakdown as ProductivityScore['breakdown']) || {
+              tasks_completed_on_time: 0,
+              tasks_completed_other: 0,
+              tasks_overdue_now: 0,
+              leads_won: 0,
+              qa_audits_passed: 0,
+              qa_audits_warning: 0,
+            },
+            computed_at: String(existing.computed_at || new Date().toISOString()),
+          };
+        }
+
         return {
-          ...row,
-          member_name: member?.full_name || 'Membre',
-          member_avatar_url: member?.avatar_url ?? null,
-          workspace: member?.workspace ?? null,
+          id: `starting-${p.id}-${month}`,
+          user_id: p.id,
+          member_name: memberName,
+          member_avatar_url: p.avatar_url ?? null,
+          workspace: p.workspace ?? null,
+          department: p.department ?? null,
+          role: p.role ?? null,
+          period_month: month,
+          tasks_points: 0,
+          role_bonus_points: 0,
+          total_points: 0,
+          current_rank: null,
+          previous_rank: null,
+          breakdown: {
+            tasks_completed_on_time: 0,
+            tasks_completed_other: 0,
+            tasks_overdue_now: 0,
+            leads_won: 0,
+            qa_audits_passed: 0,
+            qa_audits_warning: 0,
+          },
+          computed_at: new Date().toISOString(),
         };
-      }) as ProductivityScore[];
+      });
+
+      // Sort by total_points DESC, then member_name ASC
+      mergedScores.sort((a, b) => {
+        if (b.total_points !== a.total_points) {
+          return b.total_points - a.total_points;
+        }
+        return (a.member_name || '').localeCompare(b.member_name || '');
+      });
+
+      // Assign current_rank based on sorted position
+      return mergedScores.map((score, idx) => ({
+        ...score,
+        current_rank: idx + 1,
+      }));
     })(),
     []
   );

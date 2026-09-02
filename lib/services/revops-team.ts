@@ -90,7 +90,7 @@ export async function fetchTeamWorkloads(): Promise<TeamMemberWorkload[]> {
       const overdue = mine.filter((t: Task) => t.status !== 'done' && t.due_date && t.due_date < todayStr).length;
       
       const assignedHours = activeTasksCount * DEFAULT_TASK_ESTIMATED_HOURS;
-      const utilPct = Math.min(100, Math.round((assignedHours / DEFAULT_WEEKLY_CAPACITY_HOURS) * 100));
+      const utilPct = Math.round((assignedHours / DEFAULT_WEEKLY_CAPACITY_HOURS) * 100);
 
       let specialty: TeamSpecialty = 'generalist';
       const dept = (p.department || '').toLowerCase();
@@ -153,9 +153,19 @@ export function computeRevOpsSummary(workloads: TeamMemberWorkload[], commission
 export async function reassignTaskAssignee(taskId: string, targetMemberId: string): Promise<boolean> {
   try {
     const supabase = getSupabase();
+    const { data: targetProfile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', targetMemberId)
+      .maybeSingle();
+
     const { error } = await supabase
       .from('tasks')
-      .update({ assignee_id: targetMemberId, updated_at: new Date().toISOString() })
+      .update({
+        assignee_id: targetMemberId,
+        assignee_name: targetProfile?.full_name || null,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', taskId);
 
     return !error;

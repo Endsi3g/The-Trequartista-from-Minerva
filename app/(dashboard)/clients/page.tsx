@@ -281,101 +281,167 @@ export default function ClientsPage() {
             </Link>
           </div>
         ) : (
-          <table className="w-full text-[12.5px] border-collapse">
-            <thead>
-              <tr className="h-7 bg-black/[0.02] border-b border-mv-border text-[10.5px] font-medium uppercase tracking-wider text-zinc-400">
-                <th className="pl-3.5 pr-2 w-8 text-left">
-                  <input
-                    type="checkbox"
-                    checked={allVisibleSelected}
-                    onChange={toggleAll}
-                    className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-0 cursor-pointer"
-                  />
-                </th>
-                <th className="px-2 text-left font-medium">Entreprise</th>
-                <th className="px-2 text-left font-medium">Secteur</th>
-                <th className="px-2 text-right font-medium">MRR Mensuel</th>
-                <th className="px-2 text-left font-medium">Statut & Santé</th>
-                <th className="px-2 text-left font-medium hidden md:table-cell">Contact</th>
-                <th className="pr-3.5 pl-2 text-right font-medium">Action</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* Desktop Table View */}
+            <table className="hidden sm:table w-full text-[12.5px] border-collapse">
+              <thead>
+                <tr className="h-7 bg-black/[0.02] border-b border-mv-border text-[10.5px] font-medium uppercase tracking-wider text-zinc-400">
+                  <th className="pl-3.5 pr-2 w-8 text-left">
+                    <input
+                      type="checkbox"
+                      checked={allVisibleSelected}
+                      onChange={toggleAll}
+                      className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-0 cursor-pointer"
+                    />
+                  </th>
+                  <th className="px-2 text-left font-medium">Entreprise</th>
+                  <th className="px-2 text-left font-medium">Secteur</th>
+                  <th className="px-2 text-right font-medium">MRR Mensuel</th>
+                  <th className="px-2 text-left font-medium">Statut & Santé</th>
+                  <th className="px-2 text-left font-medium hidden md:table-cell">Contact</th>
+                  <th className="pr-3.5 pl-2 text-right font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleClients.map((client) => {
+                  const isSelected = selected.has(client.id);
+                  const isAtRisk = client.health_status === 'At Risk';
+                  return (
+                    <tr
+                      key={client.id}
+                      onClick={() => router.push(`/clients/${client.id}`)}
+                      className={cn(
+                        'h-10 border-b border-mv-border last:border-0 transition-colors cursor-pointer',
+                        isSelected ? 'bg-emerald-50/40' : 'hover:bg-black/[0.02]'
+                      )}
+                    >
+                      <td className="pl-3.5 pr-2 py-1.5" onClick={(e) => toggleOne(client.id, e)}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}}
+                          className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-0 cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-2 py-1.5 min-w-0 max-w-[200px]">
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-[3px] bg-zinc-100 border border-mv-border flex items-center justify-center text-[9.5px] font-semibold text-zinc-900 shrink-0">
+                            {getInitials(client.name)}
+                          </div>
+                          <span className="font-semibold text-zinc-900 truncate" title={`Réf: ${client.id.slice(0, 8)}`}>
+                            {client.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-2 py-1.5 whitespace-nowrap">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-[3px] bg-zinc-100/90 text-zinc-700 text-[10.5px] font-medium border border-zinc-200/50">
+                          {client.industry || 'Général'}
+                        </span>
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono font-semibold text-zinc-900 whitespace-nowrap" style={MONO}>
+                        {(client.mrr || 0).toLocaleString('fr-CA')} $ <span className="text-[10px] text-zinc-400 font-normal">/ mo</span>
+                      </td>
+                      <td className="px-2 py-1.5 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={cn(
+                              'w-1.5 h-1.5 rounded-full shrink-0',
+                              client.status === 'Active'
+                                ? isAtRisk
+                                ? 'bg-amber-500'
+                                : 'bg-mv-green'
+                                : client.status === 'Paused'
+                                ? 'bg-amber-500'
+                                : 'bg-zinc-400'
+                            )}
+                          />
+                          <span className="text-[11.5px] font-medium text-zinc-700">
+                            {client.status} · {client.health_status || 'On Track'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-2 py-1.5 text-[11.5px] text-zinc-600 truncate max-w-[160px] hidden md:table-cell">
+                        <span className="font-medium text-zinc-800">{client.contact_name || '—'}</span>
+                      </td>
+                      <td className="pr-3.5 pl-2 py-1.5 text-right whitespace-nowrap">
+                        <Link
+                          href={`/clients/${client.id}/roi-tracker`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-mv-green hover:underline"
+                        >
+                          <span>Suivi ROI</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* Mobile Stacked Cards View (< 640px) */}
+            <div className="block sm:hidden divide-y divide-mv-border">
               {visibleClients.map((client) => {
                 const isSelected = selected.has(client.id);
                 const isAtRisk = client.health_status === 'At Risk';
                 return (
-                  <tr
+                  <div
                     key={client.id}
                     onClick={() => router.push(`/clients/${client.id}`)}
                     className={cn(
-                      'h-10 border-b border-mv-border last:border-0 transition-colors cursor-pointer',
-                      isSelected ? 'bg-emerald-50/40' : 'hover:bg-black/[0.02]'
+                      'p-3.5 space-y-2.5 transition-colors cursor-pointer',
+                      isSelected ? 'bg-emerald-50/40' : 'active:bg-black/[0.03]'
                     )}
                   >
-                    <td className="pl-3.5 pr-2 py-1.5" onClick={(e) => toggleOne(client.id, e)}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => {}}
-                        className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-0 cursor-pointer"
-                      />
-                    </td>
-                    <td className="px-2 py-1.5 min-w-0 max-w-[200px]">
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-[3px] bg-zinc-100 border border-mv-border flex items-center justify-center text-[9.5px] font-semibold text-zinc-900 shrink-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 rounded-[4px] bg-zinc-100 border border-mv-border flex items-center justify-center text-xs font-bold text-zinc-900 shrink-0">
                           {getInitials(client.name)}
                         </div>
-                        <span className="font-semibold text-zinc-900 truncate" title={`Réf: ${client.id.slice(0, 8)}`}>
-                          {client.name}
-                        </span>
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-zinc-900 truncate">{client.name}</h4>
+                          <span className="text-[10.5px] text-zinc-500 truncate block">{client.industry || 'Restauration'}</span>
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-2 py-1.5 whitespace-nowrap">
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-[3px] bg-zinc-100/90 text-zinc-700 text-[10.5px] font-medium border border-zinc-200/50">
-                        {client.industry || 'Général'}
-                      </span>
-                    </td>
-                    <td className="px-2 py-1.5 text-right font-mono font-semibold text-zinc-900 whitespace-nowrap" style={MONO}>
-                      {(client.mrr || 0).toLocaleString('fr-CA')} $ <span className="text-[10px] text-zinc-400 font-normal">/ mo</span>
-                    </td>
-                    <td className="px-2 py-1.5 whitespace-nowrap">
+                      <div className="text-right">
+                        <span className="text-xs font-bold text-mv-green font-mono block" style={MONO}>
+                          {(client.mrr || 0).toLocaleString('fr-CA')} $
+                        </span>
+                        <span className="text-[10px] text-zinc-400">/ mois</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-mv-border/40 text-[11px]">
                       <div className="flex items-center gap-1.5">
                         <span
                           className={cn(
-                            'w-1.5 h-1.5 rounded-full shrink-0',
+                            'w-2 h-2 rounded-full',
                             client.status === 'Active'
                               ? isAtRisk
                                 ? 'bg-amber-500'
                                 : 'bg-mv-green'
-                              : client.status === 'Paused'
-                              ? 'bg-amber-500'
                               : 'bg-zinc-400'
                           )}
                         />
-                        <span className="text-[11.5px] font-medium text-zinc-700">
-                          {client.status} · {client.health_status || 'On Track'}
+                        <span className="text-zinc-600 font-medium">
+                          {client.status} ({client.health_status || 'Stable'})
                         </span>
                       </div>
-                    </td>
-                    <td className="px-2 py-1.5 text-[11.5px] text-zinc-600 truncate max-w-[160px] hidden md:table-cell">
-                      <span className="font-medium text-zinc-800">{client.contact_name || '—'}</span>
-                    </td>
-                    <td className="pr-3.5 pl-2 py-1.5 text-right whitespace-nowrap">
+
                       <Link
                         href={`/clients/${client.id}/roi-tracker`}
                         onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-mv-green hover:underline"
+                        className="text-mv-green font-semibold inline-flex items-center gap-1 text-[11px]"
                       >
-                        <span>Suivi ROI</span>
+                        <span>Portail ROI</span>
                         <ExternalLink className="w-3 h-3" />
                       </Link>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
 

@@ -415,7 +415,7 @@ CREATE POLICY "Acces commissions membres" ON public.team_commissions
 CREATE TABLE IF NOT EXISTS public.team_chat_messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    channel_type TEXT NOT NULL CHECK (channel_type IN ('project', 'client', 'dm', 'topic')),
+    channel_type TEXT NOT NULL CHECK (channel_type IN ('project', 'client', 'dm', 'topic', 'coach')),
     channel_id TEXT NOT NULL,
     sender_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     body TEXT,
@@ -434,6 +434,9 @@ ALTER TABLE public.team_chat_messages
     ADD COLUMN IF NOT EXISTS attachment_type TEXT,
     ADD COLUMN IF NOT EXISTS attachment_name TEXT,
     ADD COLUMN IF NOT EXISTS parent_message_id UUID REFERENCES public.team_chat_messages(id) ON DELETE CASCADE;
+
+ALTER TABLE public.team_chat_messages DROP CONSTRAINT IF EXISTS team_chat_messages_channel_type_check;
+ALTER TABLE public.team_chat_messages ADD CONSTRAINT team_chat_messages_channel_type_check CHECK (channel_type IN ('project', 'client', 'dm', 'topic', 'coach'));
 
 CREATE INDEX IF NOT EXISTS team_chat_channel_idx ON public.team_chat_messages(channel_type, channel_id, created_at);
 
@@ -599,6 +602,58 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
+-- ── 17. Tables du Module de Booking In-App & Hybride ───────────────────────
+CREATE TABLE IF NOT EXISTS public.member_availabilities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    member_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    day_of_week INT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+    start_time TEXT NOT NULL DEFAULT '09:00',
+    end_time TEXT NOT NULL DEFAULT '17:00',
+    slot_duration_minutes INT NOT NULL DEFAULT 30,
+    buffer_minutes INT NOT NULL DEFAULT 10,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.member_availabilities ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Availabilities read public" ON public.member_availabilities;
+CREATE POLICY "Availabilities read public" ON public.member_availabilities FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Availabilities write member" ON public.member_availabilities;
+CREATE POLICY "Availabilities write member" ON public.member_availabilities FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+CREATE TABLE IF NOT EXISTS public.bookings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    host_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    host_name TEXT,
+    host_email TEXT,
+    guest_name TEXT NOT NULL,
+    guest_email TEXT NOT NULL,
+    guest_phone TEXT,
+    guest_company TEXT,
+    meeting_type TEXT NOT NULL DEFAULT 'internal_sync',
+    meeting_title TEXT NOT NULL,
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time TIMESTAMPTZ NOT NULL,
+    status TEXT NOT NULL DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'completed', 'cancelled')),
+    notes TEXT,
+    location_url TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Bookings read host or guest" ON public.bookings;
+CREATE POLICY "Bookings read host or guest" ON public.bookings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Bookings insert public" ON public.bookings;
+CREATE POLICY "Bookings insert public" ON public.bookings FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Bookings update host" ON public.bookings;
+CREATE POLICY "Bookings update host" ON public.bookings FOR UPDATE TO authenticated USING (true);
+
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.bookings;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
 -- ============================================================================
--- FIN DU MASTER SCRIPT CONSOLIDÉ (v2.17.0)
+-- FIN DU MASTER SCRIPT CONSOLIDÉ (v2.18.0)
 -- ============================================================================

@@ -50,7 +50,7 @@ const PRODUCT_GROUPS: { key: string; label: string; products: string[] }[] = [
   { key: 'reach', label: 'REACH', products: ['Reach', 'Prospection', 'Acquisition'] },
   { key: 'ops', label: 'OPS', products: ['Operations', 'Ops', 'Partenariats'] },
   { key: 'marketing', label: 'MARKETING', products: ['Marketing', 'YouTube', 'Content'] },
-  { key: 'flow_os', label: 'FLOW & OS', products: ['Minerva-Flow', 'Minerva OS', 'Flow', 'OS'] },
+  { key: 'flow_trequartista', label: 'FLOW & TREQUARTISTA', products: ['Minerva-Flow', 'Minerva Trequartista', 'Flow', 'Trequartista'] },
   { key: 'labs', label: 'LABS & RECHERCHE', products: ['Atlas', 'Forge', 'Ascend', 'Recherche', 'IA'] },
 ];
 
