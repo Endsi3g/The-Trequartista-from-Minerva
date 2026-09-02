@@ -3091,6 +3091,24 @@ export async function fetchTeamMembers(excludeUserId?: string): Promise<TeamMemb
   );
 }
 
+// Uploads an image/PDF attached to the AI assistant panel -- reuses the
+// existing team-chat-media bucket under its own prefix rather than
+// provisioning a new Storage bucket for one small feature.
+export async function uploadHelpChatAttachment(file: File, userId: string): Promise<{ url: string; name: string; mimeType: string } | null> {
+  const supabase = getSupabase();
+  const path = `ai-assistant/${userId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+  const { error } = await supabase.storage.from('team-chat-media').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+  });
+  if (error) {
+    console.error('[Supabase] Error uploading help-chat attachment:', error);
+    return null;
+  }
+  const { data } = supabase.storage.from('team-chat-media').getPublicUrl(path);
+  return { url: data.publicUrl, name: file.name, mimeType: file.type || 'application/octet-stream' };
+}
+
 // Uploads a chat attachment (image, voice note, GIF, or generic file) to
 // the team-chat-media bucket and returns its public URL + inferred kind.
 export async function uploadTeamChatAttachment(

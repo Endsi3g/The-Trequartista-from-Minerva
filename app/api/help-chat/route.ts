@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { requireTeamMember } from '@/lib/server/permissions';
 import { getGeminiClient, GEMINI_MODEL, GEMINI_NOT_CONFIGURED_ERROR, generateGeminiText } from '@/lib/services/gemini';
-import { findRelevantSops, buildHelpChatPrompt, HELP_CHAT_TOOL_DECLARATIONS, executeHelpChatTool } from '@/lib/services/help-chat';
+import { findRelevantSops, buildHelpChatPrompt, HELP_CHAT_SYSTEM_INSTRUCTION, HELP_CHAT_TOOL_DECLARATIONS, executeHelpChatTool } from '@/lib/services/help-chat';
 import type { AcademySOP } from '@/lib/types';
 import type { Content } from '@google/genai';
 
@@ -33,6 +33,31 @@ export async function POST(req: Request) {
   const message = typeof body?.message === 'string' ? body.message.trim() : '';
   if (!message) {
     return NextResponse.json({ error: 'Message vide.' }, { status: 400 });
+  }
+
+  // Image/PDF attachment from the AI panel's "+" button. The URL is
+  // client-supplied, so it's only ever fetched server-side if it points at
+  // our own Storage bucket -- anything else is ignored rather than fetched,
+  // to avoid this route being usable as an open SSRF proxy.
+  let attachmentPart: { inlineData: { data: string; mimeType: string } } | null = null;
+  const attachmentUrl = typeof body?.attachmentUrl === 'string' ? body.attachmentUrl : null;
+  const attachmentMimeType = typeof body?.attachmentMimeType === 'string' ? body.attachmentMimeType : '';
+  const trustedAttachmentPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/team-chat-media/ai-assistant/`;
+  const isSupportedAttachmentType = attachmentMimeType.startsWith('image/') || attachmentMimeType === 'application/pdf';
+  if (attachmentUrl && isSupportedAttachmentType && attachmentUrl.startsWith(trustedAttachmentPrefix)) {
+    try {
+      const fileRes = await fetch(attachmentUrl);
+      if (fileRes.ok) {
+        const buffer = Buffer.from(await fileRes.arrayBuffer());
+        // Gemini's inline-data limit is well under this; a generous cap
+        // here just avoids sending something clearly oversized.
+        if (buffer.byteLength <= 15 * 1024 * 1024) {
+          attachmentPart = { inlineData: { data: buffer.toString('base64'), mimeType: attachmentMimeType } };
+        }
+      }
+    } catch (err) {
+      console.warn('[help-chat] Could not fetch attachment for Gemini:', err);
+    }
   }
 
   const isConversationAware = !!body && Object.prototype.hasOwnProperty.call(body, 'conversationId');
@@ -77,14 +102,25 @@ export async function POST(req: Request) {
   const history = (historyRows as { role: 'user' | 'assistant'; content: string }[]).reverse();
   const prompt = buildHelpChatPrompt(message, relevantSops, history);
 
-  const toolConfig = { tools: [{ functionDeclarations: HELP_CHAT_TOOL_DECLARATIONS }] };
+  // Static role/rules/app-context text lives in systemInstruction instead
+  // of being concatenated into `contents` on every call -- identical bytes
+  // on every request, so the API can treat it as a stable, reusable prefix
+  // rather than fresh input tokens each time (the main token-efficiency
+  // lever available here; formal explicit context caching isn't practical
+  // at this content's size).
+  const toolConfig = {
+    systemInstruction: HELP_CHAT_SYSTEM_INSTRUCTION,
+    tools: [{ functionDeclarations: HELP_CHAT_TOOL_DECLARATIONS }],
+  };
   const models = [GEMINI_MODEL, 'gemini-3.6-flash'];
 
   let answer = '';
   let lastErr: unknown = null;
   for (const model of models) {
     try {
-      let contents: Content[] = [{ role: 'user', parts: [{ text: prompt }] }];
+      let contents: Content[] = [
+        { role: 'user', parts: attachmentPart ? [{ text: prompt }, attachmentPart] : [{ text: prompt }] },
+      ];
       let response = await client.models.generateContent({ model, contents, config: toolConfig });
 
       // At most one tool round-trip: enough for "search then answer" or

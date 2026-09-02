@@ -1,20 +1,30 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, X, Send, User, Plus, SlidersHorizontal, ChevronDown, RefreshCw, Maximize2, Minimize2, Workflow, ClipboardList, Search, BookOpen, MessageSquareText } from 'lucide-react';
+import { Sparkles, X, Send, User, Plus, SlidersHorizontal, ChevronDown, RefreshCw, Maximize2, Minimize2, Workflow, ClipboardList, Search, BookOpen, MessageSquareText, Paperclip, FileText, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LogoMark } from '@/components/shell/Logo';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { useCurrentUser } from '@/hooks/use-current-user';
-import { fetchAiConversations, fetchHelpChatMessagesByConversation } from '@/lib/services/supabase-data';
+import { useToast } from '@/components/providers/ToastProvider';
+import { fetchAiConversations, fetchHelpChatMessagesByConversation, uploadHelpChatAttachment } from '@/lib/services/supabase-data';
 import type { AiConversation } from '@/lib/types';
+
+interface MessageAttachment {
+  url: string;
+  name: string;
+  mimeType: string;
+}
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   sources?: { id: string; title: string }[];
+  attachment?: MessageAttachment;
 }
+
+const ACCEPTED_ATTACHMENT_TYPES = 'image/*,application/pdf';
 
 const QUICK_PROMPTS: { icon: typeof Workflow; label: string }[] = [
   { icon: Workflow, label: 'Comment lier mes comptes dans Composio ?' },
@@ -28,6 +38,7 @@ const MAX_TEXTAREA_HEIGHT = 120;
 
 export function AiAssistantSpeedDial() {
   const { id: userId, fullName, avatarUrl } = useCurrentUser();
+  const { toastError } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -37,8 +48,11 @@ export function AiAssistantSpeedDial() {
   const [title, setTitle] = useState(DEFAULT_TITLE);
   const [conversations, setConversations] = useState<AiConversation[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [pendingAttachment, setPendingAttachment] = useState<MessageAttachment | null>(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Keyboard shortcut ⌘J ou Ctrl+J pour ouvrir/fermer le panneau
   useEffect(() => {
@@ -75,24 +89,46 @@ export function AiAssistantSpeedDial() {
     setConversations(await fetchAiConversations(userId));
   };
 
+  const handleSelectFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !userId) return;
+    setUploadingAttachment(true);
+    const attachment = await uploadHelpChatAttachment(file, userId);
+    setUploadingAttachment(false);
+    if (!attachment) {
+      toastError('Erreur', 'Impossible de téléverser ce fichier.');
+      return;
+    }
+    setPendingAttachment(attachment);
+  };
+
   const handleSendMessage = async (textToSend?: string) => {
     const query = (textToSend || draft).trim();
-    if (!query || sending) return;
+    if ((!query && !pendingAttachment) || sending) return;
 
+    const attachment = pendingAttachment;
     const userMsg: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
       content: query,
+      attachment: attachment || undefined,
     };
     setMessages((prev) => [...prev, userMsg]);
     setDraft('');
+    setPendingAttachment(null);
     setSending(true);
 
     try {
       const res = await fetch('/api/help-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: query, conversationId }),
+        body: JSON.stringify({
+          message: query || `(Fichier joint : ${attachment?.name})`,
+          conversationId,
+          attachmentUrl: attachment?.url,
+          attachmentMimeType: attachment?.mimeType,
+        }),
       });
 
       if (res.ok) {
@@ -289,6 +325,16 @@ export function AiAssistantSpeedDial() {
                             : 'bg-mv-surface border border-mv-border text-mv-ink rounded-bl-none shadow-2xs'
                         )}
                       >
+                        {m.attachment && (
+                          <div className={cn('flex items-center gap-1.5 text-[10.5px]', isUser ? 'text-white/85' : 'text-mv-ink-soft')}>
+                            {m.attachment.mimeType.startsWith('image/') ? (
+                              <Paperclip className="w-3 h-3 shrink-0" />
+                            ) : (
+                              <FileText className="w-3 h-3 shrink-0" />
+                            )}
+                            <span className="truncate">{m.attachment.name}</span>
+                          </div>
+                        )}
                         <p className="whitespace-pre-wrap">{m.content}</p>
                         {m.sources && m.sources.length > 0 && (
                           <div className="pt-1 border-t border-mv-border text-[10px] text-mv-ink-faint space-y-0.5">
@@ -333,6 +379,31 @@ export function AiAssistantSpeedDial() {
               }}
               className="m-2.5 mt-0 bg-mv-cream-soft border border-mv-border rounded-xl shrink-0 focus-within:border-mv-green/60 transition-colors"
             >
+              {pendingAttachment && (
+                <div className="flex items-center gap-1.5 mx-2.5 mt-2 px-2 py-1 rounded-md bg-mv-surface border border-mv-border text-[11px] text-mv-ink-soft w-fit">
+                  {pendingAttachment.mimeType.startsWith('image/') ? (
+                    <Paperclip className="w-3 h-3 text-mv-ink-faint shrink-0" />
+                  ) : (
+                    <FileText className="w-3 h-3 text-mv-ink-faint shrink-0" />
+                  )}
+                  <span className="truncate max-w-[180px]">{pendingAttachment.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPendingAttachment(null)}
+                    className="text-mv-ink-faint hover:text-mv-ink cursor-pointer"
+                    aria-label="Retirer la pièce jointe"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_ATTACHMENT_TYPES}
+                className="hidden"
+                onChange={handleSelectFile}
+              />
               <textarea
                 ref={textareaRef}
                 value={draft}
@@ -353,11 +424,13 @@ export function AiAssistantSpeedDial() {
                 <div className="flex items-center gap-0.5">
                   <button
                     type="button"
-                    className="p-1.5 rounded-md text-mv-ink-faint hover:text-mv-ink hover:bg-mv-border/50 transition-colors cursor-pointer"
-                    title="Ajouter du contexte"
-                    aria-label="Ajouter du contexte"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAttachment}
+                    className="p-1.5 rounded-md text-mv-ink-faint hover:text-mv-ink hover:bg-mv-border/50 transition-colors cursor-pointer disabled:opacity-50"
+                    title="Joindre une image ou un PDF"
+                    aria-label="Joindre une image ou un PDF"
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    {uploadingAttachment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                   </button>
                   <button
                     type="button"
@@ -372,7 +445,7 @@ export function AiAssistantSpeedDial() {
                   <span className="text-[10.5px] font-medium text-mv-ink-faint">Automatique</span>
                   <button
                     type="submit"
-                    disabled={!draft.trim() || sending}
+                    disabled={(!draft.trim() && !pendingAttachment) || sending}
                     className="w-6 h-6 rounded-full bg-mv-green hover:bg-mv-green-dark disabled:opacity-30 disabled:hover:bg-mv-green text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
                     aria-label="Envoyer"
                   >
