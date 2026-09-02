@@ -528,17 +528,24 @@ export interface TeamDocument {
 }
 
 
+// Matches the real minerva_roadmap_items schema (supabase/migrations/
+// 20260822000000_consolidated_schema.sql) -- an earlier version of this
+// type invented `impact`/`start_date`/`end_date`/`owner_name` fields and a
+// capitalized status vocabulary that no migration in this repo ever
+// created, which silently broke every read/write against this table.
 export interface MinervaRoadmapItem {
   id: string;
   title: string;
   product: string;
-  item_type: 'Milestone' | 'Launch' | 'Experiment';
-  status: 'Planned' | 'In Progress' | 'Done';
-  impact: 'Low' | 'Medium' | 'High';
-  start_date?: string | null;
-  end_date?: string | null;
-  owner_name?: string | null;
+  item_type: 'Milestone' | 'Launch' | 'Experiment' | 'Enhancement';
+  status: 'planned' | 'in_progress' | 'completed' | 'blocked';
+  target_quarter?: string | null;
+  description?: string | null;
+  notion_id?: string | null;
+  notion_url?: string | null;
+  sort_order?: number;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface ProjectMilestone {

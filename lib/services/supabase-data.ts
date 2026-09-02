@@ -2413,16 +2413,18 @@ export async function setAppPermission(key: string, allowed: boolean): Promise<b
 // ----------------------------------------------------
 // 16. PRODUITS MINERVA — ROADMAP INTERNE (admin-only)
 // ----------------------------------------------------
+// True fallback only (DB unreachable) -- shape matches the real schema, not
+// an invented one. Kept content-similar to the original Notion-imported
+// Minerva Flow rows so an offline view still looks plausible.
 const DEFAULT_ROADMAP_ITEMS: MinervaRoadmapItem[] = [
   {
     id: 'roadmap-flow-0-3m',
     title: 'Pilote 90 jours : Tests terrain restos & cafés, feedback réel et ajustements',
     product: 'Minerva Flow',
     item_type: 'Milestone',
-    status: 'In Progress',
-    impact: 'High',
-    start_date: '2026-08-01',
-    end_date: '2026-11-01',
+    status: 'in_progress',
+    target_quarter: 'Q3 2026',
+    sort_order: 1,
     created_at: new Date().toISOString(),
   },
   {
@@ -2430,10 +2432,9 @@ const DEFAULT_ROADMAP_ITEMS: MinervaRoadmapItem[] = [
     title: 'Consolidation : Stabilisation du produit, fonctions clés & valeur commerciale',
     product: 'Minerva Flow',
     item_type: 'Launch',
-    status: 'Planned',
-    impact: 'High',
-    start_date: '2026-11-01',
-    end_date: '2027-08-01',
+    status: 'planned',
+    target_quarter: 'Q4 2026',
+    sort_order: 2,
     created_at: new Date().toISOString(),
   },
   {
@@ -2441,10 +2442,9 @@ const DEFAULT_ROADMAP_ITEMS: MinervaRoadmapItem[] = [
     title: 'Référence Niche : Expansion produit viral autonome & solution stratégique',
     product: 'Minerva Flow',
     item_type: 'Experiment',
-    status: 'Planned',
-    impact: 'High',
-    start_date: '2027-08-01',
-    end_date: '2029-08-01',
+    status: 'planned',
+    target_quarter: 'Q3 2027',
+    sort_order: 3,
     created_at: new Date().toISOString(),
   },
 ];
@@ -2455,7 +2455,8 @@ export async function fetchMinervaRoadmap(): Promise<MinervaRoadmapItem[]> {
       const { data, error } = await getSupabase()
         .from('minerva_roadmap_items')
         .select('*')
-        .order('start_date', { ascending: true });
+        .order('sort_order', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: true });
       if (error || !data || data.length === 0) return DEFAULT_ROADMAP_ITEMS;
       return data as MinervaRoadmapItem[];
     })(),
@@ -2468,10 +2469,8 @@ export async function addMinervaRoadmapItem(item: {
   product: string;
   item_type: MinervaRoadmapItem['item_type'];
   status: MinervaRoadmapItem['status'];
-  impact: MinervaRoadmapItem['impact'];
-  start_date?: string | null;
-  end_date?: string | null;
-  owner_name?: string | null;
+  target_quarter?: string | null;
+  description?: string | null;
 }): Promise<MinervaRoadmapItem | null> {
   const { data, error } = await getSupabase().from('minerva_roadmap_items').insert([item]).select().single();
   if (error) {

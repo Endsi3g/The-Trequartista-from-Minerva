@@ -58,9 +58,10 @@ const STATUS_CONFIG_MAP: Record<
   MinervaRoadmapItem['status'],
   { label: string; bg: string; text: string; border: string; dot: string }
 > = {
-  Done: { label: 'Done', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' },
-  'In Progress': { label: 'In Progress', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', dot: 'bg-blue-500' },
-  Planned: { label: 'Planned', bg: 'bg-zinc-100', text: 'text-zinc-600', border: 'border-zinc-200', dot: 'bg-zinc-400' },
+  completed: { label: 'Terminé', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' },
+  in_progress: { label: 'En cours', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', dot: 'bg-blue-500' },
+  planned: { label: 'Planifié', bg: 'bg-zinc-100', text: 'text-zinc-600', border: 'border-zinc-200', dot: 'bg-zinc-400' },
+  blocked: { label: 'Bloqué', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', dot: 'bg-rose-500' },
 };
 
 const CLIENT_STATUS_OPTIONS: { status: FeatureRequestStatus; label: string; bg: string; text: string; border: string }[] = [
@@ -158,8 +159,7 @@ export default function ProduitsMinervaPage() {
         title: text,
         product: defaultProduct,
         item_type: 'Milestone',
-        status: 'Planned',
-        impact: 'Medium',
+        status: 'planned',
       });
 
       if (newItem) {
@@ -221,14 +221,14 @@ export default function ProduitsMinervaPage() {
   }, [items]);
 
   // Ribbon Stats
-  const totalItems = items.length || 10;
-  const doneCount = items.filter((i) => i.status === 'Done').length;
-  const inProgressCount = items.filter((i) => i.status === 'In Progress').length;
-  const plannedCount = items.filter((i) => i.status === 'Planned').length;
+  const totalItems = items.length;
+  const doneCount = items.filter((i) => i.status === 'completed').length;
+  const inProgressCount = items.filter((i) => i.status === 'in_progress').length;
+  const plannedCount = items.filter((i) => i.status === 'planned').length;
 
-  const donePct = Math.round((doneCount / totalItems) * 100);
-  const inProgressPct = Math.round((inProgressCount / totalItems) * 100);
-  const plannedPct = Math.round((plannedCount / totalItems) * 100);
+  const donePct = totalItems > 0 ? Math.round((doneCount / totalItems) * 100) : 0;
+  const inProgressPct = totalItems > 0 ? Math.round((inProgressCount / totalItems) * 100) : 0;
+  const plannedPct = totalItems > 0 ? Math.round((plannedCount / totalItems) * 100) : 0;
 
   // Filter Client Requests (Tab 2)
   const filteredRequests = useMemo(() => {
@@ -321,8 +321,7 @@ export default function ProduitsMinervaPage() {
                     title: title.trim(),
                     product: 'Minerva-Flow',
                     item_type: 'Launch',
-                    status: 'Planned',
-                    impact: 'High',
+                    status: 'planned',
                   }).then((item) => {
                     if (item) {
                       setItems((prev) => [item, ...prev]);
@@ -391,10 +390,9 @@ export default function ProduitsMinervaPage() {
           {/* Table Header Column Bar */}
           <div className="bg-zinc-50/70 border-b border-zinc-200 px-4 py-2 flex items-center justify-between text-[10px] uppercase font-bold text-zinc-500 tracking-wider">
             <div className="grid grid-cols-12 gap-3 w-full">
-              <span className="col-span-5 sm:col-span-6">Produit / Initiative</span>
-              <span className="col-span-3 sm:col-span-2">Dates / Échéance</span>
+              <span className="col-span-5 sm:col-span-7">Produit / Initiative</span>
+              <span className="col-span-3 sm:col-span-2">Trimestre</span>
               <span className="hidden sm:inline sm:col-span-1">Type</span>
-              <span className="hidden sm:inline sm:col-span-1">Priorité</span>
               <span className="col-span-4 sm:col-span-2 text-right">Statut</span>
             </div>
           </div>
@@ -419,7 +417,7 @@ export default function ProduitsMinervaPage() {
                   </div>
 
                   <span className="text-[10px] text-zinc-400 font-mono" style={MONO}>
-                    {groupItems.filter((i) => i.status === 'Done').length}/{groupItems.length} Done
+                    {groupItems.filter((i) => i.status === 'completed').length}/{groupItems.length} Done
                   </span>
                 </div>
 
@@ -432,10 +430,7 @@ export default function ProduitsMinervaPage() {
                       </div>
                     ) : (
                       groupItems.map((item) => {
-                        const statusConf = STATUS_CONFIG_MAP[item.status] || STATUS_CONFIG_MAP.Planned;
-                        const dateStr = item.start_date && item.end_date
-                          ? `${item.start_date} → ${item.end_date}`
-                          : item.end_date || 'Q3 2026';
+                        const statusConf = STATUS_CONFIG_MAP[item.status] || STATUS_CONFIG_MAP.planned;
 
                         return (
                           <div
@@ -444,7 +439,7 @@ export default function ProduitsMinervaPage() {
                           >
                             <div className="grid grid-cols-12 gap-3 w-full items-center">
                               {/* 1. Titre */}
-                              <div className="col-span-5 sm:col-span-6 font-medium text-zinc-900 truncate hover:text-emerald-700 cursor-pointer flex items-center gap-2">
+                              <div className="col-span-5 sm:col-span-7 font-medium text-zinc-900 truncate hover:text-emerald-700 cursor-pointer flex items-center gap-2">
                                 <span className="truncate">{item.title}</span>
                                 {item.product && item.product !== group.label && (
                                   <span className="hidden md:inline px-1.5 py-0.2 rounded text-[9.5px] font-mono bg-zinc-100 text-zinc-500 border border-zinc-200/60 shrink-0">
@@ -453,9 +448,9 @@ export default function ProduitsMinervaPage() {
                                 )}
                               </div>
 
-                              {/* 2. Dates */}
+                              {/* 2. Trimestre */}
                               <div className="col-span-3 sm:col-span-2 text-[11px] text-zinc-400 font-mono truncate" style={MONO}>
-                                {dateStr}
+                                {item.target_quarter || 'Non planifié'}
                               </div>
 
                               {/* 3. Type */}
@@ -465,20 +460,7 @@ export default function ProduitsMinervaPage() {
                                 </span>
                               </div>
 
-                              {/* 4. Priorité */}
-                              <div className="hidden sm:inline sm:col-span-1">
-                                <span className="flex items-center gap-1 text-[11px] font-medium text-zinc-600">
-                                  <span
-                                    className={cn(
-                                      'w-1.5 h-1.5 rounded-full',
-                                      item.impact === 'High' ? 'bg-rose-500' : item.impact === 'Medium' ? 'bg-amber-500' : 'bg-zinc-400'
-                                    )}
-                                  />
-                                  <span>{item.impact}</span>
-                                </span>
-                              </div>
-
-                              {/* 5. Statut & Actions */}
+                              {/* 4. Statut & Actions */}
                               <div className="col-span-4 sm:col-span-2 flex items-center justify-end gap-2">
                                 <select
                                   value={item.status}
@@ -491,9 +473,10 @@ export default function ProduitsMinervaPage() {
                                   )}
                                   style={MONO}
                                 >
-                                  <option value="Planned">○ Planned</option>
-                                  <option value="In Progress">◐ In Progress</option>
-                                  <option value="Done">● Done</option>
+                                  <option value="planned">○ Planifié</option>
+                                  <option value="in_progress">◐ En cours</option>
+                                  <option value="completed">● Terminé</option>
+                                  <option value="blocked">✕ Bloqué</option>
                                 </select>
 
                                 <button
