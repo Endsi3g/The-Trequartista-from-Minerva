@@ -654,7 +654,35 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
--- ── 18. Seed Changelog In-App & Annonce Officielle v2.18.0 ─────────────────
+-- ── 18. Table du Changelog In-App & Annonce Officielle v2.18.0 ─────────────────
+CREATE TABLE IF NOT EXISTS public.changelog_entries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    body TEXT NOT NULL DEFAULT '',
+    category TEXT DEFAULT 'fonctionnalite',
+    created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    author_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    image_url TEXT,
+    version TEXT,
+    included_items TEXT[] NOT NULL DEFAULT '{}'::text[],
+    published_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.changelog_entries ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "changelog_entries_select" ON public.changelog_entries;
+CREATE POLICY "changelog_entries_select" ON public.changelog_entries FOR SELECT USING (true);
+DROP POLICY IF EXISTS "changelog_entries_manage" ON public.changelog_entries;
+CREATE POLICY "changelog_entries_manage" ON public.changelog_entries FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.changelog_entries;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
 INSERT INTO public.changelog_entries (title, description, body, version, included_items)
 SELECT
     'Refonte Intégrale Minerva Trequartista — Booking In-App, Rôles & Rémunérations, Clients & MRR, Devis Réels (v2.18.0)',
