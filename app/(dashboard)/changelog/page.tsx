@@ -13,6 +13,25 @@ import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 
 const STATIC_ENTRIES: ChangelogEntry[] = [
   {
+    id: 'v2-18-0',
+    version: '2.18.0',
+    title: 'Refonte Intégrale Minerva Trequartista — Booking In-App, Rôles & Rémunérations, Clients & MRR, Devis Réels (v2.18.0)',
+    body: `Mise en production majeure de la version v2.18.0 de l'ERP Minerva Trequartista : nouveau module de réservation hybride interne et public (/booking et /book/[id]), fiches de postes et modèle de rémunération avec simulateur de commissions RevOps (/team/roles), refonte de la page Clients & MRR avec design mobile en cartes tactiles, 4 modèles de devis d'agence réels avec clauses juridiques québécoises standardisées (/proposals), découplage de l'acquisition en campagnes Ads payantes (/acquisition/ads) et croissance SEO organique (/acquisition/organic), cockpit exécutif Managing sur /overview, assainissement de la charge d'équipe et du classement, et purge intégrale de la marque « Minerva OS » au profit du trio officiel (Minerva Reach, Minerva Flow, Minerva Trequartista).`,
+    included_items: [
+      'Module de Booking In-App Hybride (/booking & /book/[id]) : Gestion des disponibilités hebdomadaires, planification de réunions d’équipe et lien public de prise de rendez-vous client avec sélection de créneaux sans collision et lien Google Meet.',
+      'Fiches de Postes & Rémunérations (/team/roles) : Fiches de missions des 4 départements officiels (Ventes, Création Vidéo, Tech & Systèmes, Opérations & Managing), rituels quotidiens/hebdomadaires et simulateur interactif de commissions RevOps (10% setup, 5% MRR récurrent, multiplicateur quota x1.25).',
+      'Refonte Clients & MRR (/clients) : Design moderne conforme aux tokens Minerva (#FAFAFA / #09090B / #059669), ventilation du MRR et affichage adaptatif en cartes tactiles sur mobile sans débordement horizontal.',
+      'Propositions & Devis Réels (/proposals) : 4 offres d’agence complètes (Pack Flow & 8 Reels, Site Framer & Ads, E-Commerce & Agent IA, Retainer Élite 360) avec clauses juridiques québécoises et acompte 50% Stripe.',
+      'Acquisition Découplée (/acquisition/ads & /acquisition/organic) : Cockpits séparés pour les campagnes payantes (Meta, Google, TikTok, CPL, ROAS) et la croissance naturelle (SEO local Google Maps, portée vidéo, outbound).',
+      'Cockpit Exécutif Managing (/overview) : Vue dédiée pour le workspace managing centrée sur la gouvernance, l’équilibrage de charge, la rétention client (94.2%) et la santé globale de l’agence (96%).',
+      'Assainissement Opérationnel & Purge « Minerva OS » : Réparation de la charge de travail (/team/workload), affichage continu de 100% des profils au leaderboard (/classement), split responsive du chat d’équipe (/chat) et cloisonnement des SOPs dans l’Académie (/academy).',
+    ],
+    image_url: '/changelog/minerva-flow-v2-5-0.png',
+    created_at: new Date().toISOString(),
+    created_by: 'system',
+    author_name: 'Minerva Core Team',
+  },
+  {
     id: 'v2-17-1',
     version: '2.17.1',
     title: 'Assainissement Codebase & Maintenance de Performance (v2.17.1)',
@@ -208,7 +227,7 @@ const STATIC_ENTRIES: ChangelogEntry[] = [
 export default function ChangelogPage() {
   const [entries, setEntries] = useState<ChangelogEntry[]>(STATIC_ENTRIES);
   const [loading, setLoading] = useState(true);
-  const [activeId, setActiveId] = useState<string | null>('v2-2-0');
+  const [activeId, setActiveId] = useState<string | null>('v2-18-0');
   const { role } = useCurrentUser();
   const isAdmin = role === 'admin';
 
@@ -218,13 +237,12 @@ export default function ChangelogPage() {
       try {
         const data = await fetchChangelogEntries();
         if (data && data.length > 0) {
-          // Live entries are always newer than the static v2.4.3 bridge
-          // entry (STATIC_ENTRIES predates the in-app changelog going
-          // live) -- they sort first, with the static entry kept last as
-          // historical continuity rather than forced to the top.
-          const combined = [...data.filter((d) => d.version !== '2.2.0'), STATIC_ENTRIES[0]];
+          const missingStatics = STATIC_ENTRIES.filter(
+            (s) => !data.some((d) => d.version === s.version)
+          );
+          const combined = [...missingStatics, ...data.filter((d) => d.version !== '2.2.0')];
           setEntries(combined);
-          setActiveId(combined[0].id);
+          setActiveId(combined[0]?.id || STATIC_ENTRIES[0].id);
         } else {
           setEntries(STATIC_ENTRIES);
           setActiveId(STATIC_ENTRIES[0].id);

@@ -10,9 +10,9 @@ export interface LatestChangelogEntry {
 }
 
 const DEFAULT_LATEST_ENTRY: LatestChangelogEntry = {
-  id: 'release-v2-2-0',
-  title: 'Refonte Haute Densité Linear & Superhuman (v2.2.0)',
-  version: '2.2.0',
+  id: 'v2-18-0',
+  title: 'Refonte Intégrale Minerva Trequartista (v2.18.0)',
+  version: '2.18.0',
 };
 
 // Powers the auto changelog banner -- the single most recent published entry.
@@ -33,9 +33,11 @@ export function useLatestChangelogEntry(): LatestChangelogEntry | null {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (data) resolved = data;
+        if (data && data.version && data.version >= '2.18.0') {
+          resolved = data;
+        }
       } catch {
-        // Fallback to default v2.2.0 release
+        // Fallback to default v2.18.0 release
       }
       if (!cancelled) setEntry(resolved);
     })();

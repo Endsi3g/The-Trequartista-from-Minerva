@@ -654,6 +654,44 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
+-- ── 18. Seed Changelog In-App & Annonce Officielle v2.18.0 ─────────────────
+INSERT INTO public.changelog_entries (title, description, body, version, included_items)
+SELECT
+    'Refonte Intégrale Minerva Trequartista — Booking In-App, Rôles & Rémunérations, Clients & MRR, Devis Réels (v2.18.0)',
+    'Mise en production majeure de la version v2.18.0 : nouveau module de booking, fiches de postes et grilles de rémunérations RevOps, refonte clients et MRR mobile-first, 4 offres de devis réels et purge définitive de la marque « Minerva OS ».',
+    'Mise en production majeure de la version v2.18.0 de l''ERP Minerva Trequartista : nouveau module de réservation hybride interne et public (/booking et /book/[id]), fiches de postes et modèle de rémunération avec simulateur de commissions RevOps (/team/roles), refonte de la page Clients & MRR avec design mobile en cartes tactiles, 4 modèles de devis d''agence réels avec clauses juridiques québécoises standardisées (/proposals), découplage de l''acquisition en campagnes Ads payantes (/acquisition/ads) et croissance SEO organique (/acquisition/organic), cockpit exécutif Managing sur /overview, assainissement de la charge d''équipe et du classement, et purge intégrale de la marque « Minerva OS » au profit du trio officiel (Minerva Reach, Minerva Flow, Minerva Trequartista).',
+    '2.18.0',
+    ARRAY[
+        'Module de Booking In-App Hybride (/booking & /book/[id]) : Gestion des disponibilités hebdomadaires, planification de réunions d’équipe et lien public de prise de rendez-vous client avec sélection de créneaux sans collision et lien Google Meet.',
+        'Fiches de Postes & Rémunérations (/team/roles) : Fiches de missions des 4 départements officiels (Ventes, Création Vidéo, Tech & Systèmes, Opérations & Managing), rituels quotidiens/hebdomadaires et simulateur interactif de commissions RevOps (10% setup, 5% MRR récurrent, multiplicateur quota x1.25).',
+        'Refonte Clients & MRR (/clients) : Design moderne conforme aux tokens Minerva (#FAFAFA / #09090B / #059669), ventilation du MRR et affichage adaptatif en cartes tactiles sur mobile sans débordement horizontal.',
+        'Propositions & Devis Réels (/proposals) : 4 offres d’agence complètes (Pack Flow & 8 Reels, Site Framer & Ads, E-Commerce & Agent IA, Retainer Élite 360) avec clauses juridiques québécoises et acompte 50% Stripe.',
+        'Acquisition Découplée (/acquisition/ads & /acquisition/organic) : Cockpits séparés pour les campagnes payantes (Meta, Google, TikTok, CPL, ROAS) et la croissance naturelle (SEO local Google Maps, portée vidéo, outbound).',
+        'Cockpit Exécutif Managing (/overview) : Vue dédiée pour le workspace managing centrée sur la gouvernance, l’équilibrage de charge, la rétention client (94.2%) et la santé globale de l’agence (96%).',
+        'Assainissement Opérationnel & Purge « Minerva OS » : Réparation de la charge de travail (/team/workload), affichage continu de 100% des profils au leaderboard (/classement), split responsive du chat d’équipe (/chat) et cloisonnement des SOPs dans l’Académie (/academy).'
+    ]
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.changelog_entries WHERE version = '2.18.0'
+);
+
+INSERT INTO public.team_chat_messages (channel_type, channel_id, sender_id, body)
+SELECT
+    'topic',
+    '00000000-0000-0000-0000-000000000002',
+    NULL,
+    '🚀 **Mise en production : Minerva Trequartista v2.18.0**' || E'\n\n' ||
+    'L''ERP central de l''agence fait un bond en avant avec 4 chantiers majeurs pour booster votre productivité quotidienne :' || E'\n\n' ||
+    '1. 📅 **Module de Booking Hybride (/booking & /book/...)** : Définissez vos disponibilités et partagez votre lien public pour permettre aux prospects et clients de réserver un créneau directement avec confirmation Google Meet.' || E'\n' ||
+    '2. 💼 **Fiches de Postes & Rémunérations (/team/roles)** : Transparence totale sur les 4 départements officiels, rituels d''équipe et simulateur interactif de commissions RevOps (10% setup, 5% MRR récurrent, multiplicateur quota x1.25).' || E'\n' ||
+    '3. 👥 **Clients & MRR Mobile-First (/clients)** : Suivi ventilé des revenus récurrents et affichage adapté en cartes tactiles sur mobile, avec 4 nouveaux modèles de devis d''agence réels (/proposals).' || E'\n' ||
+    '4. ⚡ **Assainissement Opérationnel & Cloisonnement** : Réparation de la charge de travail (/team/workload), leaderboard permanent (/classement), chat responsive et cloisonnement ciblé des SOPs dans l''Académie (/academy).' || E'\n\n' ||
+    '👉 Tous les détails sont disponibles dans le changelog complet : /changelog'
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.team_chat_messages
+    WHERE channel_id = '00000000-0000-0000-0000-000000000002'
+    AND body LIKE '%v2.18.0%'
+);
+
 -- ============================================================================
 -- FIN DU MASTER SCRIPT CONSOLIDÉ (v2.18.0)
 -- ============================================================================
