@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { LogoMark } from '@/components/shell/Logo';
 import { createClient } from '@/lib/supabase/client';
-import { fetchTeamInviteByToken, redeemTeamInvite, fetchRoles } from '@/lib/services/supabase-data';
+import { fetchTeamInviteByToken, fetchUsedTeamInviteInfo, redeemTeamInvite, fetchRoles } from '@/lib/services/supabase-data';
 
 const ROLE_LABELS: Record<string, string> = { admin: 'Admin', member: 'Membre' };
 const WORKSPACE_LABELS: Record<string, string> = { prospection: 'Prospection', managing: 'Managing', tech: 'Tech & Ingénierie' };
@@ -29,6 +29,15 @@ function JoinForm() {
   const [checking, setChecking] = useState(true);
   const [invalid, setInvalid] = useState(false);
 
+  // Set when this link was already redeemed -- the member is re-clicking
+  // their own (bookmarked) invite link instead of finding the app's real
+  // login URL. We offer a login form right here instead of a dead end.
+  const [alreadyUsed, setAlreadyUsed] = useState<{ email: string | null; workspace: string | null } | null>(null);
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,10 +53,23 @@ function JoinForm() {
       return;
     }
     (async () => {
+      // A member who already redeemed this link and is still signed in
+      // (same browser, session not expired) should land straight in the
+      // app rather than see a signup form or a login prompt at all.
+      const supabase = createClient();
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('workspace')
+          .eq('id', sessionData.session.user.id)
+          .maybeSingle();
+        window.location.href = workspaceHomeRoute(profile?.workspace ?? null);
+        return;
+      }
+
       const inv = await fetchTeamInviteByToken(token);
-      if (!inv) {
-        setInvalid(true);
-      } else {
+      if (inv) {
         setInvite({ role: inv.role, department: inv.department, custom_role_id: inv.custom_role_id, workspace: inv.workspace });
         if ((inv as any).custom_role_name) {
           setCustomRoleName((inv as any).custom_role_name);
@@ -55,10 +77,40 @@ function JoinForm() {
           const roles = await fetchRoles();
           setCustomRoleName(roles.find((r) => r.id === inv.custom_role_id)?.name || null);
         }
+        setChecking(false);
+        return;
+      }
+
+      const usedInfo = await fetchUsedTeamInviteInfo(token);
+      if (usedInfo) {
+        setAlreadyUsed({ email: usedInfo.email, workspace: usedInfo.workspace });
+        if (usedInfo.email) setEmail(usedInfo.email);
+      } else {
+        setInvalid(true);
       }
       setChecking(false);
     })();
   }, [token]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError(null);
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password: loginPassword,
+    });
+
+    if (error) {
+      setLoginError(error.message);
+      setLoginLoading(false);
+      return;
+    }
+
+    window.location.href = workspaceHomeRoute(alreadyUsed?.workspace ?? null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +143,68 @@ function JoinForm() {
 
   if (checking) {
     return <div className="text-center text-sm text-mv-ink-soft">Vérification de l'invitation…</div>;
+  }
+
+  if (alreadyUsed) {
+    return (
+      <div className="w-full max-w-md space-y-6">
+        <div className="text-center space-y-2">
+          <LogoMark size={40} className="mx-auto" />
+          <h1 className="text-xl font-extrabold text-mv-ink text-center tracking-tight font-display mb-1">
+            Bon retour parmi l'équipe Minerva
+          </h1>
+          <p className="text-xs text-mv-ink-soft">
+            Ce lien d'invitation a déjà été utilisé pour créer un compte. Reconnectez-vous ci-dessous.
+          </p>
+        </div>
+
+        {loginError && (
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-mv-red-bg border border-mv-red/30 text-mv-red text-xs font-medium">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{loginError}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-4 bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-md">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-mv-ink">Courriel</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:border-mv-green"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-mv-ink">Mot de passe</label>
+            <div className="relative">
+              <input
+                type={showLoginPassword ? 'text' : 'password'}
+                required
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="w-full px-3.5 py-2.5 pr-10 bg-mv-cream-soft border border-mv-border rounded-xl text-sm text-mv-ink focus:outline-none focus:border-mv-green font-mono"
+              />
+              <button
+                type="button"
+                onClick={() => setShowLoginPassword(!showLoginPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-mv-ink-soft hover:text-mv-ink cursor-pointer p-1"
+              >
+                {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={loginLoading}
+            className="w-full py-3 bg-mv-green hover:bg-mv-green-dark text-white font-bold text-sm rounded-xl shadow-mv-sm transition-all cursor-pointer disabled:opacity-50"
+          >
+            {loginLoading ? 'Connexion…' : 'Se connecter'}
+          </button>
+        </form>
+      </div>
+    );
   }
 
   if (invalid || !invite) {

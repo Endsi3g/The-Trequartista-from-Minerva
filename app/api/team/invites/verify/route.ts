@@ -37,7 +37,28 @@ export async function GET(req: NextRequest) {
     }
 
     if (invite.used_at) {
-      return NextResponse.json({ valid: false, error: 'Cette invitation a déjà été utilisée' }, { status: 410 });
+      // Not a dead end -- someone whose account already exists is
+      // re-clicking their own (bookmarked) invite link instead of finding
+      // the app's real login URL. Hand back who redeemed it so the join
+      // page can offer a login form instead of an "invalid link" error.
+      let usedByEmail: string | null = null;
+      let usedByName: string | null = null;
+      if (invite.used_by) {
+        const { data: usedByProfile } = await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .eq('id', invite.used_by)
+          .maybeSingle();
+        usedByEmail = usedByProfile?.email ?? null;
+        usedByName = usedByProfile?.full_name ?? null;
+      }
+      return NextResponse.json({
+        valid: false,
+        used: true,
+        usedByEmail,
+        usedByName,
+        workspace: invite.workspace || (invite.department?.toLowerCase().includes('tech') ? 'tech' : null),
+      });
     }
 
     if (invite.expires_at && new Date(invite.expires_at) < new Date()) {

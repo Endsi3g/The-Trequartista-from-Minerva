@@ -1253,6 +1253,27 @@ export async function fetchTeamInviteByToken(token: string): Promise<TeamInvite 
   return data as TeamInvite;
 }
 
+// Distinguishes "this invite was already redeemed by someone" from
+// "this token never existed/expired" -- so /team/join can offer the
+// already-redeemed member a login form (using their own invite link)
+// instead of a dead-end "invalid link" message.
+export async function fetchUsedTeamInviteInfo(
+  token: string
+): Promise<{ email: string | null; fullName: string | null; workspace: string | null } | null> {
+  try {
+    const res = await fetch(`/api/team/invites/verify?token=${encodeURIComponent(token.trim())}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json?.used) {
+        return { email: json.usedByEmail ?? null, fullName: json.usedByName ?? null, workspace: json.workspace ?? null };
+      }
+    }
+  } catch (err) {
+    console.warn('[fetchUsedTeamInviteInfo] error:', err);
+  }
+  return null;
+}
+
 export async function redeemTeamInvite(
   token: string,
   userId: string,
