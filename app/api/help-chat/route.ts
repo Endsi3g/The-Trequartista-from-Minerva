@@ -63,6 +63,12 @@ export async function POST(req: Request) {
   const isConversationAware = !!body && Object.prototype.hasOwnProperty.call(body, 'conversationId');
   let conversationId: string | null = isConversationAware && typeof body.conversationId === 'string' ? body.conversationId : null;
   let isNewConversation = false;
+  // Flips to false if `ai_conversations`/`conversation_id` isn't deployed
+  // yet (the migration ships in this same PR but needs a manual
+  // `npm run deploy:supabase` run) -- degrades to the flat /help history
+  // instead of failing the whole request or writing to a column that
+  // doesn't exist.
+  let conversationsSupported = isConversationAware;
 
   if (isConversationAware && !conversationId) {
     const { data: created, error: createErr } = await authed
@@ -70,17 +76,21 @@ export async function POST(req: Request) {
       .insert([{ user_id: guard.user.id, title: 'Nouvelle discussion' }])
       .select('id')
       .single();
-    if (createErr || !created) {
-      return NextResponse.json({ error: 'Impossible de créer la conversation.' }, { status: 500 });
+    if (createErr) {
+      if (!isMissingSchemaError(createErr)) {
+        return NextResponse.json({ error: 'Impossible de créer la conversation.' }, { status: 500 });
+      }
+      conversationsSupported = false;
+    } else if (created) {
+      conversationId = created.id;
+      isNewConversation = true;
     }
-    conversationId = created.id;
-    isNewConversation = true;
   }
 
   const { data: sops } = await authed.from('academy_sops').select('*');
 
   let historyRows: { role: string; content: string }[] = [];
-  if (isConversationAware && conversationId && !isNewConversation) {
+  if (conversationsSupported && conversationId && !isNewConversation) {
     const { data } = await authed
       .from('help_chat_messages')
       .select('role, content')
@@ -88,7 +98,7 @@ export async function POST(req: Request) {
       .order('created_at', { ascending: false })
       .limit(6);
     historyRows = data || [];
-  } else if (!isConversationAware) {
+  } else if (!conversationsSupported) {
     const { data } = await authed
       .from('help_chat_messages')
       .select('role, content')
@@ -112,7 +122,10 @@ export async function POST(req: Request) {
     systemInstruction: HELP_CHAT_SYSTEM_INSTRUCTION,
     tools: [{ functionDeclarations: HELP_CHAT_TOOL_DECLARATIONS }],
   };
-  const models = [GEMINI_MODEL, 'gemini-3.6-flash'];
+  // Genuinely distinct from GEMINI_MODEL -- a model-specific outage (as
+  // opposed to a transient error retried on the same model) needs a
+  // different model id to actually fall back to anything.
+  const models = [GEMINI_MODEL, 'gemini-3.7-flash'];
 
   let answer = '';
   let lastErr: unknown = null;
@@ -150,25 +163,40 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "L'IA n'a pas pu répondre pour l'instant. Réessaie dans un moment." }, { status: 502 });
   }
 
-  await authed.from('help_chat_messages').insert([
-    { user_id: guard.user.id, role: 'user', content: message, conversation_id: conversationId },
-    { user_id: guard.user.id, role: 'assistant', content: answer, conversation_id: conversationId },
-  ]);
+  const userMessageRow: Record<string, unknown> = { user_id: guard.user.id, role: 'user', content: message };
+  const assistantMessageRow: Record<string, unknown> = { user_id: guard.user.id, role: 'assistant', content: answer };
+  if (conversationsSupported) {
+    userMessageRow.conversation_id = conversationId;
+    assistantMessageRow.conversation_id = conversationId;
+  }
+  await authed.from('help_chat_messages').insert([userMessageRow, assistantMessageRow]);
 
   let title: string | undefined;
-  if (isNewConversation && conversationId) {
-    title = await generateGeminiText(
-      `Résume ce message en un titre de conversation ultra-court (3-6 mots, en français, pas de ponctuation finale) : "${message}"`,
-      message.slice(0, 40)
-    );
-    await authed.from('ai_conversations').update({ title, updated_at: new Date().toISOString() }).eq('id', conversationId);
-  } else if (conversationId) {
-    await authed.from('ai_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
+  if (conversationsSupported && conversationId) {
+    if (isNewConversation) {
+      title = await generateGeminiText(
+        `Résume ce message en un titre de conversation ultra-court (3-6 mots, en français, pas de ponctuation finale) : "${message}"`,
+        message.slice(0, 40)
+      );
+      await authed.from('ai_conversations').update({ title, updated_at: new Date().toISOString() }).eq('id', conversationId);
+    } else {
+      await authed.from('ai_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
+    }
   }
 
   return NextResponse.json({
     answer,
     sources: relevantSops.map((s) => ({ id: s.id, title: s.title })),
-    ...(isConversationAware ? { conversationId, title } : {}),
+    ...(conversationsSupported ? { conversationId, title } : {}),
   });
+}
+
+// PostgREST/Postgres error signature for a table or column that doesn't
+// exist yet -- distinguishes "the ai_conversations migration hasn't been
+// deployed" (degrade gracefully) from a real database error (surface it).
+function isMissingSchemaError(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  if (error.code === '42P01' || error.code === '42703') return true;
+  const message = error.message || '';
+  return message.includes('does not exist') || message.includes('schema cache');
 }
