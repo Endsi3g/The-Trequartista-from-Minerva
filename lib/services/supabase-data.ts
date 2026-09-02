@@ -174,7 +174,7 @@ export async function fetchProjects(): Promise<Project[]> {
 
       return data.map((p: Record<string, unknown>) => ({
         ...p,
-        client_name: (p.client as { name?: string } | null)?.name || 'Client Minerva',
+        client_name: p.client_id ? (p.client as { name?: string } | null)?.name || 'Client Minerva' : 'Projet interne',
         assignees: p.assignees || [],
       })) as Project[];
     })(),
@@ -183,7 +183,7 @@ export async function fetchProjects(): Promise<Project[]> {
 }
 
 export async function addProject(project: {
-  client_id: string;
+  client_id?: string | null;
   name: string;
   current_stage: Project['current_stage'];
   health: Project['health'];
@@ -191,10 +191,11 @@ export async function addProject(project: {
   budget_cad?: number | null;
   assignees?: string[];
   client_visible?: boolean;
+  department?: string | null;
 }): Promise<Project | null> {
   const { data, error } = await getSupabase()
     .from('projects')
-    .insert([{ ...project, progress_pct: 0 }])
+    .insert([{ ...project, client_id: project.client_id || null, progress_pct: 0 }])
     .select('*, client:clients(name)')
     .single();
 
@@ -205,7 +206,7 @@ export async function addProject(project: {
   const row = data as Record<string, unknown>;
   return {
     ...row,
-    client_name: (row.client as { name?: string } | null)?.name || 'Client Minerva',
+    client_name: row.client_id ? (row.client as { name?: string } | null)?.name || 'Client Minerva' : 'Projet interne',
     assignees: (row.assignees as string[] | null) || [],
   } as unknown as Project;
 }
@@ -1418,8 +1419,25 @@ export async function addTask(task: {
   assignee_id?: string | null;
   created_by: string;
   due_date?: string | null;
+  department?: string | null;
 }): Promise<Task | null> {
-  const { data, error } = await getSupabase().from('tasks').insert([task]).select(TASK_SELECT).single();
+  const supabase = getSupabase();
+
+  // A task under an internal/company project inherits that project's
+  // department at creation time (a copy, not a live link -- see the
+  // migration comment for why). Only looked up when the caller didn't
+  // already pass one explicitly.
+  let department = task.department;
+  if (department === undefined && task.project_id) {
+    const { data: project } = await supabase.from('projects').select('department').eq('id', task.project_id).maybeSingle();
+    department = project?.department ?? null;
+  }
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert([{ ...task, department: department ?? null }])
+    .select(TASK_SELECT)
+    .single();
 
   if (error) {
     console.error('[Supabase] Error adding task:', error);

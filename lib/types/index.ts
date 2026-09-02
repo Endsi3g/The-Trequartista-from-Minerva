@@ -145,6 +145,11 @@ export interface Task {
   plane_state_id?: string | null;
   plane_last_synced_at?: string | null;
   plane_sync_status?: 'synced' | 'pending' | 'error' | null;
+  // Copied from the parent project's department at creation time (not a
+  // live foreign key -- a task's department doesn't silently change if
+  // the project is reassigned later). Null for tasks not tied to an
+  // internal/company project.
+  department?: string | null;
 }
 
 export interface TaskSubitem {
@@ -254,7 +259,7 @@ export interface ClientRoiMetrics {
 
 export interface Project {
   id: string;
-  client_id: string;
+  client_id: string | null;
   client_name: string;
   name: string;
   current_stage: 'Onboarding' | 'Design Framer' | 'Launch Check' | 'Live Production';
@@ -264,6 +269,9 @@ export interface Project {
   assignees: string[];
   budget_cad?: number | null;
   client_visible?: boolean;
+  // Set on internal/company projects (no client_id) to scope them to a
+  // department -- tasks created under the project inherit this value.
+  department?: string | null;
 }
 
 export interface ProjectAttachment {
