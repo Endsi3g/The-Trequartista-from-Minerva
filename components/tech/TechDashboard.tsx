@@ -923,27 +923,6 @@ export function TechDashboard() {
                 <span>Relancer le Protocole QA (⌘P)</span>
               </Button>
             </div>
-
-            {/* 3. Runtime & Architecture Telemetry Info */}
-            <div className="border border-zinc-200 rounded-lg p-3.5 bg-white shadow-xs space-y-2">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 font-mono">
-                ENVIRONNEMENT RUNTIME
-              </div>
-              <div className="space-y-1.5 text-[11px] font-mono text-zinc-600">
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-400">Framework</span>
-                  <span className="text-zinc-900 font-semibold">Next.js 16 (Turbopack)</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-400">Base & Auth</span>
-                  <span className="text-emerald-700 font-semibold">Supabase PostgreSQL RLS</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-400">Protocole IA</span>
-                  <span className="text-purple-700 font-semibold">Model Context Protocol (MCP v2)</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       )}
