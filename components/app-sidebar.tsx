@@ -267,13 +267,14 @@ export function AppSidebar() {
   // members always see everything -- this is a focus/declutter filter, not
   // a permission boundary (RLS is unaffected either way).
   const WORKSPACE_TAG: Record<string, 'prospection' | 'managing'> = {
-    'voice-agent': 'prospection',
+    'voice-agent': 'managing',
     leads: 'prospection',
     acquisition: 'prospection',
     audits: 'prospection',
     clients: 'managing',
     workload: 'managing',
     invoices: 'managing',
+    reels: 'managing',
   };
   const visibleForWorkspace = (item: NavItem) => {
     const tag = WORKSPACE_TAG[item.key];
@@ -283,18 +284,18 @@ export function AppSidebar() {
   // "Principal" -- daily-use, personal-scope items
   const mainMenuItems: NavItem[] = [
     { key: 'overview', label: 'Accueil', href: '/overview', icon: LayoutDashboard },
-    { key: 'voice-agent', label: 'Agent Vocal IA', href: '/voice-agent', icon: PhoneCall, isNew: true },
+    { key: 'voice-agent', label: 'Agent Vocal IA', href: '/voice-agent', icon: PhoneCall },
     { key: 'tasks', label: 'Tâches', href: '/tasks', icon: CheckSquare, count: counts.myTasks ?? undefined },
-    { key: 'documents', label: 'Documents', href: '/documents', icon: FileText, isNew: true },
-    { key: 'chat', label: 'Chat d\'équipe', href: '/chat', icon: MessageSquare, isNew: true },
+    { key: 'documents', label: 'Documents', href: '/documents', icon: FileText },
+    { key: 'chat', label: 'Chat d\'équipe', href: '/chat', icon: MessageSquare },
   ].filter(visibleForWorkspace);
 
   // "CRM" -- the sales pipeline
   const crmItems: NavItem[] = [
-    { key: 'contacts', label: 'Réseau', href: '/contacts', icon: Contact, isNew: true },
+    { key: 'contacts', label: 'Réseau', href: '/contacts', icon: Contact },
     { key: 'clients', label: 'Clients', href: '/clients', icon: Users },
-    { key: 'proposals', label: 'Propositions & Devis', href: '/proposals', icon: FileCheck2, isNew: true },
-    { key: 'invoices', label: 'Facturation & Devis', href: '/invoices', icon: Receipt, isNew: true },
+    { key: 'proposals', label: 'Propositions & Devis', href: '/proposals', icon: FileCheck2 },
+    { key: 'invoices', label: 'Facturation & Devis', href: '/invoices', icon: Receipt },
     { key: 'leads', label: 'Leads', href: '/leads', icon: Target },
   ].filter(visibleForWorkspace);
 
@@ -303,8 +304,8 @@ export function AppSidebar() {
     { key: 'projects', label: 'Projets', href: '/projects', icon: FolderKanban },
     { key: 'reels', label: 'Réels', href: '/content-planner', icon: Clapperboard },
     { key: 'academy', label: 'Académie', href: '/academy', icon: GraduationCap },
-    { key: 'company', label: 'Compagnie & Vision', href: '/company', icon: Building2, isNew: true },
-  ];
+    { key: 'company', label: 'Compagnie & Vision', href: '/company', icon: Building2 },
+  ].filter(visibleForWorkspace);
 
   // "Équipe" -- people ops. Workload is admin-only OR a Managing-workspace
   // member (previously admin-only outright).
@@ -331,13 +332,13 @@ export function AppSidebar() {
   const techMainItems: NavItem[] = [
     { key: 'overview', label: 'Accueil Tech', href: '/overview', icon: LayoutDashboard },
     { key: 'tasks', label: 'Tâches Tech', href: '/tasks', icon: CheckSquare, count: counts.myTasks ?? undefined },
-    { key: 'documents', label: 'Docs & Specs', href: '/documents', icon: FileText, isNew: true },
-    { key: 'chat', label: 'Chat d\'équipe', href: '/chat', icon: MessageSquare, isNew: true },
+    { key: 'documents', label: 'Docs & Specs', href: '/documents', icon: FileText },
+    { key: 'chat', label: 'Chat d\'équipe', href: '/chat', icon: MessageSquare },
   ];
 
   const techSprintItems: NavItem[] = [
     { key: 'projects', label: 'Projets & Livrables', href: '/projects', icon: FolderKanban },
-    { key: 'audits', label: 'Contrôle Qualité & QA', href: '/audits', icon: ClipboardCheck },
+    { key: 'audits', label: 'Contrôle Qualité & QA', href: '/overview?tab=qa', icon: ClipboardCheck },
   ];
 
   const techKnowledgeItems: NavItem[] = [
@@ -509,7 +510,7 @@ export function AppSidebar() {
           >
             <div className="flex items-center gap-2 min-w-0">
               <Target size={13} className="text-emerald-600 shrink-0" />
-              <span className="truncate">Minerva OS Lite</span>
+              <span className="truncate">Minerva Reach</span>
             </div>
             <ExternalLink size={10} className="text-zinc-400 opacity-60 group-hover:opacity-100 shrink-0" />
           </a>

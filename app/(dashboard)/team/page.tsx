@@ -50,8 +50,10 @@ import {
   setCustomRolePermissions,
   assignCustomRole,
   syncCustomRolePermissionsToAppPermissions,
+  fetchPerformanceReviews,
+  addPerformanceReview,
 } from '@/lib/services/supabase-data';
-import type { Department, CustomRole, CustomRolePermission } from '@/lib/types';
+import type { Department, CustomRole, CustomRolePermission, PerformanceReview } from '@/lib/types';
 import { ROLE_MODULE_ACTIONS, ROLE_MODULE_LABELS } from '@/lib/permissions';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -108,7 +110,31 @@ export default function TeamPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
-  const { role: currentUserRole } = useCurrentUser();
+  // Départements tab
+  const [newDeptName, setNewDeptName] = useState('');
+  const [savingDept, setSavingDept] = useState(false);
+  const [reassigningMemberId, setReassigningMemberId] = useState<string | null>(null);
+
+  // Postes & Rôles tab
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+  const [rolePermissions, setRolePermissions] = useState<CustomRolePermission[]>([]);
+  const [loadingRolePermissions, setLoadingRolePermissions] = useState(false);
+  const [savingRolePermissions, setSavingRolePermissions] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [savingRole, setSavingRole] = useState(false);
+  const [assigningRoleMemberId, setAssigningRoleMemberId] = useState<string | null>(null);
+
+  // Évaluations de performance tab
+  const [reviews, setReviews] = useState<PerformanceReview[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [reviewMemberId, setReviewMemberId] = useState('');
+  const [reviewPeriod, setReviewPeriod] = useState('');
+  const [reviewRating, setReviewRating] = useState(3);
+  const [reviewStrengths, setReviewStrengths] = useState('');
+  const [reviewImprovements, setReviewImprovements] = useState('');
+  const [savingReview, setSavingReview] = useState(false);
+
+  const { id: currentUserId, role: currentUserRole } = useCurrentUser();
   const isAdmin = currentUserRole === 'admin';
   const { toastSuccess, toastError, toastInfo } = useToast();
   const confirmDialog = useConfirm();
@@ -192,7 +218,24 @@ export default function TeamPage() {
     loadTeam();
     fetchDepartments().then(setDepartments);
     fetchRoles().then(setRoles);
+    setLoadingReviews(true);
+    fetchPerformanceReviews().then((r) => {
+      setReviews(r);
+      setLoadingReviews(false);
+    });
   }, []);
+
+  useEffect(() => {
+    if (!selectedRoleId) {
+      setRolePermissions([]);
+      return;
+    }
+    setLoadingRolePermissions(true);
+    fetchCustomRolePermissions(selectedRoleId).then((p) => {
+      setRolePermissions(p);
+      setLoadingRolePermissions(false);
+    });
+  }, [selectedRoleId]);
 
   const toggleExpand = (id: string) => {
     setExpandedRows((prev) => {
@@ -210,6 +253,161 @@ export default function TeamPage() {
       else next.add(id);
       return next;
     });
+  };
+
+  // ── Départements ──
+  const handleAddDepartment = async () => {
+    const name = newDeptName.trim();
+    if (!name || !currentUserId) return;
+    setSavingDept(true);
+    const created = await addDepartment({ name, color: 'emerald', created_by: currentUserId });
+    setSavingDept(false);
+    if (created) {
+      setDepartments((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+      setNewDeptName('');
+      toastSuccess('Département créé', `« ${name} » est maintenant disponible.`);
+    } else {
+      toastError('Erreur', 'Impossible de créer ce département.');
+    }
+  };
+
+  const handleDeleteDepartment = async (dept: Department) => {
+    const memberCount = members.filter((m) => m.department === dept.name).length;
+    const ok = await confirmDialog({
+      title: 'Supprimer ce département ?',
+      message:
+        memberCount > 0
+          ? `${memberCount} membre${memberCount > 1 ? 's' : ''} y sont actuellement assignés -- ils resteront sans département après suppression.`
+          : `« ${dept.name} » sera définitivement supprimé.`,
+      confirmLabel: 'Supprimer',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    const success = await deleteDepartment(dept.id);
+    if (success) {
+      setDepartments((prev) => prev.filter((d) => d.id !== dept.id));
+      toastSuccess('Département supprimé');
+    } else {
+      toastError('Erreur', 'Impossible de supprimer ce département.');
+    }
+  };
+
+  const handleReassignDepartment = async (member: TeamMember, deptName: string) => {
+    setReassigningMemberId(member.id);
+    try {
+      const supabase = createClient();
+      await supabase.from('profiles').update({ department: deptName || null }).eq('id', member.id);
+      setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, department: deptName || null } : m)));
+    } catch {
+      toastError('Erreur', 'Impossible de changer le département.');
+    } finally {
+      setReassigningMemberId(null);
+    }
+  };
+
+  // ── Postes & Rôles ──
+  const handleAddRole = async () => {
+    const name = newRoleName.trim();
+    if (!name || !currentUserId) return;
+    setSavingRole(true);
+    const created = await addRole({ name, created_by: currentUserId });
+    setSavingRole(false);
+    if (created) {
+      setRoles((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+      setNewRoleName('');
+      setSelectedRoleId(created.id);
+      toastSuccess('Poste créé', `« ${name} » est maintenant disponible.`);
+    } else {
+      toastError('Erreur', 'Impossible de créer ce poste.');
+    }
+  };
+
+  const handleDeleteRole = async (role: CustomRole) => {
+    const ok = await confirmDialog({
+      title: 'Supprimer ce poste ?',
+      message: `« ${role.name} » sera définitivement supprimé. Les membres qui l'occupent perdront les permissions associées.`,
+      confirmLabel: 'Supprimer',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    const success = await deleteRole(role.id);
+    if (success) {
+      setRoles((prev) => prev.filter((r) => r.id !== role.id));
+      if (selectedRoleId === role.id) setSelectedRoleId(null);
+      toastSuccess('Poste supprimé');
+    } else {
+      toastError('Erreur', 'Impossible de supprimer ce poste.');
+    }
+  };
+
+  const toggleRolePermission = (module: string, action: CustomRolePermission['action']) => {
+    setRolePermissions((prev) => {
+      const exists = prev.some((p) => p.module === module && p.action === action);
+      if (exists) return prev.filter((p) => !(p.module === module && p.action === action));
+      return [...prev, { id: `local-${module}-${action}`, role_id: selectedRoleId || '', module, action }];
+    });
+  };
+
+  const handleSaveRolePermissions = async () => {
+    if (!selectedRoleId) return;
+    setSavingRolePermissions(true);
+    const success = await setCustomRolePermissions(
+      selectedRoleId,
+      rolePermissions.map((p) => ({ module: p.module, action: p.action }))
+    );
+    setSavingRolePermissions(false);
+    if (success) {
+      toastSuccess('Permissions enregistrées');
+      // Every member currently holding this role needs their real
+      // app_permissions rows refreshed to match the new grid.
+      const affected = members.filter((m) => m.custom_role_id === selectedRoleId);
+      await Promise.all(affected.map((m) => syncCustomRolePermissionsToAppPermissions(m.id)));
+    } else {
+      toastError('Erreur', "Impossible d'enregistrer les permissions.");
+    }
+  };
+
+  const handleAssignRole = async (member: TeamMember, roleId: string) => {
+    setAssigningRoleMemberId(member.id);
+    try {
+      const success = await assignCustomRole(member.id, roleId || null);
+      if (success) {
+        setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, custom_role_id: roleId || null } : m)));
+        await syncCustomRolePermissionsToAppPermissions(member.id);
+        toastSuccess('Poste assigné', roleId ? `${member.full_name || member.email} occupe désormais ce poste.` : `Poste retiré de ${member.full_name || member.email}.`);
+      } else {
+        toastError('Erreur', "Impossible d'assigner ce poste.");
+      }
+    } finally {
+      setAssigningRoleMemberId(null);
+    }
+  };
+
+  // ── Évaluations de performance ──
+  const handleAddReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewMemberId || !reviewPeriod.trim() || !currentUserId) return;
+    setSavingReview(true);
+    const created = await addPerformanceReview({
+      member_id: reviewMemberId,
+      reviewer_id: currentUserId,
+      period: reviewPeriod.trim(),
+      rating: reviewRating,
+      strengths: reviewStrengths.trim() || null,
+      improvements: reviewImprovements.trim() || null,
+    });
+    setSavingReview(false);
+    if (created) {
+      const member = members.find((m) => m.id === reviewMemberId);
+      setReviews((prev) => [{ ...created, member_name: member?.full_name || member?.email || undefined }, ...prev]);
+      setReviewPeriod('');
+      setReviewStrengths('');
+      setReviewImprovements('');
+      setReviewRating(3);
+      toastSuccess('Évaluation enregistrée');
+    } else {
+      toastError('Erreur', "Impossible d'enregistrer cette évaluation.");
+    }
   };
 
   const toggleAll = () => {
@@ -681,45 +879,310 @@ export default function TeamPage() {
           )}
         </div>
       ) : activeTab === 'departments' ? (
-        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3 shadow-2xs">
-          <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
-            <Building className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-zinc-900">
-              Départements de l&apos;agence
-            </h3>
-            <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
-              Structure active : Tech & IA, Operations, Engineering, Marketing, Ventes.
-            </p>
-          </div>
+        <div className="space-y-4">
+          {isAdmin && (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newDeptName}
+                onChange={(e) => setNewDeptName(e.target.value)}
+                placeholder="Nom du nouveau département"
+                className="h-8 px-3 text-xs bg-mv-surface border border-mv-border rounded-[4px] text-mv-ink focus:outline-none focus:border-mv-green w-64"
+              />
+              <Button size="sm" onClick={handleAddDepartment} disabled={savingDept || !newDeptName.trim()} className="h-8 text-xs cursor-pointer">
+                <Plus className="w-3.5 h-3.5 mr-1" /> Ajouter
+              </Button>
+            </div>
+          )}
+
+          {departments.length === 0 ? (
+            <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3 shadow-2xs">
+              <div className="w-10 h-10 rounded-full bg-mv-cream-soft flex items-center justify-center text-mv-ink-faint mx-auto">
+                <Building className="w-5 h-5" />
+              </div>
+              <p className="text-xs text-mv-ink-soft">Aucun département enregistré{isAdmin ? ' -- crée le premier ci-dessus.' : '.'}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {departments.map((dept) => {
+                const deptMembers = members.filter((m) => m.department === dept.name);
+                const style = getDepartmentStyle(dept.name);
+                return (
+                  <div key={dept.id} className="bg-mv-surface border border-mv-border rounded-[6px] p-4 shadow-2xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold border', style.bg, style.text)}>
+                        <span className={cn('w-1.5 h-1.5 rounded-full', style.dot)} />
+                        {dept.name}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10.5px] text-mv-ink-faint font-mono" style={MONO}>
+                          {deptMembers.length} membre{deptMembers.length > 1 ? 's' : ''}
+                        </span>
+                        {isAdmin && (
+                          <button onClick={() => handleDeleteDepartment(dept)} className="text-mv-ink-faint hover:text-mv-red cursor-pointer" title="Supprimer">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {deptMembers.length === 0 ? (
+                      <p className="text-[11px] text-mv-ink-faint italic">Aucun membre assigné.</p>
+                    ) : (
+                      <ul className="space-y-1.5">
+                        {deptMembers.map((m) => (
+                          <li key={m.id} className="flex items-center gap-2">
+                            <UserAvatar name={m.full_name || m.email || 'Membre'} src={m.avatar_url} size="xs" />
+                            <span className="text-xs text-mv-ink truncate flex-1">{m.full_name || m.email}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {isAdmin && (
+                      <div className="pt-2 border-t border-mv-border">
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-mv-ink-faint mb-1">Assigner un membre</label>
+                        <select
+                          value=""
+                          disabled={!!reassigningMemberId}
+                          onChange={(e) => {
+                            const m = members.find((mm) => mm.id === e.target.value);
+                            if (m) handleReassignDepartment(m, dept.name);
+                          }}
+                          className="w-full h-7 px-2 text-[11px] bg-mv-cream-soft border border-mv-border rounded-[4px] text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
+                        >
+                          <option value="">Choisir un membre…</option>
+                          {members.filter((m) => m.department !== dept.name).map((m) => (
+                            <option key={m.id} value={m.id}>{m.full_name || m.email}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       ) : activeTab === 'positions' ? (
-        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3 shadow-2xs">
-          <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
-            <Briefcase className="w-5 h-5" />
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
+          <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3.5 shadow-2xs space-y-3">
+            {isAdmin && (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value)}
+                  placeholder="Nouveau poste"
+                  className="h-7 px-2 text-[11px] bg-mv-cream-soft border border-mv-border rounded-[4px] text-mv-ink focus:outline-none focus:border-mv-green flex-1 min-w-0"
+                />
+                <Button size="sm" onClick={handleAddRole} disabled={savingRole || !newRoleName.trim()} className="h-7 px-2 text-[11px] cursor-pointer shrink-0">
+                  <Plus className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            )}
+            {roles.length === 0 ? (
+              <p className="text-[11px] text-mv-ink-faint italic py-4 text-center">Aucun poste créé{isAdmin ? ' -- ajoute-en un ci-dessus.' : '.'}</p>
+            ) : (
+              <ul className="space-y-1">
+                {roles.map((role) => (
+                  <li key={role.id}>
+                    <button
+                      onClick={() => setSelectedRoleId(role.id)}
+                      className={cn(
+                        'w-full flex items-center justify-between px-2.5 py-1.5 rounded-[4px] text-left text-xs font-medium transition-colors cursor-pointer',
+                        selectedRoleId === role.id ? 'bg-mv-green text-white' : 'text-mv-ink-soft hover:bg-mv-cream-soft'
+                      )}
+                    >
+                      <span className="truncate">{role.name}</span>
+                      <span className={cn('text-[10px] font-mono shrink-0 ml-2', selectedRoleId === role.id ? 'text-white/70' : 'text-mv-ink-faint')} style={MONO}>
+                        {members.filter((m) => m.custom_role_id === role.id).length}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-zinc-900">
-              Postes & Rôles
-            </h3>
-            <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
-              Développeur Fullstack & Lead IA, Head of Growth, Spécialiste Framer.
-            </p>
+
+          <div className="bg-mv-surface border border-mv-border rounded-[6px] p-4 shadow-2xs">
+            {!selectedRoleId ? (
+              <div className="py-16 text-center space-y-2">
+                <div className="w-10 h-10 rounded-full bg-mv-cream-soft flex items-center justify-center text-mv-ink-faint mx-auto">
+                  <Briefcase className="w-5 h-5" />
+                </div>
+                <p className="text-xs text-mv-ink-soft">Sélectionne un poste pour voir ses permissions réelles et ses titulaires.</p>
+              </div>
+            ) : (
+              (() => {
+                const role = roles.find((r) => r.id === selectedRoleId);
+                const holders = members.filter((m) => m.custom_role_id === selectedRoleId);
+                return (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-mv-ink">{role?.name}</h3>
+                      {isAdmin && role && !role.is_system && (
+                        <button onClick={() => handleDeleteRole(role)} className="text-mv-ink-faint hover:text-mv-red cursor-pointer" title="Supprimer ce poste">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div>
+                      <h4 className="text-[10.5px] font-semibold uppercase tracking-wider text-mv-ink-faint mb-2">Permissions réelles</h4>
+                      {loadingRolePermissions ? (
+                        <p className="text-[11px] text-mv-ink-faint">Chargement…</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {Object.entries(ROLE_MODULE_ACTIONS).map(([module, actions]) => (
+                            <div key={module} className="flex items-center justify-between py-1.5 border-b border-mv-border/60 last:border-0">
+                              <span className="text-xs text-mv-ink-soft">{ROLE_MODULE_LABELS[module] || module}</span>
+                              <div className="flex items-center gap-3">
+                                {(Object.keys(actions) as (keyof typeof actions)[]).map((action) => (
+                                  <label key={action} className="flex items-center gap-1.5 text-[11px] text-mv-ink-soft cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      disabled={!isAdmin}
+                                      checked={rolePermissions.some((p) => p.module === module && p.action === action)}
+                                      onChange={() => toggleRolePermission(module, action as CustomRolePermission['action'])}
+                                      className="cursor-pointer"
+                                    />
+                                    <span className="capitalize">{action}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                          {isAdmin && (
+                            <Button size="sm" onClick={handleSaveRolePermissions} disabled={savingRolePermissions} className="mt-2 h-7 text-[11px] cursor-pointer">
+                              {savingRolePermissions ? 'Enregistrement…' : 'Enregistrer les permissions'}
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <h4 className="text-[10.5px] font-semibold uppercase tracking-wider text-mv-ink-faint mb-2">
+                        Titulaires ({holders.length})
+                      </h4>
+                      {holders.length === 0 ? (
+                        <p className="text-[11px] text-mv-ink-faint italic">Personne n&apos;occupe ce poste actuellement.</p>
+                      ) : (
+                        <ul className="space-y-1.5">
+                          {holders.map((m) => (
+                            <li key={m.id} className="flex items-center gap-2">
+                              <UserAvatar name={m.full_name || m.email || 'Membre'} src={m.avatar_url} size="xs" />
+                              <span className="text-xs text-mv-ink truncate flex-1">{m.full_name || m.email}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {isAdmin && (
+                        <select
+                          value=""
+                          disabled={!!assigningRoleMemberId}
+                          onChange={(e) => {
+                            const m = members.find((mm) => mm.id === e.target.value);
+                            if (m) handleAssignRole(m, selectedRoleId);
+                          }}
+                          className="mt-2 w-full h-7 px-2 text-[11px] bg-mv-cream-soft border border-mv-border rounded-[4px] text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
+                        >
+                          <option value="">Assigner à un membre…</option>
+                          {members.filter((m) => m.custom_role_id !== selectedRoleId).map((m) => (
+                            <option key={m.id} value={m.id}>{m.full_name || m.email}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()
+            )}
           </div>
         </div>
       ) : (
-        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-3 shadow-2xs">
-          <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 mx-auto">
-            <Award className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-zinc-900">
-              Évaluations de Performance
-            </h3>
-            <p className="text-xs text-zinc-500 max-w-md mx-auto mt-1">
-              Suivi des revues trimestrielles et 1-on-1 des collaborateurs.
-            </p>
+        <div className="space-y-4">
+          {isAdmin && (
+            <form onSubmit={handleAddReview} className="bg-mv-surface border border-mv-border rounded-[6px] p-4 shadow-2xs space-y-3">
+              <h3 className="text-xs font-bold text-mv-ink">Nouvelle évaluation</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <select
+                  required
+                  value={reviewMemberId}
+                  onChange={(e) => setReviewMemberId(e.target.value)}
+                  className="h-8 px-2.5 text-xs bg-mv-cream-soft border border-mv-border rounded-[4px] text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
+                >
+                  <option value="">Membre…</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>{m.full_name || m.email}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  required
+                  value={reviewPeriod}
+                  onChange={(e) => setReviewPeriod(e.target.value)}
+                  placeholder="Période (ex: T3 2026)"
+                  className="h-8 px-2.5 text-xs bg-mv-cream-soft border border-mv-border rounded-[4px] text-mv-ink focus:outline-none focus:border-mv-green"
+                />
+                <select
+                  value={reviewRating}
+                  onChange={(e) => setReviewRating(Number(e.target.value))}
+                  className="h-8 px-2.5 text-xs bg-mv-cream-soft border border-mv-border rounded-[4px] text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
+                >
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <option key={n} value={n}>{n} / 5</option>
+                  ))}
+                </select>
+              </div>
+              <textarea
+                value={reviewStrengths}
+                onChange={(e) => setReviewStrengths(e.target.value)}
+                placeholder="Points forts"
+                rows={2}
+                className="w-full px-2.5 py-2 text-xs bg-mv-cream-soft border border-mv-border rounded-[4px] text-mv-ink focus:outline-none focus:border-mv-green resize-none"
+              />
+              <textarea
+                value={reviewImprovements}
+                onChange={(e) => setReviewImprovements(e.target.value)}
+                placeholder="Axes d'amélioration"
+                rows={2}
+                className="w-full px-2.5 py-2 text-xs bg-mv-cream-soft border border-mv-border rounded-[4px] text-mv-ink focus:outline-none focus:border-mv-green resize-none"
+              />
+              <Button type="submit" size="sm" disabled={savingReview || !reviewMemberId || !reviewPeriod.trim()} className="h-8 text-xs cursor-pointer">
+                {savingReview ? 'Enregistrement…' : "Enregistrer l'évaluation"}
+              </Button>
+            </form>
+          )}
+
+          <div className="bg-mv-surface border border-mv-border rounded-[6px] shadow-2xs">
+            <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-mv-border bg-black/[0.01]">
+              <Award className="w-3.5 h-3.5 text-mv-ink-faint" />
+              <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">Historique des évaluations</span>
+            </div>
+            {loadingReviews ? (
+              <p className="text-xs text-mv-ink-faint py-8 text-center">Chargement…</p>
+            ) : reviews.length === 0 ? (
+              <p className="text-xs text-mv-ink-faint py-8 text-center">Aucune évaluation enregistrée pour le moment.</p>
+            ) : (
+              <ul className="divide-y divide-mv-border">
+                {reviews.map((r) => (
+                  <li key={r.id} className="p-3.5 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-mv-ink">{r.member_name || 'Membre'}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10.5px] text-mv-ink-faint font-mono" style={MONO}>{r.period}</span>
+                        <Badge variant={r.rating >= 4 ? 'green' : r.rating >= 3 ? 'blue' : 'amber'}>{r.rating} / 5</Badge>
+                      </div>
+                    </div>
+                    {r.strengths && <p className="text-[11.5px] text-mv-ink-soft"><strong className="text-mv-ink">Points forts :</strong> {r.strengths}</p>}
+                    {r.improvements && <p className="text-[11.5px] text-mv-ink-soft"><strong className="text-mv-ink">À améliorer :</strong> {r.improvements}</p>}
+                    <p className="text-[10px] text-mv-ink-faint">
+                      Par {r.reviewer_name || 'un administrateur'} · {new Date(r.created_at).toLocaleDateString('fr-CA')}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       )}

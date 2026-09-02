@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { UploadCloud, Link as LinkIcon, Check, Loader2 } from 'lucide-react';
+import { UploadCloud, Link as LinkIcon, Check, Loader2, AlertTriangle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/providers/ToastProvider';
 import { cn } from '@/lib/utils';
 
 interface VideoUploadFieldProps {
@@ -14,12 +15,15 @@ interface VideoUploadFieldProps {
 }
 
 export function VideoUploadField({ value, onChange, bucket = 'client-assets', folder = 'reels', compact = false }: VideoUploadFieldProps) {
+  const { toastError } = useToast();
   const [mode, setMode] = useState<'upload' | 'link'>('upload');
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const uploadFile = async (file: File) => {
     setUploading(true);
+    setUploadError(null);
     try {
       const supabase = createClient();
       const filePath = `${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
@@ -27,10 +31,22 @@ export function VideoUploadField({ value, onChange, bucket = 'client-assets', fo
         cacheControl: '3600',
         upsert: true,
       });
-      if (!error) {
-        const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-        onChange(data.publicUrl);
+      if (error) {
+        // Previously silent -- the spinner would just stop with no
+        // indication anything went wrong, which read as "upload is
+        // broken" when it was really a real error (missing bucket, RLS,
+        // file size) with nowhere to surface.
+        const message = error.message || 'Échec du téléversement.';
+        setUploadError(message);
+        toastError('Téléversement échoué', message);
+        return;
       }
+      const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+      onChange(data.publicUrl);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Échec du téléversement.';
+      setUploadError(message);
+      toastError('Téléversement échoué', message);
     } finally {
       setUploading(false);
     }
@@ -82,13 +98,21 @@ export function VideoUploadField({ value, onChange, bucket = 'client-assets', fo
         >
           {uploading ? (
             <Loader2 className={cn('text-mv-green animate-spin', compact ? 'w-4 h-4' : 'w-6 h-6')} />
+          ) : uploadError ? (
+            <AlertTriangle className={cn('text-mv-red', compact ? 'w-4 h-4' : 'w-6 h-6')} />
           ) : value ? (
             <Check className={cn('text-mv-green', compact ? 'w-4 h-4' : 'w-6 h-6')} />
           ) : (
             <UploadCloud className={cn('text-mv-green', compact ? 'w-4 h-4' : 'w-6 h-6')} />
           )}
-          <div className={cn('font-bold text-mv-ink text-center', compact ? 'text-[11px]' : 'text-xs')}>
-            {uploading ? 'Envoi en cours…' : value ? 'Vidéo prête — glissez-en une autre pour remplacer' : 'Glissez-déposez une vidéo ou parcourez vos fichiers'}
+          <div className={cn('font-bold text-center', compact ? 'text-[11px]' : 'text-xs', uploadError ? 'text-mv-red' : 'text-mv-ink')}>
+            {uploading
+              ? 'Envoi en cours…'
+              : uploadError
+              ? `Échec : ${uploadError}`
+              : value
+              ? 'Vidéo prête — glissez-en une autre pour remplacer'
+              : 'Glissez-déposez une vidéo ou parcourez vos fichiers'}
           </div>
           <input
             type="file"

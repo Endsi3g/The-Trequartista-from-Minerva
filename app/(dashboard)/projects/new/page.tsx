@@ -18,9 +18,9 @@ import {
   CheckCircle2,
   Zap,
 } from 'lucide-react';
-import { addProject, fetchClients, addProjectMilestone } from '@/lib/services/supabase-data';
+import { addProject, fetchClients, fetchDepartments, addProjectMilestone } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
-import type { Client, Project } from '@/lib/types';
+import type { Client, Department, Project } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const STAGES: Project['current_stage'][] = ['Onboarding', 'Design Framer', 'Launch Check', 'Live Production'];
@@ -86,11 +86,14 @@ export default function NewProjectPage() {
   const { toastSuccess, toastError } = useToast();
   const [saving, setSaving] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loadingClients, setLoadingClients] = useState(true);
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('minerva_flow');
   const [name, setName] = useState('Déploiement Minerva-Flow — Commande Directe 0%');
+  const [isInternal, setIsInternal] = useState(false);
   const [clientId, setClientId] = useState('');
+  const [department, setDepartment] = useState('');
   const [currentStage, setCurrentStage] = useState<Project['current_stage']>('Onboarding');
   const [health, setHealth] = useState<Project['health']>('On Track');
   const [dueDate, setDueDate] = useState(() => {
@@ -102,8 +105,9 @@ export default function NewProjectPage() {
   useEffect(() => {
     async function loadData() {
       setLoadingClients(true);
-      const clientData = await fetchClients();
+      const [clientData, departmentData] = await Promise.all([fetchClients(), fetchDepartments()]);
       setClients(clientData);
+      setDepartments(departmentData);
       if (clientData[0]) setClientId(clientData[0].id);
       setLoadingClients(false);
     }
@@ -120,11 +124,14 @@ export default function NewProjectPage() {
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !clientId || !dueDate) return;
+    if (!name || !dueDate) return;
+    if (!isInternal && !clientId) return;
+    if (isInternal && !department) return;
     setSaving(true);
 
     const newProject = await addProject({
-      client_id: clientId,
+      client_id: isInternal ? null : clientId,
+      department: isInternal ? department : null,
       name,
       current_stage: currentStage,
       health,
@@ -224,10 +231,6 @@ export default function NewProjectPage() {
 
       {loadingClients ? (
         <div className="bg-mv-surface border border-mv-border rounded-2xl py-12 text-center text-xs text-mv-ink-soft shadow-mv-sm">Chargement des clients…</div>
-      ) : clients.length === 0 ? (
-        <div className="bg-mv-surface border border-mv-border rounded-2xl py-12 text-center text-xs text-mv-ink-soft shadow-mv-sm">
-          Aucun client enregistré. <Link href="/clients/new" className="text-mv-green hover:underline">Créez d&apos;abord un client</Link>.
-        </div>
       ) : (
         <form onSubmit={handleCreateProject} className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
           <div className="space-y-6">
@@ -247,22 +250,75 @@ export default function NewProjectPage() {
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-mv-ink mb-1.5">Client</label>
-                <div className="relative">
-                  <Building2 className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <select
-                    required
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors cursor-pointer appearance-none"
-                  >
-                    {clients.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
+
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-mv-cream-soft border border-mv-border w-fit">
+                <button
+                  type="button"
+                  onClick={() => setIsInternal(false)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer',
+                    !isInternal ? 'bg-white text-mv-ink shadow-2xs' : 'text-mv-ink-soft hover:text-mv-ink'
+                  )}
+                >
+                  Projet client
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsInternal(true)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer',
+                    isInternal ? 'bg-white text-mv-ink shadow-2xs' : 'text-mv-ink-soft hover:text-mv-ink'
+                  )}
+                >
+                  Projet interne
+                </button>
               </div>
+
+              {isInternal ? (
+                <div>
+                  <label className="block text-xs font-bold text-mv-ink mb-1.5">Département</label>
+                  <div className="relative">
+                    <Building2 className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <select
+                      required
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors cursor-pointer appearance-none"
+                    >
+                      <option value="">Sélectionner un département</option>
+                      {departments.map((d) => (
+                        <option key={d.id} value={d.name}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {departments.length === 0 && (
+                    <p className="text-[11px] text-mv-ink-faint mt-1.5">
+                      Aucun département enregistré. <Link href="/team" className="text-mv-green hover:underline">Créez-en un dans Équipe</Link>.
+                    </p>
+                  )}
+                </div>
+              ) : clients.length === 0 ? (
+                <p className="text-[11px] text-mv-ink-faint">
+                  Aucun client enregistré. <Link href="/clients/new" className="text-mv-green hover:underline">Créez d&apos;abord un client</Link>, ou choisissez « Projet interne » ci-dessus.
+                </p>
+              ) : (
+                <div>
+                  <label className="block text-xs font-bold text-mv-ink mb-1.5">Client</label>
+                  <div className="relative">
+                    <Building2 className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <select
+                      required
+                      value={clientId}
+                      onChange={(e) => setClientId(e.target.value)}
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors cursor-pointer appearance-none"
+                    >
+                      {clients.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm space-y-4">
@@ -319,10 +375,12 @@ export default function NewProjectPage() {
             <SectionLabel>Aperçu du chantier</SectionLabel>
             <div className="bg-mv-cream-soft border border-mv-border rounded-xl p-4 space-y-3">
               <div className="flex items-center gap-3">
-                <UserAvatar name={client?.name || 'Client'} src={client?.logo_url} size="lg" shape="rounded" />
+                <UserAvatar name={isInternal ? (department || 'Interne') : client?.name || 'Client'} src={isInternal ? undefined : client?.logo_url} size="lg" shape="rounded" />
                 <div className="min-w-0">
                   <div className="font-bold text-sm text-mv-ink truncate">{name || 'Nom du projet'}</div>
-                  <div className="text-[11px] text-mv-ink-soft truncate">{client?.name || 'Client'}</div>
+                  <div className="text-[11px] text-mv-ink-soft truncate">
+                    {isInternal ? `Projet interne${department ? ` · ${department}` : ''}` : client?.name || 'Client'}
+                  </div>
                 </div>
               </div>
               <div className="pt-3 border-t border-mv-border flex items-center justify-between">

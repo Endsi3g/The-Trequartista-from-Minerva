@@ -8,15 +8,20 @@ import React from 'react';
 export const REEL_PLATFORM_OPTIONS = [
   { value: 'Instagram', label: 'Instagram Reels' },
   { value: 'TikTok', label: 'TikTok' },
-  { value: 'YouTube', label: 'YouTube Shorts' },
+  { value: 'YouTube', label: 'YouTube' },
   { value: 'LinkedIn', label: 'LinkedIn Video' },
   { value: 'Facebook', label: 'Facebook Reels' },
 ] as const;
 
+// No hard duration cap enforced anywhere in the upload flow -- these are
+// just planning labels. "Vidéo longue" covers YouTube-style long-form
+// content (a full video, not a short), alongside the existing short-form
+// reel lengths.
 export const REEL_FORMAT_OPTIONS = [
   { value: 'Reel 30s', label: 'Reel 30s (Court)' },
   { value: 'Reel 60s', label: 'Reel 60s (Standard)' },
   { value: 'Reel 90s', label: 'Reel 90s (Détaillé)' },
+  { value: 'Vidéo longue', label: 'Vidéo longue (YouTube)' },
   { value: 'Carrousel', label: 'Carrousel 5-10 slides' },
   { value: 'Story', label: 'Story interactive' },
 ] as const;

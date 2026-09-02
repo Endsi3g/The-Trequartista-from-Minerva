@@ -302,7 +302,7 @@ export default function ContentPlannerPage() {
             <div
               className="h-full bg-zinc-400 transition-all"
               style={{ width: `${totalPosts > 0 ? (ytPosts / totalPosts) * 100 : 0}%` }}
-              title="YouTube Shorts"
+              title="YouTube"
             />
           </div>
           <div className="flex items-center gap-3 text-[10.5px] text-zinc-500 font-mono shrink-0" style={MONO}>

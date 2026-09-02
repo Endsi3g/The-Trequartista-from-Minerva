@@ -148,7 +148,7 @@ function useSequenceShortcuts() {
 
 export default function OverviewPage() {
   const router = useRouter();
-  const { fullName, workspace, role } = useCurrentUser();
+  const { id: currentUserId, fullName, workspace, role } = useCurrentUser();
   // Prospection members care most about the lead funnel; everyone else
   // (Managing, admin, unassigned) keeps the client-health-first order --
   // see the "Main Data Grid" render below.
@@ -287,47 +287,95 @@ export default function OverviewPage() {
     .sort((a, b) => (a.due_date && b.due_date ? new Date(a.due_date).getTime() - new Date(b.due_date).getTime() : 0))
     .slice(0, 8);
 
-  const pendingTasks = tasks.filter((t) => t.status !== 'done').slice(0, 6);
+  // "Mes tâches" -- personal, not the whole team's queue -- covering
+  // pending + in-progress + overdue (not just pending, per Kael's ask).
+  // Overdue first regardless of status, since that's what needs attention.
+  const myTasks = tasks.filter((t) => t.assignee_id === currentUserId && t.status !== 'done');
+  const myOverdueTasks = myTasks.filter((t) => t.due_date && new Date(t.due_date) < now);
+  const myInProgressTasks = myTasks.filter((t) => t.status === 'in_progress' && !myOverdueTasks.includes(t));
+  const myTodoTasks = myTasks.filter((t) => t.status === 'todo' && !myOverdueTasks.includes(t));
+  const myTasksSorted = [...myOverdueTasks, ...myInProgressTasks, ...myTodoTasks].slice(0, 6);
 
-  const metrics = [
-    {
-      key: 'clients',
-      href: '/clients',
-      shortcut: 'G C',
-      label: 'Clients actifs',
-      icon: Users,
-      value: activeClients.length,
-      sublabel: `${moneyFmt(totalMrr)} MRR total`,
-    },
-    {
-      key: 'leads',
-      href: '/leads',
-      shortcut: 'G L',
-      label: 'Leads actifs',
-      icon: Target,
-      value: activeLeads.length,
-      sublabel: 'en cours de qualification',
-    },
-    {
-      key: 'projects',
-      href: '/projects',
-      shortcut: 'G P',
-      label: 'Projets en cours',
-      icon: AlertTriangle,
-      value: projects.length,
-      sublabel: lateProjects.length === 0 ? 'Tout est à jour' : `${lateProjects.length} à surveiller`,
-      alert: lateProjects.length > 0,
-    },
-    {
-      key: 'calls',
-      href: '/voice-agent',
-      shortcut: 'G V',
-      label: 'Appels IA (7j)',
-      icon: PhoneCall,
-      value: last7dCalls.length,
-      sublabel: `${callMinutes} min consommée${callMinutes > 1 ? 's' : ''}`,
-    },
-  ];
+  const metrics = isProspectionWorkspace
+    ? [
+        {
+          key: 'leads',
+          href: '/leads',
+          shortcut: 'G L',
+          label: 'Leads actifs',
+          icon: Target,
+          value: activeLeads.length,
+          sublabel: 'en cours de qualification',
+        },
+        {
+          key: 'pipeline',
+          href: '/leads',
+          shortcut: 'G L',
+          label: 'Pipeline total',
+          icon: TrendingUp,
+          value: totalPipelineValue,
+          sublabel: 'valeur estimée en cours',
+          format: moneyFmt,
+        },
+        {
+          key: 'projects',
+          href: '/projects',
+          shortcut: 'G P',
+          label: 'Projets en cours',
+          icon: AlertTriangle,
+          value: projects.length,
+          sublabel: lateProjects.length === 0 ? 'Tout est à jour' : `${lateProjects.length} à surveiller`,
+          alert: lateProjects.length > 0,
+        },
+        {
+          key: 'calls',
+          href: '/voice-agent',
+          shortcut: 'G V',
+          label: 'Appels IA (7j)',
+          icon: PhoneCall,
+          value: last7dCalls.length,
+          sublabel: `${callMinutes} min consommée${callMinutes > 1 ? 's' : ''}`,
+        },
+      ]
+    : [
+        {
+          key: 'clients',
+          href: '/clients',
+          shortcut: 'G C',
+          label: 'Clients actifs',
+          icon: Users,
+          value: activeClients.length,
+          sublabel: `${moneyFmt(totalMrr)} MRR total`,
+        },
+        {
+          key: 'leads',
+          href: '/leads',
+          shortcut: 'G L',
+          label: 'Leads actifs',
+          icon: Target,
+          value: activeLeads.length,
+          sublabel: 'en cours de qualification',
+        },
+        {
+          key: 'projects',
+          href: '/projects',
+          shortcut: 'G P',
+          label: 'Projets en cours',
+          icon: AlertTriangle,
+          value: projects.length,
+          sublabel: lateProjects.length === 0 ? 'Tout est à jour' : `${lateProjects.length} à surveiller`,
+          alert: lateProjects.length > 0,
+        },
+        {
+          key: 'calls',
+          href: '/voice-agent',
+          shortcut: 'G V',
+          label: 'Appels IA (7j)',
+          icon: PhoneCall,
+          value: last7dCalls.length,
+          sublabel: `${callMinutes} min consommée${callMinutes > 1 ? 's' : ''}`,
+        },
+      ];
 
   // Same two content blocks either way -- only which one lands in the wide
   // (lg:col-span-2) slot changes, based on workspace (see the grid below).
@@ -473,7 +521,7 @@ export default function OverviewPage() {
     </>
   );
 
-  const funnelAndTasksContent = (
+  const funnelContent = (
     <>
       {/* Sales Pipeline Funnel */}
       <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3.5 shadow-2xs">
@@ -530,14 +578,19 @@ export default function OverviewPage() {
           </div>
         )}
       </div>
+    </>
+  );
 
-      {/* Pending Tasks & Priorities */}
+  const tasksAndPlaceholderContent = (
+    <>
+      {/* Mes tâches -- personal, covers pending + in-progress + overdue,
+          not just pending (overdue highlighted, shown first). */}
       <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3.5 shadow-2xs">
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-1.5">
             <CheckSquare className="w-3.5 h-3.5 text-mv-green" />
             <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">
-              Tâches en attente
+              Mes tâches
             </span>
           </div>
           <Link
@@ -547,31 +600,58 @@ export default function OverviewPage() {
             Voir tout <ArrowRight className="w-2.5 h-2.5" />
           </Link>
         </div>
+        {!loading && myTasks.length > 0 && (
+          <div className="flex items-center gap-2.5 mb-2.5 text-[10.5px] font-mono" style={MONO}>
+            {myOverdueTasks.length > 0 && (
+              <span className="text-mv-red font-semibold">{myOverdueTasks.length} en retard</span>
+            )}
+            {myInProgressTasks.length > 0 && (
+              <span className="text-mv-ink-soft">{myInProgressTasks.length} en cours</span>
+            )}
+            {myTodoTasks.length > 0 && (
+              <span className="text-mv-ink-faint">{myTodoTasks.length} à faire</span>
+            )}
+          </div>
+        )}
         {loading ? (
           <p className="text-xs text-mv-ink-faint py-4 text-center">Chargement…</p>
-        ) : pendingTasks.length === 0 ? (
-          <p className="text-xs text-mv-ink-faint py-4 text-center">Toutes les tâches sont terminées ✓</p>
+        ) : myTasksSorted.length === 0 ? (
+          <p className="text-xs text-mv-ink-faint py-4 text-center">Aucune tâche assignée pour le moment ✓</p>
         ) : (
           <ul className="space-y-1">
-            {pendingTasks.map((t) => (
-              <li key={t.id}>
-                <Link
-                  href={`/tasks/${t.id}`}
-                  className="flex items-center justify-between text-[12px] py-1 px-1.5 -mx-1.5 rounded-[4px] hover:bg-black/[0.03] transition-colors"
-                >
-                  <span className="truncate text-mv-ink-soft hover:text-mv-ink font-medium max-w-[200px]">
-                    {t.title}
-                  </span>
-                  {t.due_date && (
-                    <span className="text-[10px] text-mv-ink-faint shrink-0 ml-2" style={MONO}>
-                      {new Date(t.due_date).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })}
+            {myTasksSorted.map((t) => {
+              const isOverdue = myOverdueTasks.includes(t);
+              return (
+                <li key={t.id}>
+                  <Link
+                    href={`/tasks/${t.id}`}
+                    className="flex items-center justify-between text-[12px] py-1 px-1.5 -mx-1.5 rounded-[4px] hover:bg-black/[0.03] transition-colors"
+                  >
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      {isOverdue && <span className="w-1.5 h-1.5 rounded-full bg-mv-red shrink-0" />}
+                      <span className="truncate text-mv-ink-soft hover:text-mv-ink font-medium max-w-[200px]">
+                        {t.title}
+                      </span>
                     </span>
-                  )}
-                </Link>
-              </li>
-            ))}
+                    {t.due_date && (
+                      <span className={cn('text-[10px] shrink-0 ml-2', isOverdue ? 'text-mv-red font-semibold' : 'text-mv-ink-faint')} style={MONO}>
+                        {getDueDateLabel(t.due_date)}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
+      </div>
+
+      {/* Emplacement réservé pour un futur widget personnalisable --
+          honnête (aucune donnée fictive), pas encore configurable. */}
+      <div className="border border-dashed border-mv-border rounded-[6px] p-3.5 flex items-center justify-center text-center">
+        <p className="text-[11px] text-mv-ink-faint">
+          Emplacement libre — un prochain widget personnalisable viendra ici.
+        </p>
       </div>
     </>
   );
@@ -891,7 +971,7 @@ export default function OverviewPage() {
                     className={`text-[20px] font-semibold tracking-tight leading-none ${m.alert ? 'text-mv-red' : 'text-mv-ink'}`}
                     style={MONO}
                   >
-                    {loading ? '—' : <AnimatedNumber value={m.value} />}
+                    {loading ? '—' : <AnimatedNumber value={m.value} format={(m as { format?: (n: number) => string }).format} />}
                   </div>
                   <div className="text-[11px] text-mv-ink-faint truncate ml-2 text-right" style={MONO}>
                     {loading ? '' : m.sublabel}
@@ -904,13 +984,22 @@ export default function OverviewPage() {
       </div>
 
       {/* -- 3. Main Data Grid -- */}
+      {/* Prospection is sales/lead-funnel-focused only -- MRR and
+          client-health widgets (projectsAndMrrContent) are fully removed
+          here, not just reordered second, per an explicit product
+          decision. Managing/admin/unassigned keep the original
+          client-health-first layout. */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-        {/* Wide column: funnel-first for Prospection, client-health-first otherwise */}
         <div className="lg:col-span-2 space-y-4">
-          {isProspectionWorkspace ? funnelAndTasksContent : projectsAndMrrContent}
+          {isProspectionWorkspace ? funnelContent : projectsAndMrrContent}
         </div>
         <div className="space-y-4">
-          {isProspectionWorkspace ? projectsAndMrrContent : funnelAndTasksContent}
+          {isProspectionWorkspace ? tasksAndPlaceholderContent : (
+            <>
+              {funnelContent}
+              {tasksAndPlaceholderContent}
+            </>
+          )}
         </div>
       </div>
     </>

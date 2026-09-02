@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import webpush from 'web-push';
+import { STALE_CONTACT_REMINDER_DAYS } from '@/lib/constants/contacts';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseSecret = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -25,13 +26,18 @@ export async function GET(req: Request) {
 
   const supabase = createServiceClient(supabaseUrl, supabaseSecret);
   const today = new Date().toISOString().slice(0, 10);
+  const staleCutoff = new Date(Date.now() - STALE_CONTACT_REMINDER_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-  // Contacts whose follow_up_date is today or overdue and not yet contacted
+  // Contacts whose follow_up_date is today/overdue, OR that were never given
+  // a follow_up_date but have sat at 'a_contacter' for STALE_CONTACT_REMINDER_DAYS+.
+  // Previously this only matched an explicitly-set follow_up_date, so a
+  // contact added without one (the common case -- it's an optional field on
+  // /contacts/new) was never reminded no matter its age.
   const { data: contactsToRemind, error } = await supabase
     .from('contacts')
-    .select('id, full_name, company, follow_up_date, follow_up_note, created_by')
-    .lte('follow_up_date', today)
-    .eq('status', 'a_contacter');
+    .select('id, full_name, company, follow_up_date, follow_up_note, created_by, created_at')
+    .eq('status', 'a_contacter')
+    .or(`follow_up_date.lte.${today},and(follow_up_date.is.null,created_at.lte.${staleCutoff})`);
 
   if (error) {
     console.error('[contact-reminders] Error fetching contacts:', error);

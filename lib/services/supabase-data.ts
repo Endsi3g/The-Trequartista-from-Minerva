@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote, CoachMemberMemory, CoachWeeklyReport, CoachGhostStatus, AiConversation } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote, CoachMemberMemory, CoachWeeklyReport, CoachGhostStatus, AiConversation, PerformanceReview } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 import { markdownToBlocks } from '@/lib/utils/markdown-to-blocks';
 
@@ -40,7 +40,11 @@ export async function fetchClients(): Promise<Client[]> {
     (async () => {
       const { data, error } = await getSupabase()
         .from('clients')
-        .select('*, account_manager:profiles(full_name)')
+        // Explicit FK name required -- clients has two relationships to
+        // profiles (this one, and profiles.client_id for the client-portal
+        // account), so PostgREST can't infer which one "profiles(...)"
+        // means and rejects the query with PGRST201.
+        .select('*, account_manager:profiles!clients_account_manager_id_fkey(full_name)')
         .order('created_at', { ascending: false });
 
       if (error || !data) {
@@ -170,7 +174,7 @@ export async function fetchProjects(): Promise<Project[]> {
 
       return data.map((p: Record<string, unknown>) => ({
         ...p,
-        client_name: (p.client as { name?: string } | null)?.name || 'Client Minerva',
+        client_name: p.client_id ? (p.client as { name?: string } | null)?.name || 'Client Minerva' : 'Projet interne',
         assignees: p.assignees || [],
       })) as Project[];
     })(),
@@ -179,7 +183,7 @@ export async function fetchProjects(): Promise<Project[]> {
 }
 
 export async function addProject(project: {
-  client_id: string;
+  client_id?: string | null;
   name: string;
   current_stage: Project['current_stage'];
   health: Project['health'];
@@ -187,10 +191,11 @@ export async function addProject(project: {
   budget_cad?: number | null;
   assignees?: string[];
   client_visible?: boolean;
+  department?: string | null;
 }): Promise<Project | null> {
   const { data, error } = await getSupabase()
     .from('projects')
-    .insert([{ ...project, progress_pct: 0 }])
+    .insert([{ ...project, client_id: project.client_id || null, progress_pct: 0 }])
     .select('*, client:clients(name)')
     .single();
 
@@ -201,7 +206,7 @@ export async function addProject(project: {
   const row = data as Record<string, unknown>;
   return {
     ...row,
-    client_name: (row.client as { name?: string } | null)?.name || 'Client Minerva',
+    client_name: row.client_id ? (row.client as { name?: string } | null)?.name || 'Client Minerva' : 'Projet interne',
     assignees: (row.assignees as string[] | null) || [],
   } as unknown as Project;
 }
@@ -515,11 +520,11 @@ const FALLBACK_DEV_SOPS: AcademySOP[] = [
   },
   {
     id: 'sop-app-01-os-lite',
-    title: 'Guide Pratique : Utiliser & Déployer Minerva OS Lite (Prospection & Closing)',
+    title: 'Guide Pratique : Utiliser & Déployer Minerva Reach (Prospection & Closing)',
     description: 'Workflow de prospection quotidienne, routine /today, qualification de leads locaux et closing.',
     category: 'Ventes & Prospection',
     pillar: 'reach',
-    content_markdown: '# SOP-APP-01 — Guide Pratique : Utiliser & Déployer Minerva OS Lite (Prospection & Closing)\n\n**Lien d’accès :** https://minerva-os-lite-desktop.vercel.app/today\n\n## 1. Rôle de Minerva OS Lite\n- Vue quotidienne condensée /today pour les commerciaux terrain.\n- Qualification express des fiches Google Maps / Instagram.\n- Déclenchement direct des propositions avec acompte 50% sur Minerva Trequartista.',
+    content_markdown: '# SOP-APP-01 — Guide Pratique : Utiliser & Déployer Minerva Reach (Prospection & Closing)\n\n**Lien d’accès :** https://minerva-os-lite-desktop.vercel.app/today\n\n## 1. Rôle de Minerva Reach\n- Vue quotidienne condensée /today pour les commerciaux terrain.\n- Qualification express des fiches Google Maps / Instagram.\n- Déclenchement direct des propositions avec acompte 50% sur Minerva Trequartista.',
     author: 'Kael Belceus & Closer Lead',
     read_time_min: 8,
     is_essential: true,
@@ -568,15 +573,16 @@ export async function fetchAcademySops(): Promise<AcademySOP[]> {
         .order('created_at', { ascending: false });
 
       if (error || !data || data.length === 0) {
+        // True fallback only: the DB is unreachable or genuinely empty.
+        // These items carry non-UUID ids and were never merged into a
+        // real, non-empty DB result -- doing so previously produced list
+        // cards whose /academy/{id} link could never resolve in
+        // fetchAcademySop() (id doesn't exist in academy_sops), showing
+        // "SOP introuvable" even though the SOP "existed" on the list.
         return FALLBACK_DEV_SOPS.map(withComputedBlocks);
       }
 
-      // If DB has items, ensure our 3 dev SOPs are also present if not in DB yet
-      const dbSops = (data as AcademySOP[]).map(withComputedBlocks);
-      const existingTitles = new Set(dbSops.map((s) => s.title));
-      const missingDevSops = FALLBACK_DEV_SOPS.filter((s) => !existingTitles.has(s.title)).map(withComputedBlocks);
-
-      return [...dbSops, ...missingDevSops];
+      return (data as AcademySOP[]).map(withComputedBlocks);
     })(),
     FALLBACK_DEV_SOPS.map(withComputedBlocks)
   );
@@ -1303,6 +1309,47 @@ export async function redeemTeamInvite(
     await syncCustomRolePermissionsToAppPermissions(userId);
   }
 
+  // Best-effort welcome message in #général (same as the server route's
+  // primary path) -- never blocks redemption if it fails.
+  try {
+    const { data: newProfile } = await supabase.from('profiles').select('full_name').eq('id', userId).maybeSingle();
+    const GENERAL_CHANNEL_ID = '00000000-0000-0000-0000-000000000001';
+    await supabase.from('team_chat_messages').insert([
+      {
+        channel_type: 'topic',
+        channel_id: GENERAL_CHANNEL_ID,
+        sender_id: null,
+        body: `🎉 Bienvenue ${newProfile?.full_name || 'dans l’équipe'} chez Minerva ! N'hésite pas à te présenter ici.`,
+      },
+    ]);
+  } catch (welcomeErr) {
+    console.warn('[redeemTeamInvite] Could not post welcome message:', welcomeErr);
+  }
+
+  // Personal push notification to admins (same as the server route's
+  // primary path) -- routed through /api/push/send since the VAPID
+  // private key can't be used client-side; the newly-signed-up member's
+  // own session is enough to authenticate that call.
+  try {
+    const { data: newProfile } = await supabase.from('profiles').select('full_name').eq('id', userId).maybeSingle();
+    const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
+    const adminIds = (admins || []).map((a) => a.id).filter((id) => id !== userId);
+    if (adminIds.length > 0) {
+      await fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: '👋 Nouveau membre',
+          body: `${newProfile?.full_name || 'Un nouveau membre'} vient de rejoindre l'équipe Minerva.`,
+          url: '/team',
+          userIds: adminIds,
+        }),
+      }).catch(() => {});
+    }
+  } catch (pushErr) {
+    console.warn('[redeemTeamInvite] Could not send admin push notification:', pushErr);
+  }
+
   return true;
 }
 
@@ -1413,8 +1460,25 @@ export async function addTask(task: {
   assignee_id?: string | null;
   created_by: string;
   due_date?: string | null;
+  department?: string | null;
 }): Promise<Task | null> {
-  const { data, error } = await getSupabase().from('tasks').insert([task]).select(TASK_SELECT).single();
+  const supabase = getSupabase();
+
+  // A task under an internal/company project inherits that project's
+  // department at creation time (a copy, not a live link -- see the
+  // migration comment for why). Only looked up when the caller didn't
+  // already pass one explicitly.
+  let department = task.department;
+  if (department === undefined && task.project_id) {
+    const { data: project } = await supabase.from('projects').select('department').eq('id', task.project_id).maybeSingle();
+    department = project?.department ?? null;
+  }
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert([{ ...task, department: department ?? null }])
+    .select(TASK_SELECT)
+    .single();
 
   if (error) {
     console.error('[Supabase] Error adding task:', error);
@@ -1677,6 +1741,44 @@ export async function deleteDepartment(id: string): Promise<boolean> {
     return false;
   }
   return true;
+}
+
+// ── 16a-2. Performance Reviews ──────────────────────────────────────────────
+
+export async function fetchPerformanceReviews(memberId?: string): Promise<PerformanceReview[]> {
+  return withTimeout(
+    (async () => {
+      let query = getSupabase()
+        .from('performance_reviews')
+        .select('*, member:profiles!performance_reviews_member_id_fkey(full_name), reviewer:profiles!performance_reviews_reviewer_id_fkey(full_name)')
+        .order('created_at', { ascending: false });
+      if (memberId) query = query.eq('member_id', memberId);
+      const { data, error } = await query;
+      if (error || !data) return [];
+      return data.map((row: Record<string, unknown>) => ({
+        ...row,
+        member_name: (row.member as { full_name?: string } | null)?.full_name,
+        reviewer_name: (row.reviewer as { full_name?: string } | null)?.full_name,
+      })) as PerformanceReview[];
+    })(),
+    []
+  );
+}
+
+export async function addPerformanceReview(review: {
+  member_id: string;
+  reviewer_id: string;
+  period: string;
+  rating: number;
+  strengths?: string | null;
+  improvements?: string | null;
+}): Promise<PerformanceReview | null> {
+  const { data, error } = await getSupabase().from('performance_reviews').insert([review]).select().single();
+  if (error) {
+    console.error('[Supabase] Error adding performance review:', error);
+    return null;
+  }
+  return data as PerformanceReview;
 }
 
 // ── 16b. Help / FAQ ──────────────────────────────────────────────────────────
@@ -2802,7 +2904,11 @@ export async function fetchTeamChatMessages(
         const sender = senderMap.get(row.sender_id);
         return {
           ...row,
-          sender_name: row.sender_id ? sender?.full_name || 'Membre' : 'Coach Minerva',
+          sender_name: row.sender_id
+            ? sender?.full_name || 'Membre'
+            : channelType === 'coach'
+              ? 'Coach Minerva'
+              : 'Assistant Minerva',
           sender_avatar: sender?.avatar_url || '',
         };
       }) as TeamChatMessage[];
@@ -2839,23 +2945,18 @@ export async function sendTeamChatMessage(
     if (!error && data) {
       return data as TeamChatMessage;
     }
+    // A CHECK-constraint violation here (Postgres code 23514) most often
+    // means channel_type='topic'/'coach' isn't allowed yet on the live DB
+    // -- i.e. the migration widening that constraint hasn't been deployed.
+    // Previously this silently fell back to a client-only optimistic
+    // message, which looked sent but vanished on refresh with no signal
+    // as to why. Real-data-only means an honest failure beats a fake one.
+    console.error('[Supabase] team_chat_messages insert failed -- message NOT persisted:', error);
+    return null;
   } catch (err) {
-    console.warn('[Supabase] Non-blocking error inserting team chat message, falling back to optimistic:', err);
+    console.error('[Supabase] team_chat_messages insert threw -- message NOT persisted:', err);
+    return null;
   }
-
-  // Resilient fallback: optimistic message so UI never freezes or fails
-  return {
-    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `msg-${Date.now()}`,
-    channel_type: channelType,
-    channel_id: channelId,
-    sender_id: safeSenderId,
-    body: body || null,
-    attachment_url: attachment?.url || null,
-    attachment_type: attachment?.type || null,
-    attachment_name: attachment?.name || null,
-    parent_message_id: parentMessageId || null,
-    created_at: new Date().toISOString(),
-  };
 }
 
 // ── Coach Minerva (bot IA d'équipe) ──
