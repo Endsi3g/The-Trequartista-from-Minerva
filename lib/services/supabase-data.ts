@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote, CoachMemberMemory, CoachWeeklyReport, CoachGhostStatus, PerformanceReview } from '@/lib/types';
+import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote, CoachMemberMemory, CoachWeeklyReport, CoachGhostStatus, AiConversation, PerformanceReview } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 import { markdownToBlocks } from '@/lib/utils/markdown-to-blocks';
 
@@ -1871,6 +1871,29 @@ async function fetchProfileNamesForHelpChat(userIds: string[]): Promise<Map<stri
   return new Map((data || []).map((p: { id: string; full_name: string | null }) => [p.id, p.full_name || 'Membre']));
 }
 
+// Past-discussion history for the floating AI assistant panel (distinct
+// from /help's own flat, non-grouped Q&A log above).
+export async function fetchAiConversations(userId: string): Promise<AiConversation[]> {
+  const { data, error } = await getSupabase()
+    .from('ai_conversations')
+    .select('*')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+    .limit(30);
+  if (error || !data) return [];
+  return data as AiConversation[];
+}
+
+export async function fetchHelpChatMessagesByConversation(conversationId: string): Promise<HelpChatMessage[]> {
+  const { data, error } = await getSupabase()
+    .from('help_chat_messages')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true });
+  if (error || !data) return [];
+  return data as HelpChatMessage[];
+}
+
 // ── 17. In-App Changelog ────────────────────────────────────────────────────
 
 export async function fetchChangelogEntries(): Promise<ChangelogEntry[]> {
@@ -3188,6 +3211,24 @@ export async function fetchTeamMembers(excludeUserId?: string): Promise<TeamMemb
     })(),
     []
   );
+}
+
+// Uploads an image/PDF attached to the AI assistant panel -- reuses the
+// existing team-chat-media bucket under its own prefix rather than
+// provisioning a new Storage bucket for one small feature.
+export async function uploadHelpChatAttachment(file: File, userId: string): Promise<{ url: string; name: string; mimeType: string } | null> {
+  const supabase = getSupabase();
+  const path = `ai-assistant/${userId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+  const { error } = await supabase.storage.from('team-chat-media').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+  });
+  if (error) {
+    console.error('[Supabase] Error uploading help-chat attachment:', error);
+    return null;
+  }
+  const { data } = supabase.storage.from('team-chat-media').getPublicUrl(path);
+  return { url: data.publicUrl, name: file.name, mimeType: file.type || 'application/octet-stream' };
 }
 
 // Uploads a chat attachment (image, voice note, GIF, or generic file) to

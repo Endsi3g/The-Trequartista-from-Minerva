@@ -1,15 +1,30 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, X, Send, Bot, User, Plus, SlidersHorizontal, ChevronDown, RefreshCw, Maximize2, Minimize2, Workflow, ClipboardList, Search, BookOpen } from 'lucide-react';
+import { Sparkles, X, Send, User, Plus, SlidersHorizontal, ChevronDown, RefreshCw, Maximize2, Minimize2, Workflow, ClipboardList, Search, BookOpen, MessageSquareText, Paperclip, FileText, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LogoMark } from '@/components/shell/Logo';
+import { UserAvatar } from '@/components/ui/user-avatar';
+import { useCurrentUser } from '@/hooks/use-current-user';
+import { useToast } from '@/components/providers/ToastProvider';
+import { fetchAiConversations, fetchHelpChatMessagesByConversation, uploadHelpChatAttachment } from '@/lib/services/supabase-data';
+import type { AiConversation } from '@/lib/types';
+
+interface MessageAttachment {
+  url: string;
+  name: string;
+  mimeType: string;
+}
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   sources?: { id: string; title: string }[];
+  attachment?: MessageAttachment;
 }
+
+const ACCEPTED_ATTACHMENT_TYPES = 'image/*,application/pdf';
 
 const QUICK_PROMPTS: { icon: typeof Workflow; label: string }[] = [
   { icon: Workflow, label: 'Comment lier mes comptes dans Composio ?' },
@@ -18,14 +33,26 @@ const QUICK_PROMPTS: { icon: typeof Workflow; label: string }[] = [
   { icon: BookOpen, label: 'Comment lancer le contrôle QA 20-points ?' },
 ];
 
+const DEFAULT_TITLE = 'Nouvelle discussion avec l\'IA';
+const MAX_TEXTAREA_HEIGHT = 120;
+
 export function AiAssistantSpeedDial() {
+  const { id: userId, fullName, avatarUrl } = useCurrentUser();
+  const { toastError } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [title, setTitle] = useState(DEFAULT_TITLE);
+  const [conversations, setConversations] = useState<AiConversation[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [pendingAttachment, setPendingAttachment] = useState<MessageAttachment | null>(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Keyboard shortcut ⌘J ou Ctrl+J pour ouvrir/fermer le panneau
   useEffect(() => {
@@ -44,29 +71,64 @@ export function AiAssistantSpeedDial() {
 
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 150);
+      setTimeout(() => textareaRef.current?.focus(), 150);
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [isOpen, messages]);
 
+  // Auto-grow the textarea up to a max height, scrolling internally beyond that.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
+  }, [draft]);
+
+  const loadConversations = async () => {
+    if (!userId) return;
+    setConversations(await fetchAiConversations(userId));
+  };
+
+  const handleSelectFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !userId) return;
+    setUploadingAttachment(true);
+    const attachment = await uploadHelpChatAttachment(file, userId);
+    setUploadingAttachment(false);
+    if (!attachment) {
+      toastError('Erreur', 'Impossible de téléverser ce fichier.');
+      return;
+    }
+    setPendingAttachment(attachment);
+  };
+
   const handleSendMessage = async (textToSend?: string) => {
     const query = (textToSend || draft).trim();
-    if (!query || sending) return;
+    if ((!query && !pendingAttachment) || sending) return;
 
+    const attachment = pendingAttachment;
     const userMsg: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
       content: query,
+      attachment: attachment || undefined,
     };
     setMessages((prev) => [...prev, userMsg]);
     setDraft('');
+    setPendingAttachment(null);
     setSending(true);
 
     try {
       const res = await fetch('/api/help-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: query }),
+        body: JSON.stringify({
+          message: query || `(Fichier joint : ${attachment?.name})`,
+          conversationId,
+          attachmentUrl: attachment?.url,
+          attachmentMimeType: attachment?.mimeType,
+        }),
       });
 
       if (res.ok) {
@@ -78,6 +140,11 @@ export function AiAssistantSpeedDial() {
           sources: data.sources,
         };
         setMessages((prev) => [...prev, botMsg]);
+        if (data.conversationId) setConversationId(data.conversationId);
+        if (data.title) {
+          setTitle(data.title);
+          loadConversations();
+        }
       } else {
         const botMsg: Message = {
           id: `bot-err-${Date.now()}`,
@@ -98,9 +165,25 @@ export function AiAssistantSpeedDial() {
     }
   };
 
-  const resetConversation = () => {
+  const startNewConversation = () => {
     setMessages([]);
     setDraft('');
+    setConversationId(null);
+    setTitle(DEFAULT_TITLE);
+    setHistoryOpen(false);
+  };
+
+  const openConversation = async (conv: AiConversation) => {
+    setHistoryOpen(false);
+    setConversationId(conv.id);
+    setTitle(conv.title);
+    const rows = await fetchHelpChatMessagesByConversation(conv.id);
+    setMessages(rows.map((r) => ({ id: r.id, role: r.role, content: r.content })));
+  };
+
+  const toggleHistory = () => {
+    if (!historyOpen) loadConversations();
+    setHistoryOpen((v) => !v);
   };
 
   return (
@@ -137,14 +220,17 @@ export function AiAssistantSpeedDial() {
             )}
           >
             {/* Header */}
-            <div className="px-4 h-12 flex items-center justify-between border-b border-mv-border shrink-0">
-              <div className="flex items-center gap-1.5 text-mv-ink-soft">
-                <span className="text-[13px] font-medium">Nouvelle discussion avec l&apos;IA</span>
-                <ChevronDown className="w-3.5 h-3.5 text-mv-ink-faint" />
-              </div>
+            <div className="relative px-4 h-12 flex items-center justify-between border-b border-mv-border shrink-0">
+              <button
+                onClick={toggleHistory}
+                className="flex items-center gap-1.5 text-mv-ink-soft hover:text-mv-ink transition-colors cursor-pointer min-w-0"
+              >
+                <span className="text-[13px] font-medium truncate max-w-[220px]">{title}</span>
+                <ChevronDown className={cn('w-3.5 h-3.5 text-mv-ink-faint shrink-0 transition-transform', historyOpen && 'rotate-180')} />
+              </button>
               <div className="flex items-center gap-0.5">
                 <button
-                  onClick={resetConversation}
+                  onClick={startNewConversation}
                   className="p-1.5 rounded-md text-mv-ink-faint hover:text-mv-ink hover:bg-mv-cream-soft transition-colors cursor-pointer"
                   title="Nouvelle discussion"
                   aria-label="Nouvelle discussion"
@@ -167,14 +253,40 @@ export function AiAssistantSpeedDial() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
+
+              {/* Past-discussions dropdown */}
+              {historyOpen && (
+                <div className="absolute top-full left-2 mt-1 w-72 max-h-72 overflow-y-auto bg-mv-surface border border-mv-border rounded-xl shadow-mv-md z-10 py-1">
+                  {conversations.length === 0 ? (
+                    <p className="px-3 py-4 text-[12px] text-mv-ink-faint text-center">Aucune discussion précédente.</p>
+                  ) : (
+                    conversations.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => openConversation(c)}
+                        className={cn(
+                          'w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-mv-cream-soft transition-colors cursor-pointer',
+                          c.id === conversationId && 'bg-mv-cream-soft'
+                        )}
+                      >
+                        <MessageSquareText className="w-3.5 h-3.5 text-mv-ink-faint shrink-0" />
+                        <span className="flex-1 min-w-0 truncate text-[12.5px] text-mv-ink">{c.title}</span>
+                        <span className="text-[10px] text-mv-ink-faint font-mono shrink-0">
+                          {new Date(c.updated_at).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Body */}
             {messages.length === 0 ? (
               /* Empty state: mascotte centrée + prompts suggérés, à la Notion AI */
               <div className="flex-1 flex flex-col items-center justify-end px-5 pb-6 gap-5 overflow-y-auto bg-mv-cream-soft/40">
-                <div className="w-16 h-16 rounded-full bg-mv-green-tint border border-mv-green/25 flex items-center justify-center text-mv-green shrink-0">
-                  <Bot className="w-7 h-7" />
+                <div className="w-16 h-16 rounded-full bg-mv-green-tint border border-mv-green/25 flex items-center justify-center overflow-hidden shrink-0 p-3.5">
+                  <LogoMark size={36} />
                 </div>
                 <h2 className="text-lg font-bold font-display text-mv-ink text-center">Quelle est ta question aujourd&apos;hui ?</h2>
                 <div className="w-full space-y-1">
@@ -201,8 +313,8 @@ export function AiAssistantSpeedDial() {
                   return (
                     <div key={m.id} className={cn('flex gap-2.5', isUser ? 'justify-end' : 'justify-start')}>
                       {!isUser && (
-                        <div className="w-6 h-6 rounded-full bg-mv-green-tint border border-mv-green/25 text-mv-green flex items-center justify-center shrink-0 mt-0.5">
-                          <Bot className="w-3.5 h-3.5" />
+                        <div className="w-6 h-6 rounded-full bg-mv-green-tint border border-mv-green/25 flex items-center justify-center overflow-hidden shrink-0 mt-0.5 p-1">
+                          <LogoMark size={16} />
                         </div>
                       )}
                       <div
@@ -213,6 +325,16 @@ export function AiAssistantSpeedDial() {
                             : 'bg-mv-surface border border-mv-border text-mv-ink rounded-bl-none shadow-2xs'
                         )}
                       >
+                        {m.attachment && (
+                          <div className={cn('flex items-center gap-1.5 text-[10.5px]', isUser ? 'text-white/85' : 'text-mv-ink-soft')}>
+                            {m.attachment.mimeType.startsWith('image/') ? (
+                              <Paperclip className="w-3 h-3 shrink-0" />
+                            ) : (
+                              <FileText className="w-3 h-3 shrink-0" />
+                            )}
+                            <span className="truncate">{m.attachment.name}</span>
+                          </div>
+                        )}
                         <p className="whitespace-pre-wrap">{m.content}</p>
                         {m.sources && m.sources.length > 0 && (
                           <div className="pt-1 border-t border-mv-border text-[10px] text-mv-ink-faint space-y-0.5">
@@ -226,9 +348,13 @@ export function AiAssistantSpeedDial() {
                         )}
                       </div>
                       {isUser && (
-                        <div className="w-6 h-6 rounded-full bg-mv-border text-mv-ink-soft flex items-center justify-center shrink-0 mt-0.5">
-                          <User className="w-3.5 h-3.5" />
-                        </div>
+                        fullName ? (
+                          <UserAvatar name={fullName} src={avatarUrl} size="xs" className="w-6 h-6 text-[10px] shrink-0 mt-0.5" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-mv-border text-mv-ink-soft flex items-center justify-center shrink-0 mt-0.5">
+                            <User className="w-3.5 h-3.5" />
+                          </div>
+                        )
                       )}
                     </div>
                   );
@@ -253,24 +379,58 @@ export function AiAssistantSpeedDial() {
               }}
               className="m-2.5 mt-0 bg-mv-cream-soft border border-mv-border rounded-xl shrink-0 focus-within:border-mv-green/60 transition-colors"
             >
+              {pendingAttachment && (
+                <div className="flex items-center gap-1.5 mx-2.5 mt-2 px-2 py-1 rounded-md bg-mv-surface border border-mv-border text-[11px] text-mv-ink-soft w-fit">
+                  {pendingAttachment.mimeType.startsWith('image/') ? (
+                    <Paperclip className="w-3 h-3 text-mv-ink-faint shrink-0" />
+                  ) : (
+                    <FileText className="w-3 h-3 text-mv-ink-faint shrink-0" />
+                  )}
+                  <span className="truncate max-w-[180px]">{pendingAttachment.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPendingAttachment(null)}
+                    className="text-mv-ink-faint hover:text-mv-ink cursor-pointer"
+                    aria-label="Retirer la pièce jointe"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
               <input
-                ref={inputRef}
-                type="text"
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_ATTACHMENT_TYPES}
+                className="hidden"
+                onChange={handleSelectFile}
+              />
+              <textarea
+                ref={textareaRef}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
                 placeholder="Posez une question ou demandez une action…"
-                className="w-full h-10 px-3.5 pt-1 text-[13px] bg-transparent focus:outline-none text-mv-ink placeholder:text-mv-ink-faint"
+                rows={1}
+                className="w-full px-3.5 pt-2.5 text-[13px] bg-transparent focus:outline-none text-mv-ink placeholder:text-mv-ink-faint resize-none overflow-y-auto"
+                style={{ maxHeight: MAX_TEXTAREA_HEIGHT }}
                 disabled={sending}
               />
               <div className="flex items-center justify-between px-2 pb-1.5">
                 <div className="flex items-center gap-0.5">
                   <button
                     type="button"
-                    className="p-1.5 rounded-md text-mv-ink-faint hover:text-mv-ink hover:bg-mv-border/50 transition-colors cursor-pointer"
-                    title="Ajouter du contexte"
-                    aria-label="Ajouter du contexte"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAttachment}
+                    className="p-1.5 rounded-md text-mv-ink-faint hover:text-mv-ink hover:bg-mv-border/50 transition-colors cursor-pointer disabled:opacity-50"
+                    title="Joindre une image ou un PDF"
+                    aria-label="Joindre une image ou un PDF"
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    {uploadingAttachment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                   </button>
                   <button
                     type="button"
@@ -285,7 +445,7 @@ export function AiAssistantSpeedDial() {
                   <span className="text-[10.5px] font-medium text-mv-ink-faint">Automatique</span>
                   <button
                     type="submit"
-                    disabled={!draft.trim() || sending}
+                    disabled={(!draft.trim() && !pendingAttachment) || sending}
                     className="w-6 h-6 rounded-full bg-mv-green hover:bg-mv-green-dark disabled:opacity-30 disabled:hover:bg-mv-green text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
                     aria-label="Envoyer"
                   >
