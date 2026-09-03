@@ -892,11 +892,63 @@ export interface Lead {
   probability_pct?: number;
   notes: LeadNote[];
   created_at: string;
+  source?: string | null;
   ai_score?: number | null;
   ai_qualification_notes?: LeadAiQualification | null;
   voice_call_status?: 'not_called' | 'calling' | 'completed' | 'failed' | null;
   voice_call_id?: string | null;
   reach_id?: string | null;
+  // Qualification Inbound, Scoring & Booking
+  city?: string | null;
+  monthly_transactions?: number | null;
+  pos_system?: string | null;
+  business_type?: string | null;
+  loyalty_goal?: string | null;
+  is_multi_site?: boolean | null;
+  qualification_score?: number | null;
+  qualification_tier?: 'A' | 'B' | 'C' | null;
+  qualification_breakdown?: Record<string, any> | null;
+  next_action_due_at?: string | null;
+  call_at?: string | null;
+  booking_link?: string | null;
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  utm_term?: string | null;
+  utm_content?: string | null;
+  gclid?: string | null;
+  consent_sms?: boolean | null;
+  intervention_checklist?: Array<{
+    id: string;
+    step: number;
+    title: string;
+    description: string;
+    estimatedMinutes: number;
+    completed: boolean;
+    completedAt?: string | null;
+    completedBy?: string | null;
+    notes?: string | null;
+  }> | null;
+}
+
+export interface LeadEvent {
+  id: string;
+  lead_id: string;
+  event_type:
+    | 'lead_created'
+    | 'qualification_scored'
+    | 'tier_a_alert_sent'
+    | 'confirmation_email_sent'
+    | 'booking_scheduled'
+    | 'reminder_24h_sent'
+    | 'reminder_2h_sent'
+    | 'relance_2h_sent'
+    | 'relance_24h_sent'
+    | 'sms_opt_out'
+    | 'checklist_updated'
+    | 'trial_activated';
+  payload: Record<string, any>;
+  created_at: string;
 }
 
 // ── Acquisition: intake, audits, proposals ──────────────────────────────────

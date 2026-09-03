@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Mail, Phone, DollarSign, TrendingUp, MessageSquare, Trash2, Save, PhoneCall, StickyNote, Target,
-  Sparkles, Copy, Check, Bot, RefreshCw, Utensils, ExternalLink, ShieldCheck,
+  Sparkles, Copy, Check, Bot, RefreshCw, Utensils, ExternalLink, ShieldCheck, Calendar, Clock, MapPin, Tag,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { AnimatedNumber } from '@/components/ui/animated-number';
@@ -16,6 +16,7 @@ import { useToast } from '@/components/providers/ToastProvider';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { useAppPermissions } from '@/components/providers/AppPermissionsProvider';
 import { cn } from '@/lib/utils';
+import { InterventionChecklistCard } from '@/components/crm/InterventionChecklistCard';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
@@ -486,6 +487,81 @@ export default function LeadDetailPage() {
           )}
         </div>
       </div>
+
+      {/* ── 2.1 Inbound Qualification & Intervention Protocol ── */}
+      {(lead.qualification_score !== undefined && lead.qualification_score !== null) || lead.call_at ? (
+        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-4 shadow-2xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-mv-border pb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-mv-ink-soft">
+                Qualification Inbound &amp; Score
+              </span>
+              {lead.qualification_tier && (
+                <span
+                  className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                    lead.qualification_tier === 'A'
+                      ? 'bg-red-50 text-red-700 border border-red-200'
+                      : lead.qualification_tier === 'B'
+                      ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                      : 'bg-zinc-100 text-zinc-700 border border-zinc-200'
+                  }`}
+                >
+                  Tier {lead.qualification_tier} (Score {lead.qualification_score}/100)
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 text-xs font-medium">
+              <Calendar className="w-3.5 h-3.5 text-mv-green" />
+              {lead.call_at ? (
+                <span className="text-emerald-700 dark:text-emerald-400 font-semibold" style={MONO}>
+                  RDV Fixé : {new Date(lead.call_at).toLocaleDateString('fr-CA', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+              ) : (
+                <span className="text-zinc-500">Aucun créneau sélectionné</span>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div className="p-2.5 rounded bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800">
+              <div className="text-[10px] text-zinc-500 font-medium">Système POS</div>
+              <div className="font-semibold text-zinc-900 dark:text-zinc-100">{lead.pos_system || 'Non renseigné'}</div>
+            </div>
+            <div className="p-2.5 rounded bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800">
+              <div className="text-[10px] text-zinc-500 font-medium">Ville / Secteur</div>
+              <div className="font-semibold text-zinc-900 dark:text-zinc-100">{lead.city || 'Non renseignée'}</div>
+            </div>
+            <div className="p-2.5 rounded bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800">
+              <div className="text-[10px] text-zinc-500 font-medium">Transactions / mois</div>
+              <div className="font-semibold text-zinc-900 dark:text-zinc-100" style={MONO}>
+                {lead.monthly_transactions ? `${lead.monthly_transactions} tx` : 'Non renseigné'}
+              </div>
+            </div>
+            <div className="p-2.5 rounded bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800">
+              <div className="text-[10px] text-zinc-500 font-medium">Consentement SMS</div>
+              <div className={`font-semibold ${lead.consent_sms ? 'text-emerald-600' : 'text-zinc-500'}`}>
+                {lead.consent_sms ? '✓ Actif (CASL)' : 'Non consenti'}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── 2.2 Checklist d'Intervention Terrain (45-60 min) ── */}
+      <InterventionChecklistCard
+        leadId={lead.id}
+        initialChecklist={lead.intervention_checklist}
+        onStatusChange={(newStatus) => {
+          setLead((prev) => (prev ? { ...prev, status: newStatus as any } : null));
+        }}
+      />
 
       {/* ── 3. Contact & Pipeline ── */}
       <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">

@@ -4,6 +4,46 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-09-03 (v2.23.0) — Pipeline Inbound Automatisé : Ingestion `/api/leads`, Scoring Multi-Critères, Réservation Hybride & Relances
+
+Mise en place d'un système complet d'acquisition, de qualification instantanée et d'automatisation des leads entrants pour l'agence Minerva :
+
+- **Route API Universelle `POST /api/leads`** :
+  - Ingestion sécurisée avec support CORS (`handleCorsPreflight`, `corsHeaders`) pour Framer, Webflow et formulaires internes.
+  - Rate limiting (20 requêtes/min/IP) et validation stricte avec Zod.
+  - Sauvegarde enrichie dans `public.leads` : ville, volume de transactions, système de caisse (POS), type de commerce, objectif de fidélisation, multi-sites, UTMs (`utm_source`, `utm_campaign`, etc.), `gclid` et consentement SMS explicite (CASL).
+  - Génération automatique du lien de réservation personnalisé (`booking_link`).
+  - Historisation systématique dans la nouvelle table d'audit `public.lead_events` (`lead_created`, `qualification_scored`).
+- **Moteur de Qualification & Scoring `scoreLead` (`lib/leads/scoring.ts`)** :
+  - Barème québécois de restauration : Montréal & agglomération (+25), Transactions >= 200 (+25), POS compatible (Lightspeed, Square, Clover, TouchBistro, Maitre'D) (+20), Type fréquent (+15), Objectif fidélité (+15), Multi-sites (+5). Plafond à 100 points.
+  - Seuils de triage : **Tier A** (70-100) avec SLA d'appel sous 10m, **Tier B** (45-69) avec SLA d'appel sous 1h, **Tier C** (0-44) avec email & validation manuelle.
+  - **Alerte multi-canal instantanée pour les leads Tier A** : notification temps réel dans le chat d'équipe Minerva (`team_chat_messages`), courriel d'urgence haute priorité via Resend et SMS d'astreinte Twilio à l'administrateur.
+  - Email de confirmation immédiat envoyé au prospect avec récapitulatif et bouton de prise de rendez-vous.
+- **Module de Réservation Hybride & Page `/merci` (`app/merci/page.tsx`)** :
+  - Déclenchement automatique de la balise de conversion Google Ads `gtag('event', 'conversion', ...)` avec protection anti-doublon en `sessionStorage`.
+  - Sélecteur interactif des 2 créneaux d'installation sur place par semaine (mardi 14h / jeudi 10h) générés dynamiquement.
+  - Route dédiée `POST /api/leads/[id]/book` pour valider le créneau, horodater `call_at`, enregistrer `booking_scheduled` dans `lead_events` et envoyer la confirmation par courriel et SMS.
+  - Lien de repli direct vers Cal.com / Calendly paramétrable via `NEXT_PUBLIC_CAL_BOOKING_URL`.
+- **Formulaire de Capture Dédié (`app/demande/page.tsx`)** :
+  - Interface soignée avec tokens Minerva (accents émeraude, mode sombre/clair, `font-mono tabular-nums`).
+  - Capture transparente des paramètres marketing (UTMs, gclid) et consentement légal SMS (CASL / TCPA).
+- **Cron Horaire de Rappels & Relances (`app/api/cron/lead-reminders/route.ts`)** :
+  - Enregistré dans `vercel.json` (`0 * * * *`) et protégé par `CRON_SECRET`.
+  - Rappels de rendez-vous à J-1 (24h avant) et H-2 (2h avant `call_at`) par email et SMS (strictement sous condition `consent_sms === true`).
+  - Relances automatiques d'abandon si aucun créneau n'est sélectionné : première relance douce à 2-4h, deuxième relance de rappel des disponibilités limitées à 24h.
+  - Déduplication garantie sans double envoi via requêtes d'existence sur `lead_events`.
+- **Conformité SMS Twilio & Webhook Opt-Out (`app/api/webhooks/twilio-sms/route.ts`)** :
+  - Ajout automatique de la mention légale « Répondre STOP pour refuser » sur tous les SMS sortants.
+  - Traitement automatique des réponses STOP / ARRET via webhook pour désactiver immédiatement `consent_sms` sur le lead et historiser l'événement `sms_opt_out`.
+- **Dashboard de Triage Inbound & Checklist 45-60 min** :
+  - Nouvel onglet **« Triage & Pipeline »** dans `/leads` avec filtrage par Tier (Tier A avec badge clignotant, Tier B, Tier C, RDV fixés), vue rapide de la prochaine action, date du prochain RDV et appel direct en 1 clic.
+  - Carte interactive `InterventionChecklistCard` dans la fiche lead `/leads/[id]` détaillant les 6 étapes du protocole terrain de 45-60 min, avec bascule automatique du lead en `trial_active` dès la validation des 6 étapes.
+- **Base de Données & Idempotence** :
+  - Migration `supabase/migrations/20260903000001_leads_inbound_scoring_and_events.sql`.
+  - Schéma consolidé dans `supabase/deploy_production_complete.sql` (v2.23.0).
+
+---
+
 ## 2026-09-02 (v2.22.0) — Gestion Client & Rétention : Cycle de Vie de l'Essai Accompagné 14 Jours (Minerva Flow Montréal)
 
 Mise à niveau majeure du module Clients & Rétention (`/clients`) pour piloter l'offre phare de déploiement Minerva Flow auprès des restaurateurs montréalais :

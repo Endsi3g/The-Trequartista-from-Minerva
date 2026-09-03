@@ -20,6 +20,12 @@ import {
   X,
   RefreshCw,
   Sparkles,
+  Calendar,
+  Clock,
+  ShieldCheck,
+  PhoneCall,
+  AlertTriangle,
+  Flame,
 } from 'lucide-react';
 import { fetchClients, fetchLeads } from '@/lib/services/supabase-data';
 import type { Client, Lead, LeadStage } from '@/lib/types';
@@ -34,7 +40,8 @@ const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantN
 function LeadsCrmContent() {
   const router = useRouter();
   const { toastSuccess, toastError } = useToast();
-  const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
+  const [viewMode, setViewMode] = useState<'kanban' | 'table' | 'triage'>('kanban');
+  const [triageFilter, setTriageFilter] = useState<'all' | 'A' | 'B' | 'C' | 'booked'>('all');
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,6 +86,32 @@ function LeadsCrmContent() {
       );
     });
   }, [leads, searchQuery]);
+
+  const triageLeads = useMemo(() => {
+    return filteredLeads.filter((l) => {
+      if (triageFilter === 'all') return true;
+      if (triageFilter === 'A')
+        return (
+          l.qualification_tier === 'A' ||
+          (l.qualification_score !== null && l.qualification_score !== undefined && l.qualification_score >= 70)
+        );
+      if (triageFilter === 'B')
+        return (
+          l.qualification_tier === 'B' ||
+          (l.qualification_score !== null &&
+            l.qualification_score !== undefined &&
+            l.qualification_score >= 45 &&
+            l.qualification_score < 70)
+        );
+      if (triageFilter === 'C')
+        return (
+          l.qualification_tier === 'C' ||
+          (l.qualification_score !== null && l.qualification_score !== undefined && l.qualification_score < 45)
+        );
+      if (triageFilter === 'booked') return Boolean(l.call_at);
+      return true;
+    });
+  }, [filteredLeads, triageFilter]);
 
   // Calculate Pipeline Financial Metrics
   const totalPipelineMrr = filteredLeads.reduce((acc, l) => acc + (l.mrr_value || 0), 0);
@@ -217,6 +250,21 @@ function LeadsCrmContent() {
             >
               <TableIcon className="w-3 h-3" />
               <span>Table</span>
+            </button>
+            <button
+              onClick={() => setViewMode('triage')}
+              className={cn(
+                'px-2.5 py-1 rounded-[4px] transition-all cursor-pointer flex items-center gap-1.5',
+                viewMode === 'triage'
+                  ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              )}
+            >
+              <ShieldCheck className="w-3 h-3 text-emerald-600" />
+              <span>Triage &amp; Pipeline</span>
+              {leads.filter((l) => l.qualification_tier === 'A').length > 0 && (
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+              )}
             </button>
           </div>
 
@@ -385,7 +433,7 @@ function LeadsCrmContent() {
           onSelectLead={(lead) => router.push(`/leads/${lead.id}`)}
           onLeadsUpdated={loadData}
         />
-      ) : (
+      ) : viewMode === 'table' ? (
         /* Commutable 36px DataTable View */
         <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
           <table className="w-full text-[12.5px] border-collapse">
@@ -481,6 +529,264 @@ function LeadsCrmContent() {
               })}
             </tbody>
           </table>
+        </div>
+      ) : (
+        /* ── Triage Inbound & Qualification Dashboard ── */
+        <div className="space-y-4">
+          {/* Triage Filter Ribbon */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+            <button
+              onClick={() => setTriageFilter('all')}
+              className={cn(
+                'px-3 py-1.5 rounded-lg border font-medium transition-all flex items-center gap-1.5 shrink-0',
+                triageFilter === 'all'
+                  ? 'bg-zinc-900 text-white border-zinc-900 shadow-2xs dark:bg-white dark:text-zinc-900'
+                  : 'bg-white dark:bg-zinc-900 border-mv-border text-zinc-600 hover:text-zinc-900'
+              )}
+            >
+              <span>Tous les leads</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-200/60 dark:bg-zinc-800" style={MONO}>
+                {filteredLeads.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setTriageFilter('A')}
+              className={cn(
+                'px-3 py-1.5 rounded-lg border font-medium transition-all flex items-center gap-1.5 shrink-0',
+                triageFilter === 'A'
+                  ? 'bg-red-600 text-white border-red-600 shadow-2xs'
+                  : 'bg-white dark:bg-zinc-900 border-mv-border text-zinc-600 hover:text-red-600'
+              )}
+            >
+              <Flame className="w-3.5 h-3.5 text-red-500" />
+              <span>Tier A • Appel &lt;10m</span>
+              <span
+                className={cn(
+                  'px-1.5 py-0.2 rounded-full text-[10px]',
+                  triageFilter === 'A' ? 'bg-red-700 text-white' : 'bg-red-50 text-red-700'
+                )}
+                style={MONO}
+              >
+                {leads.filter((l) => l.qualification_tier === 'A' || (l.qualification_score !== null && l.qualification_score !== undefined && l.qualification_score >= 70)).length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setTriageFilter('B')}
+              className={cn(
+                'px-3 py-1.5 rounded-lg border font-medium transition-all flex items-center gap-1.5 shrink-0',
+                triageFilter === 'B'
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-2xs'
+                  : 'bg-white dark:bg-zinc-900 border-mv-border text-zinc-600 hover:text-amber-600'
+              )}
+            >
+              <Clock className="w-3.5 h-3.5 text-amber-500" />
+              <span>Tier B • Appel &lt;1h</span>
+              <span
+                className={cn(
+                  'px-1.5 py-0.2 rounded-full text-[10px]',
+                  triageFilter === 'B' ? 'bg-amber-700 text-white' : 'bg-amber-50 text-amber-700'
+                )}
+                style={MONO}
+              >
+                {leads.filter((l) => l.qualification_tier === 'B' || (l.qualification_score !== null && l.qualification_score !== undefined && l.qualification_score >= 45 && l.qualification_score < 70)).length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setTriageFilter('C')}
+              className={cn(
+                'px-3 py-1.5 rounded-lg border font-medium transition-all flex items-center gap-1.5 shrink-0',
+                triageFilter === 'C'
+                  ? 'bg-zinc-700 text-white border-zinc-700 shadow-2xs'
+                  : 'bg-white dark:bg-zinc-900 border-mv-border text-zinc-600 hover:text-zinc-900'
+              )}
+            >
+              <span>Tier C • Email / Validation</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-100 dark:bg-zinc-800" style={MONO}>
+                {leads.filter((l) => l.qualification_tier === 'C' || (l.qualification_score !== null && l.qualification_score !== undefined && l.qualification_score < 45)).length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setTriageFilter('booked')}
+              className={cn(
+                'px-3 py-1.5 rounded-lg border font-medium transition-all flex items-center gap-1.5 shrink-0',
+                triageFilter === 'booked'
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                  : 'bg-white dark:bg-zinc-900 border-mv-border text-zinc-600 hover:text-emerald-600'
+              )}
+            >
+              <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+              <span>RDV d&apos;Installation Fixés</span>
+              <span
+                className={cn(
+                  'px-1.5 py-0.2 rounded-full text-[10px]',
+                  triageFilter === 'booked' ? 'bg-emerald-700 text-white' : 'bg-emerald-50 text-emerald-700'
+                )}
+                style={MONO}
+              >
+                {leads.filter((l) => Boolean(l.call_at)).length}
+              </span>
+            </button>
+          </div>
+
+          {/* Triage DataTable */}
+          <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
+            <table className="w-full text-[12.5px] border-collapse">
+              <thead>
+                <tr className="h-8 bg-black/[0.02] border-b border-mv-border text-[10.5px] font-medium uppercase tracking-wider text-zinc-400">
+                  <th className="pl-3.5 pr-2 text-left font-medium">Établissement / Contact</th>
+                  <th className="px-2 text-left font-medium">Score &amp; Tier</th>
+                  <th className="px-2 text-left font-medium">Source / Canal</th>
+                  <th className="px-2 text-left font-medium">Prochaine Action</th>
+                  <th className="px-2 text-left font-medium">Date Prochain RDV</th>
+                  <th className="px-2 text-left font-medium">Checklist (45-60m)</th>
+                  <th className="pr-3.5 pl-2 text-right font-medium">Action Directe</th>
+                </tr>
+              </thead>
+              <tbody>
+                {triageLeads.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-zinc-400 text-xs font-mono">
+                      Aucun lead ne correspond aux filtres de triage sélectionnés.
+                    </td>
+                  </tr>
+                ) : (
+                  triageLeads.map((lead) => {
+                    const tier = lead.qualification_tier || (lead.qualification_score !== null && lead.qualification_score !== undefined ? (lead.qualification_score >= 70 ? 'A' : lead.qualification_score >= 45 ? 'B' : 'C') : null);
+                    const score = lead.qualification_score ?? lead.ai_score ?? 0;
+                    const checklistItems = Array.isArray(lead.intervention_checklist) ? lead.intervention_checklist : [];
+                    const completedSteps = checklistItems.filter((i) => i.completed).length;
+
+                    return (
+                      <tr
+                        key={lead.id}
+                        onClick={() => router.push(`/leads/${lead.id}`)}
+                        className="h-11 border-b border-mv-border last:border-0 hover:bg-black/[0.015] transition-colors cursor-pointer"
+                      >
+                        <td className="pl-3.5 pr-2 py-1.5">
+                          <div className="font-semibold text-zinc-900 truncate max-w-[190px]">
+                            {lead.company_name || lead.contact_name}
+                          </div>
+                          <div className="text-[11px] text-zinc-500 truncate max-w-[190px]">
+                            {lead.contact_name} {lead.city ? `• ${lead.city}` : ''} {lead.pos_system ? `(${lead.pos_system})` : ''}
+                          </div>
+                        </td>
+
+                        <td className="px-2 py-1.5 whitespace-nowrap">
+                          {tier ? (
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={cn(
+                                  'px-2 py-0.5 rounded text-[11px] font-bold font-mono',
+                                  tier === 'A'
+                                    ? 'bg-red-50 text-red-700 border border-red-200'
+                                    : tier === 'B'
+                                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                    : 'bg-zinc-100 text-zinc-700 border border-zinc-200'
+                                )}
+                              >
+                                Tier {tier}
+                              </span>
+                              <span className="text-[11px] font-mono text-zinc-500" style={MONO}>
+                                {score}/100
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-zinc-400 font-mono">Non scoré</span>
+                          )}
+                        </td>
+
+                        <td className="px-2 py-1.5 whitespace-nowrap text-xs text-zinc-600">
+                          <div className="flex items-center gap-1.5">
+                            <span className="truncate max-w-[110px] capitalize font-mono text-[11px]">
+                              {lead.utm_source || lead.source || 'Direct'}
+                            </span>
+                            {lead.gclid && (
+                              <span className="px-1 py-0.2 rounded text-[9px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                Ads
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="px-2 py-1.5 whitespace-nowrap text-xs">
+                          {tier === 'A' ? (
+                            <span className="inline-flex items-center gap-1 text-red-600 font-semibold text-[11.5px]">
+                              <Flame className="w-3 h-3 text-red-500 animate-pulse" />
+                              Appel d&apos;urgence &lt;10m
+                            </span>
+                          ) : tier === 'B' ? (
+                            <span className="inline-flex items-center gap-1 text-amber-700 font-medium text-[11.5px]">
+                              <Clock className="w-3 h-3 text-amber-500" />
+                              Appel sous 1 heure
+                            </span>
+                          ) : (
+                            <span className="text-zinc-500 text-[11.5px]">Email / Validation</span>
+                          )}
+                        </td>
+
+                        <td className="px-2 py-1.5 whitespace-nowrap text-xs">
+                          {lead.call_at ? (
+                            <span
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 font-medium font-mono text-[11px] border border-emerald-200"
+                              style={MONO}
+                            >
+                              <Calendar className="w-3 h-3 text-emerald-600" />
+                              {new Date(lead.call_at).toLocaleDateString('fr-CA', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          ) : (
+                            <span className="text-zinc-400 text-[11px] font-mono italic">À planifier</span>
+                          )}
+                        </td>
+
+                        <td className="px-2 py-1.5 whitespace-nowrap text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-12 bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                              <div
+                                className="bg-emerald-500 h-full rounded-full"
+                                style={{ width: `${checklistItems.length > 0 ? (completedSteps / checklistItems.length) * 100 : 0}%` }}
+                              />
+                            </div>
+                            <span className="text-[11px] font-mono text-zinc-500" style={MONO}>
+                              {checklistItems.length > 0 ? `${completedSteps}/${checklistItems.length}` : '0/6'}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="pr-3.5 pl-2 py-1.5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1.5">
+                            {lead.contact_phone && (
+                              <a
+                                href={`tel:${lead.contact_phone}`}
+                                className="p-1 rounded bg-zinc-100 hover:bg-emerald-50 text-zinc-600 hover:text-emerald-700 transition-colors"
+                                title={`Appeler ${lead.contact_name}`}
+                              >
+                                <PhoneCall className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                            <button
+                              onClick={() => router.push(`/leads/${lead.id}`)}
+                              className="px-2 py-0.5 rounded bg-mv-green/10 hover:bg-mv-green/20 text-mv-green font-semibold text-[11px] transition-colors"
+                            >
+                              Ouvrir
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
       </TabTransition>

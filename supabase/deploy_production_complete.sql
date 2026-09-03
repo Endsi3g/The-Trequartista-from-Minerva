@@ -162,16 +162,64 @@ ALTER TABLE public.leads
     ADD COLUMN IF NOT EXISTS ai_qualification_notes JSONB DEFAULT '{}'::jsonb,
     ADD COLUMN IF NOT EXISTS voice_call_status TEXT DEFAULT 'not_called',
     ADD COLUMN IF NOT EXISTS voice_call_id TEXT,
-    ADD COLUMN IF NOT EXISTS reach_id TEXT;
+    ADD COLUMN IF NOT EXISTS reach_id TEXT,
+    ADD COLUMN IF NOT EXISTS city TEXT,
+    ADD COLUMN IF NOT EXISTS monthly_transactions INT DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS pos_system TEXT,
+    ADD COLUMN IF NOT EXISTS business_type TEXT,
+    ADD COLUMN IF NOT EXISTS loyalty_goal TEXT,
+    ADD COLUMN IF NOT EXISTS is_multi_site BOOLEAN DEFAULT false,
+    ADD COLUMN IF NOT EXISTS qualification_score INT,
+    ADD COLUMN IF NOT EXISTS qualification_tier TEXT,
+    ADD COLUMN IF NOT EXISTS qualification_breakdown JSONB DEFAULT '{}'::jsonb,
+    ADD COLUMN IF NOT EXISTS next_action_due_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS call_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS booking_link TEXT,
+    ADD COLUMN IF NOT EXISTS utm_source TEXT,
+    ADD COLUMN IF NOT EXISTS utm_medium TEXT,
+    ADD COLUMN IF NOT EXISTS utm_campaign TEXT,
+    ADD COLUMN IF NOT EXISTS utm_term TEXT,
+    ADD COLUMN IF NOT EXISTS utm_content TEXT,
+    ADD COLUMN IF NOT EXISTS gclid TEXT,
+    ADD COLUMN IF NOT EXISTS consent_sms BOOLEAN DEFAULT false,
+    ADD COLUMN IF NOT EXISTS intervention_checklist JSONB DEFAULT '[]'::jsonb;
 
 CREATE INDEX IF NOT EXISTS leads_ai_score_idx ON public.leads (ai_score);
 CREATE INDEX IF NOT EXISTS leads_reach_id_idx ON public.leads (reach_id);
+CREATE INDEX IF NOT EXISTS leads_qualification_tier_idx ON public.leads (qualification_tier);
+CREATE INDEX IF NOT EXISTS leads_qualification_score_idx ON public.leads (qualification_score);
+CREATE INDEX IF NOT EXISTS leads_call_at_idx ON public.leads (call_at);
+CREATE INDEX IF NOT EXISTS leads_gclid_idx ON public.leads (gclid);
 
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Acces leads membres" ON public.leads;
 CREATE POLICY "Acces leads membres" ON public.leads
     FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- ── 4.1 Événements du Cycle de Vie des Leads ────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.lead_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    lead_id UUID NOT NULL REFERENCES public.leads(id) ON DELETE CASCADE,
+    event_type TEXT NOT NULL,
+    payload JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS lead_events_lead_id_idx ON public.lead_events (lead_id);
+CREATE INDEX IF NOT EXISTS lead_events_type_idx ON public.lead_events (event_type);
+CREATE INDEX IF NOT EXISTS lead_events_created_at_idx ON public.lead_events (created_at);
+CREATE INDEX IF NOT EXISTS lead_events_composite_idx ON public.lead_events (lead_id, event_type);
+
+ALTER TABLE public.lead_events ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Acces lead_events membres" ON public.lead_events;
+CREATE POLICY "Acces lead_events membres" ON public.lead_events
+    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Insertion publique lead_events" ON public.lead_events;
+CREATE POLICY "Insertion publique lead_events" ON public.lead_events
+    FOR INSERT TO anon WITH CHECK (true);
 
 -- ── 5. Réseau & Contacts Professionnels ──────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.contacts (

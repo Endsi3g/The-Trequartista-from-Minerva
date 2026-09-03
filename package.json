@@ -30,6 +30,7 @@
     "@radix-ui/react-tooltip": "^1.2.16",
     "@react-pdf/renderer": "^4.6.0",
     "@supabase-labs/y-supabase": "^0.1.0",
+    "@supabase/server": "^1.5.2",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
     "@upstash/qstash": "^2.11.3",
