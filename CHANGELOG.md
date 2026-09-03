@@ -4,6 +4,23 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-09-03 (v2.23.1) — Sécurisation Backend : Adaptateur Next.js `@supabase/server`, Auth Hybride & Contrôle RBAC
+
+Architecture unifiée pour la sécurisation des API backend avec le paquet officiel `@supabase/server` :
+
+- **Adaptateur Next.js App Router (`lib/supabase/server-auth.ts`)** :
+  - Création de `withSupabaseRouteHandler` et `createRouteHandlerContext` composant `@supabase/server/core` (`verifyCredentials`, `createContextClient`, `createAdminClient`) et `@supabase/ssr` (`createServerClient`).
+  - Prise en charge des 4 modes : `'user'`, `'secret'`, `'publishable'`, `'none'`.
+  - Authentification hybride : extraction prioritaire du Bearer JWT dans l'en-tête `Authorization`, avec bascule transparente vers les sessions cookies SSR.
+  - Contrôle d'accès basé sur les rôles (RBAC) intégré : option `requiredRole: 'admin' | 'manager' | 'member'` avec rejet automatique 403 Forbidden.
+  - Résolution multi-clés compatible avec les nouvelles clés Supabase (`SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`) et les variables legacy.
+- **Migration des Routes Pilotes de Référence** :
+  - **Route CRM Utilisateur** : [`/api/contacts/[id]/send-email`](file:///Users/kaelbelceus/Flow%20by%20Minerva/The-Trequartista-from-Minerva/app/api/contacts/[id]/send-email/route.ts) migrée vers `{ auth: 'user' }`.
+  - **Route Administration & RevOps** : [`/api/team/workload`](file:///Users/kaelbelceus/Flow%20by%20Minerva/The-Trequartista-from-Minerva/app/api/team/workload/route.ts) verrouillée avec `{ auth: 'user', requiredRole: 'admin' }`.
+  - **Route Cron Machine-to-Machine** : [`/api/cron/lead-reminders`](file:///Users/kaelbelceus/Flow%20by%20Minerva/The-Trequartista-from-Minerva/app/api/cron/lead-reminders/route.ts) sécurisée avec `{ auth: 'secret' }`.
+
+---
+
 ## 2026-09-03 (v2.23.0) — Pipeline Inbound Automatisé : Ingestion `/api/leads`, Scoring Multi-Critères, Réservation Hybride & Relances
 
 Mise en place d'un système complet d'acquisition, de qualification instantanée et d'automatisation des leads entrants pour l'agence Minerva :

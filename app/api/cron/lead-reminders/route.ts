@@ -1,31 +1,20 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { withSupabaseRouteHandler } from '@/lib/supabase/server-auth';
 import { sendEmailServerSide } from '@/lib/services/email-service';
 import { sendSms } from '@/lib/services/twilio';
 
-function getSupabase() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-}
-
-export async function GET(req: Request) {
-  // 1. Vérification de sécurité CRON_SECRET
-  const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const authHeader = req.headers.get('authorization');
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
-  }
-
-  const supabase = getSupabase();
-  const now = new Date();
-  const report = {
-    reminders24hSent: 0,
-    reminders2hSent: 0,
-    relances2hSent: 0,
-    relances24hSent: 0,
-    errors: [] as string[],
-  };
+export const GET = withSupabaseRouteHandler(
+  { auth: 'secret' },
+  async (req, ctx) => {
+    const supabase = ctx.supabaseAdmin;
+    const now = new Date();
+    const report = {
+      reminders24hSent: 0,
+      reminders2hSent: 0,
+      relances2hSent: 0,
+      relances24hSent: 0,
+      errors: [] as string[],
+    };
 
   try {
     // =========================================================================
@@ -295,3 +284,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: err.message, report }, { status: 500 });
   }
 }
+);
