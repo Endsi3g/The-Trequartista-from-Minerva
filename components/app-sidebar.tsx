@@ -39,6 +39,7 @@ import {
   Trophy,
   Calendar,
   Briefcase,
+  Globe,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -287,8 +288,8 @@ export function AppSidebar() {
   // "Principal" -- daily-use, personal-scope items
   const mainMenuItems: NavItem[] = [
     { key: 'overview', label: 'Accueil', href: '/overview', icon: LayoutDashboard },
+    { key: 'ecosystem', label: 'Hub Écosystème', href: '/ecosystem', icon: Globe },
     { key: 'booking', label: 'Rendez-Vous', href: '/booking', icon: Calendar },
-    { key: 'voice-agent', label: 'Agent Vocal IA', href: '/voice-agent', icon: PhoneCall },
     { key: 'tasks', label: 'Tâches', href: '/tasks', icon: CheckSquare, count: counts.myTasks ?? undefined },
     { key: 'documents', label: 'Documents', href: '/documents', icon: FileText },
     { key: 'chat', label: 'Chat d\'équipe', href: '/chat', icon: MessageSquare },
@@ -505,6 +506,34 @@ export function AppSidebar() {
             )}
           </>
         )}
+
+        {/* ── Sites Web Officiels ── */}
+        <NavSection label="Sites Web Officiels" defaultOpen>
+          <a
+            href="https://minervaflow.framer.website/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between rounded-[4px] px-2 h-7 text-[12px] font-medium text-zinc-600 hover:bg-black/[0.05] hover:text-zinc-900 transition-colors group"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Utensils size={13} className="text-emerald-600 shrink-0" />
+              <span className="truncate">Minerva Flow</span>
+            </div>
+            <ExternalLink size={10} className="text-zinc-400 opacity-60 group-hover:opacity-100 shrink-0" />
+          </a>
+          <a
+            href="https://minervastudio.framer.website/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between rounded-[4px] px-2 h-7 text-[12px] font-medium text-zinc-600 hover:bg-black/[0.05] hover:text-zinc-900 transition-colors group"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Building2 size={13} className="text-purple-600 shrink-0" />
+              <span className="truncate">Minerva Studio</span>
+            </div>
+            <ExternalLink size={10} className="text-zinc-400 opacity-60 group-hover:opacity-100 shrink-0" />
+          </a>
+        </NavSection>
 
         {/* ── Apps & Portails Écosystème ── */}
         <NavSection label="Apps & Portails" defaultOpen>

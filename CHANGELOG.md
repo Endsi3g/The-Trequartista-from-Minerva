@@ -4,6 +4,27 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-09-02 (v2.21.0) — Écosystème de Fidélisation, Optimisation des Marges & Intégration des Sites Web Officiels (Minerva Flow & Studio)
+
+Réalignement stratégique majeur de Minerva Trequartista avec le positionnement de marque de l'agence (fidélisation client, protection des marges nettes et intégration des vitrines officielles) :
+
+- **Intégration Complète des Sites Web Officiels de la Compagnie** :
+  - **Barre latérale unifiée (`components/app-sidebar.tsx`)** : Nouvelle organisation distinguant clairement les *Sites Web Officiels* (`minervaflow.framer.website` & `minervastudio.framer.website`) et les *Applications & Portails* (`Minerva Reach` & `Minerva Flow SaaS`).
+  - **Nouveau Hub Écosystème (`/ecosystem`)** : Page centrale interactive présentant les 4 piliers de l'agence avec badges de statuts, fiches d'usages pour chaque pôle (Ventes, Managing, Tech), liens d'accès direct et copies rapides d'URLs.
+- **Recentrage Stratégique : Fidélisation Client & Protection des Marges Nettes** :
+  - Recalibrage complet du moteur de qualification et scoring commercial (`/api/leads/[id]/qualify`) : substitution de l'angle culpabilisant de « perte Uber Eats » par le **Potentiel de Fidélisation Client (Score 0-100)** et le **Gain de Marge Nette Estimé ($ CAD/mois)** généré par la commande directe.
+  - Identification des piliers de fidélisation activés (Commande directe 0%, QR codes comptoir & tables, Programme de récompenses habitués, Essai accompagné de 14 jours avec installation sur place à Montréal).
+  - Génération d'une accroche commerciale positive et incitative basée sur l'offre d'essai accompagné de 14 jours.
+- **Décommissionnement & Retrait des Appels Vocaux IA Non Fonctionnels** :
+  - Retrait des boutons d'appels sortants automatisés sur les fiches leads (`/leads` et `/leads/[id]`) suite aux retours terrain confirmant leur inefficacité opérationnelle.
+  - Remplacement de cet espace dans le CRM par le panneau haute valeur **« Écosystème de Fidélisation & Marges Nettes »** avec leviers de rétention habitués et estimation de marge nette.
+- **Harmonisation des Modèles Commerciaux & SOPs de Vente** :
+  - Mise à jour des templates de devis (`lib/services/proposals.ts`) autour de l'offre Minerva Flow (Fidélisation & 0% commission) et Minerva Studio (Framer & Identité).
+  - Migration SQL `supabase/migrations/20260902000002_loyalty_ecosystem_and_websites.sql` actualisant les SOPs de vente et closing (SOP-PROSP-04 & SOP-PROSP-05).
+  - Mise à jour du script maître consolidé `supabase/deploy_production_complete.sql` en version v2.21.0.
+
+---
+
 ## 2026-09-02 (v2.20.0) — CRM & Prospection Intelligente (Minerva Reach Sync, Appels Vocaux IA ElevenLabs & Qualification Automatique)
 
 Mise à niveau majeure du pipeline commercial et de l'acquisition Minerva Trequartista :

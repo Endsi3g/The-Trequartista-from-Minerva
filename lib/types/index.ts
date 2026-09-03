@@ -851,6 +851,8 @@ export interface LeadAiQualification {
   summary?: string;
   buying_signals?: string[];
   estimated_monthly_loss_cad?: number;
+  estimated_net_margin_gain_cad?: number;
+  loyalty_pillars?: string[];
   recommended_hook?: string;
   qualifier_model?: string;
   qualified_at?: string;

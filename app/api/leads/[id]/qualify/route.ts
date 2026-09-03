@@ -30,7 +30,7 @@ export function computeLeadQualification(lead: {
   const notesLower = notesStr.toLowerCase();
   const meta = lead.metadata || {};
 
-  let score = 50; // Base score
+  let score = 55; // Base score
   const buyingSignals: string[] = [];
 
   // 1. Food & Beverage / Restaurant keywords
@@ -39,65 +39,64 @@ export function computeLeadQualification(lead: {
 
   if (isResto) {
     score += 20;
-    buyingSignals.push("Secteur Restauration / Commerce de bouche indépendant à forte marge brute");
+    buyingSignals.push("Forte base potentielle de clients réguliers et habitués de quartier");
   }
 
-  // 2. Third-party delivery commission loss detection
-  const deliveryKeywords = ['uber', 'doordash', 'skip', 'livraison', 'commission', 'takeout', 'à emporter', 'frais 30%'];
-  const hasDelivery = deliveryKeywords.some((k) => notesLower.includes(k) || service.includes(k));
+  // 2. Direct Ordering & Margin Gain potential
+  const hashSeed = (name.length * 149 + 1150) % 2700;
+  const estimatedMarginGain = 1500 + hashSeed;
+  score += 15;
+  buyingSignals.push(`Gain de marge nette estimé à ~${estimatedMarginGain.toLocaleString('fr-CA')} $ CAD/mois via commandes directes à 0% commission`);
 
-  let estimatedLoss = 0;
-  if (hasDelivery || isResto) {
-    score += 15;
-    // Estimated average delivery commission loss between 1,800$ and 4,500$ CAD
-    const hashSeed = (name.length * 137 + 1200) % 2500;
-    estimatedLoss = 1800 + hashSeed;
-    buyingSignals.push(`Érosion de marge estimée à ~${estimatedLoss.toLocaleString('fr-CA')} $ CAD/mois en commissions tierces (UberEats / DoorDash)`);
-  }
-
-  // 3. Digital presence / Google Maps rating
+  // 3. Digital presence / Google Maps reviews (loyalty reservoir)
   if (meta.rating || meta.reviews_count || notesLower.includes('maps') || notesLower.includes('avis')) {
     score += 10;
-    buyingSignals.push(`Volume d'avis Google Maps actif (${meta.reviews_count || '50+'} avis, note ${meta.rating || '4.3'}/5)`);
+    buyingSignals.push(`Communauté locale active (${meta.reviews_count || '50+'} avis, note ${meta.rating || '4.3'}/5) prête à être fidélisée`);
   }
 
   // 4. Contact viability
   if (lead.phone) {
     score += 5;
-    buyingSignals.push("Ligne téléphonique directe disponible pour qualification vocale");
+    buyingSignals.push("Ligne directe disponible pour planifier l'installation sur place à Montréal");
   }
   if (lead.email) {
     score += 5;
-    buyingSignals.push("Canal de relance par courriel validé");
+    buyingSignals.push("Canal validé pour l'envoi de la démo interactive personnalisée");
   }
 
-  // 5. Territory
+  // 5. Montreal Territory priority
   const isMontreal = ['montréal', 'montreal', 'rosemont', 'plateau', 'mile end', 'laval', 'longueuil', 'verdun'].some(
     (loc) => notesLower.includes(loc) || JSON.stringify(meta).toLowerCase().includes(loc)
   );
   if (isMontreal) {
     score += 5;
-    buyingSignals.push("Implantation dans la zone prioritaire d'intervention terrain (Grand Montréal)");
+    buyingSignals.push("Zone d'intervention prioritaire pour l'essai accompagné de 14 jours");
   }
 
   // Cap score
-  score = Math.min(Math.max(score, 25), 98);
+  score = Math.min(Math.max(score, 30), 98);
 
   const grade: 'A' | 'B' | 'C' | 'D' =
     score >= 80 ? 'A' : score >= 65 ? 'B' : score >= 50 ? 'C' : 'D';
 
-  const company = lead.company_name || 'cet établissement';
-  const hook =
-    estimatedLoss > 0
-      ? `« Bonjour ${lead.contact_name || 'Chef'}, j'ai calculé que ${company} verse environ ${estimatedLoss.toLocaleString('fr-CA')} $ par mois en commissions de livraison. On a modélisé votre menu sur Minerva Flow à 0% de commission. Seriez-vous ouvert à une démo de 5 minutes sur votre imprimante de cuisine ? »`
-      : `« Bonjour ${lead.contact_name || 'l\'équipe'}, on a analysé le parcours client en ligne de ${company} et modélisé une expérience de commande directe sans intermédiaire pour vos habitués. Êtes-vous disponible 10 minutes cette semaine ? »`;
+  const company = lead.company_name || 'votre établissement';
+  const hook = `« Bonjour ${lead.contact_name || 'Chef'}, on aide les restaurateurs montréalais comme ${company} à protéger leurs marges en cuisine et faire revenir leurs clients réguliers sans commission. On a préparé votre espace de commande directe et de fidélisation : essai accompagné de 14 jours inclus et installation sur place à Montréal. Seriez-vous ouvert à échanger 5 minutes cette semaine ? »`;
+
+  const loyaltyPillars = [
+    'Commande directe 0% commission (Protection des marges)',
+    'QR code comptoir & tables pour réachat express',
+    'Programme de récompenses habitués (Rétention LTV)',
+    'Installation sur place à Montréal & Essai accompagné 14 jours',
+  ];
 
   const qualification: LeadAiQualification = {
-    summary: `Prospect qualifié avec un indice de priorité commerciale de ${score}/100. Établissement particulièrement réceptif à l'offre Minerva Flow (0% commission) et à l'acquisition de commandes directes.`,
+    summary: `Établissement qualifié avec un indice de potentiel de fidélisation de ${score}/100. Profil idéal pour déployer l'écosystème Minerva Flow, stimuler la récurrence des habitués et sécuriser ~${estimatedMarginGain.toLocaleString('fr-CA')} $ CAD/mois de marge nette additionnelle.`,
     buying_signals: buyingSignals,
-    estimated_monthly_loss_cad: estimatedLoss,
+    estimated_monthly_loss_cad: estimatedMarginGain,
+    estimated_net_margin_gain_cad: estimatedMarginGain,
+    loyalty_pillars: loyaltyPillars,
     recommended_hook: hook,
-    qualifier_model: 'Minerva RevOps Intelligence v2.20',
+    qualifier_model: 'Minerva Loyalty & Margin Engine v2.21',
     qualified_at: new Date().toISOString(),
   };
 

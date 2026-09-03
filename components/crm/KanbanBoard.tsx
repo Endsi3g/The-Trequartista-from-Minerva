@@ -196,15 +196,10 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
                                 ? 'bg-mv-amber/15 text-mv-amber border border-mv-amber/30'
                                 : 'bg-mv-cream-soft text-mv-ink-soft border border-mv-border'
                             )}
-                            title={`Score d'opportunité IA: ${lead.ai_score}/100`}
+                            title={`Score potentiel de fidélité & marges: ${lead.ai_score}/100`}
                           >
                             <Sparkles className="w-2.5 h-2.5" />
-                            <span>{lead.ai_score}</span>
-                          </span>
-                        )}
-                        {lead.voice_call_status === 'calling' && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-mono bg-amber-50 text-amber-700 border border-amber-200">
-                            <Phone className="w-2.5 h-2.5 animate-pulse text-amber-600" /> Appel en cours
+                            <span>Fidélité {lead.ai_score}</span>
                           </span>
                         )}
                         {isMeetingBooked && (

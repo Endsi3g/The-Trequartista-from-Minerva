@@ -1,5 +1,5 @@
 -- ============================================================================
--- MINERVA TREQUARTISTA — MASTER DÉPLOIEMENT PRODUCTION CONSOLIDÉ (v2.17.0)
+-- MINERVA TREQUARTISTA — MASTER DÉPLOIEMENT PRODUCTION CONSOLIDÉ (v2.21.0)
 -- 
 -- Ce script unique regroupe l'intégralité du schéma de base de données,
 -- des tables, contraintes, triggers, politiques de sécurité RLS et données
