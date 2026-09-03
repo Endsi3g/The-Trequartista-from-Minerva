@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Mail, Phone, DollarSign, TrendingUp, MessageSquare, Trash2, Save, PhoneCall, StickyNote, Target,
+  Sparkles, Copy, Check, Bot, PhoneOutgoing, RefreshCw,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { AnimatedNumber } from '@/components/ui/animated-number';
@@ -14,6 +15,7 @@ import type { Lead, LeadNote, LeadStage } from '@/lib/types';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { useAppPermissions } from '@/components/providers/AppPermissionsProvider';
+import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
@@ -57,6 +59,9 @@ export default function LeadDetailPage() {
   const [entryType, setEntryType] = useState<'note' | 'call'>('note');
   const [callDuration, setCallDuration] = useState<number>(5);
   const [callOutcome, setCallOutcome] = useState('Répondu');
+  const [isQualifying, setIsQualifying] = useState(false);
+  const [isCalling, setIsCalling] = useState(false);
+  const [copiedHook, setCopiedHook] = useState(false);
 
   useEffect(() => {
     if (!rawId) return;
@@ -167,6 +172,90 @@ export default function LeadDetailPage() {
     router.push('/leads');
   };
 
+  const handleQualifyLead = async () => {
+    if (!lead) return;
+    setIsQualifying(true);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/qualify`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Erreur lors de la qualification');
+      }
+
+      setLead((prev) =>
+        prev
+          ? {
+              ...prev,
+              ai_score: data.score,
+              ai_qualification_notes: data.qualification,
+              stage: data.stage || prev.stage,
+            }
+          : null
+      );
+      if (data.stage) setStage(data.stage);
+      toastSuccess('Lead qualifié par l\'IA !', `Score attribué : ${data.score}/100.`);
+    } catch (err: any) {
+      toastError('Erreur de qualification', err.message);
+    } finally {
+      setIsQualifying(false);
+    }
+  };
+
+  const handleTriggerCall = async () => {
+    if (!lead) return;
+    const phone = lead.contact_phone || (lead as any).phone;
+    if (!phone) {
+      toastError('Téléphone manquant', 'Ce prospect ne possède aucun numéro de téléphone.');
+      return;
+    }
+
+    const ok = await confirmDialog({
+      title: 'Lancer un appel vocal IA (ElevenLabs) ?',
+      message: `L'agent vocal Minerva va composer le numéro ${phone} pour qualifier l'intérêt de ${lead.company_name || lead.contact_name} pour l'offre Minerva Flow.`,
+      confirmLabel: 'Appeler maintenant',
+      variant: 'default',
+    });
+    if (!ok) return;
+
+    setIsCalling(true);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/call`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ simulate: false }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Impossible d'initier l'appel vocal");
+      }
+
+      setLead((prev) =>
+        prev
+          ? {
+              ...prev,
+              voice_call_status: 'calling',
+              voice_call_id: data.conversationId,
+              stage: data.stage || prev.stage,
+            }
+          : null
+      );
+      if (data.stage) setStage(data.stage);
+      toastSuccess('Appel initié !', data.message || `Appel en cours vers ${phone}`);
+    } catch (err: any) {
+      toastError('Erreur d\'appel vocal', err.message);
+    } finally {
+      setIsCalling(false);
+    }
+  };
+
+  const handleCopyHook = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedHook(true);
+    setTimeout(() => setCopiedHook(false), 2000);
+  };
+
   const displayName = lead.company_name || lead.client_name || lead.contact_name || 'Lead';
 
   return (
@@ -264,6 +353,182 @@ export default function LeadDetailPage() {
               {Math.round(pipelineValue).toLocaleString('fr-CA')} $
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ── 2.5. Intelligence Commerciale & Actions IA ── */}
+      <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
+        <div className="p-3.5 border-b border-mv-border bg-mv-cream-soft/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-[4px] bg-mv-green/10 border border-mv-green/20 flex items-center justify-center text-mv-green shrink-0">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-bold text-mv-ink">Intelligence Commerciale & Qualification IA</h3>
+                {lead.ai_score !== undefined && lead.ai_score !== null ? (
+                  <span
+                    className={cn(
+                      'px-2 py-0.5 rounded text-[10px] font-bold font-mono',
+                      lead.ai_score >= 80
+                        ? 'bg-mv-green/15 text-mv-green border border-mv-green/30'
+                        : lead.ai_score >= 60
+                        ? 'bg-mv-amber/15 text-mv-amber border border-mv-amber/30'
+                        : 'bg-zinc-100 text-zinc-600 border border-zinc-200'
+                    )}
+                  >
+                    Score {lead.ai_score}/100
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono text-zinc-500 bg-zinc-100 border border-zinc-200">
+                    Non analysé
+                  </span>
+                )}
+                {lead.reach_id && (
+                  <span className="px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                    Source: Minerva Reach
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-mv-ink-soft">
+                Détection automatique des signaux d'achat, calcul des pertes de marge et déclencheur d'appel vocal ElevenLabs
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleQualifyLead}
+              disabled={isQualifying}
+              className="h-7 px-2.5 rounded-[4px] bg-mv-cream-soft border border-mv-border text-[11px] font-semibold text-mv-ink hover:bg-mv-border/40 transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs disabled:opacity-50"
+            >
+              <Sparkles className={`w-3 h-3 text-mv-green ${isQualifying ? 'animate-spin' : ''}`} />
+              <span>{isQualifying ? 'Analyse en cours…' : 'Qualifier avec l\'IA'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTriggerCall}
+              disabled={isCalling || lead.voice_call_status === 'calling'}
+              className="h-7 px-3 rounded-[4px] bg-mv-green hover:bg-mv-green-dark text-white text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+              title="Lancer un appel sortant de qualification via l'agent vocal ElevenLabs"
+            >
+              <PhoneOutgoing className={`w-3 h-3 ${isCalling ? 'animate-bounce' : ''}`} />
+              <span>{isCalling ? 'Composition…' : 'Appel Vocal IA'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Card Body */}
+        <div className="p-4 space-y-3.5">
+          {lead.ai_qualification_notes ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Column 1 & 2: Buying signals and recommended pitch */}
+              <div className="md:col-span-2 space-y-3">
+                {/* Buying Signals */}
+                {lead.ai_qualification_notes.buying_signals && lead.ai_qualification_notes.buying_signals.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-mv-ink-soft">
+                      Signaux d'achat détectés :
+                    </span>
+                    <ul className="space-y-1">
+                      {lead.ai_qualification_notes.buying_signals.map((signal, idx) => (
+                        <li key={idx} className="text-xs text-mv-ink flex items-start gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-mv-green mt-1.5 shrink-0" />
+                          <span>{signal}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Recommended Sales Hook */}
+                {lead.ai_qualification_notes.recommended_hook && (
+                  <div className="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200/60 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                        Accroche recommandée pour le Closer :
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyHook(lead.ai_qualification_notes?.recommended_hook || '')}
+                        className="text-[10.5px] font-medium text-emerald-800 hover:text-emerald-950 flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        {copiedHook ? <Check className="w-3 h-3 text-mv-green" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedHook ? 'Copié !' : 'Copier l\'accroche'}</span>
+                      </button>
+                    </div>
+                    <p className="text-xs text-zinc-800 font-medium italic leading-relaxed">
+                      {lead.ai_qualification_notes.recommended_hook}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Column 3: Loss estimation & Voice call status */}
+              <div className="p-3 rounded-lg bg-mv-cream-soft/60 border border-mv-border space-y-3 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mv-ink-soft block mb-1">
+                    Érosion commissions tierces estimée
+                  </span>
+                  <div className="text-xl font-bold text-mv-ink font-mono" style={MONO}>
+                    {lead.ai_qualification_notes.estimated_monthly_loss_cad
+                      ? `${lead.ai_qualification_notes.estimated_monthly_loss_cad.toLocaleString('fr-CA')} $ / mois`
+                      : 'Non estimé'}
+                  </div>
+                  <p className="text-[10px] text-mv-ink-faint mt-0.5">
+                    Sur la base de ~25-30% de commission de livraison
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-mv-border/80">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mv-ink-soft block mb-1">
+                    Statut appel vocal ElevenLabs
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {lead.voice_call_status === 'calling' ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-amber-700 font-medium font-mono">
+                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                        Appel en cours
+                      </span>
+                    ) : lead.voice_call_status === 'completed' ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium">
+                        <Check className="w-3.5 h-3.5 text-mv-green" />
+                        Appel complété
+                      </span>
+                    ) : lead.voice_call_status === 'failed' ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-red-600 font-medium">
+                        Échec de l'appel
+                      </span>
+                    ) : (
+                      <span className="text-xs text-mv-ink-faint font-mono">
+                        Aucun appel émis
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-1">
+              <div className="space-y-0.5">
+                <p className="text-xs font-semibold text-mv-ink">Ce prospect n'a pas encore été analysé par le moteur IA.</p>
+                <p className="text-[11.5px] text-mv-ink-soft">
+                  L'analyse permet d'extraire les signaux d'achat, de calculer l'érosion Uber Eats et de formuler une accroche de vente percutante.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleQualifyLead}
+                disabled={isQualifying}
+                className="px-3 py-1.5 rounded-[4px] bg-mv-green text-white text-xs font-bold shadow-2xs hover:bg-mv-green-dark transition-all cursor-pointer flex items-center gap-1.5 shrink-0 disabled:opacity-50"
+              >
+                <Sparkles className={`w-3.5 h-3.5 ${isQualifying ? 'animate-spin' : ''}`} />
+                <span>{isQualifying ? 'Analyse…' : 'Lancer l\'analyse IA'}</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

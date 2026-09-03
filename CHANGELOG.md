@@ -4,6 +4,34 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-09-02 (v2.20.0) — CRM & Prospection Intelligente (Minerva Reach Sync, Appels Vocaux IA ElevenLabs & Qualification Automatique)
+
+Mise à niveau majeure du pipeline commercial et de l'acquisition Minerva Trequartista :
+
+- **Passerelle de Synchronisation Minerva Reach (`/api/leads/reach-sync`)** :
+  - Route d'ingestion sécurisée par clé secrète (`REACH_SYNC_SECRET`) pour recevoir les fiches qualifiées depuis l'application de prospection terrain Minerva Reach (`minerva-os-lite-desktop`).
+  - Déduplication intelligente basée sur `reach_id` et le couple nom d'établissement / numéro de téléphone.
+  - Modale interactive `ReachSyncModal` sur `/leads` permettant la synchronisation en direct avec Reach, le copier-coller de JSON et l'injection d'un échantillon de prospection montréalais en 1 clic.
+- **Déclenchement d'Appels Vocaux IA ElevenLabs depuis le CRM** :
+  - Route `POST /api/leads/[id]/call` déclenchant un appel de qualification outbound via l'agent conversationnel ElevenLabs vers le numéro du prospect.
+  - Panneau de contrôle d'appel vocal sur `/leads/[id]` avec suivi du statut (`calling`, `completed`, `failed`), durée et historisation automatique dans les notes du lead.
+  - Transition automatique du pipeline : passage du lead en étape *Qualification* et statut *Contacté* dès l'émission de l'appel.
+- **Moteur de Qualification & Scoring IA des Leads** :
+  - Route `POST /api/leads/[id]/qualify` et traitement par lot `POST /api/leads/batch-qualify`.
+  - Calcul d'un score d'opportunité commerciale (0 à 100) basé sur le secteur, la localisation dans le Grand Montréal, la présence en ligne et la réceptivité aux offres 0% commission.
+  - Détection automatique des signaux d'achat et calcul de l'érosion mensuelle en commissions tierces (1 800 $ à 4 500 $ CAD/mois versés à Uber Eats / DoorDash).
+  - Génération d'une phrase d'accroche ultra-personnalisée pour le Closer avec bouton de copie en 1 clic.
+  - Promotion automatique en étape *Qualification* pour tout prospect obtenant un score IA >= 70.
+- **Interface & Expérience Utilisateur CRM (`/leads` & `/leads/[id]`)** :
+  - Colonne *Score IA* et badges visuels (Vert 80+, Ambre 60+, Neutre) dans le tableau et sur les cartes Kanban.
+  - Badge bleu distinctif pour les prospects issus de *Minerva Reach*.
+  - Boutons d'action rapide dans l'en-tête du CRM : *Sync Reach* et *Qualifier IA*.
+- **Base de Données & Master Script** :
+  - Migration SQL `supabase/migrations/20260902000001_leads_reach_sync_and_voice.sql` ajoutant `ai_score`, `ai_qualification_notes`, `voice_call_status`, `voice_call_id` et `reach_id` sur la table `leads`.
+  - Mise à jour du script consolidé `supabase/deploy_production_complete.sql` (v2.20.0).
+
+---
+
 ## 2026-09-02 (v2.19.0) — Académie Multi-Workspaces Intelligente, 18 SOPs Dédiées, Lecteur Vidéo Universel & Curation YouTube
 
 Mise à niveau majeure de l'Académie Minerva Trequartista :

@@ -847,6 +847,15 @@ export interface ContactNote {
 
 export type LeadStage = 'nouveau' | 'qualification' | 'proposition' | 'negociation' | 'gagne' | 'perdu';
 
+export interface LeadAiQualification {
+  summary?: string;
+  buying_signals?: string[];
+  estimated_monthly_loss_cad?: number;
+  recommended_hook?: string;
+  qualifier_model?: string;
+  qualified_at?: string;
+}
+
 export interface Lead {
   id: string;
   client_id?: string;
@@ -864,6 +873,11 @@ export interface Lead {
   probability_pct?: number;
   notes: LeadNote[];
   created_at: string;
+  ai_score?: number | null;
+  ai_qualification_notes?: LeadAiQualification | null;
+  voice_call_status?: 'not_called' | 'calling' | 'completed' | 'failed' | null;
+  voice_call_id?: string | null;
+  reach_id?: string | null;
 }
 
 // ── Acquisition: intake, audits, proposals ──────────────────────────────────

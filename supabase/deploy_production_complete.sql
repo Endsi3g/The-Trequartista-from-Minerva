@@ -131,7 +131,12 @@ CREATE TABLE IF NOT EXISTS public.leads (
     source TEXT DEFAULT 'prospection',
     assigned_to UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     notes TEXT,
-    metadata JSONB DEFAULT '{}'::jsonb
+    metadata JSONB DEFAULT '{}'::jsonb,
+    ai_score INT,
+    ai_qualification_notes JSONB DEFAULT '{}'::jsonb,
+    voice_call_status TEXT DEFAULT 'not_called',
+    voice_call_id TEXT,
+    reach_id TEXT
 );
 
 ALTER TABLE public.leads
@@ -146,7 +151,15 @@ ALTER TABLE public.leads
     ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'prospection',
     ADD COLUMN IF NOT EXISTS assigned_to UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     ADD COLUMN IF NOT EXISTS notes TEXT,
-    ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
+    ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb,
+    ADD COLUMN IF NOT EXISTS ai_score INT,
+    ADD COLUMN IF NOT EXISTS ai_qualification_notes JSONB DEFAULT '{}'::jsonb,
+    ADD COLUMN IF NOT EXISTS voice_call_status TEXT DEFAULT 'not_called',
+    ADD COLUMN IF NOT EXISTS voice_call_id TEXT,
+    ADD COLUMN IF NOT EXISTS reach_id TEXT;
+
+CREATE INDEX IF NOT EXISTS leads_ai_score_idx ON public.leads (ai_score);
+CREATE INDEX IF NOT EXISTS leads_reach_id_idx ON public.leads (reach_id);
 
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 

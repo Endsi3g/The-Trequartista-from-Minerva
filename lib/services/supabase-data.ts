@@ -756,6 +756,11 @@ function mapLeadRow(row: any): Lead {
       : typeof row.notes === 'string' && row.notes.length > 0
       ? [{ id: '1', author: 'Note', text: row.notes, created_at: row.created_at || new Date().toISOString() }]
       : [],
+    ai_score: row.ai_score !== undefined && row.ai_score !== null ? Number(row.ai_score) : null,
+    ai_qualification_notes: row.ai_qualification_notes || null,
+    voice_call_status: row.voice_call_status || 'not_called',
+    voice_call_id: row.voice_call_id || null,
+    reach_id: row.reach_id || null,
     created_at: row.created_at || new Date().toISOString(),
   };
 }
@@ -860,6 +865,11 @@ export async function updateLead(leadId: string, updates: Partial<Lead>): Promis
   if (updates.stage !== undefined) payload.stage = mapStageToDb(updates.stage);
   if (updates.status !== undefined) payload.status = updates.status === 'Gagné' ? 'won' : updates.status === 'Perdu' ? 'lost' : 'open';
   if (updates.probability_pct !== undefined) payload.probability_pct = updates.probability_pct;
+  if (updates.ai_score !== undefined) payload.ai_score = updates.ai_score;
+  if (updates.ai_qualification_notes !== undefined) payload.ai_qualification_notes = updates.ai_qualification_notes;
+  if (updates.voice_call_status !== undefined) payload.voice_call_status = updates.voice_call_status;
+  if (updates.voice_call_id !== undefined) payload.voice_call_id = updates.voice_call_id;
+  if (updates.reach_id !== undefined) payload.reach_id = updates.reach_id;
 
   const { error } = await getSupabase().from('leads').update(payload).eq('id', leadId);
   if (error) {

@@ -18,17 +18,22 @@ import {
   Users,
   CheckCircle2,
   X,
+  RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 import { fetchClients, fetchLeads } from '@/lib/services/supabase-data';
 import type { Client, Lead, LeadStage } from '@/lib/types';
 import { useSupabaseRealtime } from '@/components/providers/SupabaseRealtimeProvider';
 import { AnimatedNumber } from '@/components/ui/animated-number';
+import { ReachSyncModal } from '@/components/crm/ReachSyncModal';
+import { useToast } from '@/components/providers/ToastProvider';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
 function LeadsCrmContent() {
   const router = useRouter();
+  const { toastSuccess, toastError } = useToast();
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('all');
@@ -36,6 +41,8 @@ function LeadsCrmContent() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isReachModalOpen, setIsReachModalOpen] = useState(false);
+  const [isBatchQualifying, setIsBatchQualifying] = useState(false);
 
   const { lastUpdateTimestamp } = useSupabaseRealtime();
 
@@ -112,6 +119,33 @@ function LeadsCrmContent() {
     document.body.removeChild(link);
   };
 
+  const handleBatchQualify = async () => {
+    setIsBatchQualifying(true);
+    try {
+      const res = await fetch('/api/leads/batch-qualify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadIds: selectedIds.size > 0 ? Array.from(selectedIds) : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toastSuccess(
+          'Qualification IA terminée',
+          `${data.total_qualified} lead(s) scoré(s), ${data.total_promoted} promu(s) en étape Qualification.`
+        );
+        loadData();
+      } else {
+        toastError('Erreur de qualification', data.error || 'Impossible de lancer la qualification.');
+      }
+    } catch (err: any) {
+      toastError('Erreur', err.message);
+    } finally {
+      setIsBatchQualifying(false);
+    }
+  };
+
   const allVisibleSelected = filteredLeads.length > 0 && filteredLeads.every((l) => selectedIds.has(l.id));
 
   const toggleAll = () => {
@@ -185,6 +219,27 @@ function LeadsCrmContent() {
               <span>Table</span>
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setIsReachModalOpen(true)}
+            className="h-7 px-2.5 rounded-[4px] bg-blue-50/80 border border-blue-200/80 text-[11.5px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+            title="Synchroniser les fiches depuis Minerva Reach"
+          >
+            <RefreshCw className="w-3 h-3 text-blue-600" />
+            <span>Sync Reach</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleBatchQualify}
+            disabled={isBatchQualifying}
+            className="h-7 px-2.5 rounded-[4px] bg-mv-cream-soft border border-mv-border text-[11.5px] font-semibold text-mv-ink hover:bg-mv-border/40 transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs disabled:opacity-50"
+            title="Calculer le score IA et signaux d'achat sur les leads"
+          >
+            <Sparkles className={`w-3 h-3 text-mv-green ${isBatchQualifying ? 'animate-spin' : ''}`} />
+            <span>{isBatchQualifying ? 'Scoring IA…' : 'Qualifier IA'}</span>
+          </button>
 
           <button
             onClick={handleExportCsv}
@@ -345,6 +400,7 @@ function LeadsCrmContent() {
                   />
                 </th>
                 <th className="px-2 text-left font-medium">Prospect / Entreprise</th>
+                <th className="px-2 text-left font-medium">Score IA</th>
                 <th className="px-2 text-left font-medium">Service</th>
                 <th className="px-2 text-left font-medium">Étape Pipeline</th>
                 <th className="px-2 text-right font-medium">Valeur ($)</th>
@@ -374,7 +430,33 @@ function LeadsCrmContent() {
                       />
                     </td>
                     <td className="px-2 py-1 font-semibold text-zinc-900 truncate max-w-[200px]">
-                      {lead.company_name || lead.contact_name}
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span className="truncate">{lead.company_name || lead.contact_name}</span>
+                        {lead.reach_id && (
+                          <span className="px-1 py-0.2 rounded text-[9px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+                            Reach
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-2 py-1 whitespace-nowrap">
+                      {lead.ai_score !== undefined && lead.ai_score !== null ? (
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-mono font-bold',
+                            lead.ai_score >= 80
+                              ? 'bg-mv-green/15 text-mv-green border border-mv-green/30'
+                              : lead.ai_score >= 60
+                              ? 'bg-mv-amber/15 text-mv-amber border border-mv-amber/30'
+                              : 'bg-zinc-100 text-zinc-600 border border-zinc-200'
+                          )}
+                        >
+                          <Sparkles className="w-2.5 h-2.5" />
+                          <span>{lead.ai_score}</span>
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-zinc-400 font-mono">—</span>
+                      )}
                     </td>
                     <td className="px-2 py-1 text-[11.5px] text-zinc-600 truncate max-w-[140px]">
                       {lead.service_requested || 'Général'}
@@ -426,6 +508,12 @@ function LeadsCrmContent() {
           </button>
         </div>
       )}
+
+      <ReachSyncModal
+        isOpen={isReachModalOpen}
+        onClose={() => setIsReachModalOpen(false)}
+        onSyncComplete={loadData}
+      />
     </PageFadeIn>
   );
 }

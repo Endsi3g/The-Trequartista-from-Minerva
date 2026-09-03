@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Mail, Calendar, ChevronDown, Phone, StickyNote } from 'lucide-react';
+import { Mail, Calendar, ChevronDown, Phone, StickyNote, Sparkles } from 'lucide-react';
 import type { Lead, LeadStage } from '@/lib/types';
 import { updateLeadStatus } from '@/lib/services/supabase-data';
 import { useToast } from '@/components/providers/ToastProvider';
@@ -179,13 +179,41 @@ export function KanbanBoard({ leads, onSelectLead, onLeadsUpdated }: KanbanBoard
                         </div>
                       </div>
 
-                      {/* Line 2: Meeting Alert (if booked) */}
-                      {isMeetingBooked && (
-                        <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-mv-amber-bg text-mv-amber border border-mv-amber/30 text-[9.5px] font-medium">
-                          <Calendar className="w-2.5 h-2.5 shrink-0" />
-                          <span>Meeting booké</span>
-                        </div>
-                      )}
+                      {/* Badges: Reach, AI Score, Meeting */}
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {lead.reach_id && (
+                          <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold font-mono bg-blue-50 text-blue-700 border border-blue-200">
+                            Reach
+                          </span>
+                        )}
+                        {lead.ai_score !== undefined && lead.ai_score !== null && (
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold font-mono',
+                              lead.ai_score >= 80
+                                ? 'bg-mv-green/15 text-mv-green border border-mv-green/30'
+                                : lead.ai_score >= 60
+                                ? 'bg-mv-amber/15 text-mv-amber border border-mv-amber/30'
+                                : 'bg-mv-cream-soft text-mv-ink-soft border border-mv-border'
+                            )}
+                            title={`Score d'opportunité IA: ${lead.ai_score}/100`}
+                          >
+                            <Sparkles className="w-2.5 h-2.5" />
+                            <span>{lead.ai_score}</span>
+                          </span>
+                        )}
+                        {lead.voice_call_status === 'calling' && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-mono bg-amber-50 text-amber-700 border border-amber-200">
+                            <Phone className="w-2.5 h-2.5 animate-pulse text-amber-600" /> Appel en cours
+                          </span>
+                        )}
+                        {isMeetingBooked && (
+                          <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-mv-amber-bg text-mv-amber border border-mv-amber/30 text-[9.5px] font-medium">
+                            <Calendar className="w-2.5 h-2.5 shrink-0" />
+                            <span>Meeting booké</span>
+                          </div>
+                        )}
+                      </div>
 
                       {/* Line 3: Email & Opportunity Amount */}
                       <div className="flex items-center justify-between gap-1 text-[10.5px] pt-0.5">
