@@ -719,6 +719,9 @@ export interface AcademySOP {
   is_onboarding_step?: boolean;
   sort_order?: number | null;
   pillar?: 'flow' | 'reach' | 'agency' | 'inspirations' | 'transversal';
+  target_workspace?: 'prospection' | 'managing' | 'tech' | 'all' | null;
+  checklist_items?: string[];
+  script_template?: string;
 }
 
 // ── Integrations ─────────────────────────────────────────────────────────────

@@ -529,7 +529,13 @@ ALTER TABLE public.academy_sops
     ADD COLUMN IF NOT EXISTS sort_order INT,
     ADD COLUMN IF NOT EXISTS pillar TEXT,
     ADD COLUMN IF NOT EXISTS read_time_min INT DEFAULT 10,
-    ADD COLUMN IF NOT EXISTS author TEXT DEFAULT 'Kael Belceus';
+    ADD COLUMN IF NOT EXISTS author TEXT DEFAULT 'Kael Belceus',
+    ADD COLUMN IF NOT EXISTS target_workspace TEXT CHECK (target_workspace IN ('prospection', 'managing', 'tech', 'all')) DEFAULT 'all',
+    ADD COLUMN IF NOT EXISTS checklist_items JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS script_template TEXT;
+
+CREATE INDEX IF NOT EXISTS academy_sops_target_workspace_idx
+    ON public.academy_sops (target_workspace);
 
 ALTER TABLE public.academy_sops ENABLE ROW LEVEL SECURITY;
 

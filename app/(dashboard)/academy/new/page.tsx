@@ -34,6 +34,7 @@ export default function NewSopPage() {
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<AcademySOP['category']>('Onboarding');
+  const [targetWorkspace, setTargetWorkspace] = useState<'prospection' | 'managing' | 'tech' | 'all'>('all');
   const [author, setAuthor] = useState('');
   const [readTime, setReadTime] = useState(5);
   const [description, setDescription] = useState('');
@@ -55,6 +56,7 @@ export default function NewSopPage() {
     const created = await addAcademySop({
       title,
       category,
+      target_workspace: targetWorkspace,
       read_time_min: Number(readTime),
       author,
       description,
@@ -171,17 +173,32 @@ export default function NewSopPage() {
                 </div>
               </div>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-mv-ink mb-1.5">Auteur</label>
-              <div className="relative">
-                <UserIcon className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Votre nom"
-                  value={author}
-                  onChange={(e) => setAuthor(e.target.value)}
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors"
-                />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-mv-ink mb-1.5">Workspace Cible</label>
+                <select
+                  value={targetWorkspace}
+                  onChange={(e) => setTargetWorkspace(e.target.value as 'prospection' | 'managing' | 'tech' | 'all')}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors cursor-pointer"
+                >
+                  <option value="all">Transversal (Tous les workspaces)</option>
+                  <option value="prospection">Prospection & Ventes</option>
+                  <option value="managing">Managing & Opérations</option>
+                  <option value="tech">Tech & Systèmes</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-mv-ink mb-1.5">Auteur</label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-mv-ink-faint absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Votre nom"
+                    value={author}
+                    onChange={(e) => setAuthor(e.target.value)}
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-mv-cream-soft border border-mv-border text-sm text-mv-ink focus:outline-none focus:border-mv-green transition-colors"
+                  />
+                </div>
               </div>
             </div>
           </div>

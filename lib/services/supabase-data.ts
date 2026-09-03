@@ -563,23 +563,27 @@ const FALLBACK_DEV_SOPS: AcademySOP[] = [
 ];
 
 // ----------------------------------------------------
-export async function fetchAcademySops(): Promise<AcademySOP[]> {
+export async function fetchAcademySops(workspaceFilter?: 'prospection' | 'managing' | 'tech' | 'all'): Promise<AcademySOP[]> {
   return withTimeout(
     (async () => {
-      const { data, error } = await getSupabase()
+      let query = getSupabase()
         .from('academy_sops')
         .select('*')
         .order('sort_order', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false });
 
+      if (workspaceFilter && workspaceFilter !== 'all') {
+        query = query.or(`target_workspace.eq.${workspaceFilter},target_workspace.eq.all,target_workspace.is.null`);
+      }
+
+      const { data, error } = await query;
+
       if (error || !data || data.length === 0) {
-        // True fallback only: the DB is unreachable or genuinely empty.
-        // These items carry non-UUID ids and were never merged into a
-        // real, non-empty DB result -- doing so previously produced list
-        // cards whose /academy/{id} link could never resolve in
-        // fetchAcademySop() (id doesn't exist in academy_sops), showing
-        // "SOP introuvable" even though the SOP "existed" on the list.
-        return FALLBACK_DEV_SOPS.map(withComputedBlocks);
+        const fallbacks = FALLBACK_DEV_SOPS.map(withComputedBlocks);
+        if (workspaceFilter && workspaceFilter !== 'all') {
+          return fallbacks.filter((s) => !s.target_workspace || s.target_workspace === 'all' || s.target_workspace === workspaceFilter);
+        }
+        return fallbacks;
       }
 
       return (data as AcademySOP[]).map(withComputedBlocks);

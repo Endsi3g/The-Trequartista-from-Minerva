@@ -4,6 +4,36 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-09-02 (v2.19.0) — Académie Multi-Workspaces Intelligente, 18 SOPs Dédiées, Lecteur Vidéo Universel & Curation YouTube
+
+Mise à niveau majeure de l'Académie Minerva Trequartista :
+
+- **Architecture Multi-Workspaces de l'Académie (`/academy`)** :
+  - Nouveau système d'onglets de filtrage contextuel (*Mon Workspace*, *Prospection*, *Managing*, *Tech*, *Toutes les SOPs*) adaptant automatiquement les guides au profil du collaborateur.
+  - Jauge de progression personnalisée par workspace calculant en temps réel les SOPs validées sur le parcours recommandé.
+  - Extension de la table `academy_sops` avec les colonnes `target_workspace`, `checklist_items` et `script_template`.
+- **18 Nouvelles SOPs Exhaustives & 100% Opérationnelles (6 par Workspace)** :
+  - **Prospection (6)** : Routine quotidienne (/today, batching 30-50 fiches), Rôle & Missions de qualification Closer/SDR, Rémunération RevOps & Commissions hybrides (10% setup + 5% MRR + multiplicateur 1.25x), Programme de formation continue & Dojo d'écoute d'appels le vendredi, Formation vente & closing 0% commission (Minerva Flow), Guide complet Minerva Reach & Curation de vidéos YouTube.
+  - **Managing (6)** : Routine quotidienne de l'Account Manager & Suivi des opérations, Rôle & Équilibrage de charge d'équipe (/team/workload, cible 75%-85%), Rémunération & Primes de rétention (> 90%) et score NPS (> 65), Formation continue en gestion de compte & revues mensuelles, Playbook d'onboarding client J+2 & Prévention du churn, Outils, systèmes & Cockpit exécutif (/overview & facturation légale québécoise TPS 5% / TVQ 9.975%).
+  - **Tech (6)** : Routine quotidienne & Workflow Git Minerva (branches, strict tsc), Rôle, responsabilités & Architecture technique (Next.js 16, Supabase PostgreSQL, RLS), Rémunération ingénierie & Prime de déploiement (100 $/site Flow), Formation continue (IA, Serveur MCP, Next.js 16 App Router), Protocole d'assurance qualité & Homologation 20-points pré-déploiement, Intégrations matérielles POS Flow (imprimantes thermiques ESC/POS 80mm) & Déploiement Vercel.
+- **Rendu Garanti Zéro Écran Vide (`markdownToBlocks` Fallback)** :
+  - Élimination définitive du message d'attente « Contenu pas encore rédigé » sur `/academy/[id]` grâce à la conversion dynamique markdown vers blocs Notion-like en temps réel.
+- **Lecteur Vidéo Universel & Démo Minerva Reach (`VideoAssetPlayer`)** :
+  - Prise en charge native des liens YouTube (formats standards `watch?v=`, courts `youtu.be/`, Shorts verticaux `youtube.com/shorts/` et embeds) avec ratio d'aspect adaptatif (16:9 large ou 9:16 vertical) et lecteur iframe sécurisé sans coupure.
+  - Conservation du lecteur HTML5 `<video>` natif pour les fichiers `.mp4` du stockage Cloud.
+  - Emplacement dédié et badge stylisé pour la future vidéo de démonstration Minerva Reach.
+- **Module Interactif de Recherche & Curation Vidéos YouTube (`YouTubeCuratorModal`)** :
+  - Explorateur intégré à l'Académie proposant des templates de requêtes expertes par domaine (Prospection terrain, Démo produit, Minerva Reach, Account management, Next.js 16/Supabase).
+  - Recommandations de chaînes leaders et banc de test interactif avec prévisualisation vidéo en direct.
+- **Checklists Dynamiques & Modèles de Scripts d'Action** :
+  - Checklists interactives spécifiques à chaque SOP avec persistance locale par collaborateur.
+  - Callouts de scripts opérationnels copiables en 1 clic (scripts d'accroche commerciale, protocoles d'onboarding ou commandes terminal).
+- **Base de Données & Script Déploiement 1-Clic** :
+  - Migration SQL `supabase/migrations/20260902000000_workspace_sops_and_youtube.sql`.
+  - Mise à jour du script maître `supabase/deploy_production_complete.sql` (v2.19.0).
+
+---
+
 ## 2026-09-02 (v2.18.0) — Refonte Intégrale Minerva Trequartista (Clients & MRR, Contrats Réels, Booking In-App, Rôles & Rémunérations, Ergonomie Mobile & Purge Minerva OS)
 
 Mise en production de la refonte globale de l'ERP d'agence Minerva Trequartista :
