@@ -13,6 +13,16 @@ export interface Profile {
   created_at: string;
 }
 
+export interface TrialMilestoneItem {
+  step: number;
+  title: string;
+  target_day: string;
+  description: string;
+  completed: boolean;
+  completed_at?: string | null;
+  notes?: string;
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -37,6 +47,13 @@ export interface Client {
   created_at: string;
   current_focus?: string | null;
   stripe_customer_id?: string | null;
+  trial_status?: 'active' | 'converted' | 'expired' | 'none';
+  trial_start_date?: string | null;
+  trial_end_date?: string | null;
+  trial_milestones?: TrialMilestoneItem[] | null;
+  trial_direct_orders_count?: number;
+  trial_direct_volume_cad?: number;
+  trial_net_margin_saved_cad?: number;
 }
 
 export interface ClientMrrHistoryEntry {

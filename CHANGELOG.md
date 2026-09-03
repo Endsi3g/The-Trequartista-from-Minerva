@@ -4,6 +4,26 @@ Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date,
 
 ---
 
+## 2026-09-02 (v2.22.0) — Gestion Client & Rétention : Cycle de Vie de l'Essai Accompagné 14 Jours (Minerva Flow Montréal)
+
+Mise à niveau majeure du module Clients & Rétention (`/clients`) pour piloter l'offre phare de déploiement Minerva Flow auprès des restaurateurs montréalais :
+
+- **Composant Interactif `TrialLifecycleTracker` (`/clients/[id]`)** :
+  - **Compte à rebours dynamique J-14 à J0** : Jauge de progression temporelle calculée en direct avec badge visuel (Émeraude > 7j, Ambre <= 7j, Rouge <= 3j).
+  - **Protocole Opérationnel en 5 Jalons Montréal** : J+0 (Cadrage & Numérisation Menu), J+2 (Installation sur place à Montréal & Imprimante thermique ESC/POS 80mm), J+5 (Premier service test & Formation staff 15 min), J+10 (Activation fidélisation & QR codes habitués), J+14 (Bilan de marge nette & Conversion abonnement).
+  - Horodatage et cases à cocher persistées en base de données pour chaque étape.
+  - **Calculateur de ROI de Marge Nette en Direct** : Télémétrie des commandes directes enregistrées, volume d'affaires direct généré et calcul de la marge nette protégée en cuisine (~28% de commission économisée vs plateformes tierces).
+  - **Conversion en 1 Clic** : Bouton « Valider la Conversion en Abonnement Payant » basculant automatiquement le statut client en `Active`, initialisant le MRR mensuel (149 $ CAD/mois) et consignant une entrée dans l'historique MRR.
+- **Expérience Utilisateur & Filtrage Global (`/clients`)** :
+  - Nouvel onglet de filtre dédié **« Essais 14 Jours »** dans la barre de segmentation.
+  - Badges de compte à rebours d'essai (`Essai J-X`) intégrés dans le tableau principal et la vue mobile pour identifier instantanément les restaurants en phase de test.
+  - Badge vert distinctif `Converti Flow` pour les comptes ayant validé leur transition.
+- **Schéma de Données & Idempotence** :
+  - Migration SQL `supabase/migrations/20260902000003_clients_14_day_trial_lifecycle.sql` ajoutant `trial_status`, `trial_start_date`, `trial_end_date`, `trial_milestones`, `trial_direct_orders_count`, `trial_direct_volume_cad` et `trial_net_margin_saved_cad` sur la table `clients`.
+  - Script maître idempotent `supabase/deploy_production_complete.sql` actualisé en version **v2.22.0**.
+
+---
+
 ## 2026-09-02 (v2.21.0) — Écosystème de Fidélisation, Optimisation des Marges & Intégration des Sites Web Officiels (Minerva Flow & Studio)
 
 Réalignement stratégique majeur de Minerva Trequartista avec le positionnement de marque de l'agence (fidélisation client, protection des marges nettes et intégration des vitrines officielles) :

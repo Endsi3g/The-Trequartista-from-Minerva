@@ -53,6 +53,7 @@ import { useClientChatThread } from '@/hooks/use-client-chat-thread';
 import { Client, Lead, Project, ClientPaymentLink, Task, ContentPost, ClientMrrHistoryEntry, Invoice, ClientDeliverable } from '@/lib/types';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { CoPilotageTracker } from '@/components/clients/CoPilotageTracker';
+import { TrialLifecycleTracker } from '@/components/clients/TrialLifecycleTracker';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import { fetchInvoices } from '@/lib/services/invoicing';
 import { fetchClientDeliverables, ensureClientPortalToken } from '@/lib/services/client-portal';
@@ -397,6 +398,9 @@ export default function ClientDetailPage() {
           </div>
         </div>
       )}
+
+      {/* 14-Day Accompanied Trial Lifecycle Tracker (Minerva Flow) */}
+      <TrialLifecycleTracker client={client} onClientUpdated={(updated) => setClient(updated)} />
 
       {/* Core Info Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

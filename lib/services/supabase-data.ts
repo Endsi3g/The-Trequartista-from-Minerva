@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Client, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote, CoachMemberMemory, CoachWeeklyReport, CoachGhostStatus, AiConversation, PerformanceReview, ProductivityScore, ProductivityMilestone } from '@/lib/types';
+import { Client, TrialMilestoneItem, ClientRoiMetrics, ClientMrrHistoryEntry, Project, ProjectAttachment, LaunchCheckItem, TeamMemberPerformance, AcademySOP, ContentPost, AuditLog, Lead, LeadStage, ClientInvite, ClientMessage, ClientPaymentLink, TeamInvite, Task, TaskComment, TaskSubitem, ChangelogEntry, IntakeLead, Audit, AuditWithFindings, AuditProcessStep, AuditCostItem, AuditToolFinding, AuditInitiative, AuditInitiativeReaction, AuditComment, RoleHourlyRate, ToolCompatibilityEntry, Proposal, VoiceCall, VoiceAgentConfig, CustomRole, CustomRolePermission, Department, HelpArticle, ProjectMilestone, MinervaRoadmapItem, TeamDocument, DocumentBlock, DocumentContentJson, DocumentVersion, TeamChatMessage, TeamChatAttachment, TeamChatReaction, TeamChatMention, TeamMemberSummary, MinervaContentCategory, MinervaContentItem, OpusClipJob, ClientWorkItem, ClientActivityLog, FeatureRequest, FeatureRequestStatus, FeatureRequestCategory, FeatureRequestRepo, FeatureRequestPriority, MinervaFlowResults, MinervaFlowOrderItem, MinervaFlowLiveTicket, Contact, ContactNote, HelpChatMessage, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote, CoachMemberMemory, CoachWeeklyReport, CoachGhostStatus, AiConversation, PerformanceReview, ProductivityScore, ProductivityMilestone } from '@/lib/types';
 import { INITIAL_LAUNCH_CHECKITEMS } from '@/lib/mock-data';
 import { markdownToBlocks } from '@/lib/utils/markdown-to-blocks';
 
@@ -96,6 +96,100 @@ export async function updateClient(
 }
 
 // ----------------------------------------------------
+// 1a-bis. 14-DAY ACCOMPANIED TRIAL LIFECYCLE (MINERVA FLOW)
+// ----------------------------------------------------
+export function createDefaultTrialMilestones(): TrialMilestoneItem[] {
+  return [
+    {
+      step: 1,
+      target_day: 'J+0',
+      title: 'Cadrage & Numérisation du Menu',
+      description: 'Import de la carte sur Minerva Flow, paramétrage des options, photos et modélisation de marque.',
+      completed: true,
+      completed_at: new Date().toISOString(),
+      notes: 'Menu configuré en ligne avec prix et modificateurs.',
+    },
+    {
+      step: 2,
+      target_day: 'J+2',
+      title: 'Installation sur Place à Montréal & Imprimante',
+      description: 'Déplacement physique au restaurant, branchement imprimante thermique ESC/POS 80mm en cuisine et pose des 50 chevalets QR codes.',
+      completed: false,
+      completed_at: null,
+      notes: '',
+    },
+    {
+      step: 3,
+      target_day: 'J+5',
+      title: 'Premier Service Test & Formation Staff',
+      description: 'Validation de l’impression des tickets en temps réel aux heures de rush et formation express de 15 minutes des serveurs et cuisiniers.',
+      completed: false,
+      completed_at: null,
+      notes: '',
+    },
+    {
+      step: 4,
+      target_day: 'J+10',
+      title: 'Activation Fidélisation & Habitués',
+      description: 'Lancement du programme de récompenses habitués, capture des coordonnées clients et envoi des premières relances SMS.',
+      completed: false,
+      completed_at: null,
+      notes: '',
+    },
+    {
+      step: 5,
+      target_day: 'J+14',
+      title: 'Bilan de Marge Nette & Conversion Abonnement',
+      description: 'Présentation du rapport des commandes directes, économies réalisées par rapport aux plateformes tierces et signature du passage en abonnement.',
+      completed: false,
+      completed_at: null,
+      notes: '',
+    },
+  ];
+}
+
+export async function startClientTrial(clientId: string, startDate?: string): Promise<Client | null> {
+  const start = startDate ? new Date(startDate) : new Date();
+  const end = new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000);
+  const milestones = createDefaultTrialMilestones();
+
+  return updateClient(clientId, {
+    status: 'Onboarding',
+    trial_status: 'active',
+    trial_start_date: start.toISOString(),
+    trial_end_date: end.toISOString(),
+    trial_milestones: milestones,
+    trial_direct_orders_count: 0,
+    trial_direct_volume_cad: 0,
+    trial_net_margin_saved_cad: 0,
+  });
+}
+
+export async function convertClientTrial(
+  clientId: string,
+  mrr: number = 149,
+  authorId?: string
+): Promise<Client | null> {
+  const updated = await updateClient(clientId, {
+    status: 'Active',
+    trial_status: 'converted',
+    mrr,
+    health_status: 'On Track',
+  });
+
+  if (updated) {
+    await logClientMrrChange({
+      client_id: clientId,
+      mrr,
+      note: 'Conversion réussie de l’Essai Accompagné 14 Jours Minerva Flow en abonnement actif.',
+      created_by: authorId || null,
+    });
+  }
+
+  return updated;
+}
+
+// ----------------------------------------------------
 // 1b. CLIENT MRR HISTORY
 // ----------------------------------------------------
 export async function fetchClientMrrHistory(clientId: string): Promise<ClientMrrHistoryEntry[]> {
@@ -120,7 +214,7 @@ export async function logClientMrrChange(entry: {
   client_id: string;
   mrr: number;
   note?: string | null;
-  created_by: string;
+  created_by?: string | null;
 }): Promise<boolean> {
   const { error } = await getSupabase().from('client_mrr_history').insert([entry]);
   if (error) {

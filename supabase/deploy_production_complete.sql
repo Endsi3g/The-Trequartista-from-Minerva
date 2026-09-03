@@ -105,9 +105,15 @@ ALTER TABLE public.clients
     ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Active',
     ADD COLUMN IF NOT EXISTS industry TEXT,
     ADD COLUMN IF NOT EXISTS mrr NUMERIC DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS portal_access_token TEXT,
     ADD COLUMN IF NOT EXISTS notes TEXT,
-    ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
+    ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb,
+    ADD COLUMN IF NOT EXISTS trial_status TEXT DEFAULT 'none',
+    ADD COLUMN IF NOT EXISTS trial_start_date TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS trial_end_date TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS trial_milestones JSONB DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS trial_direct_orders_count INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS trial_direct_volume_cad NUMERIC(10,2) DEFAULT 0.0,
+    ADD COLUMN IF NOT EXISTS trial_net_margin_saved_cad NUMERIC(10,2) DEFAULT 0.0;
 
 ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
 

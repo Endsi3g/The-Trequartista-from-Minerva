@@ -32,8 +32,9 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-const STATUS_TABS: { key: Client['status'] | 'all'; label: string }[] = [
+const STATUS_TABS: { key: Client['status'] | 'Trial' | 'all'; label: string }[] = [
   { key: 'all', label: 'Tous' },
+  { key: 'Trial', label: 'Essais 14 Jours' },
   { key: 'Active', label: 'Actifs' },
   { key: 'Onboarding', label: 'Onboarding' },
   { key: 'Paused', label: 'En pause' },
@@ -44,7 +45,7 @@ export default function ClientsPage() {
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusTab, setStatusTab] = useState<Client['status'] | 'all'>('all');
+  const [statusTab, setStatusTab] = useState<Client['status'] | 'Trial' | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -70,7 +71,12 @@ export default function ClientsPage() {
   const q = searchQuery.toLowerCase().trim();
   const visibleClients = useMemo(() => {
     return clients.filter((c) => {
-      const matchStatus = statusTab === 'all' || c.status === statusTab;
+      const matchStatus =
+        statusTab === 'all'
+          ? true
+          : statusTab === 'Trial'
+          ? c.trial_status === 'active' || c.trial_status === 'converted'
+          : c.status === statusTab;
       const matchSearch =
         !q ||
         c.name.toLowerCase().includes(q) ||
@@ -342,23 +348,56 @@ export default function ClientsPage() {
                         {(client.mrr || 0).toLocaleString('fr-CA')} $ <span className="text-[10px] text-zinc-400 font-normal">/ mo</span>
                       </td>
                       <td className="px-2 py-1.5 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={cn(
-                              'w-1.5 h-1.5 rounded-full shrink-0',
-                              client.status === 'Active'
-                                ? isAtRisk
-                                ? 'bg-amber-500'
-                                : 'bg-mv-green'
-                                : client.status === 'Paused'
-                                ? 'bg-amber-500'
-                                : 'bg-zinc-400'
-                            )}
-                          />
-                          <span className="text-[11.5px] font-medium text-zinc-700">
-                            {client.status} · {client.health_status || 'On Track'}
-                          </span>
-                        </div>
+                        {client.trial_status === 'active' ? (
+                          (() => {
+                            const daysRem = client.trial_end_date
+                              ? Math.max(0, Math.ceil((new Date(client.trial_end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                              : 14;
+                            return (
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className={cn(
+                                    'px-1.5 py-0.5 rounded text-[10px] font-mono font-bold',
+                                    daysRem <= 3
+                                      ? 'bg-red-50 text-red-700 border border-red-200 animate-pulse'
+                                      : daysRem <= 7
+                                      ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                      : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                  )}
+                                  style={MONO}
+                                >
+                                  Essai J-{daysRem}
+                                </span>
+                                <span className="text-[11px] text-zinc-500">Flow 14j</span>
+                              </div>
+                            );
+                          })()
+                        ) : client.trial_status === 'converted' ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-mv-green shrink-0" />
+                            <span className="text-[11.5px] font-medium text-emerald-800">
+                              Converti Flow · {client.health_status || 'On Track'}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={cn(
+                                'w-1.5 h-1.5 rounded-full shrink-0',
+                                client.status === 'Active'
+                                  ? isAtRisk
+                                    ? 'bg-amber-500'
+                                    : 'bg-mv-green'
+                                  : client.status === 'Paused'
+                                  ? 'bg-amber-500'
+                                  : 'bg-zinc-400'
+                              )}
+                            />
+                            <span className="text-[11.5px] font-medium text-zinc-700">
+                              {client.status} · {client.health_status || 'On Track'}
+                            </span>
+                          </div>
+                        )}
                       </td>
                       <td className="px-2 py-1.5 text-[11.5px] text-zinc-600 truncate max-w-[160px] hidden md:table-cell">
                         <span className="font-medium text-zinc-800">{client.contact_name || '—'}</span>
@@ -413,19 +452,48 @@ export default function ClientsPage() {
 
                     <div className="flex items-center justify-between pt-1 border-t border-mv-border/40 text-[11px]">
                       <div className="flex items-center gap-1.5">
-                        <span
-                          className={cn(
-                            'w-2 h-2 rounded-full',
-                            client.status === 'Active'
-                              ? isAtRisk
-                                ? 'bg-amber-500'
-                                : 'bg-mv-green'
-                              : 'bg-zinc-400'
-                          )}
-                        />
-                        <span className="text-zinc-600 font-medium">
-                          {client.status} ({client.health_status || 'Stable'})
-                        </span>
+                        {client.trial_status === 'active' ? (
+                          (() => {
+                            const daysRem = client.trial_end_date
+                              ? Math.max(0, Math.ceil((new Date(client.trial_end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                              : 14;
+                            return (
+                              <span
+                                className={cn(
+                                  'px-1.5 py-0.2 rounded text-[9.5px] font-mono font-bold',
+                                  daysRem <= 3
+                                    ? 'bg-red-50 text-red-700 border border-red-200 animate-pulse'
+                                    : daysRem <= 7
+                                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                    : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                )}
+                                style={MONO}
+                              >
+                                Essai J-{daysRem}
+                              </span>
+                            );
+                          })()
+                        ) : client.trial_status === 'converted' ? (
+                          <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                            Converti Flow
+                          </span>
+                        ) : (
+                          <>
+                            <span
+                              className={cn(
+                                'w-2 h-2 rounded-full',
+                                client.status === 'Active'
+                                  ? isAtRisk
+                                    ? 'bg-amber-500'
+                                    : 'bg-mv-green'
+                                  : 'bg-zinc-400'
+                              )}
+                            />
+                            <span className="text-zinc-600 font-medium">
+                              {client.status} ({client.health_status || 'Stable'})
+                            </span>
+                          </>
+                        )}
                       </div>
 
                       <Link
