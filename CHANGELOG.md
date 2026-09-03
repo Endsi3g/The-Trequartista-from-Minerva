@@ -2,6 +2,89 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-03 (v2.24.2) — Refonte Extranet Client (Portail Partenaire 360) : Stepper Linéaire, Protocole QA & Action Center Prioritaire
+
+Refactorisation complète du portail extranet client public et sécurisé (`app/portal/[token]/page.tsx`) selon les directives Linear / Raycast :
+
+- **Header & Status Bar Sécurisée h-10 (40px)** :
+  - Suppression des espaces blancs verticaux passifs et intégration d'un bandeau ultra-dense.
+  - Logo Minerva Extranet compact + breadcrumb technique `Portail Sécurisé / [Client] (Formule Partenaire 360)` en `font-mono text-xs`.
+  - Badges de certification `Espace Certifié SSL` (`bg-emerald-50 text-emerald-700`) et responsable de compte `Responsable : [Nom]` avec micro-avatar.
+- **Ruban Métrique & Progression Monolithique h-14 (56px)** :
+  - 4 métriques connectées sous la toolbar : Avancement Global du projet (pourcentage et jauge tabulaire `font-mono`), Livrables à Valider (alerte ambre prioritaire si > 0), Score de Santé Compte (98/100 optimal), et Livraison Finale Prévue (date ISO).
+- **Navigation Segmentée h-8 Intégrée** :
+  - Segmented control 6 onglets (`Vue d'Ensemble & Progrès`, `Livrables & Approbation`, `Factures & Règlements`, `Performance & ROI`, `Studio & Services`, `Support & Demandes`) avec badges dynamiques.
+- **Console Principale 2-Colonnes (65% / 35%) — Vue d'Ensemble** :
+  - **Colonne Gauche (65% - Pipeline & Protocole QA)** :
+    - Remplacement des 4 grosses boîtes isolées par un *Linear Stepper continu h-10* à 4 étapes (Audit Stratégique, Design System, Dév Next.js & POS, Recette 20-pts QA).
+    - Protocole d'Assurance Qualité en checklist haute densité (32px par rangée) avec tags techniques compacts [Sécurité | Performance | Automatisation | Design].
+    - Spécifications synthétiques des prestations incluses dans l'accord partenaire (Vidéos 4K, Flow POS).
+  - **Colonne Droite (35% - Action Center Prioritaire Ancré)** :
+    - Conteneur d'action prioritaire persistant (`sticky top-14`) plaçant l'approbation du livrable en attente au premier plan avec lien de prévisualisation directe.
+    - Double commande : *Valider & Signer le livrable* (`bg-emerald-600` avec raccourci `⌘ + Entrée`), et *Rejeter / Demander révision* avec formulaire de feedback inline intégré sans modal intrusive (`⌘ + Entrée` / `Échap`).
+    - État de validation sans action passif remplacé par une synthèse de sérénité opérationnelle.
+- **Harmonisation des Onglets Secondaires** :
+  - DataTables denses 36px pour les Livrables et les Factures Stripe, grille compacte pour le catalogue Studio 1-clic, et formulaire optimisé pour le support technique.
+
+---
+
+## 2026-09-03 (v2.24.1) — Refonte Fiche Client 360° : Ergonomie Monolithique 2-Colonnes, Zero-Scroll 1080p & Tiroir d'Édition
+
+Refactorisation complète de la fiche client 360° (`app/(dashboard)/clients/[id]/page.tsx`) selon les standards d'ingénierie Linear & Raycast :
+
+- **Architecture Zero-Scroll First (1080p) & Toolbar Strip (40px)** :
+  - Élimination intégrale du défilement vertical massif (plus de 10 boîtes flottantes indépendantes supprimées).
+  - Breadcrumb technique en tête `Clients / [Nom] (ID: #[id])` en font-mono text-xs, badges d'état (Actif, Santé ● On Track, Minerva Flow) et actions rapides h-7 (Modifier la fiche, Portail Client, Ouvrir Flow SaaS, Suivi ROI).
+- **Ruban Métrique & Financier Monolithique h-14 (56px)** :
+  - 4 métriques connectées sous la toolbar : MRR/Retainer mensuel en `font-mono tabular-nums`, Valeur Cumulée LTV historique, Micro-indicateur Churn/Santé (96% optimal), et Prochain Renouvellement ISO.
+- **Grille Opérationnelle 2-Colonnes (65% / 35%)** :
+  - **Colonne Gauche (65% - Production & Livrables)** :
+    - Segmented control intégré : `[Livrables & Tâches | Projets | Facturation & Devis | Évolution MRR | Essai 14j (si actif)]`.
+    - DataTables haute densité (lignes 36px) : vue unifiée Livrables & Tâches avec badge de type, statut micro-pill, échéance monospace et ligne d'insertion rapide inline déclenchée par la touche `C`.
+    - Résolution définitive des 7 empty states passifs : remplacement par des lignes de création actives immédiates (`+ Lancer un projet [Entrée]`, `+ Émettre une facture Stripe [Entrée]`).
+    - Onglet Évolution MRR condensé (AreaChart h-36 sans marges disproportionnées) et intégration de l'Essai 14j.
+  - **Colonne Droite (35% - Métadonnées & Console Interactive Ancrée)** :
+    - Conteneur monolithique continu réunissant :
+      1. Contact Principal (nom, téléphone `tel:`, courriel avec copie rapide h-6, micro-pills réseaux).
+      2. Protocole & Accord Mensuel (checklist interactive à cases à cocher h-6 avec prochaine séance et lien direct `/booking`).
+      3. Journal & Discussion Rapide (micro-feed d'équipe branché sur `useClientChatThread` et champ de saisie inline h-8).
+- **Slide-Over Drawer d'Édition Linear-Style** :
+  - Déclenché par le bouton `Modifier la fiche`, tiroir 2 colonnes permettant l'édition complète (profil, logo sur bucket Supabase, MRR avec traçabilité `logClientMrrChange`, coordonnées & réseaux) sans quitter la vue 360°, avec validation rapide `⌘ + Entrée` et fermeture `Échap`.
+
+---
+
+## 2026-09-03 (v2.24.0) — Refonte UI/UX Minerva OS : Standard d'Ingénierie Linear & Raycast (6 Écrans Clés)
+
+Refactorisation architecturale complète de 6 écrans majeurs selon les principes directeurs Linear / Raycast (structure monolithique continue, zéro défilement 1080p, data-to-ink maximal, raccourcis natifs et alignement strict `font-mono tabular-nums`) :
+
+- **Cockpit Exécutif de l'Agence (`components/dashboard/ManagingOverview.tsx`)** :
+  - Remplacement de la bannière volumineuse et des cartes isolées par une toolbar compacte h-10 (40px) avec breadcrumb `Minerva / Vue d'ensemble` et micro-badge `Managing`.
+  - Ruban KPI connecté monolithique h-14 (56px max) en 4 colonnes (Santé Globale Optimal 96%, MRR sous Gestion, Capacité Équipe 78%, Rétention LTV 94.2%).
+  - Grille opérationnelle 2-tiers : table dense des chantiers & projets en cours (60%, lignes h-9 de 36px) et console d'équilibrage/vélocité d'équipe avec leaderboard compact (40%).
+- **Hub Écosystème & Vitrines (`app/(dashboard)/ecosystem/page.tsx`)** :
+  - Conteneur monolithique unique divisé en 2 sections nettes (Framer Hosting vs Vercel Cloud) avec lignes de registre denses (h-12 / 48px).
+  - Raccourci clavier `/` pour focaliser la recherche et segmented control d'en-tête (Toutes | Vitrines | Apps).
+  - Règles d'or de l'écosystème déportées dans un tiroir latéral technique (Drawer) rétractable avec raccourci `?`.
+- **Planification & Booking Engine (`app/(dashboard)/booking/page.tsx`)** :
+  - Élimination des modals flottants et empty states passifs au profit d'un format 2-colonnes 65/35 single-viewport 1080p.
+  - Colonne gauche (65%) : segmented control permutant entre les rendez-vous confirmés, l'éditeur de créneaux de disponibilité hebdomadaires et les paramètres Cal.
+  - Colonne droite (35%) : formulaire d'insertion rapide persistant (inputs h-8 de 32px) avec confirmation rapide `⌘ + Entrée`.
+- **Studio de Devis & Propositions Commerciales (`app/(dashboard)/proposals/page.tsx`)** :
+  - Suppression de la bannière sombre et des cartes dispersées.
+  - Toolbar compacte h-10 avec recherche `/` et déclencheur `+ Nouvelle Proposition` (raccourci `N`).
+  - Ruban KPI 4 colonnes h-14 (Pipeline total, Signé/Encaissé 50%, En attente, Panier moyen deal).
+  - DataTable haute densité (lignes 36px) avec micro-pills de statuts et ligne d'insertion rapide inline au pied.
+  - Slide-Over Drawer Linear-style 2-colonnes (saisie à gauche, totaux & calcul d'acompte 50% à droite, validation `⌘ + Entrée`).
+- **Explorateur & Curation Vidéos YouTube (`components/academy/YouTubeCuratorModal.tsx`)** :
+  - Refonte sous forme de palette de commande technique style Raycast Launcher (largeur max 680px, pas de scroll corporel).
+  - Barre de recherche sans contour h-10 avec micro-sélecteur de domaine et ruban de filtres rapides h-7.
+  - Liste dense de résultats et playbooks (rangées 40px) pilotable au clavier (`↑`/`↓` pour naviguer, `↵` pour ouvrir, `⌘+C` pour copier l'URL, `Échap` pour fermer).
+  - Mini-testeur d'URL YouTube/Shorts avec micro-footer technique monospace.
+- **Fiches de Rôles, Rituels & Rémunération (`app/(dashboard)/team/roles/page.tsx`)** :
+  - Architecture 2-colonnes 65/35 avec segmented control h-7 pour les 4 départements (Acquisition, Création, Tech & QA, Rétention / Ops).
+  - Colonne gauche (65%) : conteneur monolithique continu regroupant missions, checklist des livrables 28px, tableau des rituels avec horaires monospace et seuils de KPIs.
+  - Colonne droite (35%) : harmonisation intégrale du simulateur RevOps dans le design system blanc/zinc (suppression du bloc noir agressif), calcul en temps réel des paliers d'accélérateur de quota 10k$ et affichage du total estimé.
+
 ---
 
 ## 2026-09-03 (v2.23.1) — Sécurisation Backend : Adaptateur Next.js `@supabase/server`, Auth Hybride & Contrôle RBAC

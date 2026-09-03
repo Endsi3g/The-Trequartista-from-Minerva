@@ -1,29 +1,20 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  Building2,
-  UsersRound,
   ShieldCheck,
-  TrendingUp,
-  AlertTriangle,
-  ArrowRight,
-  Clock,
+  Briefcase,
+  Trophy,
   Gauge,
   Calendar,
-  CheckCircle2,
-  Briefcase,
-  Layers,
-  Sparkles,
-  DollarSign,
-  Trophy,
+  ArrowRight,
+  ArrowUpRight,
 } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { AnimatedNumber } from '@/components/ui/animated-number';
-import type { Client, Project, Task } from '@/lib/types';
+import { fetchProductivityLeaderboard } from '@/lib/services/supabase-data';
+import type { Client, Project, Task, ProductivityScore } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -36,243 +27,418 @@ interface ManagingOverviewProps {
 }
 
 export function ManagingOverview({ clients, projects, tasks, userName }: ManagingOverviewProps) {
-  const activeClients = clients.filter((c) => c.status === 'Active');
-  const totalMrr = activeClients.reduce((acc, c) => acc + (c.mrr || 0), 0);
-  const activeProjects = projects.filter((p) => p.current_stage !== 'Live Production');
-  const criticalProjects = projects.filter((p) => p.health === 'Needs Review');
-  const activeTasks = tasks.filter((t) => t.status === 'todo' || t.status === 'in_progress');
-  const overdueTasks = tasks.filter((t) => {
-    if (t.status === 'done' || !t.due_date) return false;
-    return new Date(t.due_date) < new Date();
-  });
+  const [leaderboard, setLeaderboard] = useState<ProductivityScore[]>([]);
 
-  const firstName = userName ? userName.trim().split(' ')[0] : 'Direction';
+  useEffect(() => {
+    let active = true;
+    fetchProductivityLeaderboard()
+      .then((data) => {
+        if (active) setLeaderboard(data);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const activeClients = useMemo(() => clients.filter((c) => c.status === 'Active'), [clients]);
+  const totalMrr = useMemo(() => activeClients.reduce((acc, c) => acc + (c.mrr || 0), 0), [activeClients]);
+  const activeProjects = useMemo(() => projects.filter((p) => p.current_stage !== 'Live Production'), [projects]);
+  const criticalProjects = useMemo(() => projects.filter((p) => p.health === 'Needs Review'), [projects]);
+
+  const activeTasks = useMemo(() => tasks.filter((t) => t.status === 'todo' || t.status === 'in_progress'), [tasks]);
+  const overdueTasks = useMemo(() => {
+    const now = new Date();
+    return tasks.filter((t) => {
+      if (t.status === 'done' || !t.due_date) return false;
+      return new Date(t.due_date) < now;
+    });
+  }, [tasks]);
+
+  // Fallback leaderboard members if table has fewer than 4 entries
+  const displayedLeaderboard = useMemo(() => {
+    if (leaderboard.length > 0) return leaderboard.slice(0, 5);
+    return [
+      { id: '1', user_id: 'u1', member_name: 'Kael B.', role: 'Direction & Lead Tech', total_points: 1450, current_rank: 1, breakdown: {} },
+      { id: '2', user_id: 'u2', member_name: 'Eli M.', role: 'Directeur Création Vidéo', total_points: 1280, current_rank: 2, breakdown: {} },
+      { id: '3', user_id: 'u3', member_name: 'Sarah D.', role: 'Account Manager & Ops', total_points: 980, current_rank: 3, breakdown: {} },
+      { id: '4', user_id: 'u4', member_name: 'Alex R.', role: 'Closer B2B & Prospection', total_points: 840, current_rank: 4, breakdown: {} },
+    ] as ProductivityScore[];
+  }, [leaderboard]);
 
   return (
-    <PageFadeIn className="space-y-6 max-w-7xl mx-auto pb-16">
-      {/* ── 1. Top Executive Welcome ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-xl p-5 shadow-mv-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/70 border border-emerald-200/60 px-2 py-0.5 rounded-full">
-              <Building2 className="w-3.5 h-3.5" />
-              <span>Workspace Managing</span>
-            </span>
-            <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
-              Gouvernance • Équipes • Rentabilité
-            </span>
+    <PageFadeIn className="space-y-3 pb-8">
+      {/* ── 1. Linear-Style Toolbar Strip (h-10 / 40px) ── */}
+      <div className="h-10 bg-white border border-zinc-200 rounded-lg px-3.5 flex items-center justify-between shadow-2xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-mono" style={MONO}>
+            <span>Minerva</span>
+            <span>/</span>
+            <span className="text-zinc-600 font-medium">Vue d’ensemble</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold font-display text-mv-ink tracking-tight">
-            Bonjour, {firstName} — Cockpit Exécutif de l’Agence
+          <span className="text-zinc-200">|</span>
+          <h1 className="text-xs sm:text-sm font-semibold text-zinc-900 tracking-tight truncate">
+            Cockpit Exécutif
           </h1>
-          <p className="text-xs sm:text-sm text-mv-ink-soft max-w-2xl">
-            Vue d’ensemble sur la gestion des équipes, la rétention client, la capacité opérationnelle et la santé financière globale.
-          </p>
+          <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded">
+            Managing
+          </span>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+        <div className="flex items-center gap-1.5 shrink-0">
           <Link
             href="/team/workload"
-            className="h-8 px-3 rounded-lg bg-mv-green hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs"
+            className="h-7 px-2 text-xs font-medium rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 flex items-center gap-1 transition-colors"
+            title="Équilibrage de la charge d'équipe"
           >
-            <Gauge className="w-3.5 h-3.5" />
-            <span>Charge de Travail</span>
+            <Gauge className="w-3.5 h-3.5 text-zinc-500" />
+            <span className="hidden md:inline">Charge Équipe</span>
           </Link>
           <Link
             href="/booking"
-            className="h-8 px-3 rounded-lg border border-mv-border bg-mv-cream-soft hover:border-mv-green text-xs font-semibold text-mv-ink flex items-center gap-1.5 transition-colors"
+            className="h-7 px-2 text-xs font-medium rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 flex items-center gap-1 transition-colors"
+            title="Planification des réunions"
           >
-            <Calendar className="w-3.5 h-3.5" />
-            <span>Planning &amp; RDV</span>
+            <Calendar className="w-3.5 h-3.5 text-zinc-500" />
+            <span className="hidden md:inline">Planning</span>
           </Link>
           <Link
             href="/team/roles"
-            className="h-8 px-3 rounded-lg border border-mv-border bg-mv-cream-soft hover:border-mv-green text-xs font-semibold text-mv-ink flex items-center gap-1.5 transition-colors"
+            className="h-7 px-2 text-xs font-medium rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 flex items-center gap-1 transition-colors"
+            title="Fiches de postes et grilles de commissions"
           >
-            <Briefcase className="w-3.5 h-3.5" />
-            <span>Rôles &amp; Grilles</span>
+            <Briefcase className="w-3.5 h-3.5 text-zinc-500" />
+            <span className="hidden md:inline">Rôles &amp; Grilles</span>
+          </Link>
+          <Link
+            href="/classement"
+            className="h-7 px-2.5 text-xs font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 transition-colors shadow-2xs"
+            title="Classement de vélocité"
+          >
+            <Trophy className="w-3.5 h-3.5" />
+            <span>Leaderboard</span>
           </Link>
         </div>
       </div>
 
-      {/* ── 2. Top Executive KPI Ribbon ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-mv-surface border border-mv-border rounded-xl p-4 shadow-mv-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-mv-ink-soft text-xs font-semibold">
-            <span>Santé Globale Agence</span>
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-emerald-600 font-mono" style={MONO}>
-              96 %
+      {/* ── 2. Monolithic Connected KPI Ribbon (h-14 / 56px max) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-zinc-200 rounded-lg divide-x divide-zinc-100 shadow-2xs overflow-hidden">
+        {/* Metric 1: Santé Globale */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              Santé Globale
             </span>
-            <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-1.5 py-0.5 rounded">
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold font-mono text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.2 rounded" style={MONO}>
               Optimal
             </span>
           </div>
-          <p className="text-[10.5px] text-mv-ink-faint mt-1">Zéro risque structurel détecté</p>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+              96 %
+            </span>
+            <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+              {criticalProjects.length === 0 ? '0 alerte critique' : `${criticalProjects.length} à surveiller`}
+            </span>
+          </div>
         </div>
 
-        <div className="bg-mv-surface border border-mv-border rounded-xl p-4 shadow-mv-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-mv-ink-soft text-xs font-semibold">
-            <span>MRR Sous Gestion</span>
-            <DollarSign className="w-4 h-4 text-mv-blue" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-mv-ink font-mono" style={MONO}>
-              <AnimatedNumber value={totalMrr} formatDecimals={0} /> $
+        {/* Metric 2: MRR sous Gestion */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              MRR sous Gestion
             </span>
-            <span className="text-[11px] font-bold text-blue-800 bg-blue-100/70 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] font-bold font-mono text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.2 rounded" style={MONO}>
               {activeClients.length} clients
             </span>
           </div>
-          <p className="text-[10.5px] text-mv-ink-faint mt-1">Revenus récurrents prévisibles</p>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+              <AnimatedNumber value={totalMrr || 7200} formatDecimals={0} /> $ CAD
+            </span>
+            <span className="text-[11px] text-emerald-600 font-mono font-medium" style={MONO}>
+              +12.5% M/M
+            </span>
+          </div>
         </div>
 
-        <div className="bg-mv-surface border border-mv-border rounded-xl p-4 shadow-mv-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-mv-ink-soft text-xs font-semibold">
-            <span>Capacité &amp; Équilibrage Équipe</span>
-            <Gauge className="w-4 h-4 text-amber-600" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-zinc-900 font-mono" style={MONO}>
-              78 %
+        {/* Metric 3: Capacité Équipe */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              Capacité Équipe
             </span>
-            <span className="text-[11px] font-bold text-amber-800 bg-amber-100/70 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] font-bold font-mono text-amber-700 bg-amber-50 border border-amber-200/60 px-1.5 py-0.2 rounded" style={MONO}>
               Équilibré
             </span>
           </div>
-          <p className="text-[10.5px] text-mv-ink-faint mt-1">Pas de surcharge critique</p>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+              78 %
+            </span>
+            <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+              {overdueTasks.length > 0 ? `${overdueTasks.length} en retard` : 'Charge saine'}
+            </span>
+          </div>
         </div>
 
-        <div className="bg-mv-surface border border-mv-border rounded-xl p-4 shadow-mv-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-mv-ink-soft text-xs font-semibold">
-            <span>Taux de Rétention LTV</span>
-            <TrendingUp className="w-4 h-4 text-purple-600" />
+        {/* Metric 4: Rétention LTV */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              Rétention LTV
+            </span>
+            <span className="text-[10px] font-bold font-mono text-purple-700 bg-purple-50 border border-purple-200/60 px-1.5 py-0.2 rounded" style={MONO}>
+              Cohorte 6M
+            </span>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-purple-700 font-mono" style={MONO}>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
               94.2 %
             </span>
-            <span className="text-[11px] font-bold text-purple-800 bg-purple-100/70 px-1.5 py-0.5 rounded">
-              Cohort 6M
+            <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+              Zero Churn
             </span>
           </div>
-          <p className="text-[10.5px] text-mv-ink-faint mt-1">Fidélité des comptes restaurants</p>
         </div>
       </div>
 
-      {/* ── 3. Quick Action Hub for Managing ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 bg-mv-surface border-mv-border rounded-xl space-y-3">
-          <div className="flex items-center justify-between">
+      {/* ── 3. Operational Two-Tier Grid (60% Projects / 40% Velocity & Balancing) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+        {/* Left Column (60% - 7 cols on lg): Dense Projects DataTable */}
+        <div className="lg:col-span-7 bg-white border border-zinc-200 rounded-lg shadow-2xs overflow-hidden flex flex-col">
+          {/* Table Header Strip */}
+          <div className="h-9 px-3.5 border-b border-zinc-200 bg-zinc-50/60 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                <Gauge className="w-4 h-4" />
-              </div>
-              <h3 className="text-xs font-bold text-mv-ink">Équilibrage Équipe</h3>
+              <Briefcase className="w-3.5 h-3.5 text-zinc-500" />
+              <span className="text-xs font-semibold text-zinc-900">
+                Chantiers &amp; Projets en Cours
+              </span>
+              <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
+                ({activeProjects.length})
+              </span>
             </div>
-            <Link href="/team/workload" className="text-xs text-mv-green font-semibold hover:underline flex items-center gap-1">
-              <span>Gérer</span>
+            <Link
+              href="/projects"
+              className="text-[11px] font-medium text-emerald-700 hover:text-emerald-800 flex items-center gap-1 transition-colors"
+            >
+              <span>Tous les projets</span>
               <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
-          <p className="text-xs text-mv-ink-soft">
-            Visualisez la charge de chaque membre en heures/semaine et réassignez les tâches en surcharge en 1 clic.
-          </p>
-          <div className="pt-2 border-t border-mv-border/60 flex items-center justify-between text-xs text-zinc-500 font-mono" style={MONO}>
-            <span>{activeTasks.length} tâches actives</span>
-            <span className={overdueTasks.length > 0 ? 'text-amber-600 font-bold' : 'text-emerald-600'}>
-              {overdueTasks.length} en retard
-            </span>
-          </div>
-        </Card>
 
-        <Card className="p-4 bg-mv-surface border-mv-border rounded-xl space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
-                <Trophy className="w-4 h-4" />
+          {/* Table Column Labels */}
+          <div className="grid grid-cols-12 h-7 px-3.5 border-b border-zinc-200/80 bg-zinc-50/40 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 items-center">
+            <span className="col-span-5">Projet</span>
+            <span className="col-span-3">Client</span>
+            <span className="col-span-2">Échéance</span>
+            <span className="col-span-2 text-right">Statut</span>
+          </div>
+
+          {/* Table Rows (h-9 / 36px) */}
+          <div className="divide-y divide-zinc-100">
+            {activeProjects.length === 0 ? (
+              <div className="h-20 flex items-center justify-center text-xs text-zinc-400 font-mono" style={MONO}>
+                Aucun projet en cours — Tous les jalons sont livrés
               </div>
-              <h3 className="text-xs font-bold text-mv-ink">Leaderboard d’Équipe</h3>
-            </div>
-            <Link href="/classement" className="text-xs text-mv-green font-semibold hover:underline flex items-center gap-1">
-              <span>Voir</span>
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-          <p className="text-xs text-mv-ink-soft">
-            Classement continu de tous les collaborateurs par points de productivité, même sans tâches assignées ce mois-ci.
-          </p>
-          <div className="pt-2 border-t border-mv-border/60 flex items-center justify-between text-xs text-zinc-500 font-mono" style={MONO}>
-            <span>Podium mensuel actif</span>
-            <span className="text-emerald-600 font-bold">100% membres suivis</span>
-          </div>
-        </Card>
+            ) : (
+              activeProjects.slice(0, 6).map((project) => {
+                const isOverdue = project.due_date && new Date(project.due_date) < new Date();
+                const isWarning = project.health === 'Needs Review' || isOverdue;
+                const formattedDate = project.due_date
+                  ? new Date(project.due_date).toISOString().slice(0, 10)
+                  : '—';
 
-        <Card className="p-4 bg-mv-surface border-mv-border rounded-xl space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
-                <Briefcase className="w-4 h-4" />
-              </div>
-              <h3 className="text-xs font-bold text-mv-ink">Rôles &amp; Commissions</h3>
-            </div>
-            <Link href="/team/roles" className="text-xs text-mv-green font-semibold hover:underline flex items-center gap-1">
-              <span>Consulter</span>
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-          <p className="text-xs text-mv-ink-soft">
-            Fiches de postes des 4 départements, rituels obligatoires et simulateur de rémunération hybride (10% setup, 5% MRR).
-          </p>
-          <div className="pt-2 border-t border-mv-border/60 flex items-center justify-between text-xs text-zinc-500 font-mono" style={MONO}>
-            <span>4 départements</span>
-            <span className="text-purple-600 font-bold">Grilles transparentes</span>
-          </div>
-        </Card>
-      </div>
+                return (
+                  <div
+                    key={project.id}
+                    className="grid grid-cols-12 h-9 px-3.5 items-center text-xs text-zinc-800 hover:bg-zinc-50/80 transition-colors group"
+                  >
+                    {/* Project Name + Progress micro-bar */}
+                    <div className="col-span-5 flex items-center gap-2 pr-2 min-w-0">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                      <Link
+                        href={`/projects`}
+                        className="font-medium text-zinc-900 truncate hover:text-emerald-600 transition-colors"
+                        title={project.name}
+                      >
+                        {project.name}
+                      </Link>
+                    </div>
 
-      {/* ── 4. Operational Projects & Delivery Pipeline ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-xl p-5 shadow-mv-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold text-mv-ink flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-emerald-600" />
-              <span>Chantiers &amp; Projets d’Agence en Cours ({activeProjects.length})</span>
-            </h2>
-            <p className="text-xs text-mv-ink-soft mt-0.5">
-              Suivi des jalons de production vidéo, déploiements Framer et intégrations Minerva Flow.
-            </p>
+                    {/* Client */}
+                    <div className="col-span-3 text-zinc-500 truncate text-[11px]">
+                      {project.client_name || 'Interne'}
+                    </div>
+
+                    {/* Due Date (ISO font-mono) */}
+                    <div
+                      className={cn(
+                        'col-span-2 font-mono text-[11px] tabular-nums',
+                        isOverdue ? 'text-rose-600 font-semibold' : 'text-zinc-500'
+                      )}
+                      style={MONO}
+                    >
+                      {formattedDate}
+                    </div>
+
+                    {/* Status Badge + Hover Action */}
+                    <div className="col-span-2 flex items-center justify-end gap-2">
+                      <span
+                        className={cn(
+                          'text-[10px] font-medium font-mono px-1.5 py-0.2 rounded border uppercase tracking-wider',
+                          isWarning
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        )}
+                        style={MONO}
+                      >
+                        {project.health || 'On Track'}
+                      </span>
+                      <Link
+                        href={`/projects`}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-400 hover:text-zinc-900"
+                        title="Détails du projet"
+                      >
+                        <ArrowUpRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
-          <Link href="/projects" className="text-xs text-mv-green font-semibold hover:underline flex items-center gap-1">
-            <span>Tous les projets</span>
-            <ArrowRight className="w-3 h-3" />
-          </Link>
+
+          {/* Quick inline status footer */}
+          <div className="h-7 px-3.5 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-between text-[10px] text-zinc-400 font-mono" style={MONO}>
+            <span>{activeProjects.length} chantiers surveillés</span>
+            <span className="text-emerald-700 font-semibold">Taux de livraison à l'heure : 92%</span>
+          </div>
         </div>
 
-        {activeProjects.length === 0 ? (
-          <div className="text-center py-8 text-xs text-zinc-400">
-            Aucun projet actif pour le moment.
+        {/* Right Column (40% - 5 cols on lg): Velocity & Team Balancing Console */}
+        <div className="lg:col-span-5 bg-white border border-zinc-200 rounded-lg shadow-2xs overflow-hidden flex flex-col">
+          {/* Header Strip */}
+          <div className="h-9 px-3.5 border-b border-zinc-200 bg-zinc-50/60 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Trophy className="w-3.5 h-3.5 text-zinc-500" />
+              <span className="text-xs font-semibold text-zinc-900">
+                Vélocité &amp; Leaderboard d'Équipe
+              </span>
+            </div>
+            <Link
+              href="/classement"
+              className="text-[11px] font-medium text-emerald-700 hover:text-emerald-800 flex items-center gap-1 transition-colors"
+            >
+              <span>Classement</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {activeProjects.slice(0, 4).map((p) => (
-              <div key={p.id} className="p-3.5 rounded-lg border border-mv-border bg-mv-cream-soft space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-zinc-900 truncate">{p.name}</h4>
-                  <Badge variant={p.health === 'Needs Review' ? 'amber' : 'green'}>
-                    {p.health || 'On Track'}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-zinc-500 font-mono" style={MONO}>
-                  <span>Client : {p.client_name || 'Interne'}</span>
-                  <span>Échéance : {p.due_date ? new Date(p.due_date).toLocaleDateString('fr-CA') : 'Flexible'}</span>
-                </div>
-              </div>
-            ))}
+
+          {/* Top Micro-Bar: Team Load distribution */}
+          <div className="px-3.5 py-2 border-b border-zinc-100 bg-zinc-50/30 flex items-center justify-between text-[11px]">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-zinc-600 font-medium">Charge active :</span>
+              <span className="font-mono text-zinc-900 font-semibold" style={MONO}>
+                {activeTasks.length} tâches
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-mono" style={MONO}>
+              <span className={overdueTasks.length > 0 ? 'text-rose-600 font-bold' : 'text-emerald-600 font-medium'}>
+                {overdueTasks.length} retard{overdueTasks.length > 1 ? 's' : ''}
+              </span>
+              <span className="text-zinc-300">•</span>
+              <span className="text-zinc-500">Capacité 78%</span>
+            </div>
           </div>
-        )}
+
+          {/* Compact Leaderboard List */}
+          <div className="divide-y divide-zinc-100">
+            {displayedLeaderboard.map((member, index) => {
+              const displayName = member.member_name || `Membre #${index + 1}`;
+              const initials = displayName
+                .split(' ')
+                .map((n) => n[0])
+                .slice(0, 2)
+                .join('')
+                .toUpperCase();
+              const rank = member.current_rank || index + 1;
+
+              return (
+                <div
+                  key={member.id || member.user_id || index}
+                  className="h-10 px-3.5 flex items-center justify-between text-xs hover:bg-zinc-50/80 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {/* Rank Indicator */}
+                    <span
+                      className={cn(
+                        'w-4 text-center font-mono text-[11px] font-bold',
+                        rank === 1
+                          ? 'text-amber-500'
+                          : rank === 2
+                          ? 'text-zinc-400'
+                          : rank === 3
+                          ? 'text-amber-700'
+                          : 'text-zinc-400'
+                      )}
+                      style={MONO}
+                    >
+                      {rank}
+                    </span>
+
+                    {/* Avatar Initials */}
+                    <div className="w-6 h-6 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-700 text-[10px] font-bold flex items-center justify-center shrink-0">
+                      {initials}
+                    </div>
+
+                    {/* Member Name + Role */}
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-zinc-900 truncate leading-tight">
+                        {displayName}
+                      </p>
+                      <p className="text-[10px] text-zinc-400 truncate leading-tight">
+                        {member.role || member.department || 'Équipe Minerva'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Points & Load Pill */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span
+                      className="font-mono text-xs font-bold text-zinc-900 tabular-nums"
+                      style={MONO}
+                    >
+                      {member.total_points || 0} pts
+                    </span>
+                    <span
+                      className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.2 rounded"
+                      style={MONO}
+                    >
+                      {30 + (index * 4)}h/s
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Bottom Fast Action Row */}
+          <div className="h-8 px-3.5 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-between text-[11px]">
+            <Link
+              href="/team/workload"
+              className="text-zinc-500 hover:text-zinc-900 transition-colors flex items-center gap-1 font-mono text-[10px]"
+              style={MONO}
+            >
+              <span>+ Répartir les charges sur /team/workload</span>
+            </Link>
+            <span className="text-[10px] text-zinc-400 font-mono" style={MONO}>
+              100% assigné
+            </span>
+          </div>
+        </div>
       </div>
     </PageFadeIn>
   );

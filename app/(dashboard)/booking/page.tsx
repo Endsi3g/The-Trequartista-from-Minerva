@@ -1,30 +1,23 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import {
   Calendar as CalendarIcon,
   Clock,
-  CheckCircle2,
-  Users,
   Video,
-  Plus,
-  ExternalLink,
   Copy,
   Check,
-  CalendarCheck,
-  Settings,
-  Sparkles,
-  ArrowRight,
+  ExternalLink,
+  Plus,
   X,
-  Phone,
-  Building2,
-  Share2,
+  Sparkles,
+  Settings,
+  CalendarCheck,
+  CheckCircle2,
+  Trash2,
 } from 'lucide-react';
 import { PageFadeIn } from '@/components/ui/page-transition';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { useToast } from '@/components/providers/ToastProvider';
 import {
@@ -33,12 +26,9 @@ import {
   fetchMemberBookings,
   createBooking,
   updateBookingStatus,
-  generateDayTimeSlots,
   type MemberAvailabilitySlot,
   type MeetingBooking,
 } from '@/lib/services/booking';
-import { fetchTeamMembers } from '@/lib/services/supabase-data';
-import type { TeamMemberSummary } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -57,54 +47,109 @@ export default function BookingDashboardPage() {
   const { id: currentUserId, fullName, email } = useCurrentUser();
   const { toastSuccess, toastError, toastInfo } = useToast();
 
-  const [activeTab, setActiveTab] = useState<'meetings' | 'availability' | 'new_meeting'>('meetings');
+  const [leftTab, setLeftTab] = useState<'meetings' | 'availability' | 'settings'>('meetings');
   const [bookings, setBookings] = useState<MeetingBooking[]>([]);
   const [availabilities, setAvailabilities] = useState<MemberAvailabilitySlot[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMemberSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // New Internal Meeting Form
+  // Form State
   const [meetingTitle, setMeetingTitle] = useState('');
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [selectedTime, setSelectedTime] = useState('10:00');
-  const [meetingType, setMeetingType] = useState<MeetingBooking['meeting_type']>('internal_sync');
+  const [meetingType, setMeetingType] = useState<MeetingBooking['meeting_type']>('client_demo');
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [meetingNotes, setMeetingNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const publicBookingUrl = useMemo(() => {
-    if (typeof window === 'undefined') return `/book/${currentUserId || 'kael'}`;
-    return `${window.location.origin}/book/${currentUserId || 'kael'}`;
-  }, [currentUserId]);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  const publicBookingSlug = currentUserId ? currentUserId.slice(0, 8) : 'e0178465';
+  const publicBookingPath = `/book/${publicBookingSlug}`;
 
   useEffect(() => {
     if (!currentUserId) return;
-    (async () => {
-      setLoading(true);
-      try {
-        const [bData, aData, mData] = await Promise.all([
-          fetchMemberBookings(currentUserId),
-          fetchMemberAvailabilities(currentUserId),
-          fetchTeamMembers(currentUserId),
-        ]);
+    let active = true;
+    setLoading(true);
+    Promise.all([fetchMemberBookings(currentUserId), fetchMemberAvailabilities(currentUserId)])
+      .then(([bData, aData]) => {
+        if (!active) return;
         setBookings(bData);
         setAvailabilities(aData);
-        setTeamMembers(mData);
-      } catch (err) {
-        console.warn('[Booking] Error loading data:', err);
-      } finally {
         setLoading(false);
-      }
-    })();
+      })
+      .catch((err) => {
+        console.warn('[Booking] Erreur chargement :', err);
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [currentUserId]);
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(publicBookingUrl);
+    const fullUrl = `${window.location.origin}${publicBookingPath}`;
+    navigator.clipboard.writeText(fullUrl);
     setCopiedLink(true);
-    toastSuccess('Lien copié !', 'Le lien de réservation a été copié dans le presse-papier.');
+    toastSuccess('Lien copié !', fullUrl);
     setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const resetForm = () => {
+    setMeetingTitle('');
+    setGuestName('');
+    setGuestEmail('');
+    setMeetingNotes('');
+  };
+
+  const handleCreateMeeting = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!currentUserId || !meetingTitle.trim() || !guestName.trim() || !guestEmail.trim()) {
+      toastError('Champs obligatoires manquants', 'Veuillez renseigner le titre, le participant et son courriel.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const startDateTime = new Date(`${selectedDate}T${selectedTime}:00`);
+      const endDateTime = new Date(startDateTime.getTime() + 30 * 60000);
+
+      const newB = await createBooking({
+        host_id: currentUserId,
+        host_name: fullName || 'Hôte Minerva',
+        host_email: email || '',
+        guest_name: guestName,
+        guest_email: guestEmail,
+        meeting_type: meetingType,
+        meeting_title: meetingTitle,
+        start_time: startDateTime.toISOString(),
+        end_time: endDateTime.toISOString(),
+        status: 'confirmed',
+        notes: meetingNotes,
+        location_url: 'https://meet.google.com/minerva-sync',
+      });
+
+      setBookings((prev) => [newB, ...prev]);
+      toastSuccess('Rendez-vous planifié', `« ${meetingTitle} » est confirmé.`);
+      resetForm();
+    } catch {
+      toastError('Erreur', 'Impossible de planifier le rendez-vous.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancelMeeting = async (bookingId: string) => {
+    if (!currentUserId) return;
+    try {
+      await updateBookingStatus(bookingId, currentUserId, 'cancelled');
+      setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled' } : b)));
+      toastInfo('Rendez-vous annulé', 'Le statut a été mis à jour.');
+    } catch {
+      toastError('Erreur', 'Impossible d’annuler la réunion.');
+    }
   };
 
   const handleToggleDay = (dayOfWeek: number) => {
@@ -123,424 +168,457 @@ export default function BookingDashboardPage() {
     if (!currentUserId) return;
     try {
       await saveMemberAvailabilities(currentUserId, availabilities);
-      toastSuccess('Disponibilités sauvegardées', 'Vos créneaux hebdomadaires ont été mis à jour.');
+      toastSuccess('Disponibilités sauvegardées', 'Créneaux hebdomadaires mis à jour.');
     } catch {
-      toastError('Erreur', 'Impossible de sauvegarder les disponibilités.');
+      toastError('Erreur', 'Impossible de sauvegarder.');
     }
   };
 
-  const handleCreateMeeting = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUserId || !meetingTitle || !guestName || !guestEmail) {
-      toastError('Champs obligatoires manquants', 'Veuillez remplir le titre, le participant et l’email.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const startDateTime = new Date(`${selectedDate}T${selectedTime}:00`);
-      const endDateTime = new Date(startDateTime.getTime() + 30 * 60000); // 30 min default
-
-      const newB = await createBooking({
-        host_id: currentUserId,
-        host_name: fullName || 'Hôte Minerva',
-        host_email: email || '',
-        guest_name: guestName,
-        guest_email: guestEmail,
-        meeting_type: meetingType,
-        meeting_title: meetingTitle,
-        start_time: startDateTime.toISOString(),
-        end_time: endDateTime.toISOString(),
-        status: 'confirmed',
-        notes: meetingNotes,
-        location_url: 'https://meet.google.com/minerva-sync',
-      });
-
-      setBookings((prev) => [newB, ...prev]);
-      toastSuccess('Réunion planifiée', `La réunion « ${meetingTitle} » a été confirmée.`);
-      setMeetingTitle('');
-      setGuestName('');
-      setGuestEmail('');
-      setMeetingNotes('');
-      setActiveTab('meetings');
-    } catch (err) {
-      toastError('Erreur', 'Impossible de planifier la réunion.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleCancelMeeting = async (bookingId: string) => {
-    if (!currentUserId) return;
-    await updateBookingStatus(bookingId, currentUserId, 'cancelled');
-    setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled' } : b)));
-    toastInfo('Réunion annulée', 'Le statut a été mis à jour.');
-  };
+  // Keyboard Shortcuts: ⌘+Enter to submit, Escape to reset
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleCreateMeeting();
+      } else if (e.key === 'Escape') {
+        const target = e.target as HTMLElement | null;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+          resetForm();
+          target.blur();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentUserId, meetingTitle, guestName, guestEmail, selectedDate, selectedTime, meetingType, meetingNotes]);
 
   const upcomingBookings = useMemo(() => {
-    return bookings.filter((b) => b.status === 'confirmed');
+    const now = new Date();
+    return bookings
+      .filter((b) => new Date(b.end_time) >= now && b.status !== 'cancelled')
+      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
   }, [bookings]);
 
   return (
-    <PageFadeIn className="space-y-6 max-w-6xl mx-auto pb-16">
-      {/* ── 1. Header & Public Link Banner ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-xl p-5 shadow-mv-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/70 border border-emerald-200/60 px-2 py-0.5 rounded-full">
-              <CalendarCheck className="w-3.5 h-3.5" />
-              <span>Module Booking In-App</span>
-            </span>
-            <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
-              Disponibilités • 1-on-1 • Démos Clients
-            </span>
+    <PageFadeIn className="space-y-3 pb-8">
+      {/* ── 1. Linear-Style Header Strip (h-10 / 40px) ── */}
+      <div className="h-10 bg-white border border-zinc-200 rounded-lg px-3.5 flex items-center justify-between shadow-2xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-mono" style={MONO}>
+            <span>Minerva</span>
+            <span>/</span>
+            <span className="text-zinc-600 font-medium">Planning</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold font-display text-mv-ink tracking-tight">
+          <span className="text-zinc-200">|</span>
+          <h1 className="text-xs sm:text-sm font-semibold text-zinc-900 tracking-tight truncate">
             Planification &amp; Prise de Rendez-Vous
           </h1>
-          <p className="text-xs sm:text-sm text-mv-ink-soft max-w-2xl">
-            Gérez vos créneaux de disponibilité, organisez des réunions d'équipe internes et partagez votre lien public pour les prospects.
-          </p>
         </div>
 
-        {/* Shareable Public Booking Link */}
-        <div className="p-3 bg-mv-cream-soft border border-mv-border rounded-lg flex items-center gap-3 shrink-0">
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">
-              Votre Lien Public Client
-            </span>
-            <span className="text-xs font-mono font-semibold text-zinc-800 max-w-[200px] sm:max-w-[260px] truncate block" style={MONO}>
-              /book/{currentUserId ? currentUserId.slice(0, 8) : 'demo'}
-            </span>
-          </div>
+        {/* Public Booking Link Strip (h-7) */}
+        <div className="flex items-center gap-1.5 shrink-0 bg-zinc-50 border border-zinc-200 rounded-md px-2 py-0.5">
+          <span className="text-[10px] uppercase font-semibold text-zinc-400 hidden md:inline">Lien Public :</span>
+          <span className="text-xs font-mono font-medium text-zinc-700" style={MONO}>
+            {publicBookingPath}
+          </span>
           <button
             onClick={handleCopyLink}
-            className="h-8 px-2.5 rounded-md bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+            className="h-5 px-1.5 rounded text-[10px] font-medium bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-900 flex items-center gap-1 transition-colors cursor-pointer"
+            title="Copier le lien public"
           >
-            {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copiedLink ? <Check className="w-2.5 h-2.5 text-emerald-600" /> : <Copy className="w-2.5 h-2.5" />}
             <span>{copiedLink ? 'Copié' : 'Copier'}</span>
           </button>
           <Link
-            href={`/book/${currentUserId || 'demo'}`}
+            href={publicBookingPath}
             target="_blank"
-            className="h-8 w-8 rounded-md border border-mv-border bg-white hover:bg-zinc-50 flex items-center justify-center text-zinc-700 transition-colors"
-            title="Tester la page publique de réservation"
+            className="h-5 w-5 rounded bg-white border border-zinc-200 text-zinc-500 hover:text-zinc-900 flex items-center justify-center transition-colors"
+            title="Ouvrir la page publique"
           >
-            <ExternalLink className="w-3.5 h-3.5" />
+            <ExternalLink className="w-2.5 h-2.5" />
           </Link>
         </div>
       </div>
 
-      {/* ── 2. Segmented Navigation Tabs ── */}
-      <div className="flex items-center gap-2 border-b border-mv-border pb-1">
-        <button
-          onClick={() => setActiveTab('meetings')}
-          className={cn(
-            'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5',
-            activeTab === 'meetings'
-              ? 'bg-zinc-900 text-white shadow-2xs'
-              : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-          )}
-        >
-          <CalendarIcon className="w-3.5 h-3.5" />
-          <span>Mes Rendez-Vous ({upcomingBookings.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('availability')}
-          className={cn(
-            'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5',
-            activeTab === 'availability'
-              ? 'bg-zinc-900 text-white shadow-2xs'
-              : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-          )}
-        >
-          <Clock className="w-3.5 h-3.5" />
-          <span>Créneaux de Disponibilité</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('new_meeting')}
-          className={cn(
-            'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5',
-            activeTab === 'new_meeting'
-              ? 'bg-zinc-900 text-white shadow-2xs'
-              : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-          )}
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Planifier une Réunion</span>
-        </button>
-      </div>
-
-      {/* ── 3. Tab: Mes Rendez-Vous ── */}
-      {activeTab === 'meetings' && (
-        <div className="space-y-4">
-          {upcomingBookings.length === 0 ? (
-            <Card className="p-12 text-center bg-mv-surface border-mv-border rounded-xl space-y-3">
-              <CalendarCheck className="w-10 h-10 text-zinc-300 mx-auto" />
-              <h3 className="text-sm font-bold text-zinc-900">Aucune réunion à venir</h3>
-              <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-                Partagez votre lien public de réservation avec vos prospects ou planifiez une réunion interne d'équipe.
-              </p>
-              <Button
-                onClick={() => setActiveTab('new_meeting')}
-                className="bg-mv-green hover:bg-emerald-700 text-white text-xs font-semibold gap-1.5 cursor-pointer mt-2"
+      {/* ── 2. Monolithic 2-Column Architecture (65% / 35%) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+        {/* Colonne Gauche (65% - 8 cols on lg) */}
+        <div className="lg:col-span-8 bg-white border border-zinc-200 rounded-lg shadow-2xs overflow-hidden flex flex-col">
+          {/* Segmented Control Header (h-9) */}
+          <div className="h-9 px-3 border-b border-zinc-200 bg-zinc-50/60 flex items-center justify-between">
+            <div className="h-7 bg-zinc-100 p-0.5 rounded-md flex items-center text-xs">
+              <button
+                onClick={() => setLeftTab('meetings')}
+                className={cn(
+                  'px-2.5 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5',
+                  leftTab === 'meetings'
+                    ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                    : 'text-zinc-500 hover:text-zinc-900'
+                )}
               >
-                <Plus size={14} />
-                <span>Planifier un rendez-vous</span>
-              </Button>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {upcomingBookings.map((b) => {
-                const startDate = new Date(b.start_time);
-                const endDate = new Date(b.end_time);
-                return (
-                  <Card key={b.id} className="p-4 bg-mv-surface border-mv-border rounded-xl space-y-3 shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <h4 className="text-xs font-bold text-zinc-900">{b.meeting_title}</h4>
-                      </div>
-                      <Badge variant={b.meeting_type === 'internal_sync' ? 'purple' : 'green'}>
-                        {b.meeting_type === 'internal_sync' ? 'Interne 1-on-1' : 'Démo Client'}
-                      </Badge>
-                    </div>
+                <CalendarIcon className="w-3 h-3 text-zinc-500" />
+                <span>Rendez-Vous Confirmés ({upcomingBookings.length})</span>
+              </button>
 
-                    <div className="bg-mv-cream-soft p-2.5 rounded-lg border border-mv-border space-y-1.5 text-xs">
-                      <div className="flex items-center justify-between text-zinc-700 font-mono" style={MONO}>
-                        <span className="font-semibold">{startDate.toLocaleDateString('fr-CA', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                        <span>{startDate.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })} - {endDate.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}</span>
+              <button
+                onClick={() => setLeftTab('availability')}
+                className={cn(
+                  'px-2.5 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5',
+                  leftTab === 'availability'
+                    ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                    : 'text-zinc-500 hover:text-zinc-900'
+                )}
+              >
+                <Clock className="w-3 h-3 text-zinc-500" />
+                <span>Créneaux Disponibles</span>
+              </button>
+
+              <button
+                onClick={() => setLeftTab('settings')}
+                className={cn(
+                  'px-2.5 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5',
+                  leftTab === 'settings'
+                    ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                    : 'text-zinc-500 hover:text-zinc-900'
+                )}
+              >
+                <Settings className="w-3 h-3 text-zinc-500" />
+                <span>Paramètres Cal</span>
+              </button>
+            </div>
+
+            <span className="text-[10px] font-mono text-zinc-400 hidden sm:inline" style={MONO}>
+              Single Viewport 1080p
+            </span>
+          </div>
+
+          {/* Tab 1: Rendez-Vous Confirmés */}
+          {leftTab === 'meetings' && (
+            <div>
+              {/* Column Labels */}
+              <div className="grid grid-cols-12 h-7 px-3.5 border-b border-zinc-100 bg-zinc-50/40 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 items-center">
+                <span className="col-span-4">Réunion</span>
+                <span className="col-span-2">Type</span>
+                <span className="col-span-3">Date &amp; Heure</span>
+                <span className="col-span-2">Invité</span>
+                <span className="col-span-1 text-right">Action</span>
+              </div>
+
+              {/* Rows (h-9 / 36px) */}
+              <div className="divide-y divide-zinc-100">
+                {upcomingBookings.length === 0 ? (
+                  <div className="h-16 px-3.5 flex items-center justify-between text-xs text-zinc-500 bg-zinc-50/30">
+                    <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                      <span>Aucune réunion planifiée aujourd'hui.</span>
+                    </div>
+                    <span className="text-[11px] font-mono text-zinc-400" style={MONO}>
+                      Utiliser le volet droit pour créer un créneau →
+                    </span>
+                  </div>
+                ) : (
+                  upcomingBookings.map((b) => {
+                    const start = new Date(b.start_time);
+                    const end = new Date(b.end_time);
+                    const isDemo = b.meeting_type === 'client_demo';
+
+                    return (
+                      <div
+                        key={b.id}
+                        className="grid grid-cols-12 h-9 px-3.5 items-center text-xs text-zinc-800 hover:bg-zinc-50/80 transition-colors group"
+                      >
+                        {/* Col 1: Titre */}
+                        <div className="col-span-4 flex items-center gap-2 min-w-0 pr-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="font-semibold text-zinc-900 truncate">
+                            {b.meeting_title}
+                          </span>
+                        </div>
+
+                        {/* Col 2: Type Badge */}
+                        <div className="col-span-2">
+                          <span
+                            className={cn(
+                              'text-[10px] font-mono px-1.5 py-0.2 rounded border uppercase tracking-wider',
+                              isDemo
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                            )}
+                            style={MONO}
+                          >
+                            {isDemo ? 'Démo Client' : '1-on-1 Sync'}
+                          </span>
+                        </div>
+
+                        {/* Col 3: Date & Heure */}
+                        <div className="col-span-3 text-[11px] font-mono text-zinc-600 truncate" style={MONO}>
+                          {start.toLocaleDateString('fr-CA', { month: '2-digit', day: '2-digit' })}{' '}
+                          <span className="text-zinc-900 font-semibold">
+                            {start.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          -
+                          {end.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+
+                        {/* Col 4: Invité */}
+                        <div className="col-span-2 text-[11px] text-zinc-600 truncate" title={`${b.guest_name} (${b.guest_email})`}>
+                          {b.guest_name}
+                        </div>
+
+                        {/* Col 5: Actions hover */}
+                        <div className="col-span-1 flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleCancelMeeting(b.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-400 hover:text-rose-600 p-0.5 cursor-pointer"
+                            title="Annuler la réunion"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between text-[11px] text-zinc-500">
-                        <span>Avec : <strong className="text-zinc-800">{b.guest_name}</strong> ({b.guest_email})</span>
-                        {b.guest_company && <span>{b.guest_company}</span>}
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tab 2: Créneaux Disponibles */}
+          {leftTab === 'availability' && (
+            <div className="p-3.5 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-zinc-500">
+                  Définissez vos plages horaires de disponibilité pour le calendrier public de réservation.
+                </p>
+                <button
+                  onClick={handleSaveAvailabilities}
+                  className="h-7 px-2.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
+                >
+                  Sauvegarder
+                </button>
+              </div>
+
+              <div className="divide-y divide-zinc-100 border border-zinc-200 rounded-lg overflow-hidden">
+                {DAYS_OF_WEEK.map((d) => {
+                  const slot = availabilities.find((s) => s.day_of_week === d.day) || {
+                    id: `slot-${d.day}`,
+                    user_id: currentUserId || '',
+                    day_of_week: d.day,
+                    start_time: '09:00',
+                    end_time: '17:00',
+                    is_active: d.day !== 0 && d.day !== 6,
+                  };
+
+                  return (
+                    <div
+                      key={d.day}
+                      className={cn(
+                        'h-9 px-3.5 flex items-center justify-between text-xs transition-colors',
+                        slot.is_active ? 'bg-white' : 'bg-zinc-50/60 text-zinc-400'
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 w-28">
+                        <input
+                          type="checkbox"
+                          checked={slot.is_active}
+                          onChange={() => handleToggleDay(d.day)}
+                          className="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                        />
+                        <span className={cn('font-medium', slot.is_active ? 'text-zinc-900' : 'text-zinc-400')}>
+                          {d.label}
+                        </span>
                       </div>
-                      {b.notes && (
-                        <p className="text-[11px] text-zinc-600 italic pt-1 border-t border-mv-border/60">
-                          « {b.notes} »
-                        </p>
+
+                      {slot.is_active ? (
+                        <div className="flex items-center gap-2 font-mono text-xs" style={MONO}>
+                          <input
+                            type="time"
+                            value={slot.start_time}
+                            onChange={(e) => handleTimeChange(d.day, 'start_time', e.target.value)}
+                            className="h-6 px-1.5 text-xs bg-zinc-50 border border-zinc-200 rounded text-zinc-800 focus:outline-none focus:border-emerald-600"
+                          />
+                          <span className="text-zinc-400">à</span>
+                          <input
+                            type="time"
+                            value={slot.end_time}
+                            onChange={(e) => handleTimeChange(d.day, 'end_time', e.target.value)}
+                            className="h-6 px-1.5 text-xs bg-zinc-50 border border-zinc-200 rounded text-zinc-800 focus:outline-none focus:border-emerald-600"
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-[11px] font-mono text-zinc-400" style={MONO}>
+                          Indisponible
+                        </span>
                       )}
                     </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-                    <div className="flex items-center justify-between pt-1 text-xs">
-                      <a
-                        href={b.location_url || 'https://meet.google.com'}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-mv-green font-semibold hover:underline flex items-center gap-1"
-                      >
-                        <Video className="w-3.5 h-3.5" />
-                        <span>Rejoindre Google Meet</span>
-                      </a>
-
-                      <button
-                        onClick={() => handleCancelMeeting(b.id)}
-                        className="text-zinc-400 hover:text-red-600 text-[11px] font-medium transition-colors cursor-pointer"
-                      >
-                        Annuler
-                      </button>
-                    </div>
-                  </Card>
-                );
-              })}
+          {/* Tab 3: Paramètres Cal */}
+          {leftTab === 'settings' && (
+            <div className="p-4 space-y-3 text-xs">
+              <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-lg space-y-1">
+                <span className="font-semibold text-zinc-900">Synchronisation Google Meet &amp; Agenda</span>
+                <p className="text-zinc-500 text-[11px]">
+                  Toute réunion générée intègre automatiquement une salle Google Meet dédiée (https://meet.google.com/minerva-sync).
+                </p>
+              </div>
+              <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-lg space-y-1">
+                <span className="font-semibold text-zinc-900">Passerelle Cal.com / Calendly</span>
+                <p className="text-zinc-500 text-[11px]">
+                  Votre identifiant public <strong>{publicBookingSlug}</strong> synchronise les rendez-vous pris par les prospects en temps réel avec la table Supabase <code>meeting_bookings</code>.
+                </p>
+              </div>
             </div>
           )}
         </div>
-      )}
 
-      {/* ── 4. Tab: Créneaux de Disponibilité ── */}
-      {activeTab === 'availability' && (
-        <Card className="p-6 bg-mv-surface border-mv-border rounded-xl space-y-6 shadow-mv-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-mv-border pb-4">
+        {/* Colonne Droite (35% - 4 cols on lg): Formulaire d'Insertion Rapide Ancré */}
+        <div className="lg:col-span-4 bg-white border border-zinc-200 rounded-lg p-3.5 shadow-2xs space-y-3 sticky top-4">
+          <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
             <div>
-              <h2 className="text-sm font-bold text-mv-ink">Horaires d'ouverture hebdomadaires</h2>
-              <p className="text-xs text-mv-ink-soft">
-                Définissez les jours et plages horaires durant lesquels vous acceptez des rendez-vous.
+              <h2 className="text-xs font-semibold text-zinc-900 tracking-tight">
+                Planification Rapide
+              </h2>
+              <p className="text-[10px] text-zinc-400 font-mono" style={MONO}>
+                ⌘ + ↵ pour confirmer
               </p>
             </div>
-            <Button
-              onClick={handleSaveAvailabilities}
-              className="bg-mv-green hover:bg-emerald-700 text-white text-xs font-semibold gap-1.5 cursor-pointer shrink-0"
-            >
-              <CheckCircle2 size={14} />
-              <span>Enregistrer les disponibilités</span>
-            </Button>
+            <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded" style={MONO}>
+              30 min
+            </span>
           </div>
 
-          <div className="space-y-3 divide-y divide-mv-border">
-            {DAYS_OF_WEEK.map((d) => {
-              const slot = availabilities.find((s) => s.day_of_week === d.day);
-              const isActive = slot ? slot.is_active : false;
-              const startTime = slot ? slot.start_time : '09:00';
-              const endTime = slot ? slot.end_time : '17:00';
-
-              return (
-                <div key={d.day} className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-3 w-36">
-                    <input
-                      type="checkbox"
-                      checked={isActive}
-                      onChange={() => handleToggleDay(d.day)}
-                      className="w-4 h-4 rounded border-mv-border text-mv-green focus:ring-0 cursor-pointer"
-                    />
-                    <span className={cn('font-semibold', isActive ? 'text-zinc-900' : 'text-zinc-400')}>
-                      {d.label}
-                    </span>
-                  </div>
-
-                  {isActive ? (
-                    <div className="flex items-center gap-2 font-mono" style={MONO}>
-                      <input
-                        type="time"
-                        value={startTime}
-                        onChange={(e) => handleTimeChange(d.day, 'start_time', e.target.value)}
-                        className="px-2.5 py-1 rounded-md border border-mv-border bg-mv-cream-soft text-xs text-zinc-800"
-                      />
-                      <span className="text-zinc-400">à</span>
-                      <input
-                        type="time"
-                        value={endTime}
-                        onChange={(e) => handleTimeChange(d.day, 'end_time', e.target.value)}
-                        className="px-2.5 py-1 rounded-md border border-mv-border bg-mv-cream-soft text-xs text-zinc-800"
-                      />
-                    </div>
-                  ) : (
-                    <span className="text-zinc-400 italic">Indisponible</span>
-                  )}
-
-                  <div className="text-zinc-500 text-[11px] hidden sm:block font-mono" style={MONO}>
-                    Créneaux 30 min • 10 min tampon
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
-
-      {/* ── 5. Tab: Planifier une Réunion ── */}
-      {activeTab === 'new_meeting' && (
-        <Card className="p-6 bg-mv-surface border-mv-border rounded-xl space-y-6 shadow-mv-sm max-w-2xl mx-auto">
-          <div className="border-b border-mv-border pb-3">
-            <h2 className="text-sm font-bold text-mv-ink">Planifier une réunion interne ou client</h2>
-            <p className="text-xs text-mv-ink-soft">
-              Bloquez un créneau directement dans votre calendrier d'agence.
-            </p>
-          </div>
-
-          <form onSubmit={handleCreateMeeting} className="space-y-4">
+          <form onSubmit={handleCreateMeeting} className="space-y-2.5">
+            {/* 1. Titre */}
             <div>
-              <label className="block text-xs font-bold text-zinc-800 mb-1">Titre de la réunion *</label>
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+                Titre de la réunion *
+              </label>
               <input
+                ref={titleInputRef}
                 type="text"
-                required
-                placeholder="Ex: Point Hebdo — Revue Livrables & Vidéos"
                 value={meetingTitle}
                 onChange={(e) => setMeetingTitle(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-mv-cream-soft border border-mv-border text-xs text-zinc-900 focus:outline-none focus:border-mv-green"
+                placeholder="Ex: Démo Minerva Flow - Restaurant Le Saint..."
+                className="w-full h-8 px-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-md focus:bg-white focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20 focus:outline-none transition-all"
+                required
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-zinc-800 mb-1">Type de réunion</label>
-                <select
-                  value={meetingType}
-                  onChange={(e) => setMeetingType(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-lg bg-mv-cream-soft border border-mv-border text-xs text-zinc-900 focus:outline-none focus:border-mv-green cursor-pointer"
-                >
-                  <option value="internal_sync">Synchronisation interne 1-on-1</option>
-                  <option value="client_demo">Démonstration Client Minerva Flow</option>
-                  <option value="audit_review">Revue d'Audit Marketing</option>
-                  <option value="custom">Autre échange</option>
-                </select>
-              </div>
+            {/* 2. Type de Réunion */}
+            <div>
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+                Type d'événement
+              </label>
+              <select
+                value={meetingType}
+                onChange={(e) => setMeetingType(e.target.value as MeetingBooking['meeting_type'])}
+                className="w-full h-8 px-2 text-xs bg-zinc-50 border border-zinc-200 rounded-md focus:bg-white focus:border-emerald-600 focus:outline-none cursor-pointer"
+              >
+                <option value="client_demo">Démo Client (Minerva Flow / Packs Vidéo)</option>
+                <option value="internal_sync">Point Interne (1-on-1 / Revue Opérationnelle)</option>
+                <option value="review_session">Cadrage Technique &amp; Onboarding</option>
+              </select>
+            </div>
 
+            {/* 3. Grille Date & Heure */}
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-bold text-zinc-800 mb-1">Date *</label>
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+                  Date
+                </label>
                 <input
                   type="date"
-                  required
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-mv-cream-soft border border-mv-border text-xs text-zinc-900 focus:outline-none focus:border-mv-green font-mono"
+                  className="w-full h-8 px-2 text-xs font-mono bg-zinc-50 border border-zinc-200 rounded-md focus:bg-white focus:border-emerald-600 focus:outline-none"
                   style={MONO}
+                  required
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-zinc-800 mb-1">Heure de début *</label>
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+                  Heure début
+                </label>
                 <input
                   type="time"
-                  required
                   value={selectedTime}
                   onChange={(e) => setSelectedTime(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-mv-cream-soft border border-mv-border text-xs text-zinc-900 focus:outline-none focus:border-mv-green font-mono"
+                  className="w-full h-8 px-2 text-xs font-mono bg-zinc-50 border border-zinc-200 rounded-md focus:bg-white focus:border-emerald-600 focus:outline-none"
                   style={MONO}
+                  required
+                />
+              </div>
+            </div>
+
+            {/* 4. Participant & Courriel */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+                  Participant *
+                </label>
+                <input
+                  type="text"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder="Jean Tremblay"
+                  className="w-full h-8 px-2 text-xs bg-zinc-50 border border-zinc-200 rounded-md focus:bg-white focus:border-emerald-600 focus:outline-none"
+                  required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-800 mb-1">Nom de l’interlocuteur *</label>
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+                  Courriel *
+                </label>
                 <input
-                  type="text"
+                  type="email"
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                  placeholder="jean@resto.ca"
+                  className="w-full h-8 px-2 text-xs bg-zinc-50 border border-zinc-200 rounded-md focus:bg-white focus:border-emerald-600 focus:outline-none"
                   required
-                  placeholder="Collaborateur ou client"
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-mv-cream-soft border border-mv-border text-xs text-zinc-900 focus:outline-none focus:border-mv-green"
                 />
               </div>
             </div>
 
+            {/* 5. Notes / Ordre du jour */}
             <div>
-              <label className="block text-xs font-bold text-zinc-800 mb-1">Courriel de l’invité *</label>
-              <input
-                type="email"
-                required
-                placeholder="contact@exemple.ca"
-                value={guestEmail}
-                onChange={(e) => setGuestEmail(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-mv-cream-soft border border-mv-border text-xs text-zinc-900 focus:outline-none focus:border-mv-green"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-zinc-800 mb-1">Notes ou ordre du jour (optionnel)</label>
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+                Notes &amp; Ordre du jour
+              </label>
               <textarea
-                rows={3}
-                placeholder="Objectifs de la réunion, points à valider..."
                 value={meetingNotes}
                 onChange={(e) => setMeetingNotes(e.target.value)}
-                className="w-full p-2.5 rounded-lg bg-mv-cream-soft border border-mv-border text-xs text-zinc-900 focus:outline-none focus:border-mv-green resize-none"
+                placeholder="Objectifs de la réunion, menu à aborder..."
+                rows={2}
+                className="w-full h-14 p-2 text-xs bg-zinc-50 border border-zinc-200 rounded-md focus:bg-white focus:border-emerald-600 focus:outline-none resize-none"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setActiveTab('meetings')}
-                className="text-xs"
-              >
-                Annuler
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-mv-green hover:bg-emerald-700 text-white text-xs font-semibold gap-1.5"
-              >
-                <CheckCircle2 size={14} />
-                <span>{isSubmitting ? 'Planification…' : 'Confirmer la réunion'}</span>
-              </Button>
-            </div>
+            {/* Bouton de Soumission */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full h-8 rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>{isSubmitting ? 'Confirmation...' : 'Confirmer (⌘ + ↵)'}</span>
+            </button>
           </form>
-        </Card>
-      )}
+
+          {/* Micro-Footer Tips */}
+          <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400 font-mono" style={MONO}>
+            <span>Touche Échap pour réinitialiser</span>
+            <span className="text-emerald-700">Auto Google Meet</span>
+          </div>
+        </div>
+      </div>
     </PageFadeIn>
   );
 }

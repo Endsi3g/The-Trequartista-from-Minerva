@@ -1,27 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Globe,
   ExternalLink,
-  Utensils,
-  Building2,
-  Target,
   Copy,
   Check,
-  Sparkles,
+  Search,
+  HelpCircle,
+  X,
+  ArrowUpRight,
   ShieldCheck,
   Layers,
-  ArrowUpRight,
-  Smartphone,
   Laptop,
+  Smartphone,
+  Sparkles,
 } from 'lucide-react';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { useToast } from '@/components/providers/ToastProvider';
+import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
-interface PlatformCard {
+interface PlatformItem {
   id: string;
   name: string;
   category: 'website' | 'app';
@@ -34,64 +35,95 @@ interface PlatformCard {
   teamRole: string;
 }
 
-const PLATFORMS: PlatformCard[] = [
+const PLATFORMS: PlatformItem[] = [
   {
     id: 'flow-website',
     name: 'Minerva Flow',
     category: 'website',
-    typeLabel: 'Site Web Produit (Framer)',
+    typeLabel: 'Framer Hosting',
     tagline: 'Fidélisation & Marges pour Restaurants',
     url: 'https://minervaflow.framer.website/',
     description:
-      'Vitrine officielle de notre système de commande directe et de fidélisation. Protège les marges en cuisine et fait revenir les clients sans commission intermédiaire. Inclut l\'offre d\'essai accompagné de 14 jours et installation sur place à Montréal.',
+      'Vitrine officielle du système de commande directe et de fidélisation. Protège les marges en cuisine et fait revenir les clients sans commission intermédiaire.',
     badgeVariant: 'emerald',
-    highlights: ['Essai accompagné 14 jours', '0% commission de livraison', 'QR Code tables & comptoir', 'Installation sur place Montréal'],
+    highlights: ['Essai 14j', '0% commission', 'QR Code Comptoir', 'Montréal'],
     teamRole: 'À envoyer aux prospects restaurateurs en amont de démo ou après qualification terrain.',
   },
   {
     id: 'studio-website',
     name: 'Minerva Studio',
     category: 'website',
-    typeLabel: 'Site Web Agence (Framer)',
+    typeLabel: 'Framer Hosting',
     tagline: 'L’Agence Montréalaise pour les Restaurants',
     url: 'https://minervastudio.framer.website/',
     description:
-      'Site vitrine institutionnel de l\'agence Minerva. Présente notre accompagnement 360 pour restos et cafés : conception de sites Framer haute conversion, production de contenus vidéo Reels, identité visuelle et acquisition locale.',
+      'Site vitrine institutionnel de l\'agence. Accompagnement 360 : conception Framer haute conversion, production vidéo cinéma Reels et identité de marque.',
     badgeVariant: 'purple',
-    highlights: ['Sites Framer sur-mesure', 'Production Réels & Brand', 'SEO Local Google Maps', 'Retainer Agence Élite 360'],
+    highlights: ['Framer Pro', 'Reels 4K', 'SEO Local G-Maps', 'Retainer 360'],
     teamRole: 'À présenter aux clients souhaitant une refonte complète de marque ou des campagnes de contenu.',
   },
   {
     id: 'reach-app',
     name: 'Minerva Reach',
     category: 'app',
-    typeLabel: 'Application Métier (Desktop / Mobile)',
+    typeLabel: 'Vercel Cloud',
     tagline: 'Prospection Terrain & Routine /today',
     url: 'https://minerva-os-lite-desktop.vercel.app/today',
     description:
-      'Application ultra-rapide optimisée pour la prospection quotidienne. Permet aux commerciaux de traiter 30 à 50 fiches commerces montréalaises par jour, d\'identifier les signaux de fidélisation et de synchroniser les leads dans Trequartista.',
+      'Application ultra-rapide optimisée pour la prospection quotidienne. Traitement de 30 à 50 fiches commerces montréalaises/jour avec synchronisation 1-clic.',
     badgeVariant: 'blue',
-    highlights: ['Vue quotidienne /today', 'Qualification Google Maps', 'Synchronisation 1-clic Trequartista', 'Compteur de quota quotidien'],
-    teamRole: 'Outil de travail quotidien de l\'équipe Ventes / SDR / Closers de 09h30 à 12h00.',
+    highlights: ['Vue /today', 'Google Maps API', 'Sync Trequartista', 'Quota Quotidien'],
+    teamRole: 'Outil de travail quotidien de l\'équipe Ventes / SDR de 09h30 à 12h00.',
   },
   {
     id: 'flow-saas',
     name: 'Minerva Flow (SaaS)',
     category: 'app',
-    typeLabel: 'Application Client & Gestion',
+    typeLabel: 'Vercel Cloud',
     tagline: 'Dashboard Restaurateur & Commande en Ligne',
     url: 'https://minerva-flow.vercel.app/login',
     description:
-      'Portail d\'administration en ligne utilisé par nos clients restaurateurs pour piloter leur menu, réceptionner les commandes directes, imprimer les tickets en cuisine et exporter leur base de clients fidélisés.',
+      'Portail de gestion utilisé par les restaurateurs : pilotage du menu, réception des commandes directes, impression thermique cuisine et base clients fidèles.',
     badgeVariant: 'amber',
-    highlights: ['Menu digital interactif', 'Impression thermique cuisine', 'Base de données clients fidèles', 'Passerelle Stripe Connect'],
+    highlights: ['Menu Digital', 'ESC/POS Cuisine', 'Stripe Connect', 'Fidélité'],
     teamRole: 'Espace déployé lors de l\'onboarding client par les pôles Managing et Tech.',
   },
 ];
 
 export default function EcosystemPage() {
   const { toastSuccess } = useToast();
+  const [filterCategory, setFilterCategory] = useState<'all' | 'website' | 'app'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isHelpDrawerOpen, setIsHelpDrawerOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard ergonomics: '/' to search, '?' to open help drawer, 'Escape' to dismiss
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInputFocused =
+        target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
+      if (e.key === '/' && !isInputFocused) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key === '?' && !isInputFocused) {
+        e.preventDefault();
+        setIsHelpDrawerOpen((prev) => !prev);
+      } else if (e.key === 'Escape') {
+        if (isHelpDrawerOpen) {
+          setIsHelpDrawerOpen(false);
+        } else if (searchQuery) {
+          setSearchQuery('');
+          searchInputRef.current?.blur();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isHelpDrawerOpen, searchQuery]);
 
   const handleCopy = (id: string, url: string) => {
     navigator.clipboard.writeText(url);
@@ -100,253 +132,416 @@ export default function EcosystemPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const websites = PLATFORMS.filter((p) => p.category === 'website');
-  const apps = PLATFORMS.filter((p) => p.category === 'app');
+  const filteredPlatforms = useMemo(() => {
+    return PLATFORMS.filter((p) => {
+      const matchesCategory = filterCategory === 'all' || p.category === filterCategory;
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        p.name.toLowerCase().includes(q) ||
+        p.tagline.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.highlights.some((h) => h.toLowerCase().includes(q));
+      return matchesCategory && matchesSearch;
+    });
+  }, [filterCategory, searchQuery]);
+
+  const websites = filteredPlatforms.filter((p) => p.category === 'website');
+  const apps = filteredPlatforms.filter((p) => p.category === 'app');
 
   return (
-    <PageFadeIn className="space-y-6 max-w-7xl mx-auto pb-16">
-      {/* ── 1. Header Banner ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-2xl p-6 shadow-mv-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl bg-mv-green/10 border border-mv-green/20 flex items-center justify-center text-mv-green shrink-0 shadow-xs">
-            <Globe className="w-6 h-6" />
+    <PageFadeIn className="space-y-3 pb-8">
+      {/* ── 1. Linear-Style Header & Toolbar Strip (h-10 / 40px) ── */}
+      <div className="h-10 bg-white border border-zinc-200 rounded-lg px-3.5 flex items-center justify-between shadow-2xs">
+        {/* Breadcrumb & Title */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-mono" style={MONO}>
+            <span>Minerva</span>
+            <span>/</span>
+            <span className="text-zinc-600 font-medium">Écosystème</span>
           </div>
+          <span className="text-zinc-200">|</span>
+          <h1 className="text-xs sm:text-sm font-semibold text-zinc-900 tracking-tight truncate">
+            Hub Écosystème
+          </h1>
+          <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold font-mono text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded" style={MONO}>
+            {PLATFORMS.length} Plateformes Actives
+          </span>
+        </div>
+
+        {/* Controls: Search + Segmented Control + Help Drawer */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Compact Search Field */}
+          <div className="relative flex items-center">
+            <Search className="w-3 h-3 text-zinc-400 absolute left-2 pointer-events-none" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filtrer plateforme..."
+              className="h-7 w-36 sm:w-48 pl-7 pr-6 text-xs bg-zinc-50 border border-zinc-200 rounded-md placeholder-zinc-400 focus:bg-white focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20 focus:outline-none transition-all"
+            />
+            <kbd className="hidden sm:inline-flex absolute right-1.5 top-1.5 px-1 py-0.2 text-[9px] font-mono text-zinc-400 bg-white border border-zinc-200 rounded shadow-2xs pointer-events-none" style={MONO}>
+              /
+            </kbd>
+          </div>
+
+          {/* Segmented Control */}
+          <div className="h-7 bg-zinc-100 p-0.5 rounded-md flex items-center text-xs">
+            <button
+              onClick={() => setFilterCategory('all')}
+              className={cn(
+                'px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer',
+                filterCategory === 'all'
+                  ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              )}
+            >
+              Toutes
+            </button>
+            <button
+              onClick={() => setFilterCategory('website')}
+              className={cn(
+                'px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer',
+                filterCategory === 'website'
+                  ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              )}
+            >
+              Vitrines Framer
+            </button>
+            <button
+              onClick={() => setFilterCategory('app')}
+              className={cn(
+                'px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer',
+                filterCategory === 'app'
+                  ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              )}
+            >
+              Apps Métier
+            </button>
+          </div>
+
+          {/* Help Drawer Trigger Button */}
+          <button
+            onClick={() => setIsHelpDrawerOpen(true)}
+            className="h-7 w-7 rounded-md border border-zinc-200 bg-white text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 flex items-center justify-center transition-colors cursor-pointer"
+            title="Règles d'or de l'écosystème (?)"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* ── 2. Monolithic Dense Registry Container ── */}
+      <div className="bg-white border border-zinc-200 rounded-lg shadow-2xs overflow-hidden divide-y divide-zinc-200">
+        {/* Section A: Sites Vitrines & Acquisition (Framer Hosting) */}
+        {(filterCategory === 'all' || filterCategory === 'website') && (
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-xl font-bold text-mv-ink tracking-tight">
-                Hub Écosystème Minerva
-              </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-mv-green/15 text-mv-green border border-mv-green/30" style={MONO}>
-                4 Plateformes Actives
+            {/* Section Header Strip */}
+            <div className="h-8 px-3.5 bg-zinc-50/70 border-b border-zinc-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Laptop className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-xs font-semibold text-zinc-900">
+                  Sites Vitrines &amp; Acquisition
+                </span>
+                <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
+                  (Framer Hosting Live)
+                </span>
+              </div>
+              <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
+                {websites.length} domaine{websites.length > 1 ? 's' : ''}
               </span>
             </div>
-            <p className="text-xs text-mv-ink-soft mt-0.5">
-              Accès direct, ressources et cas d'usage des sites web officiels et applications de l'agence
-            </p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <div className="px-3.5 py-2 rounded-xl bg-mv-cream-soft border border-mv-border flex items-center gap-2 text-xs font-semibold text-mv-ink">
-            <span className="w-2 h-2 rounded-full bg-mv-green animate-pulse" />
-            <span>Fidélisation &amp; Marges Montréal</span>
-          </div>
-        </div>
-      </div>
+            {/* Column Labels */}
+            <div className="grid grid-cols-12 h-7 px-3.5 border-b border-zinc-100 bg-zinc-50/30 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 items-center">
+              <span className="col-span-3">Plateforme</span>
+              <span className="col-span-4">Objectif Métier</span>
+              <span className="col-span-3">Stack &amp; Points Clés</span>
+              <span className="col-span-2 text-right">Commandes</span>
+            </div>
 
-      {/* ── 2. Sites Web Officiels (Framer) ── */}
-      <div className="space-y-3.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Laptop className="w-4 h-4 text-mv-green" />
-            <h2 className="text-sm font-bold text-mv-ink uppercase tracking-wider">
-              Sites Web Officiels de la Compagnie (Vitrines &amp; Acquisition)
-            </h2>
-          </div>
-          <span className="text-xs font-mono text-mv-ink-faint">Framer Hosting Live</span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {websites.map((platform) => (
-            <div
-              key={platform.id}
-              className="bg-mv-surface border border-mv-border rounded-2xl p-5 shadow-mv-sm flex flex-col justify-between hover:border-mv-green/40 transition-all group"
-            >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-bold text-mv-ink group-hover:text-mv-green transition-colors">
-                        {platform.name}
-                      </span>
-                      <span
-                        className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-md ${
-                          platform.badgeVariant === 'emerald'
-                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                            : 'bg-purple-50 text-purple-800 border border-purple-200'
-                        }`}
-                      >
-                        {platform.typeLabel}
-                      </span>
+            {/* Rows (h-12 / 48px) */}
+            <div className="divide-y divide-zinc-100">
+              {websites.length === 0 ? (
+                <div className="h-12 flex items-center justify-center text-xs text-zinc-400 font-mono" style={MONO}>
+                  Aucune vitrine ne correspond aux critères
+                </div>
+              ) : (
+                websites.map((platform) => (
+                  <div
+                    key={platform.id}
+                    className="grid grid-cols-12 h-12 px-3.5 items-center text-xs text-zinc-800 hover:bg-zinc-50/80 transition-colors group"
+                  >
+                    {/* Col 1 (25% / 3 cols): Nom + Pill */}
+                    <div className="col-span-3 flex items-center gap-2 min-w-0 pr-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-zinc-900 truncate">
+                            {platform.name}
+                          </span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-600 border border-zinc-200" style={MONO}>
+                            {platform.typeLabel.split(' ')[0]}
+                          </span>
+                        </div>
+                        <p className="text-[10px] font-mono text-zinc-400 truncate" style={MONO}>
+                          {platform.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-xs font-semibold text-mv-ink-soft mt-0.5">
-                      {platform.tagline}
-                    </p>
+
+                    {/* Col 2 (35% / 4 cols): Objectif Métier */}
+                    <div className="col-span-4 min-w-0 pr-3">
+                      <p className="text-xs text-zinc-700 truncate font-medium">
+                        {platform.tagline}
+                      </p>
+                      <p className="text-[10.5px] text-zinc-400 truncate">
+                        {platform.description}
+                      </p>
+                    </div>
+
+                    {/* Col 3 (20% / 3 cols): Stack / Highlights */}
+                    <div className="col-span-3 flex items-center gap-1 flex-wrap min-w-0 pr-2">
+                      {platform.highlights.slice(0, 3).map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="px-1.5 py-0.2 rounded bg-zinc-50 border border-zinc-200 text-[10px] font-mono text-zinc-600 truncate"
+                          style={MONO}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Col 4 (20% / 2 cols): Actions rapides inline */}
+                    <div className="col-span-2 flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => handleCopy(platform.id, platform.url)}
+                        className="h-7 px-2 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-600 hover:text-zinc-900 text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Copier l'URL"
+                      >
+                        {copiedId === platform.id ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            <span className="text-[10px] text-emerald-700 font-medium">Copié</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 text-zinc-400" />
+                            <span className="text-[10px]">Copier</span>
+                          </>
+                        )}
+                      </button>
+
+                      <a
+                        href={platform.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-7 px-2 rounded-md bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium flex items-center gap-1 transition-colors shadow-2xs"
+                        title="Ouvrir le site"
+                      >
+                        <span className="text-[10px]">Visiter</span>
+                        <ArrowUpRight className="w-3 h-3" />
+                      </a>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => handleCopy(platform.id, platform.url)}
-                      className="p-1.5 rounded-lg border border-mv-border text-mv-ink-soft hover:text-mv-ink hover:bg-mv-cream-soft transition-colors cursor-pointer"
-                      title="Copier l'URL"
-                    >
-                      {copiedId === platform.id ? (
-                        <Check className="w-3.5 h-3.5 text-mv-green" />
-                      ) : (
-                        <Copy className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                    <a
-                      href={platform.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1.5 rounded-lg bg-mv-green text-white hover:bg-mv-green-dark transition-colors flex items-center justify-center cursor-pointer shadow-xs"
-                      title="Ouvrir le site"
-                    >
-                      <ArrowUpRight className="w-4 h-4" />
-                    </a>
-                  </div>
-                </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
 
-                <p className="text-xs text-mv-ink-soft leading-relaxed">
-                  {platform.description}
-                </p>
-
-                {/* Highlights Tags */}
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {platform.highlights.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-0.5 rounded-md bg-mv-cream-soft border border-mv-border/80 text-[11px] text-mv-ink font-medium"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Team Role Callout */}
-              <div className="mt-4 pt-3.5 border-t border-mv-border/80 flex items-start gap-2 text-[11.5px] text-mv-ink-faint">
-                <ShieldCheck className="w-3.5 h-3.5 text-mv-green mt-0.5 shrink-0" />
-                <span>
-                  <strong className="text-mv-ink">Usage Équipe :</strong> {platform.teamRole}
+        {/* Section B: Portails & Outils Métier (Vercel Cloud) */}
+        {(filterCategory === 'all' || filterCategory === 'app') && (
+          <div>
+            {/* Section Header Strip */}
+            <div className="h-8 px-3.5 bg-zinc-50/70 border-b border-zinc-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-xs font-semibold text-zinc-900">
+                  Portails &amp; Outils Métier
+                </span>
+                <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
+                  (Vercel Cloud Production)
                 </span>
               </div>
+              <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
+                {apps.length} application{apps.length > 1 ? 's' : ''}
+              </span>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* ── 3. Applications & Portails Métier ── */}
-      <div className="space-y-3.5 pt-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Smartphone className="w-4 h-4 text-blue-600" />
-            <h2 className="text-sm font-bold text-mv-ink uppercase tracking-wider">
-              Applications &amp; Portails Métier (Opérations &amp; Terrain)
-            </h2>
-          </div>
-          <span className="text-xs font-mono text-mv-ink-faint">Production Vercel Cloud</span>
-        </div>
+            {/* Column Labels */}
+            <div className="grid grid-cols-12 h-7 px-3.5 border-b border-zinc-100 bg-zinc-50/30 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 items-center">
+              <span className="col-span-3">Plateforme</span>
+              <span className="col-span-4">Objectif Métier</span>
+              <span className="col-span-3">Stack &amp; Points Clés</span>
+              <span className="col-span-2 text-right">Commandes</span>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {apps.map((platform) => (
-            <div
-              key={platform.id}
-              className="bg-mv-surface border border-mv-border rounded-2xl p-5 shadow-mv-sm flex flex-col justify-between hover:border-mv-green/40 transition-all group"
-            >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-bold text-mv-ink group-hover:text-mv-green transition-colors">
-                        {platform.name}
-                      </span>
-                      <span
-                        className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-md ${
-                          platform.badgeVariant === 'blue'
-                            ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                            : 'bg-amber-50 text-amber-800 border border-amber-200'
-                        }`}
-                      >
-                        {platform.typeLabel}
-                      </span>
+            {/* Rows (h-12 / 48px) */}
+            <div className="divide-y divide-zinc-100">
+              {apps.length === 0 ? (
+                <div className="h-12 flex items-center justify-center text-xs text-zinc-400 font-mono" style={MONO}>
+                  Aucune application ne correspond aux critères
+                </div>
+              ) : (
+                apps.map((platform) => (
+                  <div
+                    key={platform.id}
+                    className="grid grid-cols-12 h-12 px-3.5 items-center text-xs text-zinc-800 hover:bg-zinc-50/80 transition-colors group"
+                  >
+                    {/* Col 1 (25% / 3 cols): Nom + Pill */}
+                    <div className="col-span-3 flex items-center gap-2 min-w-0 pr-2">
+                      <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-zinc-900 truncate">
+                            {platform.name}
+                          </span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200" style={MONO}>
+                            {platform.typeLabel.split(' ')[0]}
+                          </span>
+                        </div>
+                        <p className="text-[10px] font-mono text-zinc-400 truncate" style={MONO}>
+                          {platform.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-xs font-semibold text-mv-ink-soft mt-0.5">
-                      {platform.tagline}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => handleCopy(platform.id, platform.url)}
-                      className="p-1.5 rounded-lg border border-mv-border text-mv-ink-soft hover:text-mv-ink hover:bg-mv-cream-soft transition-colors cursor-pointer"
-                      title="Copier l'URL"
-                    >
-                      {copiedId === platform.id ? (
-                        <Check className="w-3.5 h-3.5 text-mv-green" />
-                      ) : (
-                        <Copy className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                    <a
-                      href={platform.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1.5 rounded-lg bg-mv-green text-white hover:bg-mv-green-dark transition-colors flex items-center justify-center cursor-pointer shadow-xs"
-                      title="Ouvrir l'application"
-                    >
-                      <ArrowUpRight className="w-4 h-4" />
-                    </a>
-                  </div>
-                </div>
 
-                <p className="text-xs text-mv-ink-soft leading-relaxed">
-                  {platform.description}
+                    {/* Col 2 (35% / 4 cols): Objectif Métier */}
+                    <div className="col-span-4 min-w-0 pr-3">
+                      <p className="text-xs text-zinc-700 truncate font-medium">
+                        {platform.tagline}
+                      </p>
+                      <p className="text-[10.5px] text-zinc-400 truncate">
+                        {platform.description}
+                      </p>
+                    </div>
+
+                    {/* Col 3 (20% / 3 cols): Stack / Highlights */}
+                    <div className="col-span-3 flex items-center gap-1 flex-wrap min-w-0 pr-2">
+                      {platform.highlights.slice(0, 3).map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="px-1.5 py-0.2 rounded bg-zinc-50 border border-zinc-200 text-[10px] font-mono text-zinc-600 truncate"
+                          style={MONO}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Col 4 (20% / 2 cols): Actions rapides inline */}
+                    <div className="col-span-2 flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => handleCopy(platform.id, platform.url)}
+                        className="h-7 px-2 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-600 hover:text-zinc-900 text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Copier l'URL"
+                      >
+                        {copiedId === platform.id ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            <span className="text-[10px] text-emerald-700 font-medium">Copié</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 text-zinc-400" />
+                            <span className="text-[10px]">Copier</span>
+                          </>
+                        )}
+                      </button>
+
+                      <a
+                        href={platform.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-7 px-2 rounded-md bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium flex items-center gap-1 transition-colors shadow-2xs"
+                        title="Ouvrir l'application"
+                      >
+                        <span className="text-[10px]">Lancer</span>
+                        <ArrowUpRight className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── 3. Retractable Technical Rules Drawer (? shortcut) ── */}
+      {isHelpDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-2xs animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-white border-l border-zinc-200 shadow-2xl h-full flex flex-col justify-between">
+            {/* Drawer Header */}
+            <div className="h-12 px-4 border-b border-zinc-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
+                  Règles d'Or de l'Écosystème
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsHelpDrawerOpen(false)}
+                className="p-1 rounded-md text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 transition-colors cursor-pointer"
+                title="Fermer (Échap)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Drawer Content */}
+            <div className="p-4 space-y-4 overflow-y-auto text-xs flex-1">
+              <div className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-lg space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-zinc-900">1. Pôle Ventes &amp; Prospection</span>
+                  <span className="text-[10px] font-mono text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200" style={MONO}>
+                    09h30 - 12h00
+                  </span>
+                </div>
+                <p className="text-zinc-600 leading-relaxed text-[11px]">
+                  Utiliser <strong>Minerva Reach</strong> (/today) le matin pour qualifier les restaurants cibles. Présenter <strong>minervaflow.framer.website</strong> en démo avec l'offre d'essai accompagné de 14 jours.
                 </p>
-
-                {/* Highlights Tags */}
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {platform.highlights.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-0.5 rounded-md bg-mv-cream-soft border border-mv-border/80 text-[11px] text-mv-ink font-medium"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
               </div>
 
-              {/* Team Role Callout */}
-              <div className="mt-4 pt-3.5 border-t border-mv-border/80 flex items-start gap-2 text-[11.5px] text-mv-ink-faint">
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-600 mt-0.5 shrink-0" />
-                <span>
-                  <strong className="text-mv-ink">Usage Équipe :</strong> {platform.teamRole}
-                </span>
+              <div className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-lg space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-zinc-900">2. Pôle Managing &amp; Rétention</span>
+                  <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200" style={MONO}>
+                    J+2 Onboarding
+                  </span>
+                </div>
+                <p className="text-zinc-600 leading-relaxed text-[11px]">
+                  Activer le compte restaurateur sur <strong>Minerva Flow (SaaS)</strong> sous 48h. Configurer le menu digital, les chevalets QR tables/comptoir et le programme fidélité.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-lg space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-zinc-900">3. Pôle Tech &amp; Systèmes</span>
+                  <span className="text-[10px] font-mono text-purple-700 bg-purple-50 px-1.5 py-0.2 rounded border border-purple-200" style={MONO}>
+                    99.9% SLA
+                  </span>
+                </div>
+                <p className="text-zinc-600 leading-relaxed text-[11px]">
+                  Maintenir la synchronisation API entre Reach et Trequartista. Tester les imprimantes thermiques ESC/POS en cuisine et veiller au protocole QA 20-points.
+                </p>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* ── 4. Guide de Navigation Rapide pour l'Équipe ── */}
-      <div className="bg-mv-cream-soft/70 border border-mv-border rounded-2xl p-5 shadow-mv-xs space-y-3">
-        <div className="flex items-center gap-2">
-          <Layers className="w-4 h-4 text-mv-ink" />
-          <h3 className="text-xs font-bold text-mv-ink uppercase tracking-wider">
-            Règle d'Or de l'Écosystème Minerva (Montréal)
-          </h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-mv-ink-soft">
-          <div className="p-3 bg-white border border-mv-border rounded-xl space-y-1">
-            <span className="font-bold text-mv-ink block">1. Pôle Ventes &amp; Prospection</span>
-            <p className="leading-relaxed">
-              Utiliser <strong>Minerva Reach</strong> (/today) le matin pour qualifier les restaurants. Présenter <strong>minervaflow.framer.website</strong> en démo avec l'offre d'essai accompagné de 14 jours.
-            </p>
-          </div>
-          <div className="p-3 bg-white border border-mv-border rounded-xl space-y-1">
-            <span className="font-bold text-mv-ink block">2. Pôle Managing &amp; Rétention</span>
-            <p className="leading-relaxed">
-              Activer le compte restaurateur sur <strong>Minerva Flow (SaaS)</strong> à J+2. Configurer le QR code comptoir et le programme de fidélité pour stimuler les commandes régulières.
-            </p>
-          </div>
-          <div className="p-3 bg-white border border-mv-border rounded-xl space-y-1">
-            <span className="font-bold text-mv-ink block">3. Pôle Tech &amp; Systèmes</span>
-            <p className="leading-relaxed">
-              Maintenir la synchronisation API entre Reach et Trequartista. Tester les imprimantes thermiques ESC/POS en cuisine et veiller à la disponibilité 99.9%.
-            </p>
+            {/* Drawer Footer */}
+            <div className="h-10 px-4 border-t border-zinc-200 bg-zinc-50 flex items-center justify-between text-[11px] text-zinc-400 font-mono" style={MONO}>
+              <span>Raccourci clavier : Échap pour fermer</span>
+              <span className="text-emerald-700 font-semibold">Minerva Montréal</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </PageFadeIn>
   );
 }

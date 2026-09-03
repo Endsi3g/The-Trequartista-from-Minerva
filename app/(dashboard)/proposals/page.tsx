@@ -1,39 +1,32 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { PageFadeIn } from '@/components/ui/page-transition';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { AnimatedNumber } from '@/components/ui/animated-number';
-import { useToast } from '@/components/providers/ToastProvider';
 import {
   FileCheck2,
   Plus,
   Search,
   ExternalLink,
   Copy,
+  Check,
   Sparkles,
-  DollarSign,
-  TrendingUp,
-  Clock,
   ShieldCheck,
   CheckCircle2,
-  AlertCircle,
   X,
-  Layers,
-  ArrowRight,
-  Send,
-  Building2,
   Trash2,
+  ArrowUpRight,
+  Send,
+  Layers,
 } from 'lucide-react';
+import { PageFadeIn } from '@/components/ui/page-transition';
+import { AnimatedNumber } from '@/components/ui/animated-number';
+import { useToast } from '@/components/providers/ToastProvider';
 import {
   fetchProposals,
   PROPOSAL_TEMPLATES,
   calculateProposalTotals,
 } from '@/lib/services/proposals';
-import type { CommercialProposal, ProposalDeliverableItem, ProposalPhase, ProposalStatus } from '@/lib/types';
+import type { CommercialProposal, ProposalDeliverableItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -44,9 +37,10 @@ export default function ProposalsDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
-  // New Proposal Form State
+  // Form State
   const [title, setTitle] = useState('');
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
@@ -57,6 +51,8 @@ export default function ProposalsDashboardPage() {
     { id: '2', title: 'Setup Flow & Menu QR', category: 'Opérations', description: 'Branchement POS et 50 chevalets', price_cad: 650 },
   ]);
   const [submitting, setSubmitting] = useState(false);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const loadProposals = async () => {
     setLoading(true);
@@ -78,13 +74,45 @@ export default function ProposalsDashboardPage() {
     loadProposals();
   }, []);
 
+  // Keyboard Shortcuts: '/' search, 'N' new proposal, 'Escape' close drawer
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInputFocused =
+        target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
+      if (e.key === '/' && !isInputFocused) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if ((e.key === 'n' || e.key === 'N') && !isInputFocused && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setIsDrawerOpen(true);
+      } else if (e.key === 'Escape') {
+        if (isDrawerOpen) {
+          setIsDrawerOpen(false);
+        } else if (searchQuery) {
+          setSearchQuery('');
+          searchInputRef.current?.blur();
+        }
+      } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && isDrawerOpen) {
+        e.preventDefault();
+        handleCreateProposalSubmit();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDrawerOpen, searchQuery, title, clientName, clientEmail, deliverables]);
+
   const filteredProposals = useMemo(() => {
     return proposals.filter((p) => {
+      const q = searchQuery.toLowerCase().trim();
       const matchSearch =
-        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.client_company || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.proposal_number.toLowerCase().includes(searchQuery.toLowerCase());
+        !q ||
+        p.title.toLowerCase().includes(q) ||
+        p.client_name.toLowerCase().includes(q) ||
+        (p.client_company || '').toLowerCase().includes(q) ||
+        p.proposal_number.toLowerCase().includes(q);
       const matchStatus = statusFilter === 'all' || p.status === statusFilter;
       return matchSearch && matchStatus;
     });
@@ -98,12 +126,19 @@ export default function ProposalsDashboardPage() {
   const totalSignedValue = useMemo(() => {
     return proposals
       .filter((p) => p.status === 'signed' || p.status === 'paid')
+      .reduce((sum, p) => sum + (Number(p.deposit_amount_cad) || (Number(p.total_setup_cad) || 0) * 0.5), 0);
+  }, [proposals]);
+
+  const pendingValue = useMemo(() => {
+    return proposals
+      .filter((p) => p.status === 'sent' || p.status === 'viewed')
       .reduce((sum, p) => sum + (Number(p.total_setup_cad) || 0), 0);
   }, [proposals]);
 
-  const pendingProposalsCount = useMemo(() => {
-    return proposals.filter((p) => p.status === 'sent' || p.status === 'viewed').length;
-  }, [proposals]);
+  const averageDealValue = useMemo(() => {
+    if (proposals.length === 0) return 2150;
+    return Math.round(totalPipelineValue / proposals.length);
+  }, [proposals, totalPipelineValue]);
 
   const handleApplyTemplate = (templateId: string) => {
     const tpl = PROPOSAL_TEMPLATES.find((t) => t.id === templateId);
@@ -111,7 +146,7 @@ export default function ProposalsDashboardPage() {
     setTitle(tpl.title);
     setDeliverables(tpl.deliverables);
     setTotalMonthlyCad(tpl.total_monthly_cad || 0);
-    toastInfo('Modèle appliqué', `Le modèle "${tpl.title}" a pré-rempli la proposition.`);
+    toastInfo('Modèle appliqué', `Le modèle « ${tpl.title} » est prêt.`);
   };
 
   const handleAddDeliverable = () => {
@@ -121,7 +156,7 @@ export default function ProposalsDashboardPage() {
         id: `del-${Date.now()}`,
         title: 'Nouvelle prestation',
         category: 'Services',
-        description: 'Description détaillée du livrable',
+        description: 'Description détaillée',
         price_cad: 500,
       },
     ]);
@@ -141,8 +176,8 @@ export default function ProposalsDashboardPage() {
     return calculateProposalTotals(deliverables, true, 50.0);
   }, [deliverables]);
 
-  const handleCreateProposalSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateProposalSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!title.trim() || !clientName.trim() || deliverables.length === 0) {
       toastError('Champs obligatoires', 'Veuillez renseigner le titre, le client et au moins un livrable.');
       return;
@@ -165,9 +200,8 @@ export default function ProposalsDashboardPage() {
       });
 
       if (res.ok) {
-        toastSuccess('Proposition créée !', 'La proposition commerciale a été générée avec succès.');
-        setShowCreateModal(false);
-        // Reset form
+        toastSuccess('Proposition créée !', 'La proposition a été générée avec succès.');
+        setIsDrawerOpen(false);
         setTitle('');
         setClientName('');
         setClientEmail('');
@@ -186,451 +220,503 @@ export default function ProposalsDashboardPage() {
   const copyProposalLink = (token: string) => {
     const url = `${window.location.origin}/proposals/${token}`;
     navigator.clipboard.writeText(url);
-    toastSuccess('Lien copié', 'Le lien public de signature a été copié dans le presse-papier.');
+    setCopiedToken(token);
+    toastSuccess('Lien copié', url);
+    setTimeout(() => setCopiedToken(null), 2000);
   };
 
   return (
-    <PageFadeIn className="space-y-6 max-w-7xl mx-auto pb-16">
-      {/* ── 1. Top Header Banner ── */}
-      <div className="bg-gradient-to-r from-mv-green-darker via-emerald-950 to-zinc-900 border border-mv-green/30 rounded-2xl p-6 text-white relative overflow-hidden shadow-mv-md">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <div className="w-8 h-8 rounded-lg bg-mv-green/20 border border-mv-green/40 flex items-center justify-center text-mv-green">
-                <FileCheck2 className="w-4 h-4 text-emerald-400" />
-              </div>
-              <h1 className="text-2xl lg:text-3xl font-extrabold font-display tracking-tight text-white">
-                Studio de Propositions & Signature Électronique
-              </h1>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold">
-                Acompte 50% Stripe Intégré
-              </span>
-            </div>
-            <p className="text-xs text-zinc-300 max-w-2xl">
-              Générez des propositions commerciales visuelles et interactives combinant SaaS Flow & Prestations Studio avec signature numérique et acompte instantané.
-            </p>
+    <PageFadeIn className="space-y-3 pb-8">
+      {/* ── 1. Linear-Style Toolbar Strip (h-10 / 40px) ── */}
+      <div className="h-10 bg-white border border-zinc-200 rounded-lg px-3.5 flex items-center justify-between shadow-2xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-mono" style={MONO}>
+            <span>Minerva</span>
+            <span>/</span>
+            <span className="text-zinc-600 font-medium">Devis</span>
           </div>
-
-          <Button
-            variant="primary"
-            onClick={() => setShowCreateModal(true)}
-            className="bg-mv-green hover:bg-emerald-600 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nouvelle Proposition</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* ── 2. KPI Ribbon ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-mv-surface border border-mv-border rounded-xl p-4 shadow-mv-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-mv-ink-soft text-xs font-semibold">
-            <span>Pipeline Devis & Propal</span>
-            <DollarSign className="w-4 h-4 text-mv-green" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-mv-ink font-mono" style={MONO}>
-              <AnimatedNumber value={totalPipelineValue} formatDecimals={0} /> $
-            </span>
-            <span className="text-[11px] font-bold text-zinc-600 bg-zinc-100 px-1.5 py-0.5 rounded">
-              Total TTC
-            </span>
-          </div>
-          <p className="text-[10.5px] text-mv-ink-faint mt-1">{proposals.length} propositions émises</p>
+          <span className="text-zinc-200">|</span>
+          <h1 className="text-xs sm:text-sm font-semibold text-zinc-900 tracking-tight truncate">
+            Studio Propositions
+          </h1>
+          <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold font-mono text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded" style={MONO}>
+            Stripe 50% Acompte
+          </span>
         </div>
 
-        <div className="bg-mv-surface border border-mv-border rounded-xl p-4 shadow-mv-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-mv-ink-soft text-xs font-semibold">
-            <span>Signé & Encaissé (Acomptes)</span>
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+        {/* Controls */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Search Box */}
+          <div className="relative flex items-center">
+            <Search className="w-3 h-3 text-zinc-400 absolute left-2 pointer-events-none" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Chercher client / réf..."
+              className="h-7 w-36 sm:w-44 pl-7 pr-6 text-xs bg-zinc-50 border border-zinc-200 rounded-md placeholder-zinc-400 focus:bg-white focus:border-emerald-600 focus:outline-none transition-all"
+            />
+            <kbd className="hidden sm:inline-flex absolute right-1.5 top-1.5 px-1 py-0.2 text-[9px] font-mono text-zinc-400 bg-white border border-zinc-200 rounded shadow-2xs pointer-events-none" style={MONO}>
+              /
+            </kbd>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-emerald-600 font-mono" style={MONO}>
-              <AnimatedNumber value={totalSignedValue} formatDecimals={0} /> $
-            </span>
-            <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-1.5 py-0.5 rounded">
-              Validé
-            </span>
-          </div>
-          <p className="text-[10.5px] text-mv-ink-faint mt-1">Conversions fermes en production</p>
-        </div>
 
-        <div className="bg-mv-surface border border-mv-border rounded-xl p-4 shadow-mv-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-mv-ink-soft text-xs font-semibold">
-            <span>En Attente de Signature</span>
-            <Clock className="w-4 h-4 text-amber-500" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-amber-600 font-mono" style={MONO}>
-              {pendingProposalsCount}
-            </span>
-            <span className="text-[11px] font-bold text-amber-800 bg-amber-100/70 px-1.5 py-0.5 rounded">
-              En cours
-            </span>
-          </div>
-          <p className="text-[10.5px] text-mv-ink-faint mt-1">Propositions envoyées ou consultées</p>
-        </div>
-
-        <div className="bg-mv-surface border border-mv-border rounded-xl p-4 shadow-mv-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-mv-ink-soft text-xs font-semibold">
-            <span>Panier Moyen Deal</span>
-            <TrendingUp className="w-4 h-4 text-mv-blue" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-mv-ink font-mono" style={MONO}>
-              <AnimatedNumber
-                value={proposals.length > 0 ? Math.round(totalPipelineValue / proposals.length) : 0}
-                formatDecimals={0}
-              /> $
-            </span>
-            <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
-              CAD
-            </span>
-          </div>
-          <p className="text-[10.5px] text-mv-ink-faint mt-1">Setup moyen par client signé</p>
-        </div>
-      </div>
-
-      {/* ── 3. Filters and Search ── */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-mv-surface p-3 rounded-xl border border-mv-border">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-mv-ink-faint absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Rechercher par titre, client, numéro..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-mv-cream-soft border border-mv-border text-xs text-mv-ink focus:outline-none focus:border-mv-green transition-colors"
-          />
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Filter Status */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 rounded-lg bg-mv-cream-soft border border-mv-border text-xs font-semibold text-mv-ink focus:outline-none focus:border-mv-green transition-colors cursor-pointer"
+            className="h-7 px-2 text-xs bg-zinc-50 border border-zinc-200 rounded-md text-zinc-700 focus:outline-none cursor-pointer"
           >
-            <option value="all">Tous les statuts</option>
-            <option value="sent">Envoyé (En attente)</option>
-            <option value="viewed">Consulté</option>
-            <option value="signed">Signé & Acompte payé</option>
-            <option value="draft">Brouillon</option>
+            <option value="all">Tous statuts</option>
+            <option value="draft">Brouillons</option>
+            <option value="sent">En attente</option>
+            <option value="viewed">Consultés</option>
+            <option value="signed">Signés</option>
           </select>
+
+          {/* New Proposal Button (Shortcut N) */}
+          <button
+            onClick={() => setIsDrawerOpen(true)}
+            className="h-7 px-2.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Nouvelle Proposition</span>
+            <kbd className="hidden sm:inline-block px-1 py-0.2 text-[9px] font-mono bg-emerald-800/60 rounded text-emerald-200" style={MONO}>
+              N
+            </kbd>
+          </button>
         </div>
       </div>
 
-      {/* ── 4. Proposals Grid / List ── */}
-      <div className="space-y-4">
-        {filteredProposals.length === 0 ? (
-          <Card className="p-12 text-center bg-mv-surface border-mv-border rounded-xl space-y-3 shadow-xs">
-            <FileCheck2 className="w-10 h-10 text-mv-ink-faint mx-auto opacity-50" />
-            <h3 className="text-sm font-bold text-mv-ink">Aucune proposition commerciale trouvée</h3>
-            <p className="text-xs text-mv-ink-soft max-w-md mx-auto">
-              Créez votre première proposition commerciale avec signature électronique et paiement d'acompte Stripe 50% intégré.
-            </p>
-            <Button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-mv-green hover:bg-mv-green/90 text-white text-xs font-semibold gap-1.5 cursor-pointer mt-2"
-            >
-              <Plus size={14} />
-              <span>Créer une proposition</span>
-            </Button>
-          </Card>
-        ) : (
-          filteredProposals.map((prop) => (
-            <Card key={prop.id} className="p-5 hover:border-mv-green/40 transition-all space-y-4 bg-mv-surface border-mv-border rounded-xl shadow-xs">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    <span className="font-mono font-bold text-xs text-mv-green bg-mv-green/10 px-2 py-0.5 rounded">
-                      {prop.proposal_number}
-                    </span>
-                    <h3 className="font-bold text-sm text-mv-ink font-display">{prop.title}</h3>
-                    <Badge
-                      variant={
-                        prop.status === 'signed' || prop.status === 'paid'
-                          ? 'green'
-                          : prop.status === 'sent'
-                          ? 'amber'
-                          : 'blue'
-                      }
-                    >
-                      {prop.status === 'signed' ? 'Signé • Acompte OK' : prop.status === 'sent' ? 'Envoyé' : prop.status}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-mv-ink-soft">
-                    Client : <strong className="text-mv-ink font-semibold">{prop.client_name}</strong>
-                    {prop.client_company ? ` (${prop.client_company})` : ''} • Émis le{' '}
-                    {new Date(prop.created_at).toLocaleDateString('fr-CA')}
-                  </p>
-                </div>
+      {/* ── 2. Monolithic Connected KPI Ribbon (h-14 / 56px) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-zinc-200 rounded-lg divide-x divide-zinc-100 shadow-2xs overflow-hidden">
+        {/* Metric 1: Pipeline Devis */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              Pipeline Devis
+            </span>
+            <span className="text-[10px] font-bold font-mono text-zinc-700 bg-zinc-100 border border-zinc-200 px-1.5 py-0.2 rounded" style={MONO}>
+              {proposals.length} émis
+            </span>
+          </div>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+              <AnimatedNumber value={totalPipelineValue} formatDecimals={0} /> $ CAD
+            </span>
+            <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+              Total TTC
+            </span>
+          </div>
+        </div>
 
-                {/* Financial Snapshot */}
-                <div className="flex items-center gap-4 bg-mv-cream-soft p-3 rounded-xl border border-mv-border shrink-0">
-                  <div className="text-right">
-                    <span className="text-[10px] uppercase font-bold text-mv-ink-soft block">Total Setup TTC</span>
-                    <span className="font-mono font-bold text-sm text-mv-ink" style={MONO}>
-                      {prop.total_setup_cad.toLocaleString('fr-CA')} $
-                    </span>
-                  </div>
-                  <div className="h-6 w-px bg-mv-border" />
-                  <div className="text-right">
-                    <span className="text-[10px] uppercase font-bold text-emerald-800 block">Acompte 50%</span>
-                    <span className="font-mono font-bold text-sm text-emerald-600" style={MONO}>
-                      {prop.deposit_amount_cad.toLocaleString('fr-CA')} $
-                    </span>
-                  </div>
-                </div>
-              </div>
+        {/* Metric 2: Signé & Encaissé (Acomptes) */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              Signé &amp; Encaissé
+            </span>
+            <span className="text-[10px] font-bold font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded" style={MONO}>
+              Acomptes 50%
+            </span>
+          </div>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-emerald-700" style={MONO}>
+              <AnimatedNumber value={totalSignedValue} formatDecimals={0} /> $ CAD
+            </span>
+            <span className="text-[11px] text-emerald-600 font-mono font-medium" style={MONO}>
+              Converti
+            </span>
+          </div>
+        </div>
 
-              {/* Scope / Deliverables List pills */}
-              <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-mv-border">
-                <span className="text-[11px] font-bold text-mv-ink-soft">Livrables inclus :</span>
-                {prop.deliverables.map((del, idx) => (
-                  <span
-                    key={idx}
-                    className="px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-700 text-[11px] font-medium border border-zinc-200"
-                  >
-                    {del.title} ({del.price_cad} $)
-                  </span>
-                ))}
-              </div>
+        {/* Metric 3: En Attente de Signature */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              En Attente Signature
+            </span>
+            <span className="text-[10px] font-bold font-mono text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded" style={MONO}>
+              En cours
+            </span>
+          </div>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-amber-700" style={MONO}>
+              <AnimatedNumber value={pendingValue} formatDecimals={0} /> $ CAD
+            </span>
+            <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+              Relances auto
+            </span>
+          </div>
+        </div>
 
-              {/* Actions Bar */}
-              <div className="flex items-center justify-between pt-2 border-t border-mv-border text-xs">
-                <span className="text-[11px] text-mv-ink-faint">
-                  {prop.signer_name
-                    ? `Signé numériquement par ${prop.signer_name} le ${new Date(prop.signed_at || '').toLocaleDateString('fr-CA')}`
-                    : 'En attente de signature du prospect'}
-                </span>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => copyProposalLink(prop.token)}
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-mv-surface border border-mv-border text-mv-ink text-xs font-semibold hover:bg-zinc-50 transition-colors cursor-pointer"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copier lien</span>
-                  </button>
-
-                  <Link
-                    href={`/proposals/${prop.token}`}
-                    target="_blank"
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-mv-green text-white text-xs font-bold hover:bg-emerald-600 transition-colors shadow-xs"
-                  >
-                    <span>Ouvrir</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-            </Card>
-          ))
-        )}
+        {/* Metric 4: Panier Moyen Deal */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              Panier Moyen Deal
+            </span>
+            <span className="text-[10px] font-bold font-mono text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded" style={MONO}>
+              Moyenne
+            </span>
+          </div>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+              <AnimatedNumber value={averageDealValue} formatDecimals={0} /> $ CAD
+            </span>
+            <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+              Par contrat
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* ── 5. Create Proposal Modal ── */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-mv-surface border border-mv-border rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
-            <div className="p-5 border-b border-mv-border flex items-center justify-between">
+      {/* ── 3. High Density Proposals DataTable (h-9 / 36px) ── */}
+      <div className="bg-white border border-zinc-200 rounded-lg shadow-2xs overflow-hidden flex flex-col">
+        {/* Table Column Labels */}
+        <div className="grid grid-cols-12 h-7 px-3.5 border-b border-zinc-200/80 bg-zinc-50/50 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 items-center">
+          <span className="col-span-2">Réf</span>
+          <span className="col-span-3">Client / Contact</span>
+          <span className="col-span-2">Formule Pack</span>
+          <span className="col-span-2">Date Émission</span>
+          <span className="col-span-1 text-right">Acompte</span>
+          <span className="col-span-1 text-center">Statut</span>
+          <span className="col-span-1 text-right">Actions</span>
+        </div>
+
+        {/* Rows */}
+        <div className="divide-y divide-zinc-100">
+          {filteredProposals.length === 0 ? (
+            <div className="h-14 px-3.5 flex items-center justify-between text-xs text-zinc-500 bg-zinc-50/20">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-mv-green/10 text-mv-green flex items-center justify-center">
-                  <FileCheck2 className="w-4 h-4" />
-                </div>
-                <h3 className="font-extrabold text-base text-mv-ink font-display">
-                  Générer une Proposition Commerciale
-                </h3>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span>Aucune proposition commerciale trouvée.</span>
               </div>
               <button
-                type="button"
-                onClick={() => setShowCreateModal(false)}
-                className="text-mv-ink-faint hover:text-mv-ink cursor-pointer"
+                onClick={() => setIsDrawerOpen(true)}
+                className="text-[11px] text-emerald-700 hover:underline font-mono cursor-pointer"
+                style={MONO}
               >
-                <X className="w-5 h-5" />
+                + Rédiger une proposition rapide (N) →
               </button>
             </div>
+          ) : (
+            filteredProposals.map((proposal) => {
+              const dateStr = proposal.created_at
+                ? new Date(proposal.created_at).toISOString().slice(0, 10)
+                : '—';
+              const deposit = proposal.deposit_amount_cad || (Number(proposal.total_setup_cad) || 0) * 0.5;
 
-            <form onSubmit={handleCreateProposalSubmit} className="p-6 overflow-y-auto space-y-6">
-              {/* Quick Template Picker */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-mv-ink flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Modèles d'offres & contrats agence réels</span>
-                  </span>
-                  <span className="text-[10px] text-mv-green font-semibold bg-mv-green/10 px-2 py-0.5 rounded">4 Modèles Prêts</span>
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleApplyTemplate('flow-and-reels-pack')}
-                    className="p-2.5 rounded-xl border border-mv-border bg-mv-cream-soft hover:border-mv-green text-left transition-colors cursor-pointer"
-                  >
-                    <span className="font-bold text-xs text-mv-ink block">1. Pack Flow & 8 Reels 4K</span>
-                    <span className="text-[10.5px] text-mv-ink-soft">2 150 $ Setup + 149 $/mo</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApplyTemplate('framer-and-ads-pack')}
-                    className="p-2.5 rounded-xl border border-mv-border bg-mv-cream-soft hover:border-mv-green text-left transition-colors cursor-pointer"
-                  >
-                    <span className="font-bold text-xs text-mv-ink block">2. Site Framer & Ads 5 km</span>
-                    <span className="text-[10.5px] text-mv-ink-soft">4 000 $ Setup clé en main</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApplyTemplate('ecommerce-and-ai-pack')}
-                    className="p-2.5 rounded-xl border border-mv-border bg-mv-cream-soft hover:border-mv-green text-left transition-colors cursor-pointer"
-                  >
-                    <span className="font-bold text-xs text-mv-ink block">3. E-Commerce & Agent IA</span>
-                    <span className="text-[10.5px] text-mv-ink-soft">5 700 $ Setup + 299 $/mo</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApplyTemplate('elite-retainer-pack')}
-                    className="p-2.5 rounded-xl border border-mv-border bg-mv-cream-soft hover:border-mv-green text-left transition-colors cursor-pointer"
-                  >
-                    <span className="font-bold text-xs text-mv-ink block">4. Retainer Mensuel Élite 360</span>
-                    <span className="text-[10.5px] text-mv-ink-soft">3 450 $ Setup + 2 500 $/mo</span>
-                  </button>
+              return (
+                <div
+                  key={proposal.id}
+                  className="grid grid-cols-12 h-9 px-3.5 items-center text-xs text-zinc-800 hover:bg-zinc-50/80 transition-colors group"
+                >
+                  {/* Col 1: Réf */}
+                  <div className="col-span-2 flex items-center gap-1.5 pr-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    <span className="font-mono text-zinc-600 font-semibold text-[11px] truncate" style={MONO}>
+                      {proposal.proposal_number}
+                    </span>
+                  </div>
+
+                  {/* Col 2: Client */}
+                  <div className="col-span-3 min-w-0 pr-2">
+                    <span className="font-semibold text-zinc-900 truncate block">
+                      {proposal.client_name}
+                    </span>
+                    {proposal.client_company && (
+                      <span className="text-[10px] text-zinc-400 truncate block">
+                        {proposal.client_company}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Col 3: Pack Title */}
+                  <div className="col-span-2 text-zinc-600 text-[11px] truncate pr-2">
+                    {proposal.title}
+                  </div>
+
+                  {/* Col 4: Date */}
+                  <div className="col-span-2 font-mono text-[11px] text-zinc-500 tabular-nums" style={MONO}>
+                    {dateStr}
+                  </div>
+
+                  {/* Col 5: Acompte 50% */}
+                  <div className="col-span-1 font-mono text-[11px] text-zinc-900 font-semibold text-right tabular-nums" style={MONO}>
+                    {Math.round(deposit)} $
+                  </div>
+
+                  {/* Col 6: Statut Micro-Pill */}
+                  <div className="col-span-1 flex justify-center">
+                    {proposal.status === 'signed' || proposal.status === 'paid' ? (
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded border bg-emerald-50 text-emerald-700 border-emerald-200" style={MONO}>
+                        Signé
+                      </span>
+                    ) : proposal.status === 'viewed' ? (
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded border bg-blue-50 text-blue-700 border-blue-200" style={MONO}>
+                        Consulté
+                      </span>
+                    ) : proposal.status === 'sent' ? (
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded border bg-amber-50 text-amber-700 border-amber-200" style={MONO}>
+                        En attente
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded border bg-zinc-100 text-zinc-600 border-zinc-200" style={MONO}>
+                        Brouillon
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Col 7: Hover Actions */}
+                  <div className="col-span-1 flex items-center justify-end gap-1.5">
+                    <button
+                      onClick={() => copyProposalLink(proposal.token)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-400 hover:text-zinc-900 cursor-pointer"
+                      title="Copier le lien public"
+                    >
+                      {copiedToken === proposal.token ? (
+                        <Check className="w-3 h-3 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                    </button>
+                    <Link
+                      href={`/proposals/${proposal.token}`}
+                      target="_blank"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-400 hover:text-emerald-700"
+                      title="Prévisualiser"
+                    >
+                      <ArrowUpRight className="w-3 h-3" />
+                    </Link>
+                  </div>
                 </div>
-              </div>
+              );
+            })
+          )}
+        </div>
 
-              {/* General Fields */}
-              <div className="space-y-3">
+        {/* Inline Bottom Fast Insertion Row */}
+        <div className="h-8 px-3.5 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-between text-xs">
+          <button
+            onClick={() => setIsDrawerOpen(true)}
+            className="text-zinc-500 hover:text-zinc-900 transition-colors flex items-center gap-1.5 font-mono text-[11px] cursor-pointer"
+            style={MONO}
+          >
+            <span>+ Rédiger une proposition rapide [N]</span>
+          </button>
+          <span className="text-[10px] text-zinc-400 font-mono" style={MONO}>
+            Acompte Stripe 50% natif
+          </span>
+        </div>
+      </div>
+
+      {/* ── 4. Slide-Over Drawer Linear-Style (2-Colonnes) ── */}
+      {isDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-2xs animate-in fade-in duration-150">
+          <div className="w-full max-w-3xl bg-white border-l border-zinc-200 shadow-2xl h-full flex flex-col justify-between overflow-hidden">
+            {/* Drawer Header */}
+            <div className="h-12 px-4 border-b border-zinc-200 flex items-center justify-between bg-zinc-50/60">
+              <div className="flex items-center gap-2">
+                <FileCheck2 className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
+                  Nouvelle Proposition Commerciale
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {/* Template Fast Picker */}
+                <div className="flex items-center gap-1 text-[11px]">
+                  <span className="text-zinc-400">Modèle :</span>
+                  {PROPOSAL_TEMPLATES.map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() => handleApplyTemplate(tpl.id)}
+                      className="px-2 py-0.5 rounded text-[10px] font-mono bg-white border border-zinc-200 hover:border-emerald-600 text-zinc-700 cursor-pointer"
+                      style={MONO}
+                    >
+                      {tpl.id === 'standard-flow-studio' ? 'Flow+Studio' : tpl.id.split('-')[0]}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setIsDrawerOpen(false)}
+                  className="p-1 rounded-md text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 transition-colors cursor-pointer"
+                  title="Fermer (Échap)"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Drawer 2-Column Body (60% Inputs / 40% Live Totals & Preview) */}
+            <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-zinc-200">
+              {/* Left Column (60% - 7 cols) : Inputs & Deliverables */}
+              <div className="md:col-span-7 p-4 space-y-3 text-xs">
                 <div>
-                  <label className="block text-xs font-bold text-mv-ink mb-1">Titre de la proposition</label>
+                  <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+                    Titre du Deal *
+                  </label>
                   <input
                     type="text"
-                    required
-                    placeholder="Ex: Proposition Pilote — Resto & Vidéos 4K"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-mv-cream-soft border border-mv-border text-xs text-mv-ink focus:outline-none focus:border-mv-green"
+                    placeholder="Ex: Refonte Digitale & Flow — Le Saint-Bocuse"
+                    className="w-full h-8 px-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-md focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    required
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs font-bold text-mv-ink mb-1">Nom du signataire</label>
+                    <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+                      Nom Contact *
+                    </label>
                     <input
                       type="text"
-                      required
-                      placeholder="Jean Tremblay"
                       value={clientName}
                       onChange={(e) => setClientName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-mv-cream-soft border border-mv-border text-xs text-mv-ink focus:outline-none focus:border-mv-green"
+                      placeholder="Marc Tremblay"
+                      className="w-full h-8 px-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-md focus:bg-white focus:border-emerald-600 focus:outline-none"
+                      required
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-mv-ink mb-1">Entreprise / Restaurant</label>
-                    <input
-                      type="text"
-                      placeholder="Bistro Laurier Inc."
-                      value={clientCompany}
-                      onChange={(e) => setClientCompany(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-mv-cream-soft border border-mv-border text-xs text-mv-ink focus:outline-none focus:border-mv-green"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-mv-ink mb-1">Courriel</label>
+                    <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+                      Courriel Client *
+                    </label>
                     <input
                       type="email"
-                      placeholder="jean@bistrolaurier.ca"
                       value={clientEmail}
                       onChange={(e) => setClientEmail(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-mv-cream-soft border border-mv-border text-xs text-mv-ink focus:outline-none focus:border-mv-green"
+                      placeholder="direction@resto.ca"
+                      className="w-full h-8 px-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-md focus:bg-white focus:border-emerald-600 focus:outline-none"
                     />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
+                    Établissement / Entreprise
+                  </label>
+                  <input
+                    type="text"
+                    value={clientCompany}
+                    onChange={(e) => setClientCompany(e.target.value)}
+                    placeholder="Bistro Le Saint-Bocuse"
+                    className="w-full h-8 px-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-md focus:bg-white focus:border-emerald-600 focus:outline-none"
+                  />
+                </div>
+
+                {/* Deliverables Section */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                      Livrables &amp; Tarification Setup
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAddDeliverable}
+                      className="text-[10px] text-emerald-700 hover:underline font-mono cursor-pointer"
+                      style={MONO}
+                    >
+                      + Ajouter prestation
+                    </button>
+                  </div>
+
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {deliverables.map((item, idx) => (
+                      <div
+                        key={item.id || idx}
+                        className="p-2.5 rounded-lg border border-zinc-200 bg-zinc-50 space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <input
+                            type="text"
+                            value={item.title}
+                            onChange={(e) => handleDeliverableChange(idx, 'title', e.target.value)}
+                            className="h-6 px-1.5 text-xs font-semibold bg-white border border-zinc-200 rounded flex-1 focus:outline-none focus:border-emerald-600"
+                          />
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={item.price_cad}
+                              onChange={(e) => handleDeliverableChange(idx, 'price_cad', Number(e.target.value) || 0)}
+                              className="h-6 w-20 px-1.5 text-xs text-right font-mono bg-white border border-zinc-200 rounded focus:outline-none focus:border-emerald-600"
+                              style={MONO}
+                            />
+                            <span className="text-xs text-zinc-500">$</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveDeliverable(idx)}
+                              className="text-zinc-400 hover:text-rose-600 p-0.5 cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
 
-              {/* Deliverables Builder */}
-              <div className="space-y-3 pt-3 border-t border-mv-border">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-mv-ink">Livrables & Prestations au Forfait</label>
-                  <button
-                    type="button"
-                    onClick={handleAddDeliverable}
-                    className="text-xs text-mv-green font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Ajouter une prestation</span>
-                  </button>
+              {/* Right Column (40% - 5 cols) : Live Preview & Totals */}
+              <div className="md:col-span-5 p-4 bg-zinc-50/50 flex flex-col justify-between text-xs space-y-4">
+                <div className="space-y-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">
+                    Décomposition Financière
+                  </span>
+
+                  <div className="p-3 bg-white border border-zinc-200 rounded-lg space-y-2 font-mono text-xs" style={MONO}>
+                    <div className="flex items-center justify-between text-zinc-600">
+                      <span>Total Prestations :</span>
+                      <span>{calculatedFormTotals.subtotal_setup_cad.toFixed(2)} $</span>
+                    </div>
+                    <div className="flex items-center justify-between text-zinc-500 text-[11px]">
+                      <span>TPS (5%) :</span>
+                      <span>{calculatedFormTotals.tax_tps_cad.toFixed(2)} $</span>
+                    </div>
+                    <div className="flex items-center justify-between text-zinc-500 text-[11px]">
+                      <span>TVQ (9.975%) :</span>
+                      <span>{calculatedFormTotals.tax_tvq_cad.toFixed(2)} $</span>
+                    </div>
+                    <div className="pt-2 border-t border-zinc-100 flex items-center justify-between font-bold text-zinc-900 text-sm">
+                      <span>Total TTC :</span>
+                      <span>{calculatedFormTotals.total_setup_cad.toFixed(2)} $</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">
+                      Acompte Stripe 50% Exigé
+                    </span>
+                    <div className="text-base font-bold font-mono text-emerald-800" style={MONO}>
+                      {calculatedFormTotals.deposit_amount_cad.toFixed(2)} $ CAD
+                    </div>
+                    <p className="text-[10px] text-emerald-700">
+                      La signature client débloque instantanément la session de paiement Stripe sécurisée.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  {deliverables.map((del, idx) => (
-                    <div key={del.id || idx} className="p-3 rounded-xl bg-mv-cream-soft border border-mv-border flex items-center gap-3 text-xs">
-                      <div className="flex-1 space-y-1">
-                        <input
-                          type="text"
-                          placeholder="Titre de la prestation"
-                          value={del.title}
-                          onChange={(e) => handleDeliverableChange(idx, 'title', e.target.value)}
-                          className="w-full font-semibold bg-transparent border-b border-mv-border pb-0.5 text-xs text-mv-ink focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Description succincte"
-                          value={del.description}
-                          onChange={(e) => handleDeliverableChange(idx, 'description', e.target.value)}
-                          className="w-full text-[11px] text-mv-ink-soft bg-transparent focus:outline-none"
-                        />
-                      </div>
-                      <div className="w-24">
-                        <input
-                          type="number"
-                          placeholder="Prix CAD"
-                          value={del.price_cad}
-                          onChange={(e) => handleDeliverableChange(idx, 'price_cad', Number(e.target.value))}
-                          className="w-full px-2 py-1 rounded bg-mv-surface border border-mv-border text-right font-mono font-bold text-xs"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveDeliverable(idx)}
-                        className="text-mv-ink-faint hover:text-red-600 cursor-pointer p-1"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+                  <button
+                    type="button"
+                    onClick={() => handleCreateProposalSubmit()}
+                    disabled={submitting}
+                    className="w-full h-8 rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{submitting ? 'Création...' : 'Générer la Proposition (⌘+↵)'}</span>
+                  </button>
+                  <p className="text-center text-[10px] text-zinc-400 font-mono" style={MONO}>
+                    Échap pour annuler
+                  </p>
                 </div>
               </div>
-
-              {/* Financial Calculation Live Preview */}
-              <div className="bg-mv-cream-soft p-4 rounded-xl border border-mv-border space-y-2 text-xs">
-                <div className="flex justify-between text-mv-ink-soft">
-                  <span>Sous-total HT :</span>
-                  <span className="font-mono font-bold text-mv-ink">{calculatedFormTotals.subtotal_setup_cad.toFixed(2)} $ CAD</span>
-                </div>
-                <div className="flex justify-between text-mv-ink-soft">
-                  <span>TPS (5%) + TVQ (9.975%) :</span>
-                  <span className="font-mono">{(calculatedFormTotals.tax_tps_cad + calculatedFormTotals.tax_tvq_cad).toFixed(2)} $</span>
-                </div>
-                <div className="flex justify-between font-bold text-mv-ink pt-1 border-t border-mv-border">
-                  <span>Total TTC :</span>
-                  <span className="font-mono text-sm">{calculatedFormTotals.total_setup_cad.toFixed(2)} $ CAD</span>
-                </div>
-                <div className="flex justify-between font-extrabold text-emerald-700 pt-1 border-t border-mv-border">
-                  <span>Acompte 50% payable à la signature :</span>
-                  <span className="font-mono text-sm">{calculatedFormTotals.deposit_amount_cad.toFixed(2)} $ CAD</span>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <Button type="button" variant="secondary" onClick={() => setShowCreateModal(false)}>
-                  Annuler
-                </Button>
-                <Button type="submit" variant="primary" disabled={submitting}>
-                  {submitting ? 'Création en cours…' : 'Générer la Proposition & Lien de Signature'}
-                </Button>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
