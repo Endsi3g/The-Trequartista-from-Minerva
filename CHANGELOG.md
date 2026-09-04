@@ -2,6 +2,36 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.27.0) — Dashboard Overview Haute Densité : Monolithe Linear/Stripe, Area Charts Vectoriels & DataTable Chirurgical Démocké
+
+- **Standard Monolithique Exécutif & Financier (`/overview` & `ManagingOverview.tsx`)** :
+  - Remplacement des cartes volumineuses isolées et des barres épaisses par une structure continue et compacte inspirée de Linear, Stripe Dashboard et Mercury.
+  - **Header Exécutif 40px** : Suppression de la bannière verte, breadcrumb technique `Minerva / Dashboard / Vue d'Ensemble`, titre `Vue d'Ensemble & Revenus`, pastille animée `● Live Stripe & MRR`, sélecteur de granularité 28px `[ Jour | Semaine | Mois | Année ]`, sélecteur de plage et bouton d'export CSV direct.
+  - **Ruban Financier Monolithique (Strip de 4 Métriques)** : Grille 4-colonnes connectée avec séparateurs hairline `divide-x divide-zinc-100` : Revenus Totaux ($20,320 CAD / run-rate live avec badge `+12.5% vs m-1`), Volume Commandes (10,320 / livrables actifs), Nouveaux Clients (4,305 / partenaires agence), et Taux de Conversion (94.2% / 0% Churn).
+  - **Split-View 65/35 Analytique & MRR** :
+    - *Colonne Gauche (65%)* : Graphique Area Chart vectoriel Recharts 180px double courbe empilée (Clients Existants émeraude foncé `#059669` + Nouveaux Clients émeraude clair `#34D399`) avec gradients descendants transparents, grille fine, axes monospace et tooltip dynamique au survol.
+    - *Colonne Droite (35%)* : Synthèse Rapide, encart exécutif IA Minerva Pulse épuré et barres horizontales ultra-fines 4px (Abonnements SaaS 45%, Workflows IA 30%, Sprints Marketing 15%, Consulting 10%).
+  - **DataTable de Transactions Chirurgical (Style Linear)** :
+    - Grille dense alignée (hauteur 34px par ligne), recherche instantanée, raccourci clavier `⌘ + N` et export CSV téléchargeable.
+    - 8 colonnes strictes avec pastilles de statut conformes (Succès `#059669`, Attente `#D97706`, Remboursé `#71717A`) et alignement monospace `tabular-nums font-mono`.
+    - Menu contextuel d'actions `···` complet : changement de statut direct (Succès / Attente / Remboursé) avec persistance Supabase, copie de référence et suppression avec confirmation.
+  - **Démockage & Persistance Supabase Réelle** :
+    - Connexion directe à la table `invoices` via `lib/services/invoicing.ts` avec auto-injection idempotente `seedBenchmarkInvoicesIfEmpty()` si la base est vide.
+    - Modal d'ajout insérant de vraies factures en base avec rafraîchissement immédiat de l'état.
+
+
+## 2026-09-04 (v2.26.1) — SOP-TECH-07 : Workflow d’Équipe Multi-IA & Standard d’Ingénierie GitHub
+
+- **SOP-TECH-07 dans l'Académie Tech (`/academy` & Supabase)** :
+  - Intégration de la procédure phare `SOP-TECH-07` : standardisation de l'orchestration multi-IA (Perplexity pour le cadrage PRD/recherche, Gemini pour le scaffolding initial, Codex pour l'implémentation fine SQL/tests, Claude Code pour la revue holistique cross-fichiers).
+  - Étape essentielle d'onboarding Tech (`is_onboarding_step = true`, `is_featured = true`, `is_essential = true`, `sort_order = 7`).
+  - Bloc interactif de checklist qualité en 7 points retraçant la boucle de développement complète.
+  - Protocole terminal interactif avec template hybride prêt à l'emploi (prompt universel système pour assistant IA + séquence de commandes Git / typage strict / gh pr create).
+  - Migration SQL `20260904010000_tech_sop_07_multi_ai_workflow.sql`, mise à jour du master script `deploy_production_complete.sql` et ajout du fallback dans `DEFAULT_ACADEMY_SOPS`.
+- **Directives IA & Rôle Minerva Trequartista (`GEMINI.md`)** :
+  - Ajout de la section 6 sanctuarisant GitHub comme socle immuable, la répartition opérationnelle des assistants IA et la boucle de développement en 7 étapes.
+
+
 ## 2026-09-04 (v2.26.0) — Verrouillage Onboarding Entreprise, Leaderboard Strict & Redesign SaaS ManagingOverview
 
 - **Verrouillage de Sécurité Onboarding & Adhésion Entreprise (`/onboarding` & `proxy.ts`)** :

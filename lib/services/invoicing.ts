@@ -354,3 +354,151 @@ export function computeFinancialSummary(invoices: Invoice[]): FinancialSummary {
     overdueInvoicesCount,
   };
 }
+
+export const BENCHMARK_INVOICES_DATA = [
+  {
+    invoice_number: '#04910',
+    client_name: 'Toitures Beauchemin',
+    product: 'Déploiement Agent IA Vocal & CRM',
+    status: 'paid' as InvoiceStatus,
+    qty: 1,
+    unitPrice: 2500,
+    totalRevenue: 2500,
+    date: '2025-01-17',
+  },
+  {
+    invoice_number: '#04909',
+    client_name: 'Bistro Laurent',
+    product: 'Setup QR Minerva Flow SaaS + Menu',
+    status: 'paid' as InvoiceStatus,
+    qty: 1,
+    unitPrice: 1250,
+    totalRevenue: 1250,
+    date: '2025-01-15',
+  },
+  {
+    invoice_number: '#04908',
+    client_name: 'Clinique Dentaire Apex',
+    product: 'Abonnement Flow Enterprise (Annuel)',
+    status: 'paid' as InvoiceStatus,
+    qty: 1,
+    unitPrice: 4800,
+    totalRevenue: 4800,
+    date: '2025-01-12',
+  },
+  {
+    invoice_number: '#04907',
+    client_name: 'Le Burger Urbain',
+    product: 'Licence OS Lite Pro + Terminal',
+    status: 'sent' as InvoiceStatus,
+    qty: 2,
+    unitPrice: 650,
+    totalRevenue: 1300,
+    date: '2025-01-09',
+  },
+  {
+    invoice_number: '#04906',
+    client_name: 'Apex Logistique',
+    product: 'Sprint Architecture Next.js 16',
+    status: 'paid' as InvoiceStatus,
+    qty: 1,
+    unitPrice: 3500,
+    totalRevenue: 3500,
+    date: '2025-01-05',
+  },
+  {
+    invoice_number: '#04905',
+    client_name: 'Garage Du Sommet',
+    product: 'Module Avis Google Automatisé',
+    status: 'cancelled' as InvoiceStatus,
+    qty: 1,
+    unitPrice: 450,
+    totalRevenue: 450,
+    date: '2024-12-28',
+  },
+  {
+    invoice_number: '#04904',
+    client_name: 'Kael Belceus (Test)',
+    product: 'Test Paiement Clé Limitée Stripe',
+    status: 'paid' as InvoiceStatus,
+    qty: 1,
+    unitPrice: 100,
+    totalRevenue: 100,
+    date: '2024-12-20',
+  },
+];
+
+export async function seedBenchmarkInvoicesIfEmpty(): Promise<Invoice[]> {
+  try {
+    const supabase = getSupabase();
+    const { data: existing, error: checkError } = await supabase
+      .from('invoices')
+      .select('id, invoice_number')
+      .limit(1);
+
+    if (!checkError && existing && existing.length > 0) {
+      return await fetchInvoices();
+    }
+
+    const { data: clients } = await supabase.from('clients').select('id, name, company');
+
+    for (const b of BENCHMARK_INVOICES_DATA) {
+      const matchedClient = clients?.find(
+        (c: any) =>
+          c.name?.toLowerCase().includes(b.client_name.toLowerCase()) ||
+          c.company?.toLowerCase().includes(b.client_name.toLowerCase())
+      );
+
+      const subtotal = b.unitPrice * b.qty;
+      const tps = Math.round(subtotal * TPS_RATE * 100) / 100;
+      const tvq = Math.round(subtotal * TVQ_RATE * 100) / 100;
+      const total = Math.round((subtotal + tps + tvq) * 100) / 100;
+
+      const { data: inv } = await supabase
+        .from('invoices')
+        .insert({
+          invoice_number: b.invoice_number,
+          type: 'invoice',
+          client_id: matchedClient?.id || null,
+          client_name: b.client_name,
+          status: b.status,
+          currency: 'CAD',
+          issue_date: b.date,
+          subtotal_cad: subtotal,
+          tax_tps_cad: tps,
+          tax_tvq_cad: tvq,
+          total_cad: total,
+          notes: b.product,
+          line_items: [
+            {
+              description: b.product,
+              quantity: b.qty,
+              unit_price_cad: b.unitPrice,
+              amount_cad: subtotal,
+            },
+          ],
+        })
+        .select()
+        .single();
+
+      if (inv) {
+        try {
+          await supabase.from('invoice_items').insert({
+            invoice_id: inv.id,
+            description: b.product,
+            quantity: b.qty,
+            unit_price_cad: b.unitPrice,
+            amount_cad: subtotal,
+            sort_order: 0,
+          });
+        } catch {}
+      }
+    }
+
+    return await fetchInvoices();
+  } catch (err) {
+    console.error('[Invoicing] seedBenchmarkInvoicesIfEmpty error:', err);
+    return [];
+  }
+}
+

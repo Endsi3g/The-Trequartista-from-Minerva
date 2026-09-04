@@ -236,7 +236,8 @@ export default function OverviewPage() {
     return <TechDashboard />;
   }
 
-  if (workspace === 'managing') {
+  // Executive financial dashboard for managing workspace, admins/managers, and unassigned profiles
+  if (workspace === 'managing' || role === 'admin' || role === 'manager' || !workspace) {
     return <ManagingOverview clients={clients} projects={projects} tasks={tasks} userName={fullName || ''} />;
   }
 
