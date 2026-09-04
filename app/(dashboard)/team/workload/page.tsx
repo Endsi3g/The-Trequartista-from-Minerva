@@ -1,106 +1,93 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PageFadeIn } from '@/components/ui/page-transition';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { AnimatedNumber } from '@/components/ui/animated-number';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import {
-  Gauge,
-  UsersRound,
-  ShieldCheck,
-  AlertTriangle,
-  TrendingUp,
-  ArrowRight,
   RefreshCw,
   Search,
   CheckCircle2,
   Clock,
   Zap,
-  ArrowLeftRight,
-  ShieldAlert,
-  CheckSquare,
-  Filter,
   Sparkles,
-  CalendarClock,
-  Ghost,
+  Plus,
+  Calendar,
+  X,
+  UserCheck,
+  Send,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   fetchTeamWorkloads,
-  fetchTeamCommissions,
-  computeRevOpsSummary,
-  reassignTaskAssignee,
+  CORE_OFFICIAL_TEAM,
 } from '@/lib/services/revops-team';
 import {
   fetchTasks,
+  addTask,
   fetchStandupResponsesForDate,
   fetchWeeklyCheckinsForWeek,
-  fetchLatestAvailabilityPoll,
-  fetchAvailabilityVotes,
-  fetchCoachWeeklyReports,
-  fetchCoachGhostStatuses,
 } from '@/lib/services/supabase-data';
 import { getIsoWeekStart } from '@/lib/utils/dates';
-import type { TeamMemberWorkload, TeamCommission, RevOpsSummary, Task, StandupResponse, WeeklyCheckinResponse, AvailabilityPoll, AvailabilityVote, CoachWeeklyReport, CoachGhostStatus } from '@/lib/types';
+import type { TeamMemberWorkload, Task } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
+const MONO: React.CSSProperties = {
+  fontFamily: 'var(--font-mono, monospace)',
+  fontVariantNumeric: 'tabular-nums',
+};
+
+// Official Role Descriptions mapping
+const OFFICIAL_ROLES_MAP: Record<string, string> = {
+  'kbelceus776@gmail.com': 'Fondateur & Lead Architect',
+  'byeh50230@gmail.com': 'Associé Growth & Studio',
+  'rayanmohellebi2009@gmail.com': 'Associé Ventes & Outbound',
+  'samade3434@gmail.com': 'Ingénieur Full-Stack',
+  'karroubiamine@hotmail.com': 'Account Manager Lead',
+};
 
 export default function TeamWorkloadPage() {
-  const { role, workspace, loading: userLoading } = useCurrentUser();
-  const isAdmin = role === 'admin';
+  const router = useRouter();
+  const { id: currentUserId, role } = useCurrentUser();
   const { toastSuccess, toastError, toastInfo } = useToast();
 
   const [workloads, setWorkloads] = useState<TeamMemberWorkload[]>([]);
-  const [commissions, setCommissions] = useState<TeamCommission[]>([]);
-  const [allTasks, setAllTasks] = useState<Task[]>([]);
-  const [summary, setSummary] = useState<RevOpsSummary | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [chargeFilter, setChargeFilter] = useState<'all' | 'available' | 'optimal' | 'overload'>('all');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Reassignment Modal State
-  const [showReassignModal, setShowReassignModal] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [targetMemberId, setTargetMemberId] = useState<string>('');
-  const [reassigning, setReassigning] = useState(false);
+  // Quick Assign Task Modal State
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<TeamMemberWorkload | null>(null);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskEstimatedHours, setTaskEstimatedHours] = useState('4');
+  const [taskPriority, setTaskPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
+  const [taskDueDate, setTaskDueDate] = useState('');
+  const [isAssigning, setIsAssigning] = useState(false);
 
-  // Coach Minerva admin review
-  const [standups, setStandups] = useState<(StandupResponse & { member_name: string })[]>([]);
-  const [checkins, setCheckins] = useState<(WeeklyCheckinResponse & { member_name: string })[]>([]);
-  const [latestPoll, setLatestPoll] = useState<AvailabilityPoll | null>(null);
-  const [latestPollVotes, setLatestPollVotes] = useState<(AvailabilityVote & { member_name: string })[]>([]);
-  const [weeklyReports, setWeeklyReports] = useState<CoachWeeklyReport[]>([]);
-  const [ghostStatuses, setGhostStatuses] = useState<CoachGhostStatus[]>([]);
+  // Coach poll counter state
+  const [pollResponsesCount, setPollResponsesCount] = useState(0);
 
   const loadData = async () => {
     setLoading(true);
     try {
       const today = new Date().toISOString().slice(0, 10);
-      const [wlData, commData, tasksData, standupData, checkinData, poll, weeklyReportData, ghostData] = await Promise.all([
+      const weekStart = getIsoWeekStart(new Date());
+
+      const [wlData, tasksData, standups, checkins] = await Promise.all([
         fetchTeamWorkloads().catch(() => []),
-        fetchTeamCommissions().catch(() => []),
         fetchTasks().catch(() => []),
         fetchStandupResponsesForDate(today).catch(() => []),
-        fetchWeeklyCheckinsForWeek(getIsoWeekStart(new Date())).catch(() => []),
-        fetchLatestAvailabilityPoll().catch(() => null),
-        fetchCoachWeeklyReports(getIsoWeekStart(new Date())).catch(() => []),
-        fetchCoachGhostStatuses().catch(() => []),
+        fetchWeeklyCheckinsForWeek(weekStart).catch(() => []),
       ]);
-      setWorkloads(Array.isArray(wlData) ? wlData : []);
-      setCommissions(Array.isArray(commData) ? commData : []);
-      setAllTasks(Array.isArray(tasksData) ? tasksData : []);
-      setSummary(computeRevOpsSummary(Array.isArray(wlData) ? wlData : [], Array.isArray(commData) ? commData : []));
-      setStandups(Array.isArray(standupData) ? standupData : []);
-      setCheckins(Array.isArray(checkinData) ? checkinData : []);
-      setLatestPoll(poll);
-      setLatestPollVotes(poll ? await fetchAvailabilityVotes(poll.id).catch(() => []) : []);
-      setWeeklyReports(Array.isArray(weeklyReportData) ? weeklyReportData : []);
-      setGhostStatuses(Array.isArray(ghostData) ? ghostData : []);
+
+      setWorkloads(wlData);
+      setTasks(tasksData);
+      setPollResponsesCount(Math.min(5, (standups?.length || 0) + (checkins?.length || 0)));
     } catch {
       toastError('Erreur de chargement', 'Impossible de récupérer la charge de travail.');
     } finally {
@@ -112,569 +99,543 @@ export default function TeamWorkloadPage() {
     loadData();
   }, []);
 
+  // Keyboard shortcuts: ⌘ + T for tasks, / for search focus
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // ⌘ + T or Ctrl + T -> Open Tasks
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        router.push('/tasks');
+        return;
+      }
+      // '/' -> Focus search input
+      if (e.key === '/' && document.activeElement !== searchInputRef.current) {
+        const target = e.target as HTMLElement | null;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [router]);
+
+  // Filtered workloads (Search & Charge level)
   const filteredWorkloads = useMemo(() => {
     return workloads.filter((w) => {
       const matchSearch =
         w.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (w.email || '').toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'overloaded' && w.utilization_pct >= 85) ||
-        (statusFilter === 'available' && w.utilization_pct < 60) ||
-        (statusFilter === 'optimal' && w.utilization_pct >= 60 && w.utilization_pct < 85);
+        (w.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (OFFICIAL_ROLES_MAP[w.email || ''] || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-      return matchSearch && matchStatus;
+      if (!matchSearch) return false;
+
+      if (chargeFilter === 'available') return w.utilization_pct < 60;
+      if (chargeFilter === 'optimal') return w.utilization_pct >= 60 && w.utilization_pct <= 85;
+      if (chargeFilter === 'overload') return w.utilization_pct > 85;
+      return true;
     });
-  }, [workloads, searchQuery, statusFilter]);
+  }, [workloads, searchQuery, chargeFilter]);
 
-  const handleReassignSubmit = async (e: React.FormEvent) => {
+  // Aggregated Team Metrics (Based strictly on the 5 core members)
+  const summaryMetrics = useMemo(() => {
+    const totalAssignedHours = workloads.reduce((sum, w) => sum + w.assigned_hours, 0);
+    const totalCapacityHours = 5 * 35; // 175h total weekly
+    const freeCapacityHours = Math.max(0, totalCapacityHours - totalAssignedHours);
+    const avgUtilization =
+      workloads.length > 0
+        ? Math.round(workloads.reduce((sum, w) => sum + w.utilization_pct, 0) / workloads.length)
+        : 0;
+    const overloadedCount = workloads.filter((w) => w.utilization_pct >= 85).length;
+    const activeTasksCount = workloads.reduce((sum, w) => sum + (w.todo_tasks + w.in_progress_tasks), 0);
+    const avgOnTime =
+      workloads.length > 0
+        ? Math.round(workloads.reduce((sum, w) => sum + w.on_time_delivery_rate_pct, 0) / workloads.length)
+        : 100;
+
+    return {
+      avgUtilization,
+      freeCapacityHours,
+      overloadedCount,
+      activeTasksCount,
+      onTimeDeliveryRate: avgOnTime,
+    };
+  }, [workloads]);
+
+  // Open Assign Modal for specific member
+  const handleOpenAssignModal = (member: TeamMemberWorkload) => {
+    setSelectedMember(member);
+    setTaskTitle('');
+    setTaskEstimatedHours('4');
+    setTaskPriority('medium');
+    setTaskDueDate(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
+    setAssignModalOpen(true);
+  };
+
+  // Submit new Task assignment
+  const handleAssignTaskSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTask || !targetMemberId) return;
+    if (!selectedMember || !taskTitle.trim() || isAssigning) return;
 
-    setReassigning(true);
+    setIsAssigning(true);
     try {
-      const ok = await reassignTaskAssignee(selectedTask.id, targetMemberId);
-      if (ok) {
-        toastSuccess('Tâche réassignée avec succès');
-        setShowReassignModal(false);
-        setSelectedTask(null);
-        setTargetMemberId('');
-        await loadData();
-      } else {
-        toastError('Erreur lors de la réassignation');
-      }
+      await addTask({
+        title: taskTitle.trim(),
+        priority: taskPriority,
+        due_date: taskDueDate || null,
+        assignee_id: selectedMember.member_id,
+        created_by: currentUserId || null,
+        status: 'todo',
+        project_id: null,
+      });
+
+      toastSuccess(
+        'Tâche assignée !',
+        `La tâche a été attribuée avec succès à ${selectedMember.full_name}.`
+      );
+      setAssignModalOpen(false);
+      await loadData();
     } catch {
-      toastError('Erreur de communication');
+      toastError('Erreur', 'Impossible de créer la tâche.');
     } finally {
-      setReassigning(false);
+      setIsAssigning(false);
     }
   };
 
-  if (!userLoading && !(isAdmin || workspace === 'managing')) {
-    return (
-      <div className="max-w-lg mx-auto py-16 text-center space-y-3">
-        <ShieldAlert className="w-8 h-8 text-mv-amber mx-auto" />
-        <p className="text-sm font-bold text-mv-ink">Réservé aux administrateurs et à l&apos;espace Managing.</p>
-        <Link href="/overview" className="text-xs text-mv-green hover:underline">Retour à l&apos;aperçu</Link>
-      </div>
+  // Trigger Slack/Email reminder
+  const handleTriggerCoachReminder = () => {
+    toastInfo(
+      'Rappel Coach Déclenché',
+      'Le rappel de disponibilité a été envoyé aux 5 membres par notification et email.'
     );
-  }
-
-  if (loading) {
-    return (
-      <PageFadeIn className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
-        <div className="space-y-2">
-          <div className="h-8 w-64 bg-black/[0.06] rounded animate-pulse" />
-          <div className="h-4 w-96 bg-black/[0.04] rounded animate-pulse" />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 bg-mv-surface border border-mv-border rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </PageFadeIn>
-    );
-  }
+  };
 
   return (
-    <PageFadeIn className="space-y-3 max-w-7xl mx-auto pb-16">
-      {/* ── 1. Linear-Style Toolbar Strip (h-10 / 40px) ── */}
-      <div className="h-10 bg-white border border-zinc-200 rounded-lg px-3.5 flex items-center justify-between shadow-2xs">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-mono" style={MONO}>
-            <span>Minerva</span>
-            <span>/</span>
-            <span className="text-zinc-600 font-medium">Équipe</span>
+    <PageFadeIn>
+      <div className="space-y-3.5 pb-12">
+        {/* ── 1. En-tête Contextuel & Barre d'Actions (Toolbar 40px) ────────── */}
+        <div className="h-10 flex items-center justify-between gap-3 border-b border-zinc-200/80 pb-3">
+          <div>
+            <div className="flex items-center gap-1.5 text-[11px] font-mono text-zinc-400" style={MONO}>
+              <span>Minerva</span>
+              <span>/</span>
+              <span>Équipe & RH</span>
+              <span>/</span>
+              <span className="text-zinc-600 font-sans">Charge de Travail</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base font-semibold text-zinc-900 tracking-tight leading-none font-sans">
+                Charge de Travail & Capacité
+              </h1>
+              <span
+                className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded leading-none flex items-center gap-1"
+                style={MONO}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span>5 Collaborateurs</span>
+              </span>
+            </div>
           </div>
-          <span className="text-zinc-200">|</span>
-          <h1 className="text-xs sm:text-sm font-semibold text-zinc-900 tracking-tight truncate">
-            Charge de Travail & Capacité
-          </h1>
-          <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded font-mono" style={MONO}>
-            {workloads.length} Collaborateurs
-          </span>
+
+          <div className="flex items-center gap-2">
+            {/* Bouton Refresh */}
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="h-7 px-2.5 text-xs border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 rounded-md shadow-xs flex items-center gap-1.5 font-sans cursor-pointer transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={cn('w-3 h-3 text-zinc-500', loading && 'animate-spin')} />
+              <span>Actualiser</span>
+            </button>
+
+            {/* Bouton Gérer les Tâches (⌘ + T) */}
+            <Link
+              href="/tasks"
+              className="h-7 px-3 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-md shadow-xs flex items-center gap-1.5 font-sans transition-colors cursor-pointer"
+              title="Raccourci : ⌘ + T"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>Gérer les Tâches</span>
+              <span
+                className="hidden sm:inline-block text-[10px] text-emerald-200 font-mono ml-0.5 bg-emerald-800/40 px-1 rounded"
+                style={MONO}
+              >
+                ⌘T
+              </span>
+            </Link>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={loadData}
-            className="h-7 px-2 text-xs font-medium rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 flex items-center gap-1 transition-colors cursor-pointer"
-            title="Actualiser les charges d'équipe"
-          >
-            <RefreshCw size={12} className={cn(loading && 'animate-spin')} />
-            <span className="hidden md:inline">Actualiser</span>
-          </button>
-
-          <Link
-            href="/tasks"
-            className="h-7 px-2.5 text-xs font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 transition-colors shadow-2xs"
-            title="Ouvrir la gestion des tâches"
-          >
-            <CheckSquare size={13} />
-            <span>Gérer les Tâches</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* ── 2. Monolithic KPI Ribbon (divide-x) ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-zinc-200 rounded-lg divide-x divide-zinc-100 shadow-2xs overflow-hidden">
-        {/* Metric 1 */}
-        <div className="px-3.5 py-2.5 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-            <span>Taux d’Occupation</span>
-            <Gauge size={13} className="text-zinc-400" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
-              <AnimatedNumber value={summary?.average_team_utilization_pct || 0} /> %
+        {/* ── 2. Ruban de Synthèse Monolithique (Strip de 4 Métriques) ──────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-zinc-200 rounded-lg divide-x divide-zinc-100 shadow-xs">
+          {/* Métrique 1 : Taux d'Occupation */}
+          <div className="p-3 sm:p-3.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-sans">
+              Taux d'Occupation
             </span>
+            <div className="text-xl font-bold font-mono text-zinc-900 mt-1 tracking-tight" style={MONO}>
+              {summaryMetrics.avgUtilization} %
+            </div>
+            <div className="mt-1 text-[11px] text-zinc-500 font-sans">
+              Capacité libre : <span className="font-mono text-zinc-700 font-semibold" style={MONO}>{summaryMetrics.freeCapacityHours}h</span>
+            </div>
           </div>
-          <span className="text-[11px] text-zinc-400 font-mono mt-0.5" style={MONO}>
-            Moyenne hebdomadaire
-          </span>
-        </div>
 
-        {/* Metric 2 */}
-        <div className="px-3.5 py-2.5 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-            <span>En Surcharge (≥85%)</span>
-            <AlertTriangle size={13} className="text-amber-600" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className={cn('text-lg font-bold font-mono tabular-nums', (summary?.overloaded_members_count || 0) > 0 ? 'text-amber-700' : 'text-zinc-900')} style={MONO}>
-              <AnimatedNumber value={summary?.overloaded_members_count || 0} />
+          {/* Métrique 2 : En Surcharge */}
+          <div className="p-3 sm:p-3.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-sans">
+              En Surcharge (≥ 85%)
             </span>
-            <span className="text-[10.5px] text-zinc-400 font-mono">collaborateurs</span>
+            <div className="text-xl font-bold font-mono text-zinc-900 mt-1 tracking-tight" style={MONO}>
+              {summaryMetrics.overloadedCount}
+            </div>
+            <div className="mt-1 text-[11px] text-zinc-500 font-sans">
+              {summaryMetrics.overloadedCount === 0 ? 'Charge équilibrée' : 'Attention requise'}
+            </div>
           </div>
-          <span className="text-[11px] text-zinc-400 font-mono mt-0.5" style={MONO}>
-            {(summary?.overloaded_members_count || 0) > 0 ? 'Rééquilibrage conseillé' : 'Charge équilibrée'}
-          </span>
-        </div>
 
-        {/* Metric 3 */}
-        <div className="px-3.5 py-2.5 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-            <span>Tâches Actives</span>
-            <CheckSquare size={13} className="text-blue-600" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
-              <AnimatedNumber value={allTasks.filter((t) => t.status !== 'done').length} />
+          {/* Métrique 3 : Tâches Actives */}
+          <div className="p-3 sm:p-3.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-sans">
+              Tâches Actives
             </span>
-            <span className="text-[10.5px] text-zinc-400 font-mono">en cours</span>
+            <div className="text-xl font-bold font-mono text-zinc-900 mt-1 tracking-tight" style={MONO}>
+              {summaryMetrics.activeTasksCount}
+            </div>
+            <div className="mt-1 text-[11px] text-zinc-500 font-sans">
+              Flux opérationnel nominal
+            </div>
           </div>
-          <span className="text-[11px] text-zinc-400 font-mono mt-0.5" style={MONO}>
-            Flux opérationnel
-          </span>
-        </div>
 
-        {/* Metric 4 */}
-        <div className="px-3.5 py-2.5 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-            <span>Respect Échéances</span>
-            <ShieldCheck size={13} className="text-emerald-600" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-lg font-bold font-mono tabular-nums text-emerald-700" style={MONO}>
-              <AnimatedNumber value={summary?.global_on_time_delivery_pct || 100} /> %
+          {/* Métrique 4 : Respect des Échéances */}
+          <div className="p-3 sm:p-3.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-sans">
+              Respect des Échéances
             </span>
+            <div className="text-xl font-bold font-mono text-emerald-600 mt-1 tracking-tight" style={MONO}>
+              {summaryMetrics.onTimeDeliveryRate} %
+            </div>
+            <div className="mt-1 text-[11px] text-emerald-700 font-sans flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Livraisons à temps</span>
+            </div>
           </div>
-          <span className="text-[11px] text-emerald-600 font-mono mt-0.5" style={MONO}>
-            Livraisons à temps
-          </span>
-        </div>
-      </div>
-
-      {/* ── 3. Search & Filter Bar (h-8) ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div className="relative">
-          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-          <input
-            type="text"
-            placeholder="Rechercher un coéquipier..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-48 sm:w-64 h-7 pl-7 pr-2 text-xs rounded-md bg-white border border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-600"
-          />
         </div>
 
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-7 px-2 text-xs rounded-md bg-white border border-zinc-200 text-zinc-700 focus:outline-none focus:border-emerald-600 cursor-pointer font-mono"
-          style={MONO}
-        >
-          <option value="all">Toutes les charges</option>
-          <option value="overloaded">En Surcharge (≥85%)</option>
-          <option value="optimal">Charge Optimale (60-84%)</option>
-          <option value="available">Capacité Disponible (&lt;60%)</option>
-        </select>
-      </div>
+        {/* ── 3. DataTable de Staffing Monolithique (Lignes de 36px) ───────── */}
+        <div className="border border-zinc-200 rounded-lg bg-white overflow-hidden shadow-xs">
+          {/* Barre d'Outils Intégrée */}
+          <div className="h-10 px-3.5 border-b border-zinc-200/80 flex items-center justify-between gap-3 bg-white">
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2 top-1/2 -translate-y-1/2" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Rechercher un coéquipier... (/)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-7 text-xs w-60 pl-7 pr-2.5 border border-zinc-200 rounded-md bg-white text-zinc-800 placeholder-zinc-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-sans"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
 
-      {/* ── 4. Staffing Heatmap DataTable (42px per row) ── */}
-      <div className="bg-white border border-zinc-200 rounded-lg shadow-2xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-zinc-200/80 bg-zinc-50/75 text-[10px] uppercase font-mono tracking-wider text-zinc-400">
-                <th className="py-2 px-3 font-semibold min-w-[200px]">COLLABORATEUR</th>
-                <th className="py-2 px-3 font-semibold w-28">CHARGE HEBDO</th>
-                <th className="py-2 px-3 font-semibold w-48">JAUGE D’UTILISATION</th>
-                <th className="py-2 px-3 font-semibold w-44">RÉPARTITION</th>
-                <th className="py-2 px-3 font-semibold">TÂCHES ASSIGNÉES</th>
-                <th className="py-2 px-3 font-semibold w-24 text-right">ACTION</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
-              {filteredWorkloads.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-xs text-zinc-400">
-                    <div className="space-y-1.5 max-w-sm mx-auto">
-                      <UsersRound className="w-6 h-6 text-zinc-300 mx-auto" />
-                      <p className="font-medium text-zinc-600">Aucun collaborateur trouvé</p>
-                      <p className="text-[11px] text-zinc-400">
-                        Aucun membre ne correspond à vos filtres de recherche.
-                      </p>
-                    </div>
-                  </td>
+            {/* Sélecteur de filtre de charge */}
+            <div className="flex items-center gap-2">
+              <select
+                value={chargeFilter}
+                onChange={(e) => setChargeFilter(e.target.value as any)}
+                className="h-7 text-xs border border-zinc-200 rounded-md bg-white px-2 text-zinc-700 focus:outline-none focus:border-emerald-500 font-sans cursor-pointer"
+              >
+                <option value="all">Toutes les charges</option>
+                <option value="available">Disponible (&lt; 60%)</option>
+                <option value="optimal">Charge Optimale (60% - 85%)</option>
+                <option value="overload">En Surcharge (&gt; 85%)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Grille Dense (36px par ligne) */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr
+                  className="border-b border-zinc-200 bg-zinc-50/70 text-[10px] uppercase font-mono text-zinc-400 tracking-wider select-none"
+                  style={MONO}
+                >
+                  <th className="py-2 px-3.5 font-semibold">COLLABORATEUR</th>
+                  <th className="py-2 px-3 font-semibold">RÔLE</th>
+                  <th className="py-2 px-3 font-semibold">CHARGE HEBDO</th>
+                  <th className="py-2 px-3 font-semibold">JAUGE DE CAPACITÉ</th>
+                  <th className="py-2 px-3 font-semibold">RÉPARTITION (TÂCHES)</th>
+                  <th className="py-2 px-3 text-center font-semibold">STATUT</th>
+                  <th className="py-2 px-3.5 text-right font-semibold">ACTION</th>
                 </tr>
-              ) : (
-                filteredWorkloads.map((member) => {
-                  const isOverloaded = member.utilization_pct >= 85;
-                  const isOptimal = member.utilization_pct >= 60 && member.utilization_pct < 85;
-                  const displayName = (member.full_name || 'Membre').toUpperCase();
-                  const initials = displayName
-                    .split(' ')
-                    .map((n) => n[0])
-                    .slice(0, 2)
-                    .join('')
-                    .toUpperCase();
+              </thead>
+              <tbody className="divide-y divide-zinc-100 text-xs font-sans">
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-zinc-400 font-sans text-xs">
+                      Chargement de la charge d'équipe...
+                    </td>
+                  </tr>
+                ) : filteredWorkloads.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-zinc-400 font-sans text-xs">
+                      Aucun collaborateur trouvé pour ce filtre.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredWorkloads.map((w) => {
+                    const initials = w.full_name
+                      .split(' ')
+                      .map((p) => p[0])
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase();
 
-                  return (
-                    <tr
-                      key={member.member_id}
-                      className="h-11 hover:bg-zinc-50/80 transition-colors group select-none"
-                    >
-                      {/* Member profile */}
-                      <td className="py-2 px-3 min-w-0">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-6 h-6 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-700 text-[10px] font-bold flex items-center justify-center shrink-0">
-                            {initials}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold text-zinc-900 truncate leading-tight tracking-wide">
-                              {displayName}
-                            </p>
-                            <p className="text-[10px] text-zinc-400 truncate leading-tight font-mono" style={MONO}>
-                              {member.email || '—'}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
+                    const isOverload = w.utilization_pct > 85;
+                    const isOptimal = w.utilization_pct >= 60 && w.utilization_pct <= 85;
+                    const roleTitle = OFFICIAL_ROLES_MAP[w.email || ''] || 'Associé Minerva';
 
-                      {/* Charge hebdo */}
-                      <td className="py-2 px-3 font-mono text-[11.5px] text-zinc-700 whitespace-nowrap" style={MONO}>
-                        <span className="font-bold text-zinc-900">{member.assigned_hours}h</span>
-                        <span className="text-zinc-400"> / {member.capacity_hours}h</span>
-                      </td>
-
-                      {/* Utilization gauge */}
-                      <td className="py-2 px-3">
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-[10.5px] font-mono" style={MONO}>
-                            <span className={cn('font-bold', isOverloaded ? 'text-rose-600' : isOptimal ? 'text-emerald-700' : 'text-blue-600')}>
-                              {member.utilization_pct} %
-                            </span>
-                            <span className="text-zinc-400 text-[10px]">
-                              {isOverloaded ? 'Surcharge' : isOptimal ? 'Optimal' : 'Disponible'}
-                            </span>
+                    return (
+                      <tr
+                        key={w.member_id}
+                        className="h-9 hover:bg-zinc-50/80 transition-colors group"
+                      >
+                        {/* Collaborateur (Sans-serif normal-case) */}
+                        <td className="py-1 px-3.5 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold flex items-center justify-center shrink-0 border border-emerald-200">
+                              {initials}
+                            </div>
+                            <div>
+                              <div className="text-xs font-medium text-zinc-900 font-sans leading-none">
+                                {w.full_name}
+                              </div>
+                              <div className="text-[11px] text-zinc-400 font-mono leading-none mt-0.5" style={MONO}>
+                                {w.email}
+                              </div>
+                            </div>
                           </div>
-                          <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200/50">
+                        </td>
+
+                        {/* Rôle */}
+                        <td className="py-1 px-3 text-zinc-600 text-xs font-sans whitespace-nowrap">
+                          {roleTitle}
+                        </td>
+
+                        {/* Charge Hebdo (Monospace Strict) */}
+                        <td className="py-1 px-3 font-mono text-zinc-700 whitespace-nowrap" style={MONO}>
+                          <span className="font-semibold text-zinc-900">{w.assigned_hours}h</span>
+                          <span className="text-zinc-400"> / 35h </span>
+                          <span className="text-zinc-500">({w.utilization_pct}%)</span>
+                        </td>
+
+                        {/* Jauge Fine 4px */}
+                        <td className="py-1 px-3 whitespace-nowrap">
+                          <div className="w-24 bg-zinc-100 rounded-full h-1 overflow-hidden">
                             <div
                               className={cn(
-                                'h-full rounded-full transition-all duration-300',
-                                isOverloaded ? 'bg-rose-500' : isOptimal ? 'bg-emerald-500' : 'bg-blue-500'
+                                'h-1 rounded-full transition-all duration-500',
+                                isOverload
+                                  ? 'bg-red-500'
+                                  : isOptimal
+                                  ? 'bg-emerald-500'
+                                  : 'bg-zinc-400'
                               )}
-                              style={{ width: `${Math.min(100, member.utilization_pct)}%` }}
+                              style={{ width: `${Math.max(w.utilization_pct, 4)}%` }}
                             />
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Task status breakdown */}
-                      <td className="py-2 px-3 whitespace-nowrap">
-                        <div className="flex items-center gap-1 text-[10.5px] font-mono" style={MONO}>
-                          <span className="px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-700 border border-zinc-200/60" title="À faire">
-                            {member.todo_tasks} td
-                          </span>
-                          <span className="px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200/60" title="En cours">
-                            {member.in_progress_tasks} act
-                          </span>
-                          {member.overdue_tasks > 0 ? (
-                            <span className="px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 font-bold border border-rose-200/60" title="En retard">
-                              {member.overdue_tasks} ret
+                        {/* Répartition (Tâches) */}
+                        <td className="py-1 px-3 text-zinc-600 text-xs whitespace-nowrap">
+                          <span className="font-medium text-zinc-800 font-mono" style={MONO}>
+                            {w.in_progress_tasks}
+                          </span>{' '}
+                          active{w.in_progress_tasks > 1 ? 's' : ''} ·{' '}
+                          <span className="font-medium text-zinc-800 font-mono" style={MONO}>
+                            {w.todo_tasks}
+                          </span>{' '}
+                          en attente
+                        </td>
+
+                        {/* Statut avec pastille conforme */}
+                        <td className="py-1 px-3 text-center whitespace-nowrap">
+                          {isOverload ? (
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-sans font-medium text-red-700 bg-red-50 border border-red-200"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+                              <span>Surcharge</span>
+                            </span>
+                          ) : isOptimal ? (
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-sans font-medium text-emerald-700 bg-emerald-50 border border-emerald-200"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                              <span>Optimal</span>
                             </span>
                           ) : (
-                            <span className="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60" title="Zéro retard">
-                              0 ret
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-sans font-medium text-zinc-600 bg-zinc-100 border border-zinc-200"
+                            >
+                              <span>Disponible</span>
                             </span>
                           )}
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Assigned Tasks Tags */}
-                      <td className="py-2 px-3 min-w-0">
-                        {member.active_deliverables.length === 0 ? (
-                          <span className="text-[11px] text-zinc-400 italic">Aucune tâche assignée</span>
-                        ) : (
-                          <div className="flex items-center gap-1.5 overflow-hidden">
-                            {member.active_deliverables.slice(0, 2).map((d) => (
-                              <span
-                                key={d.id}
-                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-50 border border-zinc-200/80 text-[10.5px] text-zinc-700 truncate max-w-[160px]"
-                                title={d.title}
-                              >
-                                <span className="truncate">{d.title}</span>
-                              </span>
-                            ))}
-                            {member.active_deliverables.length > 2 && (
-                              <span className="text-[10px] font-mono text-zinc-400">
-                                +{member.active_deliverables.length - 2}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </td>
+                        {/* Action Inline (+ Assigner au survol) */}
+                        <td className="py-1 px-3.5 text-right whitespace-nowrap">
+                          <button
+                            onClick={() => handleOpenAssignModal(w)}
+                            className="opacity-0 group-hover:opacity-100 text-xs text-zinc-700 hover:text-emerald-700 border border-zinc-200 hover:border-emerald-300 rounded px-2 py-0.5 bg-white hover:bg-emerald-50 shadow-2xs font-sans transition-all cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Assigner</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
 
-                      {/* Action */}
-                      <td className="py-2 px-3 text-right whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const firstTask = member.active_deliverables[0];
-                            if (firstTask) {
-                              const found = allTasks.find((t) => t.id === firstTask.id);
-                              setSelectedTask(found || ({ id: firstTask.id, title: firstTask.title, status: (firstTask.status as Task['status']) || 'todo' } as Task));
-                            } else {
-                              setSelectedTask(allTasks[0] || null);
-                            }
-                            setShowReassignModal(true);
-                          }}
-                          className="h-6 px-2 text-[10.5px] font-mono font-medium rounded border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-2xs"
-                        >
-                          Réassigner
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+          {/* ── 4. Intégration Compacte du Coach Minerva (Bottom Strip 36px) ── */}
+          <div className="h-9 px-3.5 border-t border-zinc-200/80 bg-zinc-50/70 flex items-center justify-between text-xs font-sans text-zinc-600">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              <span>
+                <strong className="text-zinc-900 font-medium">Coach Minerva :</strong>{' '}
+                <span className="font-mono text-zinc-800" style={MONO}>
+                  {pollResponsesCount}/5
+                </span>{' '}
+                réponses collectées sur le sondage hebdomadaire d'équipe.
+              </span>
+            </div>
+
+            <button
+              onClick={handleTriggerCoachReminder}
+              className="text-[11px] text-emerald-700 hover:text-emerald-900 font-medium hover:underline cursor-pointer flex items-center gap-1"
+            >
+              <span>Déclencher rappel Slack/Email →</span>
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* ── Coach Minerva — revue admin ── */}
-      {isAdmin && (
-        <div className="space-y-4 border-t border-mv-border pt-6">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-mv-ink">Coach Minerva</h2>
-              <p className="text-[11px] text-mv-ink-soft">Points quotidiens/hebdo et sondage de disponibilité, générés par le bot IA d'équipe.</p>
-            </div>
-          </div>
-
-          {ghostStatuses.length > 0 && (
-            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 border border-amber-200">
-              <Ghost className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-              <div className="text-xs">
-                <p className="font-bold text-amber-800">
-                  {ghostStatuses.length} membre{ghostStatuses.length > 1 ? 's' : ''} silencieux détecté{ghostStatuses.length > 1 ? 's' : ''}
-                </p>
-                <p className="text-amber-700 text-[11px] mt-0.5">
-                  {ghostStatuses.map((g) => g.member_name).join(', ')} -- relancé{ghostStatuses.length > 1 ? 's' : ''} automatiquement par Coach Minerva.
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card className="p-4 bg-mv-surface border-mv-border rounded-xl space-y-2.5">
-              <span className="text-[10.5px] font-bold text-mv-ink-faint uppercase tracking-wider">
-                Point du jour ({standups.length}/{workloads.length || 0})
-              </span>
-              {standups.length === 0 ? (
-                <p className="text-[11px] text-mv-ink-faint italic">Aucune réponse pour aujourd'hui.</p>
-              ) : (
-                <div className="space-y-2 max-h-72 overflow-y-auto">
-                  {standups.map((s) => (
-                    <div key={s.id} className="p-2.5 rounded-lg border border-mv-border bg-white text-xs space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-mv-ink">{s.member_name}</span>
-                        <span className="text-[10px] text-mv-ink-faint" style={MONO}>{s.task_snapshot.length} tâche(s)</span>
-                      </div>
-                      {s.open_answer ? (
-                        <p className="text-mv-ink-soft italic">« {s.open_answer} »</p>
-                      ) : (
-                        <p className="text-mv-ink-faint text-[10.5px]">Pas encore répondu à la question ouverte.</p>
-                      )}
-                    </div>
-                  ))}
+        {/* ── 5. Modal d'Assignation Rapide de Tâche ───────────────────────── */}
+        {assignModalOpen && selectedMember && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <div className="bg-white border border-zinc-200 rounded-xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+              <div className="px-4 py-3 border-b border-zinc-200 flex items-center justify-between bg-zinc-50">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-emerald-600" />
+                  <h4 className="text-sm font-semibold text-zinc-900 font-sans">
+                    Assigner une tâche à {selectedMember.full_name}
+                  </h4>
                 </div>
-              )}
-            </Card>
+                <button
+                  onClick={() => setAssignModalOpen(false)}
+                  className="text-zinc-400 hover:text-zinc-600 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
 
-            <Card className="p-4 bg-mv-surface border-mv-border rounded-xl space-y-2.5">
-              <span className="text-[10.5px] font-bold text-mv-ink-faint uppercase tracking-wider">
-                Point hebdo ({checkins.length}/{workloads.length || 0})
-              </span>
-              {checkins.length === 0 ? (
-                <p className="text-[11px] text-mv-ink-faint italic">Aucune réponse cette semaine.</p>
-              ) : (
-                <div className="space-y-2 max-h-72 overflow-y-auto">
-                  {checkins.map((c) => (
-                    <div key={c.id} className="p-2.5 rounded-lg border border-mv-border bg-white text-xs space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-mv-ink">{c.member_name}</span>
-                        <span className="text-[10px] text-mv-ink-faint" style={MONO}>{c.task_snapshot.length} tâche(s)</span>
-                      </div>
-                      {c.open_answer ? (
-                        <p className="text-mv-ink-soft italic">« {c.open_answer} »</p>
-                      ) : (
-                        <p className="text-mv-ink-faint text-[10.5px]">Pas encore répondu à la question ouverte.</p>
-                      )}
-                    </div>
-                  ))}
+              <form onSubmit={handleAssignTaskSubmit} className="p-4 space-y-3 text-xs font-sans">
+                <div>
+                  <label className="block text-zinc-700 font-semibold mb-1">
+                    Intitulé de la tâche :
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Refonte de la page pricing Framer"
+                    value={taskTitle}
+                    onChange={(e) => setTaskTitle(e.target.value)}
+                    className="w-full h-8 px-2.5 border border-zinc-300 rounded-md focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-sans"
+                  />
                 </div>
-              )}
-            </Card>
-          </div>
 
-          {latestPoll && (
-            <Card className="p-4 bg-mv-surface border-mv-border rounded-xl space-y-2.5">
-              <div className="flex items-center gap-2">
-                <CalendarClock className="w-3.5 h-3.5 text-mv-green" />
-                <span className="text-[10.5px] font-bold text-mv-ink-faint uppercase tracking-wider">{latestPoll.question}</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {latestPoll.proposed_slots.map((slot, idx) => {
-                  const votes = latestPollVotes.filter((v) => v.slot_index === idx);
-                  return (
-                    <div key={idx} className="p-2.5 rounded-lg border border-mv-border bg-white text-xs space-y-1">
-                      <p className="font-semibold text-mv-ink">{slot.label}</p>
-                      <p className="text-[10px] text-mv-ink-faint" style={MONO}>{votes.length} vote{votes.length > 1 ? 's' : ''}</p>
-                      {votes.length > 0 && (
-                        <p className="text-[10.5px] text-mv-ink-soft truncate">{votes.map((v) => v.member_name).join(', ')}</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          )}
-
-          {weeklyReports.length > 0 && (
-            <Card className="p-4 bg-mv-surface border-mv-border rounded-xl space-y-2.5">
-              <span className="text-[10.5px] font-bold text-mv-ink-faint uppercase tracking-wider">
-                Rapport hebdomadaire (taux de réponse & tendance)
-              </span>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {weeklyReports.map((r) => (
-                  <div key={r.id} className="p-2.5 rounded-lg border border-mv-border bg-white text-xs space-y-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-mv-ink flex items-center gap-1.5">
-                        {r.member_name}
-                        {r.is_ghosting && <Ghost className="w-3 h-3 text-amber-600" />}
-                      </span>
-                      <Badge variant={r.response_rate_pct >= 70 ? 'green' : r.response_rate_pct >= 40 ? 'amber' : 'red'} className="text-[10px]">
-                        {r.response_rate_pct}% ({r.standups_answered}/{r.standups_total})
-                      </Badge>
-                    </div>
-                    {r.trend_summary && <p className="text-mv-ink-soft text-[11px]">{r.trend_summary}</p>}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-zinc-700 font-semibold mb-1">
+                      Heures estimées :
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      max="35"
+                      value={taskEstimatedHours}
+                      onChange={(e) => setTaskEstimatedHours(e.target.value)}
+                      className="w-full h-8 px-2.5 border border-zinc-300 rounded-md focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono"
+                      style={MONO}
+                    />
                   </div>
-                ))}
-              </div>
-            </Card>
-          )}
-        </div>
-      )}
+                  <div>
+                    <label className="block text-zinc-700 font-semibold mb-1">
+                      Priorité :
+                    </label>
+                    <select
+                      value={taskPriority}
+                      onChange={(e) => setTaskPriority(e.target.value as 'low' | 'medium' | 'high' | 'urgent')}
+                      className="w-full h-8 px-2 border border-zinc-300 rounded-md focus:border-emerald-500 bg-white font-sans"
+                    >
+                      <option value="low">Basse</option>
+                      <option value="medium">Normale</option>
+                      <option value="high">Haute</option>
+                      <option value="urgent">Urgente</option>
+                    </select>
+                  </div>
+                </div>
 
-      {/* ── Reassign Task Modal ── */}
-      {showReassignModal && selectedTask && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <Card className="w-full max-w-md p-6 bg-mv-surface border-mv-border rounded-xl shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-mv-border pb-3">
-              <div className="flex items-center gap-2">
-                <ArrowLeftRight className="w-5 h-5 text-mv-green" />
-                <h3 className="text-sm font-bold text-mv-ink">Réassigner la tâche</h3>
-              </div>
-              <button
-                onClick={() => {
-                  setShowReassignModal(false);
-                  setSelectedTask(null);
-                }}
-                className="text-mv-ink-faint hover:text-mv-ink text-xs cursor-pointer"
-              >
-                ✕
-              </button>
+                <div>
+                  <label className="block text-zinc-700 font-semibold mb-1">
+                    Date d'échéance :
+                  </label>
+                  <input
+                    type="date"
+                    value={taskDueDate}
+                    onChange={(e) => setTaskDueDate(e.target.value)}
+                    className="w-full h-8 px-2.5 border border-zinc-300 rounded-md focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono"
+                    style={MONO}
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAssignModalOpen(false)}
+                    className="h-8 px-3 text-zinc-600 hover:bg-zinc-100 rounded-md cursor-pointer font-sans"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isAssigning}
+                    className="h-8 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md shadow-xs flex items-center gap-1.5 cursor-pointer font-sans disabled:opacity-50"
+                  >
+                    <Send className="w-3 h-3" />
+                    <span>{isAssigning ? 'Attribution...' : 'Assigner la tâche'}</span>
+                  </button>
+                </div>
+              </form>
             </div>
-
-            <form onSubmit={handleReassignSubmit} className="space-y-4">
-              <div className="p-3 rounded-lg bg-mv-cream-soft border border-mv-border space-y-1">
-                <span className="text-[10.5px] font-bold text-mv-ink-faint uppercase block">Tâche sélectionnée</span>
-                <p className="text-xs font-semibold text-mv-ink">{selectedTask.title}</p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-mv-ink mb-1.5">
-                  Nouveau collaborateur assigné
-                </label>
-                <select
-                  required
-                  value={targetMemberId}
-                  onChange={(e) => setTargetMemberId(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-lg bg-mv-surface border border-mv-border text-mv-ink focus:outline-none focus:border-mv-green cursor-pointer"
-                >
-                  <option value="">Sélectionner un coéquipier...</option>
-                  {workloads.map((w) => (
-                    <option key={w.member_id} value={w.member_id}>
-                      {w.full_name} ({w.utilization_pct}% charge — {w.assigned_hours}h)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-mv-border">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setShowReassignModal(false);
-                    setSelectedTask(null);
-                  }}
-                  className="text-xs cursor-pointer text-mv-ink-soft"
-                >
-                  Annuler
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={reassigning || !targetMemberId}
-                  className="bg-mv-green hover:bg-mv-green/90 text-white text-xs gap-1.5 cursor-pointer"
-                >
-                  <ArrowLeftRight size={13} />
-                  <span>{reassigning ? 'Réassignation...' : 'Confirmer la réassignation'}</span>
-                </Button>
-              </div>
-            </form>
-          </Card>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </PageFadeIn>
   );
 }

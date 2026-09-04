@@ -1780,9 +1780,11 @@ export async function addTask(task: {
   client_id?: string | null;
   lead_id?: string | null;
   assignee_id?: string | null;
-  created_by: string;
+  created_by?: string | null;
   due_date?: string | null;
   department?: string | null;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  status?: 'todo' | 'in_progress' | 'done';
 }): Promise<Task | null> {
   const supabase = getSupabase();
 
@@ -1796,9 +1798,15 @@ export async function addTask(task: {
     department = project?.department ?? null;
   }
 
+  let createdBy = task.created_by;
+  if (!createdBy) {
+    const { data: authData } = await supabase.auth.getUser();
+    createdBy = authData?.user?.id ?? null;
+  }
+
   const { data, error } = await supabase
     .from('tasks')
-    .insert([{ ...task, department: department ?? null }])
+    .insert([{ ...task, created_by: createdBy, department: department ?? null }])
     .select(TASK_SELECT)
     .single();
 

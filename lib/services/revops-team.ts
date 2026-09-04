@@ -60,50 +60,104 @@ export function calculateHybridCommission(
   };
 }
 
+export const CORE_OFFICIAL_TEAM = [
+  {
+    email: 'kbelceus776@gmail.com',
+    full_name: 'Kael Belceus',
+    role: 'admin',
+    department: 'Direction & Architecture',
+    job_title: 'Fondateur & Lead Architect',
+    specialty: 'web_framer' as TeamSpecialty,
+  },
+  {
+    email: 'byeh50230@gmail.com',
+    full_name: 'Manpreet Singh',
+    role: 'member',
+    department: 'Growth & Vidéo',
+    job_title: 'Associé Growth & Studio',
+    specialty: 'video_production' as TeamSpecialty,
+  },
+  {
+    email: 'rayanmohellebi2009@gmail.com',
+    full_name: 'Rayan',
+    role: 'member',
+    department: 'Ventes & Closing',
+    job_title: 'Associé Ventes & Outbound',
+    specialty: 'ads_acquisition' as TeamSpecialty,
+  },
+  {
+    email: 'samade3434@gmail.com',
+    full_name: 'Samuel Olamide Adeleke',
+    role: 'member',
+    department: 'Tech & Systèmes',
+    job_title: 'Ingénieur Full-Stack',
+    specialty: 'web_framer' as TeamSpecialty,
+  },
+  {
+    email: 'karroubiamine@hotmail.com',
+    full_name: 'Amine Yahya Karroubi',
+    role: 'member',
+    department: 'Opérations & Client Success',
+    job_title: 'Account Manager Lead',
+    specialty: 'pos_operations' as TeamSpecialty,
+  },
+];
+
 export async function fetchTeamWorkloads(): Promise<TeamMemberWorkload[]> {
   try {
     const supabase = getSupabase();
-    const [{ data: profiles }, tasks] = await Promise.all([
-      supabase.from('profiles').select('id, full_name, email, role, department, avatar_url').order('full_name', { ascending: true }),
+    const [{ data: rawProfiles }, tasks] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, full_name, email, role, department, avatar_url, approved')
+        .order('full_name', { ascending: true }),
       fetchTasks(),
     ]);
 
-    if (!profiles || profiles.length === 0) {
-      return [];
-    }
-
     const todayStr = new Date().toISOString().slice(0, 10);
+    const profiles = rawProfiles || [];
 
-    const workloads: TeamMemberWorkload[] = (profiles as Array<{
-      id: string;
-      full_name?: string | null;
-      email?: string | null;
-      role?: string | null;
-      department?: string | null;
-      avatar_url?: string | null;
-    }>).map((p) => {
-      const mine = tasks.filter((t: Task) => t.assignee_id === p.id);
+    // Map strictly to the 5 official core members
+    const workloads: TeamMemberWorkload[] = CORE_OFFICIAL_TEAM.map((official, idx) => {
+      // Find matching DB profile by email or full_name
+      const matched = profiles.find((p) => {
+        const pEmail = (p.email || '').toLowerCase().trim();
+        const pName = (p.full_name || '').toLowerCase().trim();
+        const oEmail = official.email.toLowerCase();
+        const oName = official.full_name.toLowerCase();
+
+        if (pEmail === oEmail) return true;
+        if (oName === 'rayan' && (pName === 'rayan' || pName.startsWith('rayan '))) return true;
+        if (pName.includes(oName) || oName.includes(pName)) {
+          // Guard against Kael duplicate emails
+          if (oEmail === 'kbelceus776@gmail.com' && pEmail && pEmail !== 'kbelceus776@gmail.com') return false;
+          return true;
+        }
+        return false;
+      });
+
+      const memberId = matched?.id || `official-${idx + 1}`;
+      const fullName = official.full_name;
+      const email = matched?.email || official.email;
+      const avatarUrl = matched?.avatar_url || null;
+
+      const mine = tasks.filter(
+        (t: Task) => t.assignee_id === memberId || (matched?.id && t.assignee_id === matched.id)
+      );
       const todo = mine.filter((t: Task) => t.status === 'todo').length;
       const inProg = mine.filter((t: Task) => t.status === 'in_progress').length;
       const done = mine.filter((t: Task) => t.status === 'done').length;
       const activeTasksCount = todo + inProg;
       const overdue = mine.filter((t: Task) => t.status !== 'done' && t.due_date && t.due_date < todayStr).length;
-      
-      const assignedHours = activeTasksCount * DEFAULT_TASK_ESTIMATED_HOURS;
-      const utilPct = Math.round((assignedHours / DEFAULT_WEEKLY_CAPACITY_HOURS) * 100);
 
-      let specialty: TeamSpecialty = 'generalist';
-      const dept = (p.department || '').toLowerCase();
-      if (dept.includes('vidéo') || dept.includes('video') || dept.includes('créa')) specialty = 'video_production';
-      else if (dept.includes('tech') || dept.includes('dev') || dept.includes('web')) specialty = 'web_framer';
-      else if (dept.includes('vente') || dept.includes('sales') || dept.includes('acquisition')) specialty = 'ads_acquisition';
-      else if (dept.includes('ops') || dept.includes('pos')) specialty = 'pos_operations';
+      const assignedHours = activeTasksCount * DEFAULT_TASK_ESTIMATED_HOURS;
+      const utilPct = Math.min(100, Math.round((assignedHours / DEFAULT_WEEKLY_CAPACITY_HOURS) * 100));
 
       return {
-        member_id: p.id,
-        full_name: p.full_name || p.email?.split('@')[0] || 'Membre',
-        email: p.email || null,
-        specialty,
+        member_id: memberId,
+        full_name: fullName,
+        email: email,
+        specialty: official.specialty,
         total_tasks: mine.length,
         todo_tasks: todo,
         in_progress_tasks: inProg,
@@ -112,15 +166,19 @@ export async function fetchTeamWorkloads(): Promise<TeamMemberWorkload[]> {
         assigned_hours: assignedHours,
         capacity_hours: DEFAULT_WEEKLY_CAPACITY_HOURS,
         utilization_pct: utilPct,
-        on_time_delivery_rate_pct: mine.length === 0 ? 100 : overdue === 0 ? 100 : Math.max(0, Math.round(((mine.length - overdue) / mine.length) * 100)),
+        on_time_delivery_rate_pct:
+          mine.length === 0 ? 100 : overdue === 0 ? 100 : Math.max(0, Math.round(((mine.length - overdue) / mine.length) * 100)),
         total_commissions_earned_cad: 0.0,
-        active_deliverables: mine.filter((t) => t.status !== 'done').slice(0, 4).map((t: Task) => ({
-          id: t.id,
-          title: t.title,
-          client_name: 'Projet Assigné',
-          due_date: t.due_date,
-          status: t.status,
-        })),
+        active_deliverables: mine
+          .filter((t) => t.status !== 'done')
+          .slice(0, 4)
+          .map((t: Task) => ({
+            id: t.id,
+            title: t.title,
+            client_name: 'Projet Assigné',
+            due_date: t.due_date,
+            status: t.status,
+          })),
       };
     });
 

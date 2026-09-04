@@ -2,6 +2,32 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.28.0) — Assainissement Strict de l'Équipe (5 Collaborateurs Officiels) & Redesign Haute Densité Charge de Travail (/team/workload)
+
+- **Sanctuarisation des 5 Collaborateurs Officiels de l'Agence** :
+  - Purge irréversible et complète de tous les comptes parasites, bots de tests (`Agent Tester`, `QA Audit Visuel`), comptes clients (`Vates`, `Client Contact`) et comptes dupliqués (`theuprisingstudio@gmail.com`, `maertin@compagny.com`).
+  - Migration SQL dédiée `20260904160000_purge_non_official_team_profiles.sql` réassignant les orphelins au compte fondateur `kbelceus776@gmail.com` et verrouillant les 5 membres clés :
+    1. **Kael Belceus** (`kbelceus776@gmail.com`) — Fondateur & Lead Architect (Admin)
+    2. **Manpreet Singh** (`byeh50230@gmail.com`) — Associé Growth & Studio (Manager)
+    3. **Rayan** (`rayanmohellebi2009@gmail.com`) — Associé Ventes & Outbound (Manager)
+    4. **Samuel Olamide Adeleke** (`samade3434@gmail.com`) — Ingénieur Full-Stack (Member)
+    5. **Amine Yahya Karroubi** (`karroubiamine@hotmail.com`) — Account Manager Lead (Manager)
+  - Liste blanche immuable `CORE_OFFICIAL_TEAM` dans `lib/services/revops-team.ts` garantissant qu'aucun profil externe ne s'infiltre dans la vue de charge, même en cas de divergence de base de données.
+- **Redesign Haute Densité & Monolithique de la Charge d'Équipe (`/team/workload` & `/team-workload`)** :
+  - **Typographie & Design Tokens** : Suppression définitive de la police monospace étirée sur les libellés. Police sans-serif normale (`font-sans text-xs font-medium text-zinc-900`) pour les noms de collaborateurs, rôles et statuts ; monospace (`font-mono tabular-nums`) réservé exclusivement aux valeurs numériques et pourcentages.
+  - **Header Exécutif 40px** : Fil d'Ariane épuré `Minerva / Dashboard / Charge d'Équipe`, titre compact, pastille live émeraude `● Live 5 Collaborateurs`, barre de recherche instantanée (raccourci `/`) et filtre de charge segmenté (`Tous`, `Disponibles`, `Optimaux`, `Surchargés`).
+  - **Ruban Monolithique Connecté (Strip 4 Métriques)** : Grille 4 colonnes divisée par hairline `divide-x divide-zinc-100` :
+    - *Membres Actifs* (5 / 5 collaborateurs)
+    - *Capacité Hebdomadaire* (175h max / 35h par membre)
+    - *Heures Assignées* (charge cumulée en temps réel)
+    - *Taux d'Occupation Équipe* (calculé sur 175h avec pastille dynamique)
+  - **Tableau de Charge Haute Précision (Hauteur 36px)** :
+    - Remplacement des 3 micro-badges répétitifs (`0 td`, `0 act`, `0 ret`) par un indicateur lisible `0 active · 0 en attente`.
+    - Micro-jauges de progression horizontales ultra-fines 4px (`h-1 rounded-full`) avec transitions de couleur dynamiques (Émeraude <80%, Ambre 80-100%, Rose >100%).
+    - Raccourci interactif `[ + Assigner ]` au survol de chaque ligne ouvrant un modal rapide d'attribution de tâche (titre, heures estimées, priorité, échéance) connecté à Supabase avec notifications toast.
+  - **Bandeau Inférieur Coach Minerva 36px** : Remplacement des 2 grands encarts blancs déconnectés ("Point du jour" et "Point hebdo") par un ruban unifié discret et compact de 36px affichant l'état des rituels et le lien direct vers le chat d'équipe.
+  - **Redirection Transparente** : Alias `/team-workload` redirigeant automatiquement vers `/team/workload` sans erreur 404.
+
 ## 2026-09-04 (v2.27.0) — Dashboard Overview Haute Densité : Monolithe Linear/Stripe, Area Charts Vectoriels & DataTable Chirurgical Démocké
 
 - **Standard Monolithique Exécutif & Financier (`/overview` & `ManagingOverview.tsx`)** :
