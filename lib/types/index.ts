@@ -54,6 +54,10 @@ export interface Client {
   trial_direct_orders_count?: number;
   trial_direct_volume_cad?: number;
   trial_net_margin_saved_cad?: number;
+  health_score?: number | null;
+  health_breakdown?: ClientHealthBreakdown;
+  portal_token?: string;
+  portal_enabled?: boolean;
 }
 
 export interface ClientMrrHistoryEntry {
@@ -1288,6 +1292,34 @@ export interface FinancialSummary {
 export type DeliverableType = 'design' | 'website' | 'video' | 'document' | 'campaign' | 'other';
 export type DeliverableStatus = 'draft' | 'pending_review' | 'approved' | 'revision_requested';
 
+export interface DeliverableVersion {
+  version: number;
+  asset_url: string;
+  created_at: string;
+  notes?: string | null;
+}
+
+export interface DeliverableRevisionComment {
+  id: string;
+  author: string;
+  role: 'client' | 'team';
+  comment: string;
+  created_at: string;
+}
+
+export interface ClientHealthBreakdown {
+  score: number; // 0-100
+  tier: 'excellent' | 'stable' | 'warning' | 'critical';
+  tier_label: string;
+  factors: {
+    deliverables_score: number; // /30
+    invoices_score: number; // /30
+    roi_score: number; // /20
+    engagement_score: number; // /20
+  };
+  alerts: string[];
+}
+
 export interface ClientDeliverable {
   id: string;
   client_id: string;
@@ -1301,6 +1333,9 @@ export interface ClientDeliverable {
   status: DeliverableStatus;
   feedback_notes?: string | null;
   reviewed_at?: string | null;
+  version?: number;
+  version_history?: DeliverableVersion[];
+  revision_comments?: DeliverableRevisionComment[];
   created_at: string;
   updated_at: string;
 }

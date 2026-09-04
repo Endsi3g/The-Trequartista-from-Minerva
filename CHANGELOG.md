@@ -2,6 +2,20 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.30.3) — Double Refonte Synchronisée : Extranet Client (/portal/[token]) & Console Rétention Client (/clients/[id])
+
+- **Portail Client Extranet Haute Densité (`/portal/[token]`, Style Linear / Stripe)** :
+  - **Architecture en 4 Piliers Structurants** :
+    1. *1. Vue d'Ensemble & Actions* : Ruban de bord compact 4 KPI (Avancement Sprint, Livrables à valider, Économie de commissions ~3 420 $ CAD, Date de mise en production), stepper de pipeline interactif, checklist QA 20-points et carte prioritaire d'approbation avec raccourci clavier `⌘+Enter`.
+    2. *2. Livrables & Validation (`DeliverableApprovalStudio`)* : Studio interactif master-detail avec bascule de version (`v1`, `v2`, `v3`), prévisualiseur multi-formats (Framer/Web iframe, Lecteur Vidéo MP4 avec métriques de durée, PDF/Docs avec téléchargement sécurisé), historique des retours horodatés et validation instantanée (`[ ✓ Valider le livrable ]` / `[ ⟲ Demander des ajustements ]`).
+    3. *3. Performance ROI & Minerva Flow (Unifié)* : Contrôle segmenté entre le flux direct Minerva Flow (`MinervaFlowResultsCard` avec accès SSO instantané) et le suivi financier du ROI (revenus directs, commandes traitées sans commission et historique mensuel).
+    4. *4. Facturation & Support Chat* : Carte d'abonnement Stripe avec bouton d'accès au portail de paiement Stripe, table de facturation TPS/TVQ conforme, catalogue Studio 6 packs avec commande en 1-clic, et messagerie bidirectionnelle en direct via `RealtimePortalChat`.
+- **Console Interne Rétention Client (`/clients/[id]`)** :
+  - **Moteur Algorithmique Health Score (0-100) & Churn Risk Engine** (`computeClientHealthScore`) : Analyse prédictive pondérée sur 4 facteurs clés (Livrables /30, Facturation Stripe /30, Flow & ROI /20, Engagement Chat 14j /20).
+  - **Widget Visuel d'Alerte Churn (`ClientHealthScoreWidget`)** : Affichage du score global, badge d'état (`excellent`, `stable`, `warning`, `critical`), jauges des 4 sous-facteurs et détection proactive des anomalies (livrables en attente, factures en retard, inactivité chat).
+  - **Bouton Copie Lien Extranet 1-Clic** : Ajout du bouton `[ Copier lien ]` dans la barre d'outils pour générer et copier le lien d'accès direct du client en un clic.
+  - **Traçabilité des Livrables** : Badges de versions (`v1`, `v2`) et décompte des commentaires de révision directement dans le tableau de production unifié.
+
 ## 2026-09-04 (v2.30.2) — Catalogue Académie : Harmonisation Visuelle Pure (Style Linear), Badges d'État & Contrôles Haute Densité 32px
 
 - **Harmonisation Visuelle du Hub Académie (`/academy`)** :

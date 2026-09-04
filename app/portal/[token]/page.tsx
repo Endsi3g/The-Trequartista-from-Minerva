@@ -41,9 +41,13 @@ import { useToast } from '@/components/providers/ToastProvider';
 import type { ClientPortalData, ClientDeliverable, StudioServicePackage } from '@/lib/types';
 import { STUDIO_PACKAGES_CATALOG } from '@/lib/services/studio-marketplace';
 import { MinervaFlowResultsCard } from '@/components/portal/MinervaFlowResultsCard';
+import { DeliverableApprovalStudio } from '@/components/portal/DeliverableApprovalStudio';
+import { RealtimePortalChat } from '@/components/portal/RealtimePortalChat';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
+
+export type PortalTab = 'overview' | 'deliverables' | 'flow_roi' | 'billing_support';
 
 export default function ClientPortalPublicPage() {
   const params = useParams();
@@ -52,7 +56,9 @@ export default function ClientPortalPublicPage() {
 
   const [data, setData] = useState<ClientPortalData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'deliverables' | 'invoices' | 'roi' | 'studio' | 'messages' | 'flow'>('overview');
+  const [activeTab, setActiveTab] = useState<PortalTab>('overview');
+  const [flowRoiSubTab, setFlowRoiSubTab] = useState<'flow' | 'roi'>('flow');
+  const [billingSubTab, setBillingSubTab] = useState<'invoices' | 'chat' | 'studio'>('chat');
   const [submittingAction, setSubmittingAction] = useState<string | null>(null);
 
   // Revision inline feedback state inside Action Center
@@ -188,9 +194,10 @@ export default function ClientPortalPublicPage() {
     }
   };
 
-  // Handle Request Revision (Inline form)
-  const handleRequestRevisionSubmit = async (deliverableId: string) => {
-    if (!inlineRevisionNotes.trim()) return;
+  // Handle Request Revision (Inline form or Studio Modal)
+  const handleRequestRevisionSubmit = async (deliverableId: string, notes?: string) => {
+    const feedback = (notes !== undefined ? notes : inlineRevisionNotes).trim();
+    if (!feedback) return;
 
     setSubmittingAction(deliverableId);
     try {
@@ -200,7 +207,7 @@ export default function ClientPortalPublicPage() {
         body: JSON.stringify({
           deliverable_id: deliverableId,
           status: 'revision_requested',
-          feedback_notes: inlineRevisionNotes.trim(),
+          feedback_notes: feedback,
         }),
       });
 
@@ -292,7 +299,8 @@ export default function ClientPortalPublicPage() {
       if (res.ok) {
         toastSuccess('Commande validée !', `Le pack "${pkg.title}" a été activé.`);
         await loadPortalData();
-        setActiveTab('invoices');
+        setActiveTab('billing_support');
+        setBillingSubTab('invoices');
       } else {
         toastError('Erreur', 'Impossible d’enregistrer la commande.');
       }
@@ -461,36 +469,36 @@ export default function ClientPortalPublicPage() {
           </div>
         </div>
 
-        {/* ── 3. Navigation Segmentée (h-8) ── */}
-        <div className="h-8 bg-zinc-100 p-0.5 rounded-md flex items-center gap-1 text-xs overflow-x-auto">
+        {/* ── 3. Navigation Segmentée 4 Piliers (h-9) ── */}
+        <div className="h-9 bg-zinc-100 p-0.5 rounded-lg flex items-center gap-1 text-xs overflow-x-auto border border-zinc-200">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
             className={cn(
-              'px-2.5 py-1 rounded text-[11px] font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1',
+              'h-8 px-3 rounded-md text-xs font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1.5',
               activeTab === 'overview'
                 ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
-                : 'text-zinc-500 hover:text-zinc-900'
+                : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
             )}
           >
-            <Layers className="w-3 h-3 text-zinc-500" />
-            <span>Vue d'Ensemble &amp; Progrès</span>
+            <Layers className="w-3.5 h-3.5 text-zinc-500" />
+            <span>1. Vue d'Ensemble &amp; Actions</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('deliverables')}
             className={cn(
-              'px-2.5 py-1 rounded text-[11px] font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1.5',
+              'h-8 px-3 rounded-md text-xs font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1.5',
               activeTab === 'deliverables'
                 ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
-                : 'text-zinc-500 hover:text-zinc-900'
+                : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
             )}
           >
-            <CheckSquare className="w-3 h-3 text-zinc-500" />
-            <span>Livrables &amp; Approbation</span>
+            <CheckSquare className="w-3.5 h-3.5 text-zinc-500" />
+            <span>2. Livrables &amp; Validation</span>
             {pendingDeliverablesCount > 0 && (
-              <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] font-bold font-mono flex items-center justify-center" style={MONO}>
+              <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[10px] font-bold font-mono flex items-center justify-center tabular-nums" style={MONO}>
                 {pendingDeliverablesCount}
               </span>
             )}
@@ -498,80 +506,35 @@ export default function ClientPortalPublicPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('invoices')}
+            onClick={() => setActiveTab('flow_roi')}
             className={cn(
-              'px-2.5 py-1 rounded text-[11px] font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1',
-              activeTab === 'invoices'
+              'h-8 px-3 rounded-md text-xs font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1.5',
+              activeTab === 'flow_roi'
                 ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
-                : 'text-zinc-500 hover:text-zinc-900'
+                : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
             )}
           >
-            <Receipt className="w-3 h-3 text-zinc-500" />
-            <span>Factures &amp; Règlements</span>
-            <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
-              ({invoices.length})
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('roi')}
-            className={cn(
-              'px-2.5 py-1 rounded text-[11px] font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1',
-              activeTab === 'roi'
-                ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
-                : 'text-zinc-500 hover:text-zinc-900'
-            )}
-          >
-            <TrendingUp className="w-3 h-3 text-zinc-500" />
-            <span>Performance &amp; ROI</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('studio')}
-            className={cn(
-              'px-2.5 py-1 rounded text-[11px] font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1',
-              activeTab === 'studio'
-                ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
-                : 'text-zinc-500 hover:text-zinc-900'
-            )}
-          >
-            <Sparkles className="w-3 h-3 text-amber-500" />
-            <span>Studio &amp; Services</span>
-            <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
-              ({STUDIO_PACKAGES_CATALOG.length})
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('messages')}
-            className={cn(
-              'px-2.5 py-1 rounded text-[11px] font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1',
-              activeTab === 'messages'
-                ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
-                : 'text-zinc-500 hover:text-zinc-900'
-            )}
-          >
-            <MessageSquare className="w-3 h-3 text-zinc-500" />
-            <span>Support &amp; Demandes</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('flow')}
-            className={cn(
-              'px-2.5 py-1 rounded text-[11px] font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1.5',
-              activeTab === 'flow'
-                ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
-                : 'text-zinc-500 hover:text-zinc-900'
-            )}
-          >
-            <Utensils className="w-3 h-3 text-emerald-600" />
-            <span>Données Minerva Flow</span>
-            <span className="text-[9px] font-mono font-bold bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded" style={MONO}>
+            <TrendingUp className="w-3.5 h-3.5 text-zinc-500" />
+            <span>3. Performance ROI &amp; Minerva Flow</span>
+            <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.2 rounded font-semibold" style={MONO}>
               Live
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('billing_support')}
+            className={cn(
+              'h-8 px-3 rounded-md text-xs font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1.5',
+              activeTab === 'billing_support'
+                ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
+            )}
+          >
+            <Receipt className="w-3.5 h-3.5 text-zinc-500" />
+            <span>4. Facturation &amp; Support Chat</span>
+            <span className="text-[10px] font-mono text-zinc-400 tabular-nums" style={MONO}>
+              ({invoices.length})
             </span>
           </button>
         </div>
@@ -939,381 +902,400 @@ export default function ClientPortalPublicPage() {
         </div>
       )}
 
-        {/* ── Tab 2: Livrables & Approbation ── */}
+        {/* ── Tab 2: Livrables & Validation (Interactive Approval Studio) ── */}
         {activeTab === 'deliverables' && (
-          <div className="bg-white border border-zinc-200 rounded-lg shadow-2xs divide-y divide-zinc-100 overflow-hidden">
-            <div className="h-9 px-3.5 bg-zinc-50/60 flex items-center justify-between text-xs">
-              <span className="font-semibold text-zinc-900">
-                Livrables &amp; Fichiers de Production ({deliverables.length})
-              </span>
-              <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
-                Validation en 1-clic
-              </span>
-            </div>
-
-            <div className="grid grid-cols-12 h-7 px-3.5 bg-zinc-50/30 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 items-center">
-              <span className="col-span-5">Titre du livrable</span>
-              <span className="col-span-2">Format / Type</span>
-              <span className="col-span-2">Statut</span>
-              <span className="col-span-3 text-right">Actions</span>
-            </div>
-
-            <div className="divide-y divide-zinc-100">
-              {deliverables.length === 0 ? (
-                <div className="h-16 px-3.5 flex items-center justify-center text-xs text-zinc-400 font-mono" style={MONO}>
-                  Aucun livrable déposé pour le moment.
-                </div>
-              ) : (
-                deliverables.map((del) => {
-                  const isApproved = del.status === 'approved';
-                  const isRevision = del.status === 'revision_requested';
-                  const isPending = del.status === 'pending_review';
-
-                  return (
-                    <div
-                      key={del.id}
-                      className="grid grid-cols-12 h-10 px-3.5 items-center text-xs text-zinc-800 hover:bg-zinc-50/60 transition-colors"
-                    >
-                      <div className="col-span-5 font-semibold text-zinc-900 truncate pr-2">
-                        {del.title}
-                      </div>
-
-                      <div className="col-span-2">
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-600 border border-zinc-200 capitalize" style={MONO}>
-                          {del.type}
-                        </span>
-                      </div>
-
-                      <div className="col-span-2">
-                        <span
-                          className={cn(
-                            'text-[10px] font-mono px-1.5 py-0.2 rounded border uppercase tracking-wider',
-                            isApproved
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : isRevision
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : 'bg-blue-50 text-blue-700 border-blue-200 font-bold'
-                          )}
-                          style={MONO}
-                        >
-                          {isApproved ? 'Validé' : isRevision ? 'Retouches' : 'En attente'}
-                        </span>
-                      </div>
-
-                      <div className="col-span-3 flex items-center justify-end gap-1.5">
-                        {del.asset_url && (
-                          <a
-                            href={del.asset_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="h-6 px-2 text-[11px] rounded border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 flex items-center gap-1"
-                          >
-                            <Eye className="w-2.5 h-2.5" />
-                            <span>Voir</span>
-                          </a>
-                        )}
-
-                        {isPending && (
-                          <button
-                            onClick={() => handleApproveDeliverable(del.id)}
-                            disabled={submittingAction === del.id}
-                            className="h-6 px-2 text-[11px] font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 cursor-pointer"
-                          >
-                            <Check className="w-2.5 h-2.5" />
-                            <span>Valider</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
+          <DeliverableApprovalStudio
+            deliverables={deliverables}
+            onApprove={handleApproveDeliverable}
+            onRequestRevision={handleRequestRevisionSubmit}
+            submittingAction={submittingAction}
+            token={token}
+          />
         )}
 
-        {/* ── Tab 3: Factures & Règlements ── */}
-        {activeTab === 'invoices' && (
-          <div className="bg-white border border-zinc-200 rounded-lg shadow-2xs divide-y divide-zinc-100 overflow-hidden">
-            <div className="h-9 px-3.5 bg-zinc-50/60 flex items-center justify-between text-xs">
-              <span className="font-semibold text-zinc-900">
-                Factures &amp; Documents Comptables ({invoices.length})
-              </span>
-              <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
-                TPS/TVQ Québec conformes
-              </span>
-            </div>
-
-            <div className="grid grid-cols-12 h-7 px-3.5 bg-zinc-50/30 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 items-center">
-              <span className="col-span-3">Numéro Facture</span>
-              <span className="col-span-3">Montant Total</span>
-              <span className="col-span-3">Date d'émission</span>
-              <span className="col-span-2">Statut</span>
-              <span className="col-span-1 text-right">Lien</span>
-            </div>
-
-            <div className="divide-y divide-zinc-100">
-              {invoices.length === 0 ? (
-                <div className="h-16 px-3.5 flex items-center justify-center text-xs text-zinc-400 font-mono" style={MONO}>
-                  Aucune facture disponible.
-                </div>
-              ) : (
-                invoices.map((inv) => (
-                  <div
-                    key={inv.id}
-                    className="grid grid-cols-12 h-9 px-3.5 items-center text-xs text-zinc-800 hover:bg-zinc-50/60 transition-colors"
-                  >
-                    <div className="col-span-3 font-mono text-zinc-900 font-semibold text-[11px]" style={MONO}>
-                      {inv.invoice_number}
-                    </div>
-
-                    <div className="col-span-3 font-mono text-zinc-900 font-bold tabular-nums text-[11px]" style={MONO}>
-                      {(inv.total_cad || 0).toLocaleString('fr-CA')} $ CAD
-                    </div>
-
-                    <div className="col-span-3 font-mono text-zinc-500 tabular-nums text-[11px]" style={MONO}>
-                      {inv.created_at ? new Date(inv.created_at).toISOString().slice(0, 10) : '—'}
-                    </div>
-
-                    <div className="col-span-2">
-                      <span
-                        className={cn(
-                          'text-[10px] font-mono px-1.5 py-0.2 rounded border uppercase',
-                          inv.status === 'paid'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-amber-50 text-amber-700 border-amber-200'
-                        )}
-                        style={MONO}
-                      >
-                        {inv.status === 'paid' ? 'Acquittée' : inv.status}
-                      </span>
-                    </div>
-
-                    <div className="col-span-1 flex items-center justify-end">
-                      {inv.stripe_hosted_invoice_url || inv.stripe_payment_link_url ? (
-                        <a
-                          href={inv.stripe_hosted_invoice_url || inv.stripe_payment_link_url || '#'}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-zinc-400 hover:text-zinc-900"
-                          title="Consulter le reçu Stripe"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      ) : (
-                        <span className="text-zinc-300 text-[10px]">—</span>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── Tab 4: Performance & ROI ── */}
-        {activeTab === 'roi' && (
-          <div className="bg-white border border-zinc-200 rounded-lg shadow-2xs divide-y divide-zinc-100 overflow-hidden">
-            <div className="h-9 px-3.5 bg-zinc-50/60 flex items-center justify-between text-xs">
-              <span className="font-semibold text-zinc-900">
-                Suivi du Rendement &amp; Chiffre d'Affaires Direct Généré
-              </span>
-              <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded" style={MONO}>
-                Économie commissions : ~3 400 $ CAD
-              </span>
-            </div>
-
-            <div className="grid grid-cols-12 h-7 px-3.5 bg-zinc-50/30 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 items-center">
-              <span className="col-span-3">Période</span>
-              <span className="col-span-3">Revenus Directs</span>
-              <span className="col-span-2">Commandes</span>
-              <span className="col-span-2">Dépenses Ads</span>
-              <span className="col-span-2 text-right">Multiplicateur ROI</span>
-            </div>
-
-            <div className="divide-y divide-zinc-100">
-              {roiMetrics.length === 0 ? (
-                <div className="h-16 px-3.5 flex items-center justify-center text-xs text-zinc-400 font-mono" style={MONO}>
-                  Calcul des métriques ROI en cours pour la période active.
-                </div>
-              ) : (
-                roiMetrics.map((r) => (
-                  <div
-                    key={r.id}
-                    className="grid grid-cols-12 h-9 px-3.5 items-center text-xs text-zinc-800 font-mono"
-                    style={MONO}
-                  >
-                    <div className="col-span-3 font-semibold text-zinc-900">{r.month}</div>
-                    <div className="col-span-3 text-emerald-700 font-bold">{r.revenue_generated_cad.toLocaleString('fr-CA')} $</div>
-                    <div className="col-span-2 text-zinc-600">{r.conversions}</div>
-                    <div className="col-span-2 text-zinc-600">{r.ad_spend_cad} $</div>
-                    <div className="col-span-2 text-right font-bold text-zinc-900">{r.roi_percentage}%</div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── Tab 5: Studio & Services ── */}
-        {activeTab === 'studio' && (
+        {/* ── Tab 3: Performance ROI & Minerva Flow (Unified) ── */}
+        {activeTab === 'flow_roi' && (
           <div className="space-y-3">
-            <div className="h-9 px-3.5 bg-white border border-zinc-200 rounded-lg shadow-2xs flex items-center justify-between text-xs">
-              <span className="font-semibold text-zinc-900">
-                Catalogue Studio &amp; Services Additionnels
-              </span>
-              <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
-                Activation directe en 1-clic
-              </span>
+            {/* Sub-navigation Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white border border-zinc-200 rounded-lg p-2 shadow-2xs">
+              <div className="flex items-center gap-1.5 bg-zinc-100 p-0.5 rounded-md border border-zinc-200/80">
+                <button
+                  type="button"
+                  onClick={() => setFlowRoiSubTab('flow')}
+                  className={cn(
+                    'h-7 px-2.5 rounded text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer',
+                    flowRoiSubTab === 'flow'
+                      ? 'bg-white text-zinc-900 font-semibold shadow-2xs'
+                      : 'text-zinc-600 hover:text-zinc-900'
+                  )}
+                >
+                  <Utensils className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Minerva Flow (Live)</span>
+                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold" style={MONO}>
+                    0% comm.
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFlowRoiSubTab('roi')}
+                  className={cn(
+                    'h-7 px-2.5 rounded text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer',
+                    flowRoiSubTab === 'roi'
+                      ? 'bg-white text-zinc-900 font-semibold shadow-2xs'
+                      : 'text-zinc-600 hover:text-zinc-900'
+                  )}
+                >
+                  <TrendingUp className="w-3.5 h-3.5 text-zinc-500" />
+                  <span>Rendement Financier &amp; ROI</span>
+                </button>
+              </div>
+
+              {flowRoiSubTab === 'flow' && (
+                <a
+                  href="https://minerva-flow.vercel.app"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="h-7 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded font-medium inline-flex items-center gap-1 shrink-0 transition-colors shadow-2xs self-end sm:self-auto cursor-pointer"
+                >
+                  <span>Accès Direct SSO Minerva Flow</span>
+                  <ExternalLink className="w-3 h-3 opacity-80" />
+                </a>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {STUDIO_PACKAGES_CATALOG.map((pkg) => (
-                <div
-                  key={pkg.id}
-                  className="bg-white border border-zinc-200 rounded-lg p-3.5 shadow-2xs flex flex-col justify-between space-y-2.5"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider" style={MONO}>
-                        {pkg.category}
-                      </span>
-                      {pkg.is_popular && (
-                        <span className="text-[9px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded font-bold" style={MONO}>
-                          Recommandé
-                        </span>
-                      )}
-                    </div>
-                    <h4 className="text-xs font-bold text-zinc-900">{pkg.title}</h4>
-                    <p className="text-[11px] text-zinc-500 leading-tight line-clamp-2">
-                      {pkg.description}
+            {/* Sub-tab 1: Minerva Flow Live Integration */}
+            {flowRoiSubTab === 'flow' && (
+              <div className="space-y-3">
+                <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-950">
+                  <div className="flex items-center gap-2">
+                    <Utensils className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>
+                      Connecté en direct à votre restaurant <strong>{client.name}</strong> sur le réseau Minerva Flow. Vos commandes QR, bornes et rapports de ventes sont synchronisés en temps réel.
+                    </span>
+                  </div>
+                </div>
+
+                <MinervaFlowResultsCard clientId={client.id} />
+              </div>
+            )}
+
+            {/* Sub-tab 2: Rendement Financier & ROI Analytics */}
+            {flowRoiSubTab === 'roi' && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="bg-white border border-zinc-200 rounded-lg p-3 shadow-2xs">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block mb-1">
+                      Chiffre d'Affaires Direct Généré
+                    </span>
+                    <span className="text-xl font-bold font-mono text-emerald-700 tabular-nums" style={MONO}>
+                      {roiMetrics.reduce((acc, m) => acc + (m.revenue_generated_cad || 0), 0).toLocaleString('fr-CA')} $ CAD
+                    </span>
+                    <p className="text-[10px] text-zinc-400 font-mono mt-1" style={MONO}>
+                      Commandes numériques &amp; acquisition
                     </p>
                   </div>
 
-                  <div className="pt-2 border-t border-zinc-100 flex items-center justify-between">
-                    <span className="text-sm font-bold font-mono text-zinc-900 tabular-nums" style={MONO}>
-                      {pkg.price_cad} $ CAD
+                  <div className="bg-white border border-zinc-200 rounded-lg p-3 shadow-2xs">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block mb-1">
+                      Volume Total Commandes
                     </span>
-                    <button
-                      onClick={() => handleOrderStudioPackage(pkg)}
-                      disabled={submittingAction === pkg.id}
-                      className="h-6 px-2 text-[11px] font-semibold rounded bg-zinc-900 hover:bg-zinc-800 disabled:opacity-50 text-white flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      {submittingAction === pkg.id ? 'Activation...' : 'Activer 1-Clic'}
-                    </button>
+                    <span className="text-xl font-bold font-mono text-zinc-900 tabular-nums" style={MONO}>
+                      {roiMetrics.reduce((acc, m) => acc + (m.conversions || 0), 0)}
+                    </span>
+                    <p className="text-[10px] text-zinc-400 font-mono mt-1" style={MONO}>
+                      Transactions sans commission tierce
+                    </p>
+                  </div>
+
+                  <div className="bg-white border border-zinc-200 rounded-lg p-3 shadow-2xs">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block mb-1">
+                      Économie Commissions Estimée
+                    </span>
+                    <span className="text-xl font-bold font-mono text-emerald-600 tabular-nums" style={MONO}>
+                      ~3 420 $ CAD
+                    </span>
+                    <p className="text-[10px] text-zinc-400 font-mono mt-1" style={MONO}>
+                      Par rapport aux agrégateurs (25-30%)
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* ── Tab 6: Support & Demandes ── */}
-        {activeTab === 'messages' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
-            <div className="lg:col-span-7 bg-white border border-zinc-200 rounded-lg shadow-2xs divide-y divide-zinc-100 overflow-hidden">
-              <div className="h-9 px-3.5 bg-zinc-50/60 flex items-center justify-between text-xs">
-                <span className="font-semibold text-zinc-900">
-                  Historique des Échanges &amp; Demandes ({messages.length})
-                </span>
-                <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
-                  Réponse garantie sous 2h ouvrées
-                </span>
-              </div>
-
-              <div className="divide-y divide-zinc-100 p-2 space-y-2">
-                {messages.length === 0 ? (
-                  <div className="h-16 flex items-center justify-center text-xs text-zinc-400 font-mono" style={MONO}>
-                    Aucune demande ouverte. Utilisez le formulaire pour contacter l'équipe.
+                <div className="bg-white border border-zinc-200 rounded-lg shadow-2xs divide-y divide-zinc-100 overflow-hidden">
+                  <div className="h-9 px-3.5 bg-zinc-50/60 flex items-center justify-between text-xs">
+                    <span className="font-semibold text-zinc-900">
+                      Historique Mensuel des Performances
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded" style={MONO}>
+                      Calcul ROI certifié
+                    </span>
                   </div>
-                ) : (
-                  messages.map((m) => (
-                    <div key={m.id} className="p-2.5 rounded bg-zinc-50/60 border border-zinc-100 text-xs space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-zinc-900">{m.subject || 'Demande'}</span>
-                        <span className="font-mono text-[10px] text-zinc-400" style={MONO}>
-                          {new Date(m.created_at).toISOString().slice(0, 10)}
-                        </span>
+
+                  <div className="grid grid-cols-12 h-7 px-3.5 bg-zinc-50/30 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 items-center">
+                    <span className="col-span-3">Période</span>
+                    <span className="col-span-3">Revenus Directs</span>
+                    <span className="col-span-2">Commandes</span>
+                    <span className="col-span-2">Dépenses Ads</span>
+                    <span className="col-span-2 text-right">Multiplicateur ROI</span>
+                  </div>
+
+                  <div className="divide-y divide-zinc-100">
+                    {roiMetrics.length === 0 ? (
+                      <div className="h-16 px-3.5 flex items-center justify-center text-xs text-zinc-400 font-mono" style={MONO}>
+                        Calcul des métriques ROI en cours pour la période active.
                       </div>
-                      <p className="text-zinc-700 text-[11px] leading-relaxed">{m.message}</p>
-                    </div>
-                  ))
-                )}
+                    ) : (
+                      roiMetrics.map((r) => (
+                        <div
+                          key={r.id}
+                          className="grid grid-cols-12 h-9 px-3.5 items-center text-xs text-zinc-800 font-mono"
+                          style={MONO}
+                        >
+                          <div className="col-span-3 font-semibold text-zinc-900">{r.month}</div>
+                          <div className="col-span-3 text-emerald-700 font-bold">{r.revenue_generated_cad.toLocaleString('fr-CA')} $</div>
+                          <div className="col-span-2 text-zinc-600">{r.conversions}</div>
+                          <div className="col-span-2 text-zinc-600">{r.ad_spend_cad} $</div>
+                          <div className="col-span-2 text-right font-bold text-zinc-900">{r.roi_percentage}%</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-
-            <div className="lg:col-span-5 bg-white border border-zinc-200 rounded-lg p-3.5 shadow-2xs space-y-2.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 block">
-                Nouvelle Demande d'Assistance
-              </span>
-              <form onSubmit={handleSendMessage} className="space-y-2 text-xs">
-                <div>
-                  <label className="block text-[10px] font-semibold uppercase text-zinc-500 mb-1">
-                    Objet de la demande
-                  </label>
-                  <input
-                    type="text"
-                    value={messageSubject}
-                    onChange={(e) => setMessageSubject(e.target.value)}
-                    placeholder="Ex: Demande de modification sur les menus QR..."
-                    className="w-full h-8 px-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-md focus:bg-white focus:border-emerald-600 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-semibold uppercase text-zinc-500 mb-1">
-                    Détail du message
-                  </label>
-                  <textarea
-                    value={messageContent}
-                    onChange={(e) => setMessageContent(e.target.value)}
-                    placeholder="Décrivez votre besoin avec précision..."
-                    rows={4}
-                    className="w-full p-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-md focus:bg-white focus:border-emerald-600 focus:outline-none resize-none"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submittingAction === 'message_send' || !messageContent.trim()}
-                  className="w-full h-8 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-50 text-white font-semibold text-xs rounded-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-                >
-                  {submittingAction === 'message_send' ? (
-                    <RefreshCw className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Send className="w-3 h-3" />
-                  )}
-                  <span>Envoyer à votre responsable</span>
-                </button>
-              </form>
-            </div>
+            )}
           </div>
         )}
 
-        {/* ── 4g. Main Console : Tab 7 Données Minerva Flow ── */}
-        {activeTab === 'flow' && (
+        {/* ── Tab 4: Facturation & Support Chat (Unified) ── */}
+        {activeTab === 'billing_support' && (
           <div className="space-y-3">
-            <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-950">
-              <div className="flex items-center gap-2">
-                <Utensils className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>
-                  Connecté en temps réel à votre instance <strong>Minerva Flow</strong> (0% commission). Toutes vos commandes, tickets cuisine et encaissements Stripe sont synchronisés.
-                </span>
+            {/* Stripe Subscription Banner & Sub-tab Bar */}
+            <div className="bg-white border border-zinc-200 rounded-lg p-3 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-zinc-100 border border-zinc-200 flex items-center justify-center shrink-0">
+                  <CreditCard className="w-4 h-4 text-zinc-700" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-zinc-900">
+                      {client.plan || 'Formule Partenaire 360'}
+                    </span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold" style={MONO}>
+                      Abonnement Actif
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 font-mono mt-0.5" style={MONO}>
+                    Forfait mensuel : <strong>{(client.mrr || 1450).toLocaleString('fr-CA')} $ CAD / mois</strong> • Prélèvement automatique Stripe
+                  </p>
+                </div>
               </div>
-              <a
-                href="https://minerva-flow.vercel.app"
-                target="_blank"
-                rel="noreferrer"
-                className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-medium inline-flex items-center gap-1 shrink-0 transition-colors shadow-2xs"
-              >
-                <span>Accès Direct SSO</span>
-                <ExternalLink className="w-3 h-3 opacity-80" />
-              </a>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenCustomerPortal}
+                  disabled={isOpeningPortal}
+                  className="h-8 px-3 text-xs font-medium rounded-md bg-zinc-900 hover:bg-zinc-800 disabled:opacity-50 text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                >
+                  {isOpeningPortal ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  )}
+                  <span>Portail Client Stripe</span>
+                </button>
+              </div>
             </div>
 
-            <MinervaFlowResultsCard clientId={client.id} />
+            {/* Sub-tab Navigation */}
+            <div className="h-9 bg-zinc-100 p-0.5 rounded-lg flex items-center gap-1 text-xs border border-zinc-200">
+              <button
+                type="button"
+                onClick={() => setBillingSubTab('chat')}
+                className={cn(
+                  'h-8 px-3 rounded-md text-xs font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1.5',
+                  billingSubTab === 'chat'
+                    ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                    : 'text-zinc-600 hover:text-zinc-900'
+                )}
+              >
+                <MessageSquare className="w-3.5 h-3.5 text-zinc-500" />
+                <span>Messagerie &amp; Support Direct</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBillingSubTab('invoices')}
+                className={cn(
+                  'h-8 px-3 rounded-md text-xs font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1.5',
+                  billingSubTab === 'invoices'
+                    ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                    : 'text-zinc-600 hover:text-zinc-900'
+                )}
+              >
+                <Receipt className="w-3.5 h-3.5 text-zinc-500" />
+                <span>Factures &amp; Documents Comptables</span>
+                <span className="text-[10px] font-mono text-zinc-400 tabular-nums" style={MONO}>
+                  ({invoices.length})
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBillingSubTab('studio')}
+                className={cn(
+                  'h-8 px-3 rounded-md text-xs font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1.5',
+                  billingSubTab === 'studio'
+                    ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                    : 'text-zinc-600 hover:text-zinc-900'
+                )}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-zinc-500" />
+                <span>Catalogue Studio &amp; Add-ons</span>
+              </button>
+            </div>
+
+            {/* Sub-tab 1: Realtime Support Chat */}
+            {billingSubTab === 'chat' && (
+              <RealtimePortalChat
+                clientId={client.id}
+                clientName={client.name}
+                token={token}
+              />
+            )}
+
+            {/* Sub-tab 2: Factures & Reçus Stripe */}
+            {billingSubTab === 'invoices' && (
+              <div className="bg-white border border-zinc-200 rounded-lg shadow-2xs divide-y divide-zinc-100 overflow-hidden">
+                <div className="h-9 px-3.5 bg-zinc-50/60 flex items-center justify-between text-xs">
+                  <span className="font-semibold text-zinc-900">
+                    Factures &amp; Documents Comptables ({invoices.length})
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
+                    TPS/TVQ Québec conformes
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-12 h-7 px-3.5 bg-zinc-50/30 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 items-center">
+                  <span className="col-span-3">Numéro Facture</span>
+                  <span className="col-span-3">Montant Total</span>
+                  <span className="col-span-3">Date d'émission</span>
+                  <span className="col-span-2">Statut</span>
+                  <span className="col-span-1 text-right">Lien</span>
+                </div>
+
+                <div className="divide-y divide-zinc-100">
+                  {invoices.length === 0 ? (
+                    <div className="h-16 px-3.5 flex items-center justify-center text-xs text-zinc-400 font-mono" style={MONO}>
+                      Aucune facture disponible.
+                    </div>
+                  ) : (
+                    invoices.map((inv) => (
+                      <div
+                        key={inv.id}
+                        className="grid grid-cols-12 h-9 px-3.5 items-center text-xs text-zinc-800 hover:bg-zinc-50/60 transition-colors"
+                      >
+                        <div className="col-span-3 font-mono text-zinc-900 font-semibold text-[11px]" style={MONO}>
+                          {inv.invoice_number}
+                        </div>
+
+                        <div className="col-span-3 font-mono text-zinc-900 font-bold tabular-nums text-[11px]" style={MONO}>
+                          {(inv.total_cad || 0).toLocaleString('fr-CA')} $ CAD
+                        </div>
+
+                        <div className="col-span-3 font-mono text-zinc-500 tabular-nums text-[11px]" style={MONO}>
+                          {inv.created_at ? new Date(inv.created_at).toISOString().slice(0, 10) : '—'}
+                        </div>
+
+                        <div className="col-span-2">
+                          <span
+                            className={cn(
+                              'text-[10px] font-mono px-1.5 py-0.2 rounded border uppercase',
+                              inv.status === 'paid'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                            )}
+                            style={MONO}
+                          >
+                            {inv.status === 'paid' ? 'Acquittée' : inv.status}
+                          </span>
+                        </div>
+
+                        <div className="col-span-1 flex items-center justify-end">
+                          {inv.stripe_hosted_invoice_url || inv.stripe_payment_link_url ? (
+                            <a
+                              href={inv.stripe_hosted_invoice_url || inv.stripe_payment_link_url || '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-zinc-400 hover:text-zinc-900"
+                              title="Consulter le reçu Stripe"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          ) : (
+                            <span className="text-zinc-300 text-[10px]">—</span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Sub-tab 3: Catalogue Studio */}
+            {billingSubTab === 'studio' && (
+              <div className="space-y-3">
+                <div className="h-9 px-3.5 bg-white border border-zinc-200 rounded-lg shadow-2xs flex items-center justify-between text-xs">
+                  <span className="font-semibold text-zinc-900">
+                    Catalogue Studio &amp; Services Additionnels
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
+                    Activation directe en 1-clic
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {STUDIO_PACKAGES_CATALOG.map((pkg) => (
+                    <div
+                      key={pkg.id}
+                      className="bg-white border border-zinc-200 rounded-lg p-3.5 shadow-2xs flex flex-col justify-between space-y-2.5"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider" style={MONO}>
+                            {pkg.category}
+                          </span>
+                          {pkg.is_popular && (
+                            <span className="text-[9px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded font-bold" style={MONO}>
+                              Recommandé
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-xs font-bold text-zinc-900">{pkg.title}</h4>
+                        <p className="text-[11px] text-zinc-500 leading-tight line-clamp-2">
+                          {pkg.description}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-zinc-100 flex items-center justify-between">
+                        <span className="text-sm font-bold font-mono text-zinc-900 tabular-nums" style={MONO}>
+                          {pkg.price_cad} $ CAD
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleOrderStudioPackage(pkg)}
+                          disabled={submittingAction === pkg.id}
+                          className="h-6 px-2 text-[11px] font-semibold rounded bg-zinc-900 hover:bg-zinc-800 disabled:opacity-50 text-white flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          {submittingAction === pkg.id ? 'Activation...' : 'Activer 1-Clic'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

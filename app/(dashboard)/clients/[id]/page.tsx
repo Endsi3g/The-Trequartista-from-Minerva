@@ -63,6 +63,8 @@ import {
   ensureClientPortalToken,
   createClientDeliverable,
 } from '@/lib/services/client-portal';
+import { computeClientHealthScore } from '@/lib/services/client-retention';
+import { ClientHealthScoreWidget } from '@/components/clients/ClientHealthScoreWidget';
 import type {
   Client,
   Lead,
@@ -93,6 +95,7 @@ export default function ClientDetailPage() {
   const [deliverables, setDeliverables] = useState<ClientDeliverable[]>([]);
   const [portalToken, setPortalToken] = useState<string>('');
   const [copiedEmail, setCopiedEmail] = useState(false);
+  const [copiedPortalLink, setCopiedPortalLink] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -266,6 +269,16 @@ export default function ClientDetailPage() {
     setTimeout(() => setCopiedEmail(false), 2000);
   };
 
+  // Copy portal token magic link
+  const handleCopyPortalLink = () => {
+    if (typeof window === 'undefined') return;
+    const url = `${window.location.origin}/portal/${portalToken || client?.id}`;
+    navigator.clipboard.writeText(url);
+    setCopiedPortalLink(true);
+    toastSuccess('Lien portail copié !', url);
+    setTimeout(() => setCopiedPortalLink(false), 2000);
+  };
+
   // Quick Chat Send
   const handleSendChat = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -403,6 +416,9 @@ export default function ClientDetailPage() {
       formatOrStage: string;
       status: 'done' | 'in_progress' | 'todo';
       dueDate: string | null;
+      version?: number;
+      revisionCount?: number;
+      assetUrl?: string | null;
     }[] = [];
 
     deliverables.forEach((d) => {
@@ -411,8 +427,11 @@ export default function ClientDetailPage() {
         title: d.title,
         kind: 'Livrable',
         formatOrStage: d.type === 'video' ? 'Pack Reels 4K' : d.type === 'design' ? 'Design System' : 'Flow POS',
-        status: d.status === 'approved' ? 'done' : 'in_progress',
+        status: d.status === 'approved' ? 'done' : d.status === 'revision_requested' ? 'todo' : 'in_progress',
         dueDate: d.created_at,
+        version: d.version ?? 1,
+        revisionCount: d.revision_comments?.length || 0,
+        assetUrl: d.asset_url,
       });
     });
 
@@ -439,6 +458,12 @@ export default function ClientDetailPage() {
       .reduce((sum, inv) => sum + (inv.total_cad || 0), 0);
     return Math.max(paidInvoicesTotal, clientMrr * 3);
   }, [client, invoices, clientMrr]);
+
+  // Health Score & Retention Churn Risk Engine (0-100)
+  const clientHealth = useMemo(() => {
+    if (!client) return null;
+    return computeClientHealthScore(client, deliverables, invoices, messages.length, true);
+  }, [client, deliverables, invoices, messages.length]);
 
   if (loading) {
     return (
@@ -527,6 +552,20 @@ export default function ClientDetailPage() {
             <ExternalLink className="w-2.5 h-2.5 opacity-60" />
           </a>
 
+          <button
+            type="button"
+            onClick={handleCopyPortalLink}
+            className="h-7 px-2 text-xs font-medium rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 flex items-center gap-1 transition-colors cursor-pointer"
+            title="Copier le lien sécurisé du portail client"
+          >
+            {copiedPortalLink ? (
+              <Check className="w-3 h-3 text-emerald-600" />
+            ) : (
+              <Copy className="w-3 h-3 text-zinc-500" />
+            )}
+            <span className="hidden sm:inline">{copiedPortalLink ? 'Lien copié' : 'Copier lien'}</span>
+          </button>
+
           <a
             href="https://minerva-flow.vercel.app/login"
             target="_blank"
@@ -609,21 +648,25 @@ export default function ClientDetailPage() {
             <span
               className={cn(
                 'text-[10px] font-bold font-mono px-1.5 py-0.2 rounded border',
-                client.health_status === 'At Risk'
+                clientHealth?.tier === 'critical'
+                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                  : clientHealth?.tier === 'warning'
                   ? 'bg-amber-50 text-amber-700 border-amber-200'
+                  : clientHealth?.tier === 'stable'
+                  ? 'bg-blue-50 text-blue-700 border-blue-200'
                   : 'bg-emerald-50 text-emerald-700 border-emerald-200'
               )}
               style={MONO}
             >
-              {client.health_status === 'At Risk' ? 'À surveiller' : 'Faible risque'}
+              {clientHealth?.tier_label || (client.health_status === 'At Risk' ? 'À surveiller' : 'Faible risque')}
             </span>
           </div>
           <div className="flex items-baseline justify-between mt-1">
             <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
-              {client.health_status === 'At Risk' ? '68%' : '96%'}
+              {clientHealth?.score ?? (client.health_status === 'At Risk' ? 68 : 96)}/100
             </span>
             <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
-              Score ops
+              Engine 4-piliers
             </span>
           </div>
         </div>
@@ -774,7 +817,7 @@ export default function ClientDetailPage() {
                         className="grid grid-cols-12 h-9 px-3.5 items-center text-xs text-zinc-800 hover:bg-zinc-50/80 transition-colors group"
                       >
                         {/* Col 1: Titre */}
-                        <div className="col-span-5 flex items-center gap-2 min-w-0 pr-2">
+                        <div className="col-span-5 flex items-center gap-1.5 min-w-0 pr-2">
                           <span
                             className={cn(
                               'w-1.5 h-1.5 rounded-full shrink-0',
@@ -784,6 +827,17 @@ export default function ClientDetailPage() {
                           <span className={cn('font-medium truncate', isDone ? 'text-zinc-400 line-through' : 'text-zinc-900')}>
                             {item.title}
                           </span>
+                          {isDel && item.version && (
+                            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-100 text-zinc-600 border border-zinc-200 font-bold shrink-0" style={MONO}>
+                              v{item.version}
+                            </span>
+                          )}
+                          {isDel && item.revisionCount && item.revisionCount > 0 ? (
+                            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 shrink-0 flex items-center gap-0.5" style={MONO}>
+                              <MessageSquare className="w-2 h-2" />
+                              <span>{item.revisionCount}</span>
+                            </span>
+                          ) : null}
                         </div>
 
                         {/* Col 2: Type Pill */}
@@ -1069,8 +1123,11 @@ export default function ClientDetailPage() {
         </div>
 
         {/* Colonne Droite (35% - 4 cols on lg): Métadonnées & Console Interactive Ancrée */}
-        <div className="lg:col-span-4 bg-white border border-zinc-200 rounded-lg shadow-2xs divide-y divide-zinc-100 sticky top-4">
-          {/* Bloc 1: Contact Principal */}
+        <div className="lg:col-span-4 space-y-3 sticky top-4">
+          {clientHealth && <ClientHealthScoreWidget health={clientHealth} />}
+
+          <div className="bg-white border border-zinc-200 rounded-lg shadow-2xs divide-y divide-zinc-100">
+            {/* Bloc 1: Contact Principal */}
           <div className="p-3.5 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
@@ -1245,6 +1302,7 @@ export default function ClientDetailPage() {
           </div>
         </div>
       </div>
+    </div>
 
       {/* ── 4. Slide-Over Drawer Linear-Style (Modifier la Fiche) ── */}
       {isEditDrawerOpen && (
