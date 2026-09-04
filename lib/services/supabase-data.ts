@@ -2086,16 +2086,31 @@ export async function fetchProductivityLeaderboard(periodMonth?: string): Promis
   return withTimeout(
     (async () => {
       const supabase = getSupabase();
-      const [{ data: profiles }, { data: scoresData }] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('id, full_name, email, avatar_url, workspace, department, role')
-          .order('full_name', { ascending: true }),
+      let profilesQuery = supabase
+        .from('profiles')
+        .select('id, full_name, email, avatar_url, workspace, department, role, approved')
+        .in('role', ['admin', 'manager', 'member'])
+        .neq('role', 'client')
+        .order('full_name', { ascending: true });
+
+      let [{ data: rawProfiles, error: pErr }, { data: scoresData }] = await Promise.all([
+        profilesQuery,
         supabase
           .from('productivity_scores')
           .select('*')
           .eq('period_month', month),
       ]);
+
+      // Fallback if 'approved' column is not yet queried or fails
+      if (pErr) {
+        const fallback = await supabase
+          .from('profiles')
+          .select('id, full_name, email, avatar_url, workspace, department, role')
+          .in('role', ['admin', 'manager', 'member'])
+          .neq('role', 'client')
+          .order('full_name', { ascending: true });
+        rawProfiles = fallback.data as typeof rawProfiles;
+      }
 
       const scoreMap = new Map<string, Record<string, unknown>>();
       if (scoresData) {
@@ -2104,12 +2119,39 @@ export async function fetchProductivityLeaderboard(periodMonth?: string): Promis
         }
       }
 
-      const allProfiles = profiles || [];
+      // Filter out test bots, unapproved accounts, clients, and deduplicate Kael Belceus
+      let seenKael = false;
+      const filteredProfiles = (rawProfiles || []).filter((p) => {
+        const name = (p.full_name || '').trim().toLowerCase();
+        const email = (p.email || '').toLowerCase();
+        const role = (p.role || '').toLowerCase();
+
+        // Must not be client
+        if (role === 'client') return false;
+
+        // Filter unapproved (unless admin)
+        const isProfileApproved = (p as { approved?: boolean | null }).approved;
+        if (isProfileApproved === false && role !== 'admin') return false;
+
+        // Filter bot and test accounts
+        if (/agent tester|qa audit|client contact|test bot/i.test(name)) return false;
+        if (/agent.*tester|qa.*audit/i.test(email)) return false;
+
+        // Deduplicate Kael Belceus (keep only the primary admin account)
+        if (name.includes('kael belceus') || email === 'kbelceus776@gmail.com') {
+          if (seenKael) return false;
+          seenKael = true;
+        }
+
+        return true;
+      });
+
+      const allProfiles = filteredProfiles;
       if (allProfiles.length === 0 && scoresData && scoresData.length > 0) {
         return scoresData.map((row: Record<string, unknown>, idx: number) => ({
           id: String(row.id || `ps-${idx}`),
           user_id: String(row.user_id || ''),
-          member_name: 'Membre',
+          member_name: 'MEMBRE',
           member_avatar_url: null,
           workspace: null,
           department: null,
@@ -2127,7 +2169,8 @@ export async function fetchProductivityLeaderboard(periodMonth?: string): Promis
 
       const mergedScores: ProductivityScore[] = allProfiles.map((p) => {
         const existing = scoreMap.get(p.id);
-        const memberName = p.full_name?.trim() || p.email?.split('@')[0] || 'Membre';
+        const rawName = p.full_name?.trim() || p.email?.split('@')[0] || 'Membre';
+        const memberName = rawName.toUpperCase();
 
         if (existing) {
           return {

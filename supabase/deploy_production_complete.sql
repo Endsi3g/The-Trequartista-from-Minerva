@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'manager', 'member', 'guest')),
     workspace TEXT CHECK (workspace IN ('prospection', 'managing', 'tech')),
     phone TEXT,
-    job_title TEXT
+    job_title TEXT,
+    approved BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 ALTER TABLE public.profiles
@@ -38,7 +39,8 @@ ALTER TABLE public.profiles
     ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'member',
     ADD COLUMN IF NOT EXISTS workspace TEXT,
     ADD COLUMN IF NOT EXISTS phone TEXT,
-    ADD COLUMN IF NOT EXISTS job_title TEXT;
+    ADD COLUMN IF NOT EXISTS job_title TEXT,
+    ADD COLUMN IF NOT EXISTS approved BOOLEAN NOT NULL DEFAULT FALSE;
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
@@ -59,14 +61,19 @@ CREATE POLICY "Insertion profil pour authentifies" ON public.profiles
 -- Trigger synchronisation auth.users -> public.profiles
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+    is_superadmin BOOLEAN;
 BEGIN
-    INSERT INTO public.profiles (id, email, full_name, avatar_url, role)
+    is_superadmin := (LOWER(NEW.email) = 'kbelceus776@gmail.com');
+
+    INSERT INTO public.profiles (id, email, full_name, avatar_url, role, approved)
     VALUES (
         NEW.id,
         NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
         COALESCE(NEW.raw_user_meta_data->>'avatar_url', 'https://api.dicebear.com/7.x/initials/svg?seed=' || encode(digest(NEW.email, 'sha256'), 'hex')),
-        CASE WHEN NEW.email = 'kbelceus776@gmail.com' THEN 'admin' ELSE 'member' END
+        CASE WHEN is_superadmin THEN 'admin' ELSE 'member' END,
+        CASE WHEN is_superadmin THEN TRUE ELSE FALSE END
     )
     ON CONFLICT (id) DO UPDATE SET
         email = EXCLUDED.email,

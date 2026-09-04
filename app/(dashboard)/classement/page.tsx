@@ -51,8 +51,41 @@ export default function ClassementPage() {
     };
   }, [period]);
 
-  const podium = useMemo(() => scores.slice(0, 3), [scores]);
-  const rest = useMemo(() => scores.slice(3), [scores]);
+  const sanitizedScores = useMemo(() => {
+    let seenKael = false;
+    const clean = scores.filter((s) => {
+      const name = (s.member_name || '').toLowerCase();
+      const role = (s.role || '').toLowerCase();
+      if (role === 'client') return false;
+      if (/agent tester|qa audit|client contact|test bot/i.test(name)) return false;
+      if (name.includes('kael belceus') || name.includes('kbelceus')) {
+        if (seenKael) return false;
+        seenKael = true;
+      }
+      return true;
+    }).map((s) => ({
+      ...s,
+      member_name: (s.member_name || '').toUpperCase(),
+    }));
+
+    // If points are zero or unconfigured, keep CEO / leadership first
+    const hasPoints = clean.some((s) => (s.total_points || 0) > 0);
+    if (!hasPoints) {
+      clean.sort((a, b) => {
+        if (a.member_name.includes('KAEL')) return -1;
+        if (b.member_name.includes('KAEL')) return 1;
+        return a.member_name.localeCompare(b.member_name);
+      });
+    }
+
+    return clean.map((s, idx) => ({
+      ...s,
+      current_rank: idx + 1,
+    }));
+  }, [scores]);
+
+  const podium = useMemo(() => sanitizedScores.slice(0, 3), [sanitizedScores]);
+  const rest = useMemo(() => sanitizedScores.slice(3), [sanitizedScores]);
   const options = useMemo(() => periodOptions(), []);
 
   return (

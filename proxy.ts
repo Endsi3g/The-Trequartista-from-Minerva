@@ -128,12 +128,23 @@ export async function proxy(request: NextRequest) {
   //    at the internal dashboard straight there. Internal team can still
   //    reach /portal (useful for previewing what a client sees).
   const isPortalRoute = pathname.startsWith('/portal');
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  const { data: profile } = await supabase.from('profiles').select('role, approved').eq('id', user.id).maybeSingle();
   const isClient = profile?.role === 'client';
 
   if (isClient && !isPortalRoute) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = '/portal';
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // 3. Unapproved internal accounts must be held on /pending-approval
+  const isPendingApprovalRoute = pathname === '/pending-approval';
+  const isAdmin = profile?.role === 'admin' || user.email === 'kbelceus776@gmail.com';
+  const isApproved = profile?.approved === true || isAdmin;
+
+  if (!isClient && !isApproved && !isPendingApprovalRoute) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = '/pending-approval';
     return NextResponse.redirect(redirectUrl);
   }
 
@@ -162,6 +173,11 @@ export const config = {
     '/settings/:path*',
     '/integrations/:path*',
     '/portal/:path*',
+    '/classement/:path*',
+    '/invoices/:path*',
+    '/roadmap/:path*',
+    '/contacts/:path*',
+    '/booking/:path*',
     '/api/media/:path*',
     '/api/integrations/:path*',
   ],

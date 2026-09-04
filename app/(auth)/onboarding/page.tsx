@@ -23,6 +23,7 @@ export default function OnboardingPage() {
   const [userId, setUserId] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [userRole, setUserRole] = useState('member');
+  const [isApproved, setIsApproved] = useState<boolean | null>(null);
 
   // Step 1: Profil
   const [fullName, setFullName] = useState('');
@@ -62,7 +63,7 @@ export default function OnboardingPage() {
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role, full_name, bio, avatar_url, client_id')
+          .select('role, full_name, bio, avatar_url, client_id, approved')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -71,6 +72,7 @@ export default function OnboardingPage() {
           return;
         }
         if (profile?.role) setUserRole(profile.role);
+        if (typeof profile?.approved === 'boolean') setIsApproved(profile.approved);
         if (profile?.full_name) setFullName(profile.full_name);
         else if (user.user_metadata?.full_name) setFullName(user.user_metadata.full_name);
         if (profile?.bio) setBio(profile.bio);
@@ -105,6 +107,12 @@ export default function OnboardingPage() {
     try {
       const supabase = createClient();
       const finalRole = userRole || 'member';
+      // Only existing approved members or admins are approved. Any new uninvited signups are approved: false
+      const isAutoApproved =
+        isApproved === true ||
+        finalRole === 'admin' ||
+        userEmail === 'kbelceus776@gmail.com';
+
       await supabase.from('profiles').upsert({
         id: userId,
         full_name: fullName,
@@ -114,7 +122,7 @@ export default function OnboardingPage() {
         role: finalRole,
         department,
         default_view: defaultView,
-        approved: true,
+        approved: isAutoApproved,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'id' });
 
@@ -127,10 +135,17 @@ export default function OnboardingPage() {
       }, { onConflict: 'user_id' });
 
       setStep(5);
-      toastSuccess('Profil créé !', 'Bienvenue dans Minerva.');
-      setTimeout(() => {
-        window.location.href = finalRole === 'client' ? '/portal' : defaultView;
-      }, 1400);
+      if (!isAutoApproved && finalRole !== 'client') {
+        toastSuccess('Demande enregistrée !', 'Votre profil est en attente d’approbation par l’administrateur.');
+        setTimeout(() => {
+          window.location.href = '/pending-approval';
+        }, 1400);
+      } else {
+        toastSuccess('Profil configuré !', 'Bienvenue dans Minerva.');
+        setTimeout(() => {
+          window.location.href = finalRole === 'client' ? '/portal' : defaultView;
+        }, 1400);
+      }
     } finally {
       setLoading(false);
     }

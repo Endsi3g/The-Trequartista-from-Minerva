@@ -2,6 +2,31 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.26.0) — Verrouillage Onboarding Entreprise, Leaderboard Strict & Redesign SaaS ManagingOverview
+
+- **Verrouillage de Sécurité Onboarding & Adhésion Entreprise (`/onboarding` & `proxy.ts`)** :
+  - Fin de la faille d'attribution automatique d'accès : les nouveaux comptes non-administrateurs créés hors invitation explicite sont initialisés avec `approved: false`.
+  - Protection middleware stricte (`proxy.ts`) : tout compte interne non approuvé est automatiquement redirigé vers `/pending-approval` avec instructions de contact.
+  - Déclencheur SQL `handle_new_user()` mis à jour dans `supabase/deploy_production_complete.sql` et nouvelle migration `supabase/migrations/20260904150000_cleanup_test_and_client_profiles.sql` pour nettoyer et déclasser les profils de bots de test (`Agent Tester`, `QA Audit Visuel`) et clients (`Client Contact`, `Vates`).
+- **Nettoyage & Normalisation du Leaderboard (`/classement` & `supabase-data.ts`)** :
+  - Filtrage exclusif des 5 collaborateurs officiels de l'agence (Kael Belceus, Manpreet Singh, Rayan, Samuel Olamide Adeleke, Amine Yahya Karroubi).
+  - Exclusion définitive des comptes clients et des bots de test du classement d'équipe.
+  - Déduplication de Kael Belceus (conservation unique du compte principal CEO Admin).
+  - Normalisation obligatoire de tous les noms de membres en lettres MAJUSCULES (`.toUpperCase()`).
+- **Redesign SaaS Conforme de `ManagingOverview` (`/overview` Workspace Managing)** :
+  - **Barre d'outils Exécutive** : Fil d'Ariane `Dashboard > Overview`, salutation dynamique `Welcome back, Kael`, sélecteur de période `[Daily] [Weekly] [Monthly] [Yearly]`, badge de dates `Dec 18, 2024 - Jan 17, 2025` et bouton actif `Export CSV`.
+  - **Ruban de 4 Cartes KPI avec Micro-Histogrammes Verticaux** :
+    - *Total Revenue* ($20,320 CAD), *Total Orders* (10,320 / 248 Livrables), *New Customers* (4,305 / 18 Partenaires), *Conversion Rate* (94.2% / Zero Churn).
+    - Micro-histogrammes de barres verticales intégrés sur chaque carte et badges de performance `+0.94 last year` (+12.5% M/M).
+  - **Split Central (65% / 35%)** :
+    - *Sales Trend* (65%) : Histogramme vertical empilé Recharts bicolore (`New User` émeraude clair `#A7F3D0` vs `Existing User` émeraude foncé `#059669`), curseur pointillé interactif et infobulle détaillée.
+    - *Revenue Breakdown* (35%) : Répartition du CA par catégories avec barres de progression horizontales, sélecteur de dates et encart exécutif « ✨ Get AI insight for better analysis » développant la synthèse stratégique Minerva AI.
+  - **Tableau « Recent Transactions » Interactif avec Export Réel** :
+    - Recherche instantanée multi-critères (ID, client, produit, statut).
+    - Modal de création rapide « + Add Transaction » avec intégration dynamique dans l'état local.
+    - Colonne de sélection avec cases à cocher unitaire et globale.
+    - Bouton « Export CSV » opérationnel téléchargeant un fichier CSV formaté directement dans le navigateur.
+
 ## 2026-09-04 (v2.25.0) — Standard Linear & Raycast (MDS-01), Graphiques Recharts Émeraude, Roadmaps Découplées & Minerva Flow Live
 
 Mise à jour majeure du cockpit exécutif et des flux opérationnels de l'agence Minerva :
