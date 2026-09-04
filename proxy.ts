@@ -81,6 +81,8 @@ export async function proxy(request: NextRequest) {
     pathname === '/login' ||
     pathname === '/signup' ||
     pathname === '/pending-approval' ||
+    pathname.startsWith('/book') ||
+    pathname.startsWith('/rendez-vous') ||
     pathname.startsWith('/portal/join') ||
     pathname.startsWith('/team/join')
   ) {

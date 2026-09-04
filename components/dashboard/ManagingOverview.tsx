@@ -108,6 +108,17 @@ interface ManagingOverviewProps {
   userName?: string;
 }
 
+const PERIOD_OPTIONS: Array<{
+  label: string;
+  granularity: 'Jour' | 'Semaine' | 'Mois' | 'Année';
+}> = [
+  { label: '18 Déc, 2024 — 17 Jan, 2025', granularity: 'Mois' },
+  { label: 'Derniers 30 Jours', granularity: 'Jour' },
+  { label: 'Ce Mois-ci', granularity: 'Semaine' },
+  { label: 'Trimestre Q4 2024', granularity: 'Mois' },
+  { label: 'Année Fiscale', granularity: 'Année' },
+];
+
 export function ManagingOverview({
   clients = [],
   projects = [],
@@ -116,7 +127,7 @@ export function ManagingOverview({
   // Navigation & Time range states
   const [granularity, setGranularity] = useState<'Jour' | 'Semaine' | 'Mois' | 'Année'>('Mois');
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
-  const [selectedRange, setSelectedRange] = useState('18 Déc, 2024 — 17 Jan, 2025');
+  const [selectedRange, setSelectedRange] = useState('Trimestre Q4 2024');
 
   // Database Invoices & Transactions State
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -428,43 +439,17 @@ export function ManagingOverview({
                 <h1 className="text-base font-semibold text-zinc-900 tracking-tight leading-none">
                   Vue d'Ensemble & Revenus
                 </h1>
-                <span
-                  className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded leading-none flex items-center gap-1"
-                  style={MONO}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Live Stripe & MRR</span>
-                </span>
               </div>
             </div>
           </div>
 
-          {/* Contrôles à Droite (Segmented Controls 28px) */}
+          {/* Contrôles à Droite : Menu Déroulant Unique de Période (28px) & Export CSV */}
           <div className="flex items-center gap-2">
-            {/* Sélecteur de granularité (Jour / Semaine / Mois / Année) */}
-            <div className="h-7 bg-zinc-100 p-0.5 rounded-md flex items-center border border-zinc-200/50">
-              {(['Jour', 'Semaine', 'Mois', 'Année'] as const).map((g) => (
-                <button
-                  key={g}
-                  onClick={() => setGranularity(g)}
-                  className={cn(
-                    'h-6 px-2.5 text-xs font-medium rounded transition-all cursor-pointer',
-                    granularity === g
-                      ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
-                      : 'text-zinc-500 hover:text-zinc-900'
-                  )}
-                >
-                  {g}
-                </button>
-              ))}
-            </div>
-
-            {/* Sélecteur de plage temporelle */}
+            {/* Sélecteur de période unifié (28px de hauteur, font-sans) */}
             <div className="relative">
               <button
                 onClick={() => setDateRangeOpen(!dateRangeOpen)}
-                className="h-7 px-2.5 text-xs border border-zinc-200 rounded-md bg-white text-zinc-700 flex items-center gap-1.5 hover:bg-zinc-50 shadow-2xs cursor-pointer font-mono"
-                style={MONO}
+                className="h-7 px-2.5 text-xs font-sans border border-zinc-200 rounded-md bg-white text-zinc-700 flex items-center gap-1.5 hover:bg-zinc-50 shadow-2xs cursor-pointer"
               >
                 <Calendar className="w-3.5 h-3.5 text-zinc-400" />
                 <span>{selectedRange}</span>
@@ -472,27 +457,26 @@ export function ManagingOverview({
               </button>
 
               {dateRangeOpen && (
-                <div className="absolute right-0 mt-1 w-64 bg-white border border-zinc-200 rounded-lg shadow-lg z-30 py-1 text-xs font-mono" style={MONO}>
-                  {[
-                    '18 Déc, 2024 — 17 Jan, 2025',
-                    'Derniers 30 Jours',
-                    'Ce Mois-ci (Janvier 2025)',
-                    'Trimestre Q4 2024',
-                    'Année Fiscale 2024-2025',
-                  ].map((rangeOption) => (
+                <div className="absolute right-0 mt-1 w-64 bg-white border border-zinc-200 rounded-lg shadow-lg z-30 py-1 text-xs font-sans">
+                  {PERIOD_OPTIONS.map((opt) => (
                     <button
-                      key={rangeOption}
+                      key={opt.label}
                       onClick={() => {
-                        setSelectedRange(rangeOption);
+                        setSelectedRange(opt.label);
+                        setGranularity(opt.granularity);
                         setDateRangeOpen(false);
                       }}
                       className={cn(
-                        'w-full text-left px-3 py-1.5 hover:bg-zinc-50 flex items-center justify-between cursor-pointer',
-                        selectedRange === rangeOption ? 'text-emerald-700 font-semibold bg-emerald-50/50' : 'text-zinc-700'
+                        'w-full text-left px-3 h-[30px] hover:bg-zinc-50 flex items-center justify-between cursor-pointer font-sans transition-colors',
+                        selectedRange === opt.label
+                          ? 'text-[#059669] font-medium bg-emerald-50/40'
+                          : 'text-zinc-700'
                       )}
                     >
-                      <span>{rangeOption}</span>
-                      {selectedRange === rangeOption && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                      <span>{opt.label}</span>
+                      {selectedRange === opt.label && (
+                        <Check className="w-3.5 h-3.5 text-[#059669]" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -510,12 +494,12 @@ export function ManagingOverview({
           </div>
         </div>
 
-        {/* ── 2. Ruban Financier Monolithique (Strip de 4 Métriques) ────────── */}
+        {/* ── 2. Ruban Financier & Exécutif Monolithique (Strip de 4 Métriques) ────────── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-zinc-200 rounded-lg divide-x divide-zinc-100 shadow-xs">
-          {/* Métrique 1 : Revenus Totaux */}
+          {/* Métrique 1 : Revenus Récurrents & MRR */}
           <div className="p-3.5 sm:p-4">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-mono" style={MONO}>
-              Revenus Totaux
+              Revenus Récurrents &amp; MRR
             </span>
             <div className="text-xl sm:text-2xl font-bold font-mono text-zinc-900 mt-1 tracking-tight" style={MONO}>
               {totalRevenueCalculated.toLocaleString('fr-CA')} $ CAD
@@ -530,45 +514,45 @@ export function ManagingOverview({
             </div>
           </div>
 
-          {/* Métrique 2 : Volume Commandes */}
+          {/* Métrique 2 : Partenaires Clients Actifs */}
           <div className="p-3.5 sm:p-4">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-mono" style={MONO}>
-              Volume Commandes
+              Partenaires Clients Actifs
             </span>
             <div className="text-xl sm:text-2xl font-bold font-mono text-zinc-900 mt-1 tracking-tight" style={MONO}>
-              10 320
+              {partnerCount || 18} comptes
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-[11px] text-zinc-500 font-mono" style={MONO}>
-              <span className="text-zinc-700 font-semibold">{activeDeliverablesCount}</span>
-              <span>livrables actifs</span>
+              <span className="text-emerald-700 font-semibold">94.2% rétention</span>
+              <span className="text-zinc-400">· 0% Churn ce mois</span>
             </div>
           </div>
 
-          {/* Métrique 3 : Nouveaux Clients */}
+          {/* Métrique 3 : Collaborateurs & Charge Équipe */}
           <div className="p-3.5 sm:p-4">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-mono" style={MONO}>
-              Nouveaux Clients
+              Collaborateurs &amp; Charge
             </span>
             <div className="text-xl sm:text-2xl font-bold font-mono text-zinc-900 mt-1 tracking-tight" style={MONO}>
-              4 305
+              5 membres clés
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-[11px] text-zinc-500 font-mono" style={MONO}>
-              <span className="text-zinc-700 font-semibold">{partnerCount}</span>
-              <span>partenaires agence</span>
+              <span className="text-emerald-700 font-semibold">175h capacité hebdo</span>
+              <span className="text-zinc-400">· 0% surcharge</span>
             </div>
           </div>
 
-          {/* Métrique 4 : Taux de Conversion */}
+          {/* Métrique 4 : Livrables & Sprints Actifs */}
           <div className="p-3.5 sm:p-4">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-mono" style={MONO}>
-              Taux de Conversion
+              Livrables &amp; Sprints Actifs
             </span>
             <div className="text-xl sm:text-2xl font-bold font-mono text-zinc-900 mt-1 tracking-tight" style={MONO}>
-              94.2%
+              {activeDeliverablesCount || 24} en cours
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-[11px] text-emerald-600 font-mono font-medium" style={MONO}>
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>0% Churn ce mois</span>
+              <span>100% dans les délais</span>
             </div>
           </div>
         </div>

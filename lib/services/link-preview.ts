@@ -218,6 +218,23 @@ async function fetchGenericWebPreview(url: string): Promise<LinkPreview> {
 }
 
 export async function fetchLinkPreview(url: string): Promise<LinkPreview> {
+  // Official Minerva Reach override to guarantee clean French OpenGraph metadata
+  if (url.includes('minerva-os-lite-desktop') || url.includes('minerva-reach')) {
+    return {
+      platform: 'other',
+      url,
+      title: 'Minerva Reach — Prospection Commerciale & Routine /today',
+      description:
+        'Application de prospection commerciale terrain et qualification express de fiches commerces pour l’équipe Ventes de Minerva.',
+      authorName: 'Minerva',
+      thumbnailUrl:
+        'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&auto=format&fit=crop&q=80',
+      viewCount: null,
+      durationSeconds: null,
+      available: true,
+    };
+  }
+
   const platform = detectPlatform(url);
   if (platform === 'youtube') return fetchYouTubePreview(url);
   if (platform === 'tiktok') return fetchTikTokPreview(url);

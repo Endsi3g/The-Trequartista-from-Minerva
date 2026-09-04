@@ -26,6 +26,7 @@ export interface MeetingBooking {
   guest_email: string;
   guest_phone?: string;
   guest_company?: string;
+  guest_website_url?: string;
   meeting_type: 'internal_sync' | 'client_demo' | 'audit_review' | 'custom';
   meeting_title: string;
   start_time: string; // ISO string
@@ -47,13 +48,64 @@ const DEFAULT_WEEKLY_AVAILABILITIES: Omit<MemberAvailabilitySlot, 'id' | 'member
 const LOCAL_STORAGE_AVAILABILITY_KEY = 'minerva_member_availabilities';
 const LOCAL_STORAGE_BOOKINGS_KEY = 'minerva_meeting_bookings';
 
+// Resolves host identifier (e.g. 'kael', 'minerva', email) to an actual Supabase profile UUID
+export async function resolveHostProfile(
+  hostIdentifier?: string
+): Promise<{ id: string; full_name: string; email: string }> {
+  const supabase = getSupabase();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hostIdentifier || '');
+
+  if (isUuid) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .eq('id', hostIdentifier!)
+      .maybeSingle();
+    if (data) return data;
+  }
+
+  // Fallback 1: Match by email if hostIdentifier contains @
+  if (hostIdentifier && hostIdentifier.includes('@')) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .ilike('email', hostIdentifier)
+      .maybeSingle();
+    if (data) return data;
+  }
+
+  // Fallback 2: Match Kael Belceus (official primary admin)
+  const { data: kael } = await supabase
+    .from('profiles')
+    .select('id, full_name, email')
+    .ilike('email', 'kbelceus776@gmail.com')
+    .maybeSingle();
+  if (kael) return kael;
+
+  // Fallback 3: Any admin profile
+  const { data: admin } = await supabase
+    .from('profiles')
+    .select('id, full_name, email')
+    .eq('role', 'admin')
+    .limit(1)
+    .maybeSingle();
+  if (admin) return admin;
+
+  return {
+    id: '00000000-0000-0000-0000-000000000001',
+    full_name: 'Kael Belceus',
+    email: 'kbelceus776@gmail.com',
+  };
+}
+
 export async function fetchMemberAvailabilities(memberId: string): Promise<MemberAvailabilitySlot[]> {
   try {
+    const hostProfile = await resolveHostProfile(memberId);
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('member_availabilities')
       .select('*')
-      .eq('member_id', memberId)
+      .eq('member_id', hostProfile.id)
       .order('day_of_week', { ascending: true });
 
     if (!error && data && data.length > 0) {
@@ -92,12 +144,13 @@ export async function saveMemberAvailabilities(
   }
 
   try {
+    const hostProfile = await resolveHostProfile(memberId);
     const supabase = getSupabase();
     // Try to delete and recreate slots in DB
-    await supabase.from('member_availabilities').delete().eq('member_id', memberId);
+    await supabase.from('member_availabilities').delete().eq('member_id', hostProfile.id);
     const { error } = await supabase.from('member_availabilities').insert(
       slots.map((s) => ({
-        member_id: memberId,
+        member_id: hostProfile.id,
         day_of_week: s.day_of_week,
         start_time: s.start_time,
         end_time: s.end_time,
@@ -117,11 +170,12 @@ export async function saveMemberAvailabilities(
 
 export async function fetchMemberBookings(memberId: string): Promise<MeetingBooking[]> {
   try {
+    const hostProfile = await resolveHostProfile(memberId);
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('bookings')
       .select('*')
-      .eq('host_id', memberId)
+      .or(`host_id.eq.${hostProfile.id},host_id.eq.${memberId}`)
       .order('start_time', { ascending: true });
 
     if (!error && data && data.length > 0) {
@@ -145,23 +199,134 @@ export async function fetchMemberBookings(memberId: string): Promise<MeetingBook
   return [];
 }
 
-export async function createBooking(booking: Omit<MeetingBooking, 'id' | 'created_at'>): Promise<MeetingBooking> {
+export async function createBooking(
+  booking: Omit<MeetingBooking, 'id' | 'created_at'>
+): Promise<MeetingBooking> {
+  const hostProfile = await resolveHostProfile(booking.host_id);
+  const shortId = Math.random().toString(36).substring(2, 10);
+  const locationUrl = booking.location_url || `https://meet.google.com/min-${shortId}`;
+
   const newBooking: MeetingBooking = {
     ...booking,
     id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `book-${Date.now()}`,
+    host_id: hostProfile.id,
+    host_name: hostProfile.full_name || booking.host_name || 'Kael Belceus',
+    host_email: hostProfile.email || booking.host_email || 'kbelceus776@gmail.com',
+    location_url: locationUrl,
     created_at: new Date().toISOString(),
   };
 
+  const supabase = getSupabase();
+
+  // 1. Insert into Supabase bookings table
   try {
-    const supabase = getSupabase();
-    const { data, error } = await supabase.from('bookings').insert([newBooking]).select().single();
-    if (!error && data) {
-      return data as MeetingBooking;
+    const { data, error } = await supabase
+      .from('bookings')
+      .insert([
+        {
+          id: newBooking.id,
+          host_id: newBooking.host_id,
+          host_name: newBooking.host_name,
+          host_email: newBooking.host_email,
+          guest_name: newBooking.guest_name,
+          guest_email: newBooking.guest_email,
+          guest_phone: newBooking.guest_phone || null,
+          guest_company: newBooking.guest_company || null,
+          meeting_type: newBooking.meeting_type,
+          meeting_title: newBooking.meeting_title,
+          start_time: newBooking.start_time,
+          end_time: newBooking.end_time,
+          status: newBooking.status,
+          notes: newBooking.notes
+            ? `${newBooking.notes}${newBooking.guest_website_url ? ` | Site: ${newBooking.guest_website_url}` : ''}`
+            : newBooking.guest_website_url
+            ? `Site: ${newBooking.guest_website_url}`
+            : null,
+          location_url: newBooking.location_url,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('[Booking] Supabase insert failed, saving to local cache:', error);
+    } else if (data) {
+      newBooking.id = data.id;
     }
   } catch (err) {
-    console.warn('[Booking] Supabase insert failed, saving to local cache:', err);
+    console.warn('[Booking] Supabase insert error:', err);
   }
 
+  // 2. Automate Lead creation in CRM Supabase (Option 1)
+  try {
+    const company = newBooking.guest_company || newBooking.guest_name;
+    const startFormatted = new Date(newBooking.start_time).toLocaleString('fr-CA', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const leadPayload = {
+      company_name: company,
+      contact_name: newBooking.guest_name,
+      contact_email: newBooking.guest_email,
+      contact_phone: newBooking.guest_phone || null,
+      source: 'Rendez-Vous Stratégique /book',
+      status: 'qualifie',
+      score: 85,
+      notes: `Rendez-vous stratégique planifié le ${startFormatted}. Google Meet : ${newBooking.location_url}. ${
+        newBooking.guest_website_url ? `Site : ${newBooking.guest_website_url}` : ''
+      }`,
+    };
+
+    const { data: existingLead } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('contact_email', newBooking.guest_email)
+      .maybeSingle();
+
+    if (existingLead) {
+      await supabase
+        .from('leads')
+        .update({
+          status: 'qualifie',
+          notes: leadPayload.notes,
+        })
+        .eq('id', existingLead.id);
+    } else {
+      await supabase.from('leads').insert([leadPayload]);
+    }
+  } catch (leadErr) {
+    console.warn('[Booking] Lead automation warning:', leadErr);
+  }
+
+  // 3. Post Announcement in Team Chat (#annonces)
+  try {
+    const startFormatted = new Date(newBooking.start_time).toLocaleString('fr-CA', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const announcementBody = `📅 **Nouveau Rendez-Vous Stratégique Réservé !**\n\n- **Prospect :** ${newBooking.guest_name} (${newBooking.guest_company || 'Indépendant'})\n- **Courriel :** ${newBooking.guest_email}\n- **Date & Heure :** ${startFormatted} (HE)\n- **Site Actuel :** ${newBooking.guest_website_url || 'Non précisé'}\n- **Visioconférence Google Meet :** ${newBooking.location_url}\n\n👉 Fiche qualifiée créée automatiquement dans le CRM.`;
+
+    await supabase.from('team_chat_messages').insert([
+      {
+        channel_type: 'topic',
+        channel_id: '00000000-0000-0000-0000-000000000002', // Canal #annonces
+        sender_id: null,
+        body: announcementBody,
+      },
+    ]);
+  } catch (chatErr) {
+    console.warn('[Booking] Team chat announcement warning:', chatErr);
+  }
+
+  // Always save locally as fallback
   if (typeof window !== 'undefined') {
     const current = await fetchMemberBookings(booking.host_id);
     const updated = [...current, newBooking];

@@ -311,15 +311,11 @@ export default function EcosystemPage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent pointer-events-none" />
 
-                  {/* Top Status & Type Badges */}
-                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                  {/* Top Status Badge */}
+                  <div className="absolute top-3 left-3 flex items-center">
                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md text-white border border-white/10 shadow-xs">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       <span>{platform.categoryLabel}</span>
-                    </span>
-
-                    <span className="text-[10px] font-mono text-zinc-300 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/10" style={MONO}>
-                      {platform.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
                     </span>
                   </div>
 

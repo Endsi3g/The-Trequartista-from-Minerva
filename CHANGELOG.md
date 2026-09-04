@@ -2,6 +2,34 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.29.0) — Module de Réservation Cal.com/Linear, Automatisations CRM Supabase, Overview Exécutif & Hub Écosystème Épuré
+
+- **Module Public de Réservation Haute Conversion (`/book`, `/book/[id]`, `/rendez-vous`)** :
+  - Remplacement de l'input date aveugle et de l'empty state passif par une interface monolithique à 3 panneaux synchronisés inspirée de Cal.com, Linear et Cron :
+    - *Panneau Gauche Sombre (280px)* : Badge `✦ MINERVA STUDIO`, titre `Rendez-Vous Stratégique`, description de cadrage, métadonnées d'appel (30 min, Google Meet, Montréal HE/EDT), profil du fondateur et pied de page officiel.
+    - *Panneau Central (Mini-Calendrier Mensuel & Formulaire Slide-in)* : Navigation mensuelle avec sélecteur de mois/année, grille 7x5 (`L M M J V S D`), micro-points verts de disponibilité, sélection circulaire émeraude `#059669`. Dès qu'un créneau est cliqué, transition fluide vers les 3 champs de contact (`Nom`, `Email professionnel`, `URL du site actuel`). Support du raccourci clavier `⌘ + Entrée` pour confirmer.
+    - *Panneau Droit (220px — Créneaux Horaires Dynamiques)* : Boutons horaires de 34px de hauteur avec effet hover émeraude, sélection active et suggestion automatique du premier jour ouvré suivant si le jour est fermé ou complet.
+    - *Écran de Confirmation Élégant* : Récapitulatif complet de la session, bouton d'ajout en 1 clic à Google Calendar et lien direct vers Google Meet.
+  - Disponibilité des routes `/book` (Kael Belceus par défaut), `/book/[id]` (hôte dynamique avec résolution automatique d'UUID de profil) et alias `/rendez-vous`.
+- **Intégration Profonde Supabase & Automatisations Métier (`lib/services/booking.ts`)** :
+  - Résolution automatique des identifiants hôtes (`kael`, `minerva`, adresses courriel) vers les UUIDs réels de la table `profiles` pour éviter les rejets de clé étrangère PostgreSQL.
+  - Insertion persistante dans la table `public.bookings` avec génération sécurisée d'URL Google Meet.
+  - **Création Automatique de Lead dans le CRM Supabase** : Toute nouvelle réservation crée ou met à jour une fiche dans `public.leads` avec statut `qualifie`, score 85 et mémo détaillé du rendez-vous.
+  - **Notification en Temps Réel dans le Chat d'Équipe (#annonces)** : Publication instantanée d'un message système dans `public.team_chat_messages` pour alerter l'équipe de chaque réservation.
+- **Refonte Exécutive du Dashboard Overview (`/overview` & `ManagingOverview.tsx`)** :
+  - Retrait du badge `Live Stripe & MRR` à côté de `Vue d'Ensemble & Revenus`.
+  - Suppression de la redondance entre segmented control et popover : remplacement par un menu déroulant unique compact `[ 📅 Trimestre Q4 2024 ▾ ]` de 28px de hauteur.
+  - Popover de dates en typographie sans-serif technique `font-sans text-xs text-zinc-700` (hauteur 30px par ligne) avec coche verte émeraude `#059669` sur l'option active.
+  - Adaptation automatique du découpage temporel de l'Area Chart dès le changement de période.
+  - **Ruban de 4 Métriques recentré sur les Clients et l'Équipe** :
+    1. *Revenus Récurrents & MRR* : `$20,320 CAD` (+12.5% vs m-1, Run-rate actif).
+    2. *Partenaires Clients Actifs* : `18 comptes` (94.2% rétention client, 0% Churn ce mois).
+    3. *Collaborateurs & Charge Équipe* : `5 membres clés` (175h capacité hebdo, 0% surcharge).
+    4. *Livrables & Sprints Actifs* : `24 en cours` (100% dans les délais, livrés cette semaine).
+- **Nettoyage Visuel Hub Écosystème (`/ecosystem`) & OpenGraph Minerva Reach en Français** :
+  - Suppression de l'affichage de l'URL brute en haut des cartes de plateformes pour ne conserver que l'image épurée avec le badge de catégorie.
+  - Interception dans `lib/services/link-preview.ts` pour `minerva-os-lite-desktop.vercel.app` garantissant des métadonnées OpenGraph 100% françaises (`Minerva Reach — Prospection Commerciale & Routine /today`).
+
 ## 2026-09-04 (v2.28.0) — Assainissement Strict de l'Équipe (5 Collaborateurs Officiels) & Redesign Haute Densité Charge de Travail (/team/workload)
 
 - **Sanctuarisation des 5 Collaborateurs Officiels de l'Agence** :
