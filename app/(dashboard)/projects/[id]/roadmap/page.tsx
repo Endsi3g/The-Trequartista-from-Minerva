@@ -400,7 +400,11 @@ export default function ProjectRoadmapPage() {
 
       {/* ── Tab 2: Minerva-Flow Deployment Guide ── */}
       {activeTab === 'guide' ? (
-        <MinervaFlowProjectGuide restaurantName={project?.client_name || project?.name || 'Votre Client'} />
+        <MinervaFlowProjectGuide
+          restaurantName={project?.client_name || project?.name || 'Votre Client'}
+          projectId={projectId}
+          sector={(project as any)?.sector || (project as any)?.client?.industry || project?.client_name}
+        />
       ) : (
         /* ── Tab 1: Milestones & Roadmap ── */
         <>
@@ -502,11 +506,11 @@ export default function ProjectRoadmapPage() {
                     <div
                       key={m.id}
                       className={cn(
-                        'p-3 sm:p-3.5 flex items-center justify-between gap-3 hover:bg-zinc-50/50 transition-colors group',
+                        'p-3 sm:p-3.5 flex items-center justify-between gap-3 hover:bg-zinc-50/60 transition-colors group',
                         isDone && 'bg-zinc-50/30'
                       )}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <button
                           type="button"
                           onClick={(e) => handleToggle(m, e)}
@@ -524,14 +528,21 @@ export default function ProjectRoadmapPage() {
                           #{String(idx + 1).padStart(2, '0')}
                         </span>
 
-                        <span
-                          className={cn(
-                            'text-xs sm:text-sm font-semibold truncate transition-colors',
-                            isDone ? 'line-through text-zinc-400' : 'text-zinc-900'
-                          )}
+                        <Link
+                          href={`/projects/${projectId}/roadmap/${m.id}`}
+                          className="min-w-0 flex items-center gap-2 group/link"
+                          title="Cliquer pour ouvrir les détails et livrables de ce jalon"
                         >
-                          {m.title}
-                        </span>
+                          <span
+                            className={cn(
+                              'text-xs sm:text-sm font-semibold truncate transition-colors group-hover/link:text-emerald-700 group-hover/link:underline',
+                              isDone ? 'line-through text-zinc-400' : 'text-zinc-900'
+                            )}
+                          >
+                            {m.title}
+                          </span>
+                          <ExternalLink className="w-3 h-3 text-zinc-300 opacity-0 group-hover/link:opacity-100 transition-opacity shrink-0" />
+                        </Link>
                       </div>
 
                       <div className="flex items-center gap-3 shrink-0">
@@ -546,6 +557,15 @@ export default function ProjectRoadmapPage() {
                             {assignee.full_name || assignee.email}
                           </span>
                         )}
+
+                        <Link
+                          href={`/projects/${projectId}/roadmap/${m.id}`}
+                          className="h-6 px-2 text-[11px] font-medium border border-zinc-200 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 rounded text-zinc-600 transition-colors inline-flex items-center gap-1 shadow-2xs"
+                          title="Ouvrir la page du jalon (documents, checklist)"
+                        >
+                          <span>Détails</span>
+                          <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                        </Link>
 
                         <button
                           type="button"
@@ -581,7 +601,10 @@ export default function ProjectRoadmapPage() {
           onClose={() => setEmailMilestone(null)}
           milestone={emailMilestone}
           clientName={project?.client_name || 'Client'}
-          clientEmail="direction@bellanapoli.ca"
+          clientEmail={
+            ((project as unknown as Record<string, unknown>)?.client_email as string) ||
+            (project?.client_name ? `direction@${project.client_name.toLowerCase().replace(/[^a-z0-9]/g, '')}.ca` : 'client@entreprise.ca')
+          }
         />
       )}
     </PageFadeIn>

@@ -33,12 +33,14 @@ import {
   User,
   X,
   Lock,
+  Utensils,
 } from 'lucide-react';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { LogoMark } from '@/components/shell/Logo';
 import { useToast } from '@/components/providers/ToastProvider';
 import type { ClientPortalData, ClientDeliverable, StudioServicePackage } from '@/lib/types';
 import { STUDIO_PACKAGES_CATALOG } from '@/lib/services/studio-marketplace';
+import { MinervaFlowResultsCard } from '@/components/portal/MinervaFlowResultsCard';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -50,7 +52,7 @@ export default function ClientPortalPublicPage() {
 
   const [data, setData] = useState<ClientPortalData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'deliverables' | 'invoices' | 'roi' | 'studio' | 'messages'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'deliverables' | 'invoices' | 'roi' | 'studio' | 'messages' | 'flow'>('overview');
   const [submittingAction, setSubmittingAction] = useState<string | null>(null);
 
   // Revision inline feedback state inside Action Center
@@ -354,7 +356,7 @@ export default function ClientPortalPublicPage() {
           <div className="hidden md:flex items-center gap-1.5 text-xs text-zinc-600 font-mono bg-zinc-50 border border-zinc-200 px-2 py-0.5 rounded" style={MONO}>
             <User className="w-3 h-3 text-zinc-400" />
             <span>
-              Responsable : <strong>{client.account_manager_name || 'Maxime (Ops)'}</strong>
+              Responsable : <strong>{client.account_manager_name || 'Amine Yahya Karroubi (Ops)'}</strong>
             </span>
           </div>
         </div>
@@ -554,6 +556,23 @@ export default function ClientPortalPublicPage() {
           >
             <MessageSquare className="w-3 h-3 text-zinc-500" />
             <span>Support &amp; Demandes</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('flow')}
+            className={cn(
+              'px-2.5 py-1 rounded text-[11px] font-medium transition-all cursor-pointer shrink-0 flex items-center gap-1.5',
+              activeTab === 'flow'
+                ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                : 'text-zinc-500 hover:text-zinc-900'
+            )}
+          >
+            <Utensils className="w-3 h-3 text-emerald-600" />
+            <span>Données Minerva Flow</span>
+            <span className="text-[9px] font-mono font-bold bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded" style={MONO}>
+              Live
+            </span>
           </button>
         </div>
 
@@ -1270,6 +1289,31 @@ export default function ClientPortalPublicPage() {
                 </button>
               </form>
             </div>
+          </div>
+        )}
+
+        {/* ── 4g. Main Console : Tab 7 Données Minerva Flow ── */}
+        {activeTab === 'flow' && (
+          <div className="space-y-3">
+            <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-950">
+              <div className="flex items-center gap-2">
+                <Utensils className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>
+                  Connecté en temps réel à votre instance <strong>Minerva Flow</strong> (0% commission). Toutes vos commandes, tickets cuisine et encaissements Stripe sont synchronisés.
+                </span>
+              </div>
+              <a
+                href="https://minerva-flow.vercel.app"
+                target="_blank"
+                rel="noreferrer"
+                className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-medium inline-flex items-center gap-1 shrink-0 transition-colors shadow-2xs"
+              >
+                <span>Accès Direct SSO</span>
+                <ExternalLink className="w-3 h-3 opacity-80" />
+              </a>
+            </div>
+
+            <MinervaFlowResultsCard clientId={client.id} />
           </div>
         )}
       </main>

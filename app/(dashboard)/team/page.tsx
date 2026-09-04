@@ -173,42 +173,114 @@ export default function TeamPage() {
       if (data && data.length > 0) {
         setMembers(data);
       } else {
-        // Fallback default team members
+        // Fallback default team members (5 membres réels officiels)
         setMembers([
           {
-            id: 'a1b2c3d4-0000-0000-0000-000000000001',
-            full_name: 'Alex Tremblay',
-            email: 'alex@minervaflow.com',
+            id: 'u1-kael-belceus',
+            full_name: 'Kael Belceus',
+            email: 'kael@minerva.ca',
+            role: 'admin',
+            department: 'Direction Générale',
+            avatar_url: null,
+            created_at: '2026-01-01T00:00:00Z',
+            custom_role_id: null,
+          },
+          {
+            id: 'u2-manpreet-singh',
+            full_name: 'Manpreet Singh',
+            email: 'manpreet@minerva.ca',
             role: 'admin',
             department: 'Tech & IA',
+            avatar_url: null,
+            created_at: '2026-01-10T00:00:00Z',
+            custom_role_id: null,
+          },
+          {
+            id: 'u3-rayan',
+            full_name: 'Rayan',
+            email: 'rayan@minerva.ca',
+            role: 'admin',
+            department: 'Marketing & Acquisition',
             avatar_url: null,
             created_at: '2026-01-15T00:00:00Z',
             custom_role_id: null,
           },
           {
-            id: 'a1b2c3d4-0000-0000-0000-000000000002',
-            full_name: 'Sarah Bouchard',
-            email: 'sarah@minervaflow.com',
+            id: 'u4-samuel-adeleke',
+            full_name: 'Samuel Olamide Adeleke',
+            email: 'samuel@minerva.ca',
             role: 'member',
-            department: 'Operations',
+            department: 'Ventes & Closing B2B',
             avatar_url: null,
             created_at: '2026-02-01T00:00:00Z',
             custom_role_id: null,
           },
           {
-            id: 'a1b2c3d4-0000-0000-0000-000000000003',
-            full_name: 'Thomas Renaud',
-            email: 'thomas@minervaflow.com',
+            id: 'u5-amine-karroubi',
+            full_name: 'Amine Yahya Karroubi',
+            email: 'amine@minerva.ca',
             role: 'member',
-            department: 'Engineering',
+            department: 'Opérations & Delivery',
             avatar_url: null,
-            created_at: '2026-03-10T00:00:00Z',
+            created_at: '2026-02-15T00:00:00Z',
             custom_role_id: null,
           },
         ]);
       }
     } catch {
-      // Fallback
+      // Fallback 5 membres réels
+      setMembers([
+        {
+          id: 'u1-kael-belceus',
+          full_name: 'Kael Belceus',
+          email: 'kael@minerva.ca',
+          role: 'admin',
+          department: 'Direction Générale',
+          avatar_url: null,
+          created_at: '2026-01-01T00:00:00Z',
+          custom_role_id: null,
+        },
+        {
+          id: 'u2-manpreet-singh',
+          full_name: 'Manpreet Singh',
+          email: 'manpreet@minerva.ca',
+          role: 'admin',
+          department: 'Tech & IA',
+          avatar_url: null,
+          created_at: '2026-01-10T00:00:00Z',
+          custom_role_id: null,
+        },
+        {
+          id: 'u3-rayan',
+          full_name: 'Rayan',
+          email: 'rayan@minerva.ca',
+          role: 'admin',
+          department: 'Marketing & Acquisition',
+          avatar_url: null,
+          created_at: '2026-01-15T00:00:00Z',
+          custom_role_id: null,
+        },
+        {
+          id: 'u4-samuel-adeleke',
+          full_name: 'Samuel Olamide Adeleke',
+          email: 'samuel@minerva.ca',
+          role: 'member',
+          department: 'Ventes & Closing B2B',
+          avatar_url: null,
+          created_at: '2026-02-01T00:00:00Z',
+          custom_role_id: null,
+        },
+        {
+          id: 'u5-amine-karroubi',
+          full_name: 'Amine Yahya Karroubi',
+          email: 'amine@minerva.ca',
+          role: 'member',
+          department: 'Opérations & Delivery',
+          avatar_url: null,
+          created_at: '2026-02-15T00:00:00Z',
+          custom_role_id: null,
+        },
+      ]);
     } finally {
       setLoading(false);
     }

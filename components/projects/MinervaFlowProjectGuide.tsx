@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Utensils,
+  Hammer,
   CheckCircle2,
   Circle,
   ExternalLink,
@@ -21,10 +22,12 @@ import {
   Percent,
   Copy,
   Check,
+  Layers,
+  ChevronDown,
+  Building,
+  FileCheck,
+  Star,
 } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -69,7 +72,7 @@ const MINERVA_FLOW_STEPS: GuideStep[] = [
   {
     id: 'step-2',
     phase: 'Étape 02',
-    title: 'Digitalisation du Menu & Photos Culinaire HD',
+    title: 'Digitalisation du Menu & Photos Culinaires HD',
     duration: 'Jours 3 – 7',
     description:
       'Intégrer l’ensemble de la carte avec photos haute résolution, descriptions alléchantes, allergènes et suppléments personnalisables.',
@@ -177,17 +180,169 @@ const MINERVA_FLOW_STEPS: GuideStep[] = [
   },
 ];
 
+const ROOFING_DEPLOYMENT_STEPS: GuideStep[] = [
+  {
+    id: 'step-roof-1',
+    phase: 'Étape 01',
+    title: 'Simulateur d’Estimation Toiture & Démonstration Live',
+    duration: 'Jours 1 – 3',
+    description:
+      'Démontrer au couvreur l’impact d’un tunnel d’estimation instantané 24/7 face aux formulaires de contact passifs qui perdent 60% des prospects qualifiés.',
+    checklist: [
+      {
+        id: 'cr-1-1',
+        label: 'Configurer les fourchettes au pied carré (Bardeau d’asphalte, Tôle pincée, Membrane élastomère)',
+        details: 'Ex. Bardeau 4,50 $ à 7,50 $/pi², Membrane 8,00 $ à 14,00 $/pi².',
+      },
+      {
+        id: 'cr-1-2',
+        label: 'Paramétrer l’outil de calcul de pente, superficie approximative et accès au toit',
+      },
+      {
+        id: 'cr-1-3',
+        label: 'Faire tester le tunnel de devis instantané au dirigeant sur smartphone',
+      },
+    ],
+    proTip:
+      'Un simulateur de toiture avec fourchette de prix immédiate triple le taux de conversion des propriétaires fonciers pressés.',
+  },
+  {
+    id: 'step-roof-2',
+    phase: 'Étape 02',
+    title: 'Grille Tarifaire, Matériaux & Garanties Certifiées',
+    duration: 'Jours 3 – 6',
+    description:
+      'Intégrer les fiches techniques des matériaux, certifications fabricant (BP, GAF, IKO) et assurances responsabilité professionnelle.',
+    checklist: [
+      {
+        id: 'cr-2-1',
+        label: 'Numériser la grille des garanties (Garantie main-d’œuvre 10 ans, garantie fabricant 50 ans)',
+      },
+      {
+        id: 'cr-2-2',
+        label: 'Intégrer la galerie des chantiers récents avant/après en haute définition',
+      },
+      {
+        id: 'cr-2-3',
+        label: 'Configurer les options complémentaires (Ventilation Entretoit, Pontage contreplaqué, Gouttières)',
+      },
+    ],
+    proTip:
+      'Mettez en avant le badge RBQ et l’assurance responsabilité 2 000 000 $ dès la 1ère étape pour lever tous les freins de confiance.',
+  },
+  {
+    id: 'step-roof-3',
+    phase: 'Étape 03',
+    title: 'Devis Interactif, Signature Électronique & Acompte 50%',
+    duration: 'Jours 7 – 9',
+    description:
+      'Automatiser la génération de la proposition commerciale avec signature sur écran tactile et encaissement de l’acompte d’engagement via Stripe.',
+    checklist: [
+      {
+        id: 'cr-3-1',
+        label: 'Lier le compte bancaire Stripe de l’entreprise pour les acomptes directs',
+      },
+      {
+        id: 'cr-3-2',
+        label: 'Tester le module de signature électronique légale (Canvas tactile)',
+      },
+      {
+        id: 'cr-3-3',
+        label: 'Paramétrer le contrat type avec clauses météo et échéancier de paiement (50% / 50%)',
+      },
+    ],
+    proTip:
+      'Recevoir un acompte de réservation de 50% en ligne bloque le chantier dans le calendrier et élimine les désistements.',
+  },
+  {
+    id: 'step-roof-4',
+    phase: 'Étape 04',
+    title: 'Protocole Test d’Alerte Équipe & Attribution Chantier',
+    duration: 'Jour 10',
+    description:
+      'Tester la notification instantanée par SMS/Courriel lors d’une demande d’estimation pour un rappel du contremaître en moins de 15 minutes.',
+    checklist: [
+      {
+        id: 'cr-4-1',
+        label: 'Soumettre une demande test d’estimation toiture depuis un mobile',
+      },
+      {
+        id: 'cr-4-2',
+        label: 'Vérifier la réception immédiate de la notification SMS avec dimensions et photos du toit',
+      },
+      {
+        id: 'cr-4-3',
+        label: 'Valider l’insertion automatique dans le pipeline CRM des chantiers en attente',
+      },
+    ],
+    proTip:
+      'Un rappel téléphonique en moins de 15 minutes multiplie par 4 la probabilité de signer le devis de toiture face aux concurrents.',
+  },
+  {
+    id: 'step-roof-5',
+    phase: 'Étape 05',
+    title: 'Lancement Officiel, Fiche GMB & Campagne Avis 5★',
+    duration: 'Jours 11 – 14',
+    description:
+      'Déployer le tunnel sur le domaine officiel, synchroniser la fiche Google Business locale et automatiser la demande d’avis post-chantier.',
+    checklist: [
+      {
+        id: 'cr-5-1',
+        label: 'Mettre en production sur le nom de domaine principal de l’entreprise de toiture',
+      },
+      {
+        id: 'cr-5-2',
+        label: 'Lier la fiche Google Business (GMB) avec bouton direct « Obtenir un devis en ligne »',
+      },
+      {
+        id: 'cr-5-3',
+        label: 'Activer le déclencheur SMS de collecte d’avis Google 48h après la livraison du chantier',
+      },
+    ],
+    proTip:
+      'Chaque avis 5 étoiles géolocalisé renforce le référencement local et amène de nouveaux chantiers organiques sans dépenser en publicité.',
+  },
+];
+
 interface MinervaFlowProjectGuideProps {
   restaurantName?: string;
+  projectId?: string;
+  sector?: string;
   className?: string;
 }
 
 export function MinervaFlowProjectGuide({
-  restaurantName = 'Votre Restaurant Partenaire',
+  restaurantName = 'Client Partenaire',
+  projectId,
+  sector,
   className,
 }: MinervaFlowProjectGuideProps) {
-  const [completedItems, setCompletedItems] = useState<Set<string>>(new Set(['c1-1', 'c1-2']));
-  const [expandedStep, setExpandedStep] = useState<string>('step-1');
+  // Sector autodetection
+  const isRoofingClient = useMemo(() => {
+    const s = (sector || '').toLowerCase();
+    const n = (restaurantName || '').toLowerCase();
+    return (
+      s.includes('toiture') ||
+      s.includes('batiment') ||
+      s.includes('construction') ||
+      n.includes('toiture') ||
+      n.includes('beauchemin') ||
+      n.includes('couvreur')
+    );
+  }, [sector, restaurantName]);
+
+  const [activeSector, setActiveSector] = useState<'restaurant' | 'roofing'>(
+    isRoofingClient ? 'roofing' : 'restaurant'
+  );
+
+  const steps = activeSector === 'roofing' ? ROOFING_DEPLOYMENT_STEPS : MINERVA_FLOW_STEPS;
+
+  const [completedItems, setCompletedItems] = useState<Set<string>>(
+    new Set(activeSector === 'roofing' ? ['cr-1-1', 'cr-1-2'] : ['c1-1', 'c1-2'])
+  );
+  const [expandedStep, setExpandedStep] = useState<string>(
+    activeSector === 'roofing' ? 'step-roof-1' : 'step-1'
+  );
   const [copiedPitch, setCopiedPitch] = useState(false);
 
   const toggleCheck = (id: string) => {
@@ -199,201 +354,357 @@ export function MinervaFlowProjectGuide({
     });
   };
 
-  const totalCheckItems = MINERVA_FLOW_STEPS.reduce((acc, s) => acc + s.checklist.length, 0);
-  const progressPct = Math.round((completedItems.size / totalCheckItems) * 100);
+  const totalCheckItems = steps.reduce((acc, s) => acc + s.checklist.length, 0);
+  const completedCount = steps.reduce(
+    (acc, s) => acc + s.checklist.filter((c) => completedItems.has(c.id)).length,
+    0
+  );
+  const progressPct = Math.round((completedCount / (totalCheckItems || 1)) * 100);
 
   const handleCopyPitch = () => {
-    const pitch = `Bonjour,\n\nSaviez-vous que 30% du prix de chaque commande sur Uber Eats ou DoorDash part en commissions de plateforme ?\n\nAvec Minerva-Flow, vos clients commandent directement sur votre carte digitale 0% commission. Vous conservez 100% de vos marges, recevez les paiements instantanément et les bons s'impriment directement en cuisine.\n\nDécouvrez la démo interactive personnalisée ici : https://minerva-trequista.vercel.app/minerva-flow?resto=${encodeURIComponent(
-      restaurantName
-    )}`;
+    let pitch = '';
+    if (activeSector === 'roofing') {
+      pitch = `Bonjour,\n\nSaviez-vous que 60% des propriétaires qui cherchent un couvreur abandonnent les formulaires classiques pour appeler un concurrent qui donne un estimé rapide ?\n\nAvec notre simulateur de toiture en ligne, les clients configurent leur toit, obtiennent une fourchette instantanée et peuvent même signer leur devis et verser un acompte 50% en ligne.\n\nDécouvrez la démo interactive personnalisée pour ${restaurantName} : https://minerva-trequartista.vercel.app/projects/${
+        projectId || 'demo'
+      }`;
+    } else {
+      pitch = `Bonjour,\n\nSaviez-vous que 30% du prix de chaque commande sur Uber Eats ou DoorDash part en commissions de plateforme ?\n\nAvec Minerva-Flow, vos clients commandent directement sur votre carte digitale 0% commission. Vous conservez 100% de vos marges, recevez les paiements instantanément et les bons s'impriment directement en cuisine.\n\nDécouvrez la démo interactive personnalisée pour ${restaurantName} : https://minerva-flow.vercel.app`;
+    }
     navigator.clipboard.writeText(pitch);
     setCopiedPitch(true);
     setTimeout(() => setCopiedPitch(false), 2000);
   };
 
   return (
-    <div className={cn('space-y-6', className)}>
-      {/* ── 1. Hero Guide Header ── */}
-      <Card className="overflow-hidden border-emerald-800/30 bg-gradient-to-br from-emerald-950/90 via-zinc-900 to-zinc-950 text-white p-6 shadow-md">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
-              <Utensils className="w-3.5 h-3.5" />
-              <span>SOP & Protocole Officiel • Minerva-Flow</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white font-display">
-              Guide de Déploiement Commande Directe & 0 % Commission
-            </h2>
-            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              Suivez ce guide étape par étape pour numériser le menu de <strong>{restaurantName}</strong>, configurer l’impression cuisine et lancer la commande sans commission en moins de 14 jours.
-            </p>
+    <div className={cn('space-y-3', className)}>
+      {/* ── 1. Linear/Raycast Toolbar Strip (40px) ── */}
+      <div className="h-10 bg-white border border-zinc-200 rounded-lg px-3 flex items-center justify-between text-xs shadow-xs">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-5 h-5 rounded bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
+            {activeSector === 'roofing' ? (
+              <Hammer className="w-3 h-3" />
+            ) : (
+              <Utensils className="w-3 h-3" />
+            )}
+          </div>
+          <span className="font-semibold text-zinc-900 truncate">
+            Guide Déploiement • {restaurantName}
+          </span>
+          <span className="text-zinc-300">|</span>
+          <span className="font-mono text-[10.5px] text-zinc-500 uppercase tracking-wider hidden sm:inline" style={MONO}>
+            MDS-01 SOP
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Sector Segmented Switcher */}
+          <div className="h-7 bg-zinc-100 p-0.5 rounded-md flex items-center text-[11px] font-medium text-zinc-600">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveSector('roofing');
+                setExpandedStep('step-roof-1');
+              }}
+              className={cn(
+                'px-2 py-0.5 rounded transition-all flex items-center gap-1 cursor-pointer',
+                activeSector === 'roofing'
+                  ? 'bg-white text-zinc-900 shadow-xs font-semibold'
+                  : 'text-zinc-500 hover:text-zinc-800'
+              )}
+            >
+              <Hammer className="w-3 h-3 text-emerald-600" />
+              <span>Toiture / Bâtiment</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveSector('restaurant');
+                setExpandedStep('step-1');
+              }}
+              className={cn(
+                'px-2 py-0.5 rounded transition-all flex items-center gap-1 cursor-pointer',
+                activeSector === 'restaurant'
+                  ? 'bg-white text-zinc-900 shadow-xs font-semibold'
+                  : 'text-zinc-500 hover:text-zinc-800'
+              )}
+            >
+              <Utensils className="w-3 h-3 text-emerald-600" />
+              <span>Restauration 0%</span>
+            </button>
           </div>
 
-          {/* Quick Actions & Progress */}
-          <div className="flex flex-col sm:items-end gap-3 shrink-0">
-            <div className="p-3 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-1 text-right min-w-[180px]">
-              <div className="text-[10.5px] uppercase font-bold text-zinc-400 font-mono" style={MONO}>
-                Progression du déploiement
+          <button
+            type="button"
+            onClick={handleCopyPitch}
+            className="h-7 px-2.5 text-xs font-medium border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+          >
+            {copiedPitch ? (
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+            ) : (
+              <Copy className="w-3.5 h-3.5 text-zinc-400" />
+            )}
+            <span>{copiedPitch ? 'Copié !' : 'Copier pitch'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── 2. Metric Ribbon (4-Columns, Height ≤ 64px) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-zinc-200 rounded-lg divide-x divide-zinc-100 shadow-xs">
+        <div className="px-3.5 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            Secteur & Package
+          </div>
+          <div className="text-sm font-bold text-zinc-900 flex items-center gap-1.5 mt-0.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span>{activeSector === 'roofing' ? 'Toiture Bâtiment Pro' : 'Minerva Flow 0%'}</span>
+          </div>
+        </div>
+
+        <div className="px-3.5 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            Complétion Protocole
+          </div>
+          <div className="text-sm font-bold font-mono text-emerald-700 flex items-center gap-2 mt-0.5" style={MONO}>
+            <span>{progressPct}%</span>
+            <div className="flex-1 max-w-[80px] h-1.5 rounded-full bg-zinc-100 overflow-hidden">
+              <div
+                className="h-full bg-emerald-600 transition-all duration-300"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="px-3.5 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            Actions Validées
+          </div>
+          <div className="text-sm font-bold font-mono text-zinc-900 mt-0.5" style={MONO}>
+            {completedCount} / {totalCheckItems} items
+          </div>
+        </div>
+
+        <div className="px-3.5 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            Délai Recommandé
+          </div>
+          <div className="text-sm font-bold font-mono text-zinc-900 mt-0.5" style={MONO}>
+            14 jours ouvrés
+          </div>
+        </div>
+      </div>
+
+      {/* ── 3. Monolithic Split-View Layout (65% Checklist / 35% Live Technical Sheet) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+        {/* Left Column (65% -> 8 cols) : Steps Checklist Matrix */}
+        <div className="lg:col-span-8 bg-white border border-zinc-200 rounded-lg overflow-hidden shadow-xs divide-y divide-zinc-100">
+          {steps.map((step, idx) => {
+            const isExpanded = expandedStep === step.id;
+            const stepDone = step.checklist.every((c) => completedItems.has(c.id));
+            const stepCountDone = step.checklist.filter((c) => completedItems.has(c.id)).length;
+
+            return (
+              <div key={step.id} className="transition-colors">
+                {/* Step Row (36px compact header) */}
+                <button
+                  type="button"
+                  onClick={() => setExpandedStep(isExpanded ? '' : step.id)}
+                  className={cn(
+                    'w-full h-10 px-3.5 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer hover:bg-zinc-50',
+                    isExpanded && 'bg-zinc-50/70 border-b border-zinc-100'
+                  )}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div
+                      className={cn(
+                        'w-5 h-5 rounded flex items-center justify-center font-bold text-[10.5px] font-mono shrink-0',
+                        stepDone
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-zinc-100 border border-zinc-200 text-zinc-700'
+                      )}
+                      style={MONO}
+                    >
+                      {stepDone ? <Check className="w-3 h-3" /> : idx + 1}
+                    </div>
+
+                    <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider shrink-0 font-mono" style={MONO}>
+                      {step.phase}
+                    </span>
+
+                    <span className="text-xs font-semibold text-zinc-900 truncate">
+                      {step.title}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-[11px] text-zinc-400 font-mono hidden sm:inline" style={MONO}>
+                      {step.duration}
+                    </span>
+                    <span
+                      className={cn(
+                        'px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold',
+                        stepDone
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-zinc-100 text-zinc-600'
+                      )}
+                      style={MONO}
+                    >
+                      {stepCountDone}/{step.checklist.length}
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        'w-3.5 h-3.5 text-zinc-400 transition-transform duration-200',
+                        isExpanded && 'transform rotate-180'
+                      )}
+                    />
+                  </div>
+                </button>
+
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div className="p-3.5 space-y-3 bg-white">
+                    <p className="text-xs text-zinc-600 leading-relaxed">
+                      {step.description}
+                    </p>
+
+                    {/* Dense Checklist Rows (32px) */}
+                    <div className="border border-zinc-200 rounded-md overflow-hidden divide-y divide-zinc-100">
+                      {step.checklist.map((item) => {
+                        const isChecked = completedItems.has(item.id);
+                        return (
+                          <div
+                            key={item.id}
+                            onClick={() => toggleCheck(item.id)}
+                            className={cn(
+                              'px-3 py-2 flex items-start gap-2.5 text-xs transition-colors cursor-pointer hover:bg-zinc-50',
+                              isChecked && 'bg-emerald-50/30'
+                            )}
+                          >
+                            <div className="pt-0.5 shrink-0">
+                              {isChecked ? (
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              ) : (
+                                <Circle className="w-3.5 h-3.5 text-zinc-300" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div
+                                className={cn(
+                                  'font-medium text-xs',
+                                  isChecked ? 'line-through text-zinc-400' : 'text-zinc-800'
+                                )}
+                              >
+                                {item.label}
+                              </div>
+                              {item.details && (
+                                <div className="text-[11px] text-zinc-500 font-mono mt-0.5" style={MONO}>
+                                  {item.details}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Inline Agency Pro Tip */}
+                    <div className="p-2.5 rounded bg-emerald-50/60 border border-emerald-200/70 flex items-start gap-2 text-emerald-950 text-[11px] leading-relaxed">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="font-semibold text-emerald-900">Conseil Minerva : </strong>
+                        <span>{step.proTip}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="text-xl font-extrabold text-emerald-400 font-mono" style={MONO}>
-                {progressPct} % complété
+            );
+          })}
+        </div>
+
+        {/* Right Column (35% -> 4 cols) : Sticky Technical Parameters Sheet */}
+        <div className="lg:col-span-4 sticky top-4 space-y-3">
+          <div className="bg-white border border-zinc-200 rounded-lg p-3.5 space-y-3 shadow-xs">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 border-b border-zinc-100 pb-2 flex items-center justify-between">
+              <span>Paramètres Techniques</span>
+              <span className="font-mono text-emerald-700" style={MONO}>v2.25.0</span>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Client :</span>
+                <span className="font-semibold text-zinc-900 truncate max-w-[150px]">{restaurantName}</span>
               </div>
-              <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 transition-all duration-500"
-                  style={{ width: `${progressPct}%` }}
-                />
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Secteur :</span>
+                <span className="font-mono text-zinc-800" style={MONO}>
+                  {activeSector === 'roofing' ? 'Bâtiment / Toiture' : 'Restauration'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Modèle de revenus :</span>
+                <span className="font-mono text-emerald-700 font-bold" style={MONO}>
+                  {activeSector === 'roofing' ? 'Devis + 50% Acompte' : '0% Com / Direct'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Plateforme live :</span>
+                <span className="font-mono text-zinc-700" style={MONO}>
+                  {activeSector === 'roofing' ? 'minerva-trequartista' : 'minerva-flow'}
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Link
-                href={`/minerva-flow?resto=${encodeURIComponent(restaurantName)}`}
-                target="_blank"
-                className="h-8 px-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors inline-flex items-center gap-1.5 shadow-sm"
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>Ouvrir la démo live</span>
-                <ExternalLink className="w-3 h-3 opacity-70" />
-              </Link>
+            <div className="pt-2 border-t border-zinc-100 space-y-2">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                Raccourcis & Actions
+              </div>
+
+              {activeSector === 'roofing' ? (
+                <Link
+                  href={projectId ? `/projects/${projectId}/roadmap` : '/projects'}
+                  className="w-full h-8 px-3 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Voir la Roadmap Projet</span>
+                </Link>
+              ) : (
+                <a
+                  href="https://minerva-flow.vercel.app"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full h-8 px-3 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Ouvrir Minerva Flow</span>
+                  <ExternalLink className="w-3 h-3 opacity-70" />
+                </a>
+              )}
 
               <button
                 type="button"
                 onClick={handleCopyPitch}
-                className="h-8 px-3 text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg border border-zinc-700 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                className="w-full h-8 px-3 text-xs font-medium border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-md transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
               >
-                {copiedPitch ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedPitch ? 'Copié !' : 'Copier pitch'}</span>
+                <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                <span>{copiedPitch ? 'Pitch copié au presse-papier' : 'Copier pitch commercial'}</span>
               </button>
             </div>
           </div>
+
+          {/* Quick Keybinding Help Card */}
+          <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-3 text-[11px] text-zinc-600 space-y-1 font-mono" style={MONO}>
+            <div className="font-semibold text-zinc-800 text-[10px] uppercase">Raccourcis Clavier</div>
+            <div className="flex items-center justify-between text-zinc-500">
+              <span>Nouveau jalon</span>
+              <kbd className="bg-white border border-zinc-200 px-1.5 py-0.5 rounded text-[10px]">C / N</kbd>
+            </div>
+            <div className="flex items-center justify-between text-zinc-500">
+              <span>Valider saisie</span>
+              <kbd className="bg-white border border-zinc-200 px-1.5 py-0.5 rounded text-[10px]">⌘ + Entrée</kbd>
+            </div>
+          </div>
         </div>
-      </Card>
-
-      {/* ── 2. Steps Accordion & Checklists ── */}
-      <div className="space-y-3.5">
-        {MINERVA_FLOW_STEPS.map((step, idx) => {
-          const isExpanded = expandedStep === step.id;
-          const stepDone = step.checklist.every((c) => completedItems.has(c.id));
-
-          return (
-            <Card
-              key={step.id}
-              className={cn(
-                'overflow-hidden border transition-all',
-                stepDone
-                  ? 'border-emerald-200/80 bg-emerald-50/20'
-                  : isExpanded
-                  ? 'border-zinc-300 shadow-sm bg-white'
-                  : 'border-zinc-200/80 bg-white hover:border-zinc-300'
-              )}
-            >
-              {/* Step Header */}
-              <button
-                type="button"
-                onClick={() => setExpandedStep(isExpanded ? '' : step.id)}
-                className="w-full p-4 sm:p-5 flex items-center justify-between gap-4 text-left cursor-pointer"
-              >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div
-                    className={cn(
-                      'w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs font-mono shrink-0 transition-colors',
-                      stepDone
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-zinc-100 border border-zinc-200 text-zinc-700'
-                    )}
-                    style={MONO}
-                  >
-                    {stepDone ? <CheckCircle2 className="w-4 h-4" /> : `0${idx + 1}`}
-                  </div>
-
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10.5px] font-bold text-emerald-700 uppercase tracking-wider">
-                        {step.phase}
-                      </span>
-                      <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
-                        • {step.duration}
-                      </span>
-                      {stepDone && (
-                        <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                          Validé
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="text-sm sm:text-base font-bold text-zinc-900 truncate mt-0.5">
-                      {step.title}
-                    </h3>
-                  </div>
-                </div>
-
-                <div className="text-zinc-400 shrink-0">
-                  <span className="text-xs font-mono mr-2 hidden sm:inline" style={MONO}>
-                    {step.checklist.filter((c) => completedItems.has(c.id)).length} / {step.checklist.length}
-                  </span>
-                </div>
-              </button>
-
-              {/* Step Details & Checklist */}
-              {isExpanded && (
-                <div className="px-4 sm:px-5 pb-5 pt-1 border-t border-zinc-100 space-y-4 text-xs">
-                  <p className="text-zinc-600 leading-relaxed text-xs sm:text-sm">
-                    {step.description}
-                  </p>
-
-                  {/* Checklist items */}
-                  <div className="space-y-2 bg-zinc-50/70 p-3.5 rounded-xl border border-zinc-200/60">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
-                      Actions à valider :
-                    </div>
-                    {step.checklist.map((item) => {
-                      const isChecked = completedItems.has(item.id);
-                      return (
-                        <div
-                          key={item.id}
-                          onClick={() => toggleCheck(item.id)}
-                          className={cn(
-                            'p-2.5 rounded-lg border transition-all cursor-pointer flex items-start gap-3',
-                            isChecked
-                              ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
-                              : 'bg-white border-zinc-200 hover:border-zinc-300 text-zinc-800'
-                          )}
-                        >
-                          <div className="pt-0.5 shrink-0">
-                            {isChecked ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                            ) : (
-                              <Circle className="w-4 h-4 text-zinc-300" />
-                            )}
-                          </div>
-                          <div className="space-y-0.5 min-w-0 flex-1">
-                            <div className={cn('font-semibold text-xs', isChecked && 'line-through opacity-80')}>
-                              {item.label}
-                            </div>
-                            {item.details && (
-                              <div className="text-[11px] text-zinc-500">
-                                {item.details}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Pro Tip Box */}
-                  <div className="p-3 rounded-lg bg-amber-50/80 border border-amber-200/80 flex items-start gap-2.5 text-amber-900 text-[11.5px]">
-                    <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold">Conseil Agence Minerva : </span>
-                      <span>{step.proTip}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </Card>
-          );
-        })}
       </div>
     </div>
   );

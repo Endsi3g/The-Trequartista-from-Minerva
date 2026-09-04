@@ -19,61 +19,72 @@ import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
-function MetricSparkline({
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  Tooltip,
+} from 'recharts';
+
+interface SparklinePoint {
+  period: string;
+  value: number;
+}
+
+function OverviewRechartsSparkline({
   data,
-  color = '#059669',
+  unit = '',
   gradientId,
-  height = 36,
 }: {
-  data: number[];
-  color?: string;
+  data: SparklinePoint[];
+  unit?: string;
   gradientId: string;
-  height?: number;
 }) {
-  if (!data || data.length < 2) return null;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const width = 110;
-  const padding = 3;
-  const innerH = height - padding * 2;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  const points = data.map((val, idx) => {
-    const x = (idx / (data.length - 1)) * (width - 6) + 3;
-    const y = height - padding - ((val - min) / range) * innerH;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-
-  const polylineStr = points.join(' ');
-  const areaPath = `M ${points[0]} L ${points.join(' L ')} L ${width - 3},${height} L 3,${height} Z`;
+  if (!mounted) {
+    return <div className="w-28 sm:w-36 h-16 bg-emerald-500/5 rounded animate-pulse" />;
+  }
 
   return (
-    <div className="w-[110px] h-[36px] overflow-visible shrink-0 flex items-center justify-end">
-      <svg width={width} height={height} className="overflow-visible" aria-hidden="true">
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-            <stop offset="100%" stopColor={color} stopOpacity="0.0" />
-          </linearGradient>
-        </defs>
-        <path d={areaPath} fill={`url(#${gradientId})`} />
-        <polyline
-          fill="none"
-          stroke={color}
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          points={polylineStr}
-        />
-        {points.length > 0 && (
-          <circle
-            cx={points[points.length - 1].split(',')[0]}
-            cy={points[points.length - 1].split(',')[1]}
-            r="2.5"
-            fill={color}
+    <div className="w-28 sm:w-36 h-16">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 2 }}>
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#059669" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="#059669" stopOpacity={0.0} />
+            </linearGradient>
+          </defs>
+          <Tooltip
+            content={({ active, payload }) => {
+              if (active && payload && payload.length) {
+                const item = payload[0].payload as SparklinePoint;
+                return (
+                  <div className="bg-zinc-900 text-white px-2.5 py-1 rounded-md shadow-lg border border-zinc-700 text-[11px] font-mono whitespace-nowrap z-50">
+                    <span className="text-zinc-400 font-sans mr-1">{item.period} :</span>
+                    <span className="font-bold text-emerald-400">{item.value.toLocaleString('fr-CA')} {unit}</span>
+                  </div>
+                );
+              }
+              return null;
+            }}
           />
-        )}
-      </svg>
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke="#059669"
+            strokeWidth={2}
+            fill={`url(#${gradientId})`}
+            isAnimationActive={false}
+            dot={false}
+            activeDot={{ r: 3.5, fill: '#059669', stroke: '#ffffff', strokeWidth: 1.5 }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 }
@@ -85,6 +96,79 @@ interface ManagingOverviewProps {
   userName: string;
 }
 
+const OFFICIAL_TEAM_MEMBERS: ProductivityScore[] = [
+  {
+    id: 'u1',
+    user_id: 'u1',
+    member_name: 'KAEL BELCEUS',
+    role: 'Direction Générale (CEO)',
+    period_month: '2026-09',
+    tasks_points: 950,
+    role_bonus_points: 500,
+    total_points: 1450,
+    current_rank: 1,
+    previous_rank: 1,
+    breakdown: {},
+    computed_at: new Date().toISOString(),
+  },
+  {
+    id: 'u2',
+    user_id: 'u2',
+    member_name: 'MANPREET SINGH',
+    role: 'Tech & Systèmes IA',
+    period_month: '2026-09',
+    tasks_points: 880,
+    role_bonus_points: 400,
+    total_points: 1280,
+    current_rank: 2,
+    previous_rank: 2,
+    breakdown: {},
+    computed_at: new Date().toISOString(),
+  },
+  {
+    id: 'u3',
+    user_id: 'u3',
+    member_name: 'RAYAN',
+    role: 'Marketing & Acquisition',
+    period_month: '2026-09',
+    tasks_points: 720,
+    role_bonus_points: 400,
+    total_points: 1120,
+    current_rank: 3,
+    previous_rank: 3,
+    breakdown: {},
+    computed_at: new Date().toISOString(),
+  },
+  {
+    id: 'u4',
+    user_id: 'u4',
+    member_name: 'SAMUEL OLAMIDE ADELEKE',
+    role: 'Ventes & Closing B2B',
+    period_month: '2026-09',
+    tasks_points: 680,
+    role_bonus_points: 300,
+    total_points: 980,
+    current_rank: 4,
+    previous_rank: 4,
+    breakdown: {},
+    computed_at: new Date().toISOString(),
+  },
+  {
+    id: 'u5',
+    user_id: 'u5',
+    member_name: 'AMINE YAHYA KARROUBI',
+    role: 'Opérations & Delivery',
+    period_month: '2026-09',
+    tasks_points: 590,
+    role_bonus_points: 300,
+    total_points: 890,
+    current_rank: 5,
+    previous_rank: 5,
+    breakdown: {},
+    computed_at: new Date().toISOString(),
+  },
+];
+
 export function ManagingOverview({ clients, projects, tasks, userName }: ManagingOverviewProps) {
   const [leaderboard, setLeaderboard] = useState<ProductivityScore[]>([]);
 
@@ -92,7 +176,7 @@ export function ManagingOverview({ clients, projects, tasks, userName }: Managin
     let active = true;
     fetchProductivityLeaderboard()
       .then((data) => {
-        if (active) setLeaderboard(data);
+        if (active && data && data.length > 0) setLeaderboard(data);
       })
       .catch(() => {});
     return () => {
@@ -114,15 +198,15 @@ export function ManagingOverview({ clients, projects, tasks, userName }: Managin
     });
   }, [tasks]);
 
-  // Fallback leaderboard members if table has fewer than 4 entries
+  // Keep strictly the official company members
   const displayedLeaderboard = useMemo(() => {
-    if (leaderboard.length > 0) return leaderboard.slice(0, 5);
-    return [
-      { id: '1', user_id: 'u1', member_name: 'Kael B.', role: 'Direction & Lead Tech', total_points: 1450, current_rank: 1, breakdown: {} },
-      { id: '2', user_id: 'u2', member_name: 'Eli M.', role: 'Directeur Création Vidéo', total_points: 1280, current_rank: 2, breakdown: {} },
-      { id: '3', user_id: 'u3', member_name: 'Sarah D.', role: 'Account Manager & Ops', total_points: 980, current_rank: 3, breakdown: {} },
-      { id: '4', user_id: 'u4', member_name: 'Alex R.', role: 'Closer B2B & Prospection', total_points: 840, current_rank: 4, breakdown: {} },
-    ] as ProductivityScore[];
+    if (leaderboard.length >= 3) {
+      return leaderboard.map((m) => ({
+        ...m,
+        member_name: (m.member_name || '').toUpperCase(),
+      })).slice(0, 5);
+    }
+    return OFFICIAL_TEAM_MEMBERS;
   }, [leaderboard]);
 
   return (
@@ -180,21 +264,16 @@ export function ManagingOverview({ clients, projects, tasks, userName }: Managin
         </div>
       </div>
 
-      {/* ── 2. Connected KPI Ribbon with Integrated Visual Charts ── */}
+      {/* ── 2. Connected KPI Ribbon with Integrated Visual Charts (Linear/Raycast Monolith) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 bg-white border border-zinc-200 rounded-lg divide-y sm:divide-y-0 sm:divide-x divide-zinc-100 shadow-2xs overflow-hidden">
         {/* Metric 1: Santé Globale with Health Trend Sparkline */}
-        <div className="px-3.5 py-3 flex items-center justify-between gap-2">
+        <div className="px-4 py-3.5 sm:px-5 sm:py-4 flex items-center justify-between gap-3">
           <div className="flex flex-col justify-between min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 truncate">
-                Santé Globale
-              </span>
-              <span className="inline-flex items-center gap-1 text-[9px] font-bold font-mono text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.2 rounded" style={MONO}>
-                Optimal
-              </span>
-            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 truncate">
+              Santé Globale
+            </span>
             <div className="mt-1">
-              <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+              <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
                 96 %
               </span>
             </div>
@@ -203,27 +282,29 @@ export function ManagingOverview({ clients, projects, tasks, userName }: Managin
             </span>
           </div>
           <div className="shrink-0 flex items-center justify-end">
-            <MetricSparkline
-              data={[88, 90, 92, 91, 94, 95, 96]}
-              color="#059669"
+            <OverviewRechartsSparkline
+              data={[
+                { period: 'Jan', value: 88 },
+                { period: 'Fév', value: 90 },
+                { period: 'Mar', value: 92 },
+                { period: 'Avr', value: 91 },
+                { period: 'Mai', value: 95 },
+                { period: 'Juin', value: 96 },
+              ]}
+              unit="%"
               gradientId="sparkHealthGrad"
             />
           </div>
         </div>
 
-        {/* Metric 2: MRR sous Gestion with 6M Revenue Growth Curve */}
-        <div className="px-3.5 py-3 flex items-center justify-between gap-2">
+        {/* Metric 2: MRR sous Gestion with Revenue Growth Curve */}
+        <div className="px-4 py-3.5 sm:px-5 sm:py-4 flex items-center justify-between gap-3">
           <div className="flex flex-col justify-between min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 truncate">
-                MRR sous Gestion
-              </span>
-              <span className="text-[9px] font-bold font-mono text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.2 rounded" style={MONO}>
-                {activeClients.length} clients
-              </span>
-            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 truncate">
+              MRR sous Gestion
+            </span>
             <div className="mt-1">
-              <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+              <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
                 <AnimatedNumber value={totalMrr || 7200} formatDecimals={0} /> $ CAD
               </span>
             </div>
@@ -232,34 +313,29 @@ export function ManagingOverview({ clients, projects, tasks, userName }: Managin
             </span>
           </div>
           <div className="shrink-0 flex items-center justify-end">
-            <MetricSparkline
+            <OverviewRechartsSparkline
               data={[
-                Math.round((totalMrr || 7200) * 0.58),
-                Math.round((totalMrr || 7200) * 0.70),
-                Math.round((totalMrr || 7200) * 0.78),
-                Math.round((totalMrr || 7200) * 0.86),
-                Math.round((totalMrr || 7200) * 0.94),
-                totalMrr || 7200,
+                { period: 'Jan', value: Math.round((totalMrr || 7200) * 0.58) },
+                { period: 'Fév', value: Math.round((totalMrr || 7200) * 0.70) },
+                { period: 'Mar', value: Math.round((totalMrr || 7200) * 0.78) },
+                { period: 'Avr', value: Math.round((totalMrr || 7200) * 0.86) },
+                { period: 'Mai', value: Math.round((totalMrr || 7200) * 0.94) },
+                { period: 'Juin', value: totalMrr || 7200 },
               ]}
-              color="#2563eb"
+              unit="$ CAD"
               gradientId="sparkMrrGrad"
             />
           </div>
         </div>
 
         {/* Metric 3: Capacité Équipe with Load Curve */}
-        <div className="px-3.5 py-3 flex items-center justify-between gap-2">
+        <div className="px-4 py-3.5 sm:px-5 sm:py-4 flex items-center justify-between gap-3">
           <div className="flex flex-col justify-between min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 truncate">
-                Capacité Équipe
-              </span>
-              <span className="text-[9px] font-bold font-mono text-amber-700 bg-amber-50 border border-amber-200/60 px-1.5 py-0.2 rounded" style={MONO}>
-                Équilibré
-              </span>
-            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 truncate">
+              Capacité Équipe
+            </span>
             <div className="mt-1">
-              <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+              <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
                 78 %
               </span>
             </div>
@@ -268,27 +344,29 @@ export function ManagingOverview({ clients, projects, tasks, userName }: Managin
             </span>
           </div>
           <div className="shrink-0 flex items-center justify-end">
-            <MetricSparkline
-              data={[64, 70, 74, 69, 75, 78]}
-              color="#d97706"
+            <OverviewRechartsSparkline
+              data={[
+                { period: 'S1', value: 64 },
+                { period: 'S2', value: 70 },
+                { period: 'S3', value: 74 },
+                { period: 'S4', value: 69 },
+                { period: 'S5', value: 75 },
+                { period: 'S6', value: 78 },
+              ]}
+              unit="%"
               gradientId="sparkCapacityGrad"
             />
           </div>
         </div>
 
         {/* Metric 4: Rétention LTV with Cohort Retention Curve */}
-        <div className="px-3.5 py-3 flex items-center justify-between gap-2">
+        <div className="px-4 py-3.5 sm:px-5 sm:py-4 flex items-center justify-between gap-3">
           <div className="flex flex-col justify-between min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 truncate">
-                Rétention LTV
-              </span>
-              <span className="text-[9px] font-bold font-mono text-purple-700 bg-purple-50 border border-purple-200/60 px-1.5 py-0.2 rounded" style={MONO}>
-                Cohorte 6M
-              </span>
-            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 truncate">
+              Rétention LTV
+            </span>
             <div className="mt-1">
-              <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+              <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
                 94.2 %
               </span>
             </div>
@@ -297,9 +375,16 @@ export function ManagingOverview({ clients, projects, tasks, userName }: Managin
             </span>
           </div>
           <div className="shrink-0 flex items-center justify-end">
-            <MetricSparkline
-              data={[100, 98.4, 97.2, 96.0, 95.1, 94.2]}
-              color="#9333ea"
+            <OverviewRechartsSparkline
+              data={[
+                { period: 'M1', value: 100 },
+                { period: 'M2', value: 98.4 },
+                { period: 'M3', value: 97.2 },
+                { period: 'M4', value: 96.0 },
+                { period: 'M5', value: 95.1 },
+                { period: 'M6', value: 94.2 },
+              ]}
+              unit="%"
               gradientId="sparkRetentionGrad"
             />
           </div>

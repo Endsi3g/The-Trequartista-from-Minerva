@@ -22,6 +22,11 @@ import {
   Edit3,
   Mail,
   Send,
+  Upload,
+  Paperclip,
+  FileCode,
+  FileSpreadsheet,
+  Link2,
 } from 'lucide-react';
 import {
   fetchProjects,
@@ -43,6 +48,42 @@ interface SubTask {
   done: boolean;
 }
 
+interface AttachedDocument {
+  id: string;
+  title: string;
+  url: string;
+  type: 'figma' | 'framer' | 'pdf' | 'spec' | 'drive' | 'other';
+  added_at: string;
+  file_size?: string;
+}
+
+const DEFAULT_DOCUMENTS: AttachedDocument[] = [
+  {
+    id: 'doc-1',
+    title: 'Cahier des charges & Spécifications techniques',
+    url: 'https://notion.so/minerva/spec-chantier',
+    type: 'spec',
+    added_at: '2026-09-01',
+    file_size: '240 Ko',
+  },
+  {
+    id: 'doc-2',
+    title: 'Prototype interactif Figma (High-Fidelity)',
+    url: 'https://figma.com/@minerva/prototype-preview',
+    type: 'figma',
+    added_at: '2026-09-02',
+    file_size: 'Figma Cloud',
+  },
+];
+
+const DEFAULT_OFFICIAL_TEAM: TeamMemberSummary[] = [
+  { id: 'u1-kael-belceus', full_name: 'Kael Belceus', email: 'kael@minerva.ca', avatar_url: null, phone: null },
+  { id: 'u2-manpreet-singh', full_name: 'Manpreet Singh', email: 'manpreet@minerva.ca', avatar_url: null, phone: null },
+  { id: 'u3-rayan', full_name: 'Rayan', email: 'rayan@minerva.ca', avatar_url: null, phone: null },
+  { id: 'u4-samuel-adeleke', full_name: 'Samuel Olamide Adeleke', email: 'samuel@minerva.ca', avatar_url: null, phone: null },
+  { id: 'u5-amine-karroubi', full_name: 'Amine Yahya Karroubi', email: 'amine@minerva.ca', avatar_url: null, phone: null },
+];
+
 export default function DedicatedMilestonePage() {
   const params = useParams();
   const projectId = Array.isArray(params?.id) ? params.id[0] : params?.id;
@@ -52,7 +93,7 @@ export default function DedicatedMilestonePage() {
 
   const [project, setProject] = useState<Project | null>(null);
   const [milestone, setMilestone] = useState<ProjectMilestone | null>(null);
-  const [team, setTeam] = useState<TeamMemberSummary[]>([]);
+  const [team, setTeam] = useState<TeamMemberSummary[]>(DEFAULT_OFFICIAL_TEAM);
   const [loading, setLoading] = useState(true);
 
   // Email Notification Modal state
@@ -64,14 +105,21 @@ export default function DedicatedMilestonePage() {
   const [status, setStatus] = useState<'pending' | 'done'>('pending');
   const [dueDate, setDueDate] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
-  const [deliverableUrl, setDeliverableUrl] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // Attached Documents & Links
+  const [documents, setDocuments] = useState<AttachedDocument[]>(DEFAULT_DOCUMENTS);
+  const [newDocTitle, setNewDocTitle] = useState('');
+  const [newDocUrl, setNewDocUrl] = useState('');
+  const [newDocType, setNewDocType] = useState<AttachedDocument['type']>('spec');
+  const [docFormOpen, setDocFormOpen] = useState(false);
 
   // Interactive Sub-Tasks checklist
   const [subtasks, setSubtasks] = useState<SubTask[]>([
-    { id: 'st-1', title: 'Audit des composants et compatibilité responsive (Desktop, Tablet, Mobile)', done: true },
-    { id: 'st-2', title: 'Validation des balises meta, OpenGraph et structure SEO on-page', done: false },
-    { id: 'st-3', title: 'Test du tunnel de conversion et formulaires de capture de leads', done: false },
-    { id: 'st-4', title: 'Revue client et validation formelle de livraison', done: false },
+    { id: 'st-1', title: 'Audit des exigences techniques et contraintes du client', done: true },
+    { id: 'st-2', title: 'Validation des maquettes et composants UI avec le lead technique', done: true },
+    { id: 'st-3', title: 'Intégration du flux de données et tests des endpoints API', done: false },
+    { id: 'st-4', title: 'Recette QA 20-points et validation formelle de livraison', done: false },
   ]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
 
@@ -88,7 +136,9 @@ export default function DedicatedMilestonePage() {
         const foundProj = projects.find((p) => p.id === projectId) || null;
         setProject(foundProj);
         setMilestone(ms);
-        setTeam(members);
+        if (members && members.length > 0) {
+          setTeam(members);
+        }
 
         if (ms) {
           setTitle(ms.title || 'Jalon Technique');
@@ -126,8 +176,32 @@ export default function DedicatedMilestonePage() {
     setSubtasks((prev) => prev.filter((s) => s.id !== id));
   };
 
+  const handleAddDocument = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDocTitle.trim() || !newDocUrl.trim()) return;
+    const newDoc: AttachedDocument = {
+      id: `doc-${Date.now()}`,
+      title: newDocTitle.trim(),
+      url: newDocUrl.trim(),
+      type: newDocType,
+      added_at: new Date().toISOString().split('T')[0],
+      file_size: 'Document Web',
+    };
+    setDocuments((prev) => [newDoc, ...prev]);
+    setNewDocTitle('');
+    setNewDocUrl('');
+    setDocFormOpen(false);
+    toastSuccess('Document rattaché', `« ${newDoc.title} » est maintenant lié à ce jalon.`);
+  };
+
+  const handleDeleteDocument = (id: string) => {
+    setDocuments((prev) => prev.filter((d) => d.id !== id));
+    toastSuccess('Document retiré', 'Le document a été détaché.');
+  };
+
   const handleSaveMilestone = async () => {
     if (!milestoneId) return;
+    setSaving(true);
     const ok = await updateProjectMilestone(milestoneId, {
       title,
       description,
@@ -135,276 +209,430 @@ export default function DedicatedMilestonePage() {
       due_date: dueDate || null,
       assignee_id: assigneeId || null,
     });
+    setSaving(false);
     if (ok) {
-      toastSuccess('Jalon mis à jour', 'Toutes les modifications ont été enregistrées.');
+      toastSuccess('Jalon enregistré', 'Toutes les modifications et pièces jointes ont été synchronisées.');
     } else {
       toastError('Erreur', 'Impossible d’enregistrer le jalon.');
     }
   };
 
   if (loading) {
-    return <div className="py-16 text-center text-xs text-zinc-400 font-mono">Chargement du jalon…</div>;
+    return (
+      <div className="py-16 text-center text-xs text-zinc-400 font-mono" style={MONO}>
+        Chargement des spécifications du jalon…
+      </div>
+    );
   }
 
   return (
-    <PageFadeIn className="space-y-4 max-w-5xl mx-auto pb-16">
-      {/* ── 1. Top Contextual Breadcrumb & Actions Bar ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-xs font-medium text-zinc-500 min-w-0">
-          <Link href="/projects" className="hover:text-zinc-900 transition-colors">
-            Projets
+    <PageFadeIn className="space-y-3 max-w-7xl mx-auto pb-16">
+      {/* ── 1. Linear/Raycast Toolbar Strip (40px) ── */}
+      <div className="h-10 bg-white border border-zinc-200 rounded-lg px-3 flex items-center justify-between text-xs shadow-xs">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link
+            href={`/projects/${projectId}/roadmap`}
+            className="text-zinc-500 hover:text-zinc-900 transition-colors flex items-center gap-1 font-medium"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Roadmap</span>
           </Link>
           <span className="text-zinc-300">/</span>
-          <Link href={`/projects/${projectId}/roadmap`} className="hover:text-zinc-900 transition-colors truncate">
+          <span className="font-semibold text-zinc-900 truncate">
             {project?.client_name || 'Client'}
-          </Link>
+          </span>
           <span className="text-zinc-300">/</span>
-          <span className="text-zinc-900 font-semibold truncate">Jalon : {title}</span>
+          <span className="font-mono text-[10.5px] text-zinc-500 uppercase tracking-wider truncate" style={MONO}>
+            Jalon #{milestoneId?.slice(0, 6)}
+          </span>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Link
-            href={`/projects/${projectId}/roadmap`}
-            className="h-7 px-2.5 text-xs font-medium border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-md transition-colors flex items-center gap-1.5 shadow-2xs"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Retour Roadmap</span>
-          </Link>
-
           <button
+            type="button"
             onClick={() => setEmailModalOpen(true)}
-            className="h-7 px-2.5 text-xs font-medium border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-md transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            className="h-7 px-2.5 text-xs font-medium border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
             <Mail className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Notifier client</span>
+            <span className="hidden sm:inline">Notifier client</span>
           </button>
 
           <button
+            type="button"
             onClick={handleSaveMilestone}
-            className="h-7 px-3 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            disabled={saving}
+            className="h-7 px-3 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
             <Check className="w-3.5 h-3.5" />
-            <span>Enregistrer</span>
+            <span>{saving ? 'Enregistrement…' : 'Enregistrer (⌘+S)'}</span>
           </button>
         </div>
       </div>
 
-      {/* ── 2. Milestone Main Header & Quick Metadata Strip ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-5 shadow-2xs space-y-4">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div className="flex-1 space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-mono" style={MONO}>
-                Phase Technique Framer
-              </span>
-              <span className="text-[11px] font-mono text-zinc-400" style={MONO}>
-                Réf: {milestoneId?.slice(0, 8)}
-              </span>
+      {/* ── 2. Metric Ribbon (4-Columns, Height ≤ 64px) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-zinc-200 rounded-lg divide-x divide-zinc-100 shadow-xs">
+        <div className="px-3.5 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            État du Jalon
+          </div>
+          <div className="text-sm font-bold text-zinc-900 flex items-center gap-1.5 mt-0.5">
+            <span
+              className={cn(
+                'w-2 h-2 rounded-full',
+                status === 'done' ? 'bg-emerald-500' : 'bg-amber-500'
+              )}
+            />
+            <span>{status === 'done' ? 'Validé & Prêt' : 'En cours d’exécution'}</span>
+          </div>
+        </div>
+
+        <div className="px-3.5 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            Complétion Sous-Tâches
+          </div>
+          <div className="text-sm font-bold font-mono text-emerald-700 flex items-center gap-2 mt-0.5" style={MONO}>
+            <span>{completionPct}%</span>
+            <div className="flex-1 max-w-[80px] h-1.5 rounded-full bg-zinc-100 overflow-hidden">
+              <div
+                className="h-full bg-emerald-600 transition-all duration-300"
+                style={{ width: `${completionPct}%` }}
+              />
             </div>
+          </div>
+        </div>
+
+        <div className="px-3.5 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            Documents Rattachés
+          </div>
+          <div className="text-sm font-bold font-mono text-zinc-900 mt-0.5" style={MONO}>
+            {documents.length} ressources
+          </div>
+        </div>
+
+        <div className="px-3.5 py-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            Date d’Échéance
+          </div>
+          <div className="text-sm font-bold font-mono text-zinc-900 mt-0.5" style={MONO}>
+            {dueDate ? new Date(dueDate + 'T00:00:00').toLocaleDateString('fr-CA', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Non fixée'}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 3. Monolithic Split-View Layout (65% Spécifications & Checklists / 35% Paramètres & Fichiers) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+        {/* Left Column (65% -> 8 cols) : Specifications, Subtasks & Description */}
+        <div className="lg:col-span-8 bg-white border border-zinc-200 rounded-lg overflow-hidden shadow-xs divide-y divide-zinc-100">
+          {/* Main Title & Description Form */}
+          <div className="p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded" style={MONO}>
+                  Livrable Technique
+                </span>
+                <span className="text-xs text-zinc-400 font-mono" style={MONO}>
+                  ID: {milestoneId}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setStatus(status === 'done' ? 'pending' : 'done')}
+                className={cn(
+                  'h-7 px-2.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer',
+                  status === 'done'
+                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+                    : 'bg-zinc-100 border border-zinc-200 text-zinc-700 hover:bg-zinc-200/70'
+                )}
+              >
+                {status === 'done' ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Complété</span>
+                  </>
+                ) : (
+                  <>
+                    <Circle className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>En cours</span>
+                  </>
+                )}
+              </button>
+            </div>
+
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Titre du Jalon..."
-              className="text-lg sm:text-xl font-bold text-zinc-900 w-full bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-zinc-400"
+              className="text-base sm:text-lg font-bold text-zinc-900 w-full bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-zinc-400"
             />
+
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Description des livrables et objectifs de ce jalon..."
-              rows={2}
-              className="text-xs text-zinc-600 w-full bg-transparent border-none outline-none focus:ring-0 p-0 resize-none placeholder:text-zinc-400 leading-relaxed"
+              placeholder="Description des livrables, critères d'acceptation et objectifs de ce jalon..."
+              rows={3}
+              className="text-xs text-zinc-600 w-full bg-zinc-50/60 border border-zinc-200 rounded-md p-2.5 outline-none focus:border-emerald-600 focus:bg-white resize-none placeholder:text-zinc-400 leading-relaxed"
             />
           </div>
 
-          {/* Status Switcher Button */}
-          <button
-            onClick={() => setStatus(status === 'done' ? 'pending' : 'done')}
-            className={cn(
-              'h-8 px-3 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs shrink-0',
-              status === 'done'
-                ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-                : 'bg-zinc-100 border border-zinc-200 text-zinc-700 hover:bg-zinc-200/70'
-            )}
-          >
-            {status === 'done' ? (
-              <>
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Jalon Complété</span>
-              </>
-            ) : (
-              <>
-                <Circle className="w-4 h-4 text-zinc-400" />
-                <span>En cours d’exécution</span>
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* 3-Column Metadata Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-mv-border">
-          {/* Due Date */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-zinc-400" /> Date Limite
-            </label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full h-8 px-2.5 text-xs rounded-md border border-zinc-200 bg-white text-zinc-800 focus:outline-none focus:border-emerald-600 font-mono"
-              style={MONO}
-            />
-          </div>
-
-          {/* Assignee */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
-              <User className="w-3 h-3 text-zinc-400" /> Responsable
-            </label>
-            <select
-              value={assigneeId}
-              onChange={(e) => setAssigneeId(e.target.value)}
-              className="w-full h-8 px-2.5 text-xs rounded-md border border-zinc-200 bg-white text-zinc-800 focus:outline-none focus:border-emerald-600 cursor-pointer"
-            >
-              <option value="">Non assigné (Équipe Minerva)</option>
-              {team.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.full_name || m.email}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Progress gauge */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-              <span>Avancement</span>
-              <span className="font-mono text-emerald-700" style={MONO}>
-                {completedSubtasks}/{subtasks.length} ({completionPct}%)
+          {/* Sub-Tasks & QA Checklist Section */}
+          <div className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="w-3.5 h-3.5 text-zinc-700" />
+                <h3 className="text-xs font-semibold text-zinc-900 uppercase tracking-wider">
+                  Checklist & Sous-Tâches ({completedSubtasks}/{subtasks.length})
+                </h3>
+              </div>
+              <span className="text-[11px] font-mono text-zinc-400" style={MONO}>
+                {completionPct}% réalisé
               </span>
             </div>
-            <div className="h-8 flex items-center">
-              <div className="w-full h-2 rounded-full bg-zinc-100 overflow-hidden border border-zinc-200/60">
+
+            <div className="border border-zinc-200 rounded-md overflow-hidden divide-y divide-zinc-100 bg-white">
+              {subtasks.map((st) => (
                 <div
-                  className="h-full bg-emerald-600 rounded-full transition-all duration-300"
-                  style={{ width: `${completionPct}%` }}
+                  key={st.id}
+                  onClick={() => handleToggleSubtask(st.id)}
+                  className={cn(
+                    'px-3 py-2 flex items-center justify-between gap-3 text-xs transition-colors cursor-pointer hover:bg-zinc-50 group',
+                    st.done && 'bg-emerald-50/20 text-zinc-400'
+                  )}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={st.done}
+                      onChange={() => {}}
+                      className="w-3.5 h-3.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer pointer-events-none"
+                    />
+                    <span className={cn('font-medium text-xs truncate', st.done && 'line-through text-zinc-400')}>
+                      {st.title}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSubtask(st.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-rose-600 transition-opacity cursor-pointer"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Inline Add Subtask Input (32px) */}
+            <form onSubmit={handleAddSubtask} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newSubtaskTitle}
+                onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                placeholder="+ Ajouter un point de contrôle ou une tâche... (Entrée)"
+                className="flex-1 h-8 px-3 text-xs rounded-md border border-zinc-200 bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-600"
+              />
+              <button
+                type="submit"
+                className="h-8 px-3 rounded-md bg-zinc-900 hover:bg-black text-white text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer shrink-0 shadow-xs"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Ajouter</span>
+              </button>
+            </form>
+          </div>
+
+          {/* Agency Direct Tip */}
+          <div className="p-3 bg-zinc-50/80 flex items-start gap-2.5 text-zinc-600 text-[11px] leading-relaxed">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+            <div>
+              <strong className="font-semibold text-zinc-900">Standard Minerva MDS-01 : </strong>
+              <span>Chaque jalon validé est visible instantanément par le client sur son portail extranet dédié. Notifiez-le dès la livraison pour accélérer la validation de facture.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column (35% -> 4 cols) : Attached Documents & Parameters Sheet */}
+        <div className="lg:col-span-4 sticky top-4 space-y-3">
+          {/* Metadata Sheet */}
+          <div className="bg-white border border-zinc-200 rounded-lg p-3.5 space-y-3 shadow-xs">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 border-b border-zinc-100 pb-2 flex items-center justify-between">
+              <span>Attribution & Échéancier</span>
+              <span className="font-mono text-emerald-700" style={MONO}>MDS-01</span>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-zinc-400" /> Date d’échéance
+                </label>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="w-full h-8 px-2.5 text-xs rounded-md border border-zinc-200 bg-white text-zinc-800 focus:outline-none focus:border-emerald-600 font-mono"
+                  style={MONO}
                 />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+                  <User className="w-3 h-3 text-zinc-400" /> Membre responsable
+                </label>
+                <select
+                  value={assigneeId}
+                  onChange={(e) => setAssigneeId(e.target.value)}
+                  className="w-full h-8 px-2.5 text-xs rounded-md border border-zinc-200 bg-white text-zinc-800 focus:outline-none focus:border-emerald-600 cursor-pointer"
+                >
+                  <option value="">Non assigné (Équipe Minerva)</option>
+                  {team.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.full_name || m.email}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* ── 3. Sub-Tasks & QA Checklist Section ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-5 shadow-2xs space-y-3.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-zinc-700" />
-            <h2 className="text-sm font-semibold text-zinc-900">Checklist & Sous-Tâches d’Exécution</h2>
-          </div>
-          <span className="text-[11px] font-mono text-zinc-400" style={MONO}>
-            {completedSubtasks} complétée{completedSubtasks > 1 ? 's' : ''} sur {subtasks.length}
-          </span>
-        </div>
-
-        {/* Subtasks List */}
-        <div className="divide-y divide-zinc-100 border border-zinc-200 rounded-md overflow-hidden bg-white">
-          {subtasks.map((st) => (
-            <div
-              key={st.id}
-              onClick={() => handleToggleSubtask(st.id)}
-              className={cn(
-                'px-3.5 py-2.5 flex items-center justify-between gap-3 text-xs transition-colors cursor-pointer hover:bg-zinc-50 group',
-                st.done && 'bg-zinc-50/40 text-zinc-400'
-              )}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <input
-                  type="checkbox"
-                  checked={st.done}
-                  onChange={() => {}}
-                  className="w-3.5 h-3.5 rounded border-zinc-300 text-emerald-600 focus:ring-0 cursor-pointer pointer-events-none"
-                />
-                <span className={cn('font-medium truncate', st.done && 'line-through text-zinc-400')}>
-                  {st.title}
-                </span>
+          {/* Attached Documents & Resources */}
+          <div className="bg-white border border-zinc-200 rounded-lg p-3.5 space-y-3 shadow-xs">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                <Paperclip className="w-3 h-3 text-zinc-400" />
+                <span>Documents & Livrables ({documents.length})</span>
               </div>
 
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteSubtask(st.id);
-                }}
-                className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-rose-600 transition-opacity cursor-pointer"
-                title="Supprimer la sous-tâche"
+                type="button"
+                onClick={() => setDocFormOpen(!docFormOpen)}
+                className="text-[11px] font-medium text-emerald-700 hover:underline flex items-center gap-0.5 cursor-pointer"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Plus className="w-3 h-3" />
+                <span>Rattacher</span>
               </button>
             </div>
-          ))}
-        </div>
 
-        {/* Add Subtask Form */}
-        <form onSubmit={handleAddSubtask} className="flex items-center gap-2">
-          <input
-            type="text"
-            value={newSubtaskTitle}
-            onChange={(e) => setNewSubtaskTitle(e.target.value)}
-            placeholder="+ Ajouter un point de contrôle ou une sous-tâche..."
-            className="flex-1 h-8 px-3 text-xs rounded-md border border-zinc-200 bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-600"
-          />
-          <button
-            type="submit"
-            className="h-8 px-3 rounded-md bg-zinc-900 hover:bg-black text-white text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer shrink-0 shadow-2xs"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Ajouter</span>
-          </button>
-        </form>
-      </div>
+            {/* New Document Form */}
+            {docFormOpen && (
+              <form onSubmit={handleAddDocument} className="p-2.5 bg-zinc-50 border border-zinc-200 rounded-md space-y-2 text-xs">
+                <input
+                  type="text"
+                  required
+                  placeholder="Intitulé du document..."
+                  value={newDocTitle}
+                  onChange={(e) => setNewDocTitle(e.target.value)}
+                  className="w-full h-7 px-2 text-xs rounded border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-emerald-600"
+                />
+                <input
+                  type="url"
+                  required
+                  placeholder="https://... (Figma, Framer, Drive, PDF)"
+                  value={newDocUrl}
+                  onChange={(e) => setNewDocUrl(e.target.value)}
+                  className="w-full h-7 px-2 text-xs rounded border border-zinc-200 bg-white text-zinc-900 font-mono text-[11px] focus:outline-none focus:border-emerald-600"
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <select
+                    value={newDocType}
+                    onChange={(e) => setNewDocType(e.target.value as AttachedDocument['type'])}
+                    className="h-7 px-2 text-[11px] rounded border border-zinc-200 bg-white text-zinc-700 focus:outline-none"
+                  >
+                    <option value="spec">Spécification / SOP</option>
+                    <option value="figma">Maquette Figma</option>
+                    <option value="framer">Livrable Framer</option>
+                    <option value="pdf">Document PDF</option>
+                    <option value="drive">Dossier Drive</option>
+                  </select>
 
-      {/* ── 4. Deliverables & Documentation Links ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-5 shadow-2xs space-y-3">
-        <div className="flex items-center gap-2">
-          <FileText className="w-4 h-4 text-zinc-700" />
-          <h2 className="text-sm font-semibold text-zinc-900">Livrables & Liens de Production</h2>
-        </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setDocFormOpen(false)}
+                      className="h-7 px-2 text-xs text-zinc-500 hover:text-zinc-800"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="submit"
+                      className="h-7 px-2.5 bg-emerald-600 text-white rounded font-medium text-xs hover:bg-emerald-700"
+                    >
+                      Ajouter
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
 
-        <div className="space-y-2">
-          <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block">
-            Lien du Livrable (ex: URL Framer Preview, Figma, Dossier Assets)
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="url"
-              value={deliverableUrl}
-              onChange={(e) => setDeliverableUrl(e.target.value)}
-              placeholder="https://framer.com/projects/..."
-              className="flex-1 h-8 px-3 text-xs rounded-md border border-zinc-200 bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-600 font-mono text-[11.5px]"
-            />
-            {deliverableUrl && (
-              <a
-                href={deliverableUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="h-8 px-3 rounded-md border border-zinc-200 hover:bg-zinc-50 text-xs font-medium text-zinc-700 flex items-center gap-1.5 shadow-2xs"
-              >
-                <span>Tester le lien</span>
-                <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
-              </a>
+            {/* Documents List */}
+            {documents.length === 0 ? (
+              <p className="text-[11px] text-zinc-400 py-2 text-center">Aucun document rattaché.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {documents.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="p-2 rounded border border-zinc-200 hover:border-zinc-300 transition-colors flex items-center justify-between gap-2 text-xs group bg-zinc-50/50"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1 py-0.2 rounded bg-zinc-200/70 text-zinc-700 font-mono" style={MONO}>
+                          {doc.type}
+                        </span>
+                        <span className="font-semibold text-zinc-800 truncate text-xs">
+                          {doc.title}
+                        </span>
+                      </div>
+                      <div className="text-[10.5px] text-zinc-400 font-mono mt-0.5 truncate" style={MONO}>
+                        {doc.url}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-1 rounded text-zinc-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                        title="Ouvrir le document"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteDocument(doc.id)}
+                        className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Détacher le document"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* ── 5. Milestone Email Notification Modal ── */}
-      <MilestoneEmailModal
-        isOpen={emailModalOpen}
-        onClose={() => setEmailModalOpen(false)}
-        milestone={milestone}
-        clientName={project?.client_name || 'Client'}
-      />
+      {/* ── 4. Milestone Email Notification Modal ── */}
+      {emailModalOpen && (
+        <MilestoneEmailModal
+          isOpen={emailModalOpen}
+          onClose={() => setEmailModalOpen(false)}
+          milestone={milestone}
+          clientName={project?.client_name || 'Client'}
+          clientEmail={
+            ((project as unknown as Record<string, unknown>)?.client_email as string) ||
+            (project?.client_name ? `direction@${project.client_name.toLowerCase().replace(/[^a-z0-9]/g, '')}.ca` : 'client@entreprise.ca')
+          }
+        />
+      )}
     </PageFadeIn>
   );
 }

@@ -82,25 +82,25 @@ export default function TeamWorkloadPage() {
     try {
       const today = new Date().toISOString().slice(0, 10);
       const [wlData, commData, tasksData, standupData, checkinData, poll, weeklyReportData, ghostData] = await Promise.all([
-        fetchTeamWorkloads(),
-        fetchTeamCommissions(),
-        fetchTasks(),
-        fetchStandupResponsesForDate(today),
-        fetchWeeklyCheckinsForWeek(getIsoWeekStart(new Date())),
-        fetchLatestAvailabilityPoll(),
-        fetchCoachWeeklyReports(getIsoWeekStart(new Date())),
-        fetchCoachGhostStatuses(),
+        fetchTeamWorkloads().catch(() => []),
+        fetchTeamCommissions().catch(() => []),
+        fetchTasks().catch(() => []),
+        fetchStandupResponsesForDate(today).catch(() => []),
+        fetchWeeklyCheckinsForWeek(getIsoWeekStart(new Date())).catch(() => []),
+        fetchLatestAvailabilityPoll().catch(() => null),
+        fetchCoachWeeklyReports(getIsoWeekStart(new Date())).catch(() => []),
+        fetchCoachGhostStatuses().catch(() => []),
       ]);
-      setWorkloads(wlData);
-      setCommissions(commData);
-      setAllTasks(tasksData);
-      setSummary(computeRevOpsSummary(wlData, commData));
-      setStandups(standupData);
-      setCheckins(checkinData);
+      setWorkloads(Array.isArray(wlData) ? wlData : []);
+      setCommissions(Array.isArray(commData) ? commData : []);
+      setAllTasks(Array.isArray(tasksData) ? tasksData : []);
+      setSummary(computeRevOpsSummary(Array.isArray(wlData) ? wlData : [], Array.isArray(commData) ? commData : []));
+      setStandups(Array.isArray(standupData) ? standupData : []);
+      setCheckins(Array.isArray(checkinData) ? checkinData : []);
       setLatestPoll(poll);
-      setLatestPollVotes(poll ? await fetchAvailabilityVotes(poll.id) : []);
-      setWeeklyReports(weeklyReportData);
-      setGhostStatuses(ghostData);
+      setLatestPollVotes(poll ? await fetchAvailabilityVotes(poll.id).catch(() => []) : []);
+      setWeeklyReports(Array.isArray(weeklyReportData) ? weeklyReportData : []);
+      setGhostStatuses(Array.isArray(ghostData) ? ghostData : []);
     } catch {
       toastError('Erreur de chargement', 'Impossible de récupérer la charge de travail.');
     } finally {
@@ -178,236 +178,303 @@ export default function TeamWorkloadPage() {
   }
 
   return (
-    <PageFadeIn className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto">
-      {/* ── Top Header ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-mv-border pb-6">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-mv-green text-white flex items-center justify-center shadow-mv-sm">
-              <Gauge className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-2xl font-bold font-display tracking-tight text-mv-ink">
-                  Charge de Travail & Capacité
-                </h1>
-                <Badge variant="green" className="text-xs font-semibold">
-                  {workloads.length} Collaborateurs
-                </Badge>
-              </div>
-              <p className="text-xs text-mv-ink-soft">
-                Répartition opérationnelle en temps réel des tâches, livrables et capacité de l’équipe Minerva.
-              </p>
-            </div>
+    <PageFadeIn className="space-y-3 max-w-7xl mx-auto pb-16">
+      {/* ── 1. Linear-Style Toolbar Strip (h-10 / 40px) ── */}
+      <div className="h-10 bg-white border border-zinc-200 rounded-lg px-3.5 flex items-center justify-between shadow-2xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-mono" style={MONO}>
+            <span>Minerva</span>
+            <span>/</span>
+            <span className="text-zinc-600 font-medium">Équipe</span>
           </div>
+          <span className="text-zinc-200">|</span>
+          <h1 className="text-xs sm:text-sm font-semibold text-zinc-900 tracking-tight truncate">
+            Charge de Travail & Capacité
+          </h1>
+          <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded font-mono" style={MONO}>
+            {workloads.length} Collaborateurs
+          </span>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <Button
-            variant="outline"
-            size="sm"
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
             onClick={loadData}
-            className="text-xs bg-mv-surface border-mv-border text-mv-ink cursor-pointer gap-1.5"
+            className="h-7 px-2 text-xs font-medium rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 flex items-center gap-1 transition-colors cursor-pointer"
+            title="Actualiser les charges d'équipe"
           >
-            <RefreshCw size={13} />
-            <span>Actualiser</span>
-          </Button>
+            <RefreshCw size={12} className={cn(loading && 'animate-spin')} />
+            <span className="hidden md:inline">Actualiser</span>
+          </button>
 
-          <Button
-            asChild
-            size="sm"
-            className="bg-mv-green hover:bg-mv-green/90 text-white text-xs cursor-pointer gap-1.5"
+          <Link
+            href="/tasks"
+            className="h-7 px-2.5 text-xs font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 transition-colors shadow-2xs"
+            title="Ouvrir la gestion des tâches"
           >
-            <Link href="/tasks">
-              <CheckSquare size={13} />
-              <span>Gérer les Tâches</span>
-            </Link>
-          </Button>
+            <CheckSquare size={13} />
+            <span>Gérer les Tâches</span>
+          </Link>
         </div>
       </div>
 
-      {/* ── Key Metrics Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5 bg-mv-surface border-mv-border rounded-xl space-y-1 shadow-mv-sm">
-          <div className="flex items-center justify-between text-xs text-mv-ink-faint font-medium">
-            <span>Taux d’Occupation Global</span>
-            <Gauge size={16} className="text-mv-green" />
+      {/* ── 2. Monolithic KPI Ribbon (divide-x) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-zinc-200 rounded-lg divide-x divide-zinc-100 shadow-2xs overflow-hidden">
+        {/* Metric 1 */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <span>Taux d’Occupation</span>
+            <Gauge size={13} className="text-zinc-400" />
           </div>
-          <div className="text-2xl font-bold text-mv-ink" style={MONO}>
-            <AnimatedNumber value={summary?.average_team_utilization_pct || 0} />%
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+              <AnimatedNumber value={summary?.average_team_utilization_pct || 0} /> %
+            </span>
           </div>
-          <p className="text-[11px] text-mv-ink-soft">Capacité hebdomadaire moyenne</p>
-        </Card>
+          <span className="text-[11px] text-zinc-400 font-mono mt-0.5" style={MONO}>
+            Moyenne hebdomadaire
+          </span>
+        </div>
 
-        <Card className="p-5 bg-mv-surface border-mv-border rounded-xl space-y-1 shadow-mv-sm">
-          <div className="flex items-center justify-between text-xs text-mv-ink-faint font-medium">
-            <span>Membres en Surcharge</span>
-            <AlertTriangle size={16} className="text-amber-600" />
+        {/* Metric 2 */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <span>En Surcharge (≥85%)</span>
+            <AlertTriangle size={13} className="text-amber-600" />
           </div>
-          <div className="text-2xl font-bold text-mv-ink" style={MONO}>
-            <AnimatedNumber value={summary?.overloaded_members_count || 0} />
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className={cn('text-lg font-bold font-mono tabular-nums', (summary?.overloaded_members_count || 0) > 0 ? 'text-amber-700' : 'text-zinc-900')} style={MONO}>
+              <AnimatedNumber value={summary?.overloaded_members_count || 0} />
+            </span>
+            <span className="text-[10.5px] text-zinc-400 font-mono">collaborateurs</span>
           </div>
-          <p className="text-[11px] text-mv-ink-soft">Taux d’occupation ≥ 85%</p>
-        </Card>
+          <span className="text-[11px] text-zinc-400 font-mono mt-0.5" style={MONO}>
+            {(summary?.overloaded_members_count || 0) > 0 ? 'Rééquilibrage conseillé' : 'Charge équilibrée'}
+          </span>
+        </div>
 
-        <Card className="p-5 bg-mv-surface border-mv-border rounded-xl space-y-1 shadow-mv-sm">
-          <div className="flex items-center justify-between text-xs text-mv-ink-faint font-medium">
-            <span>Tâches Totales Actives</span>
-            <CheckSquare size={16} className="text-blue-600" />
+        {/* Metric 3 */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <span>Tâches Actives</span>
+            <CheckSquare size={13} className="text-blue-600" />
           </div>
-          <div className="text-2xl font-bold text-mv-ink" style={MONO}>
-            <AnimatedNumber value={allTasks.filter((t) => t.status !== 'done').length} />
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+              <AnimatedNumber value={allTasks.filter((t) => t.status !== 'done').length} />
+            </span>
+            <span className="text-[10.5px] text-zinc-400 font-mono">en cours</span>
           </div>
-          <p className="text-[11px] text-mv-ink-soft">À faire ou en cours</p>
-        </Card>
+          <span className="text-[11px] text-zinc-400 font-mono mt-0.5" style={MONO}>
+            Flux opérationnel
+          </span>
+        </div>
 
-        <Card className="p-5 bg-mv-surface border-mv-border rounded-xl space-y-1 shadow-mv-sm">
-          <div className="flex items-center justify-between text-xs text-mv-ink-faint font-medium">
-            <span>Respect des Échéances</span>
-            <ShieldCheck size={16} className="text-emerald-600" />
+        {/* Metric 4 */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <span>Respect Échéances</span>
+            <ShieldCheck size={13} className="text-emerald-600" />
           </div>
-          <div className="text-2xl font-bold text-mv-ink" style={MONO}>
-            <AnimatedNumber value={summary?.global_on_time_delivery_pct || 100} />%
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-emerald-700" style={MONO}>
+              <AnimatedNumber value={summary?.global_on_time_delivery_pct || 100} /> %
+            </span>
           </div>
-          <p className="text-[11px] text-mv-ink-soft">Livraisons dans les temps</p>
-        </Card>
+          <span className="text-[11px] text-emerald-600 font-mono mt-0.5" style={MONO}>
+            Livraisons à temps
+          </span>
+        </div>
       </div>
 
-      {/* ── Search & Filter Controls ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-mv-border pb-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mv-ink-faint" />
+      {/* ── 3. Search & Filter Bar (h-8) ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="relative">
+          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
             placeholder="Rechercher un coéquipier..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg bg-mv-surface border border-mv-border focus:outline-none focus:border-mv-green"
+            className="w-48 sm:w-64 h-7 pl-7 pr-2 text-xs rounded-md bg-white border border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-600"
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 text-xs rounded-lg bg-mv-surface border border-mv-border text-mv-ink-soft focus:outline-none cursor-pointer"
-          >
-            <option value="all">Toutes les charges</option>
-            <option value="overloaded">En Surcharge (≥85%)</option>
-            <option value="optimal">Charge Optimale (60-84%)</option>
-            <option value="available">Capacité Disponible (&lt;60%)</option>
-          </select>
-        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="h-7 px-2 text-xs rounded-md bg-white border border-zinc-200 text-zinc-700 focus:outline-none focus:border-emerald-600 cursor-pointer font-mono"
+          style={MONO}
+        >
+          <option value="all">Toutes les charges</option>
+          <option value="overloaded">En Surcharge (≥85%)</option>
+          <option value="optimal">Charge Optimale (60-84%)</option>
+          <option value="available">Capacité Disponible (&lt;60%)</option>
+        </select>
       </div>
 
-      {/* ── Team Members Workload Cards Grid ── */}
-      {filteredWorkloads.length === 0 ? (
-        <Card className="p-12 text-center bg-mv-surface border-mv-border rounded-xl space-y-3">
-          <UsersRound className="w-8 h-8 text-mv-ink-faint mx-auto" />
-          <h3 className="text-sm font-bold text-mv-ink">Aucun collaborateur trouvé</h3>
-          <p className="text-xs text-mv-ink-soft max-w-sm mx-auto">
-            Aucun membre ne correspond à vos filtres de recherche. Invitez des coéquipiers ou réinitialisez le filtre.
-          </p>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredWorkloads.map((member) => {
-            const isOverloaded = member.utilization_pct >= 85;
-            const isOptimal = member.utilization_pct >= 60 && member.utilization_pct < 85;
-
-            return (
-              <Card
-                key={member.member_id}
-                className="p-5 bg-mv-surface border-mv-border rounded-xl shadow-xs space-y-4 hover:border-mv-green/40 transition-all flex flex-col justify-between"
-              >
-                <div className="space-y-3">
-                  {/* Top member header */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-mv-ink">{member.full_name}</h3>
-                      <p className="text-[11px] text-mv-ink-faint truncate">{member.email || '—'}</p>
+      {/* ── 4. Staffing Heatmap DataTable (42px per row) ── */}
+      <div className="bg-white border border-zinc-200 rounded-lg shadow-2xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-zinc-200/80 bg-zinc-50/75 text-[10px] uppercase font-mono tracking-wider text-zinc-400">
+                <th className="py-2 px-3 font-semibold min-w-[200px]">COLLABORATEUR</th>
+                <th className="py-2 px-3 font-semibold w-28">CHARGE HEBDO</th>
+                <th className="py-2 px-3 font-semibold w-48">JAUGE D’UTILISATION</th>
+                <th className="py-2 px-3 font-semibold w-44">RÉPARTITION</th>
+                <th className="py-2 px-3 font-semibold">TÂCHES ASSIGNÉES</th>
+                <th className="py-2 px-3 font-semibold w-24 text-right">ACTION</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100">
+              {filteredWorkloads.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-xs text-zinc-400">
+                    <div className="space-y-1.5 max-w-sm mx-auto">
+                      <UsersRound className="w-6 h-6 text-zinc-300 mx-auto" />
+                      <p className="font-medium text-zinc-600">Aucun collaborateur trouvé</p>
+                      <p className="text-[11px] text-zinc-400">
+                        Aucun membre ne correspond à vos filtres de recherche.
+                      </p>
                     </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredWorkloads.map((member) => {
+                  const isOverloaded = member.utilization_pct >= 85;
+                  const isOptimal = member.utilization_pct >= 60 && member.utilization_pct < 85;
+                  const displayName = (member.full_name || 'Membre').toUpperCase();
+                  const initials = displayName
+                    .split(' ')
+                    .map((n) => n[0])
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase();
 
-                    <Badge
-                      variant={isOverloaded ? 'red' : isOptimal ? 'green' : 'blue'}
-                      className="text-[10px] shrink-0 font-semibold"
+                  return (
+                    <tr
+                      key={member.member_id}
+                      className="h-11 hover:bg-zinc-50/80 transition-colors group select-none"
                     >
-                      {member.utilization_pct}% Charge
-                    </Badge>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-[11px] text-mv-ink-soft" style={MONO}>
-                      <span>{member.assigned_hours}h / {member.capacity_hours}h max</span>
-                      <span>{member.total_tasks} tâche{member.total_tasks > 1 ? 's' : ''}</span>
-                    </div>
-                    <div className="h-2 w-full bg-black/[0.06] rounded-full overflow-hidden">
-                      <div
-                        className={cn(
-                          'h-full rounded-full transition-all duration-300',
-                          isOverloaded ? 'bg-red-500' : isOptimal ? 'bg-mv-green' : 'bg-blue-500'
-                        )}
-                        style={{ width: `${Math.min(100, member.utilization_pct)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Task details stats */}
-                  <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-mv-cream-soft border border-mv-border text-center text-xs">
-                    <div>
-                      <span className="block text-[10px] text-mv-ink-faint uppercase font-bold">À faire</span>
-                      <strong className="text-mv-ink" style={MONO}>{member.todo_tasks}</strong>
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-blue-600 uppercase font-bold">En cours</span>
-                      <strong className="text-blue-700" style={MONO}>{member.in_progress_tasks}</strong>
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-red-600 uppercase font-bold">Retard</span>
-                      <strong className={cn(member.overdue_tasks > 0 ? 'text-red-600 font-bold' : 'text-mv-ink-faint')} style={MONO}>
-                        {member.overdue_tasks}
-                      </strong>
-                    </div>
-                  </div>
-
-                  {/* Active tasks preview */}
-                  <div className="space-y-1.5">
-                    <span className="text-[10.5px] font-bold text-mv-ink-faint uppercase tracking-wider block">
-                      Tâches Récentes
-                    </span>
-                    {member.active_deliverables.length === 0 ? (
-                      <p className="text-[11px] text-mv-ink-faint italic">Aucune tâche assignée en cours.</p>
-                    ) : (
-                      <div className="space-y-1">
-                        {member.active_deliverables.map((d) => (
-                          <div
-                            key={d.id}
-                            className="p-2 rounded border border-mv-border bg-white text-xs flex items-center justify-between gap-2"
-                          >
-                            <span className="truncate text-mv-ink font-medium">{d.title}</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const found = allTasks.find((t) => t.id === d.id);
-                                setSelectedTask(found || ({ id: d.id, title: d.title, status: (d.status as Task['status']) || 'todo' } as Task));
-                                setShowReassignModal(true);
-                              }}
-                              className="text-[10.5px] text-mv-green hover:underline shrink-0 font-semibold cursor-pointer"
-                            >
-                              Réassigner
-                            </button>
+                      {/* Member profile */}
+                      <td className="py-2 px-3 min-w-0">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-6 h-6 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-700 text-[10px] font-bold flex items-center justify-center shrink-0">
+                            {initials}
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-zinc-900 truncate leading-tight tracking-wide">
+                              {displayName}
+                            </p>
+                            <p className="text-[10px] text-zinc-400 truncate leading-tight font-mono" style={MONO}>
+                              {member.email || '—'}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Charge hebdo */}
+                      <td className="py-2 px-3 font-mono text-[11.5px] text-zinc-700 whitespace-nowrap" style={MONO}>
+                        <span className="font-bold text-zinc-900">{member.assigned_hours}h</span>
+                        <span className="text-zinc-400"> / {member.capacity_hours}h</span>
+                      </td>
+
+                      {/* Utilization gauge */}
+                      <td className="py-2 px-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[10.5px] font-mono" style={MONO}>
+                            <span className={cn('font-bold', isOverloaded ? 'text-rose-600' : isOptimal ? 'text-emerald-700' : 'text-blue-600')}>
+                              {member.utilization_pct} %
+                            </span>
+                            <span className="text-zinc-400 text-[10px]">
+                              {isOverloaded ? 'Surcharge' : isOptimal ? 'Optimal' : 'Disponible'}
+                            </span>
+                          </div>
+                          <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200/50">
+                            <div
+                              className={cn(
+                                'h-full rounded-full transition-all duration-300',
+                                isOverloaded ? 'bg-rose-500' : isOptimal ? 'bg-emerald-500' : 'bg-blue-500'
+                              )}
+                              style={{ width: `${Math.min(100, member.utilization_pct)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Task status breakdown */}
+                      <td className="py-2 px-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1 text-[10.5px] font-mono" style={MONO}>
+                          <span className="px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-700 border border-zinc-200/60" title="À faire">
+                            {member.todo_tasks} td
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200/60" title="En cours">
+                            {member.in_progress_tasks} act
+                          </span>
+                          {member.overdue_tasks > 0 ? (
+                            <span className="px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 font-bold border border-rose-200/60" title="En retard">
+                              {member.overdue_tasks} ret
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60" title="Zéro retard">
+                              0 ret
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Assigned Tasks Tags */}
+                      <td className="py-2 px-3 min-w-0">
+                        {member.active_deliverables.length === 0 ? (
+                          <span className="text-[11px] text-zinc-400 italic">Aucune tâche assignée</span>
+                        ) : (
+                          <div className="flex items-center gap-1.5 overflow-hidden">
+                            {member.active_deliverables.slice(0, 2).map((d) => (
+                              <span
+                                key={d.id}
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-50 border border-zinc-200/80 text-[10.5px] text-zinc-700 truncate max-w-[160px]"
+                                title={d.title}
+                              >
+                                <span className="truncate">{d.title}</span>
+                              </span>
+                            ))}
+                            {member.active_deliverables.length > 2 && (
+                              <span className="text-[10px] font-mono text-zinc-400">
+                                +{member.active_deliverables.length - 2}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Action */}
+                      <td className="py-2 px-3 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const firstTask = member.active_deliverables[0];
+                            if (firstTask) {
+                              const found = allTasks.find((t) => t.id === firstTask.id);
+                              setSelectedTask(found || ({ id: firstTask.id, title: firstTask.title, status: (firstTask.status as Task['status']) || 'todo' } as Task));
+                            } else {
+                              setSelectedTask(allTasks[0] || null);
+                            }
+                            setShowReassignModal(true);
+                          }}
+                          className="h-6 px-2 text-[10.5px] font-mono font-medium rounded border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-2xs"
+                        >
+                          Réassigner
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
 
       {/* ── Coach Minerva — revue admin ── */}
       {isAdmin && (

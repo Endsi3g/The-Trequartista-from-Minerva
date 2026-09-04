@@ -13,6 +13,43 @@ import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 
 const STATIC_ENTRIES: ChangelogEntry[] = [
   {
+    id: 'v2-25-0',
+    version: '2.25.0',
+    title: 'Standard Linear & Raycast (MDS-01), Graphiques Recharts Émeraude, Roadmaps Découplées & Minerva Flow Live (v2.25.0)',
+    body: `Mise en production majeure v2.25.0 appliquant le standard de design d'ingénierie logicielle Minerva OS (MDS-01) : unification des graphiques Recharts interactifs en vert émeraude #059669 avec tooltips dynamiques sur /overview, assainissement strict des membres officiels de l'entreprise au classement et dans l'annuaire, bouton 1-clic « Marquer contacté » sur le CRM Réseau (/contacts), refonte financière monolithique de Facturation & Finance (/invoices), matrice de staffing 42px avec redirection transparente (/team/workload & /workload), refonte Split-View 65/35 de la Roadmap Projet et du Guide de Déploiement (/projects/[id]/roadmap) avec adaptation contextuelle pour Toitures Beauchemin (Bâtiment/Toiture vs Restauration) et page dédiée aux jalons avec gestion des documents et spécifications, intégration de l'onglet Données Minerva Flow dans l'extranet client (/portal/[token]), et protocole QA 36px anti-wrap dans la Console Tech.`,
+    included_items: [
+      'Graphiques Recharts Interactifs Unifiés (/overview & ManagingOverview) : Courbes d\'aires Recharts interactives grand format (h-16), couleur Vert Émeraude #059669 uniforme, tooltips dynamiques au survol (période + valeur chiffrée), suppression des pills passifs.',
+      'Équipe Officielle Minerva (Leaderboard & Directory) : Conservation stricte des 5 profils officiels réels (Kael Belceus, Manpreet Singh, Rayan, Samuel Olamide Adeleke, Amine Yahya Karroubi), noms en MAJUSCULES et purge des profils fictifs.',
+      'CRM Réseau (/contacts) : Bouton 1-clic [ ✓ Marquer contacté ] avec mise à jour optimiste et persistance Supabase (status: contacte), filtre et onglet dédié Contactés dans la barre d\'outils.',
+      'Facturation & Finance (/invoices) : Ruban financier continu 4-colonnes (divide-x), DataTable dense 36px avec calculs précis des taxes TPS/TVQ et raccourci création ⌘+N.',
+      'Charge de Travail (/team/workload) : Redirection transparente depuis /workload, bandeau de capacité 40px, et matrice de Staffing Heatmap 42px/ligne avec jauges de charge tri-couleurs résilientes aux erreurs.',
+      'Roadmap & Guide de Déploiement (/projects/[id]/roadmap) : Élimination du bandeau noir de 200px au profit d\'un Split-View monolithique 65/35 Linear/Raycast. Détection contextuelle de secteur (Toitures Beauchemin / Bâtiment vs Restauration 0%).',
+      'Page Jalon Dédiée Enrichie (/projects/[id]/roadmap/[milestoneId]) : Jalons cliquables menant vers un espace complet de gestion de documents (Figma, Framer, PDF, Drive), sous-tâches interactives et notification client.',
+      'Données Minerva Flow dans l\'Extranet Client (/portal/[token]) : Nouvel onglet dédié avec KPI cards directes, flux des commandes et accès direct SSO vers Minerva Flow.',
+      'Console Tech & QA 20-Points (/tech) : Rangées de table QA 36px sans débordement de texte, création de tâche inline pleine largeur (col-span-full) et accès direct au Changelog.',
+    ],
+    image_url: '/changelog/minerva-flow-v2-5-0.png',
+    created_at: '2026-09-04T12:00:00.000Z',
+    created_by: 'system',
+    author_name: 'Minerva Core Team',
+  },
+  {
+    id: 'v2-24-2',
+    version: '2.24.2',
+    title: 'Refonte Extranet Client (Portail Partenaire 360) : Stepper Linéaire, Protocole QA & Action Center (v2.24.2)',
+    body: `Refactorisation complète du portail extranet client public et sécurisé selon les directives Linear / Raycast : header compact 40px avec badges de sécurité SSL et responsable d'opérations, ruban métrique monolithique 56px, barre de navigation segmentée, console 2-colonnes 65/35 avec Action Center prioritaire ancré, et double commande Valider / Rejeter avec feedback inline.`,
+    included_items: [
+      'Header & Status Bar Sécurisée 40px : Logo Minerva Extranet compact + breadcrumb technique et badge Espace Certifié SSL.',
+      'Ruban Métrique 56px : 4 métriques connectées sous la toolbar (Avancement Global, Livrables à Valider, Score de Santé, Échéance Finale).',
+      'Console 2-Colonnes (65% / 35%) : Stepper continu 4 étapes, checklist QA 32px par rangée, et Action Center prioritaire ancré.',
+      'Double Commande Livrable : Validation 1-clic (⌘+Entrée) et formulaire de feedback inline sans modale intrusive.',
+    ],
+    image_url: '/changelog/minerva-flow-v2-5-0.png',
+    created_at: '2026-09-03T12:00:00.000Z',
+    created_by: 'system',
+    author_name: 'Minerva Core Team',
+  },
+  {
     id: 'v2-18-0',
     version: '2.18.0',
     title: 'Refonte Intégrale Minerva Trequartista — Booking In-App, Rôles & Rémunérations, Clients & MRR, Devis Réels (v2.18.0)',

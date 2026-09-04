@@ -2,14 +2,15 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Contact as ContactIcon, Search, Plus, AlertTriangle, Building2, ArrowRightLeft } from 'lucide-react';
+import { Contact as ContactIcon, Search, Plus, AlertTriangle, Building2, ArrowRightLeft, Check, CheckCircle2 } from 'lucide-react';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Badge } from '@/components/ui/badge';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { ShareNetworkPanel } from '@/components/contacts/ShareNetworkPanel';
-import { fetchContacts } from '@/lib/services/supabase-data';
+import { fetchContacts, updateContact } from '@/lib/services/supabase-data';
+import { useToast } from '@/components/providers/ToastProvider';
 import { CONTACT_STATUS_OPTIONS, STALE_CONTACT_REMINDER_DAYS } from '@/lib/constants/contacts';
 import type { Contact } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -28,10 +29,11 @@ function isFollowUpDue(contact: Contact): boolean {
 }
 
 export default function ContactsPage() {
+  const { toastSuccess, toastError } = useToast();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterMode, setFilterMode] = useState<'all' | 'due' | 'converted'>('all');
+  const [filterMode, setFilterMode] = useState<'all' | 'due' | 'contacted' | 'converted'>('all');
 
   useEffect(() => {
     (async () => {
@@ -42,12 +44,15 @@ export default function ContactsPage() {
   }, []);
 
   const followUpsDue = contacts.filter(isFollowUpDue).length;
+  const contactedCount = contacts.filter((c) => c.status === 'contacte').length;
   const convertedCount = contacts.filter((c) => c.converted_to_lead_id).length;
 
   const filtered = useMemo(() => {
     let result = contacts;
     if (filterMode === 'due') {
       result = result.filter(isFollowUpDue);
+    } else if (filterMode === 'contacted') {
+      result = result.filter((c) => c.status === 'contacte');
     } else if (filterMode === 'converted') {
       result = result.filter((c) => Boolean(c.converted_to_lead_id));
     }
@@ -89,7 +94,7 @@ export default function ContactsPage() {
 
       {/* ── KPI Ribbon ── */}
       <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
-        <div className="grid grid-cols-3 divide-x divide-mv-border">
+        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-mv-border">
           <button
             type="button"
             onClick={() => setFilterMode('all')}
@@ -116,6 +121,19 @@ export default function ContactsPage() {
             </span>
             <div className={cn('text-[20px] font-semibold tracking-tight leading-none', followUpsDue > 0 ? 'text-mv-red' : 'text-mv-ink')} style={MONO}>
               {loading ? '—' : followUpsDue}
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterMode(filterMode === 'contacted' ? 'all' : 'contacted')}
+            className={cn(
+              'px-3.5 py-2.5 h-16 flex flex-col justify-between text-left transition-colors cursor-pointer',
+              filterMode === 'contacted' ? 'bg-blue-50/70 font-semibold' : 'hover:bg-black/[0.015]'
+            )}
+          >
+            <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">Contactés</span>
+            <div className="text-[20px] font-semibold text-blue-700 tracking-tight leading-none" style={MONO}>
+              {loading ? '—' : contactedCount}
             </div>
           </button>
           <button
@@ -147,7 +165,7 @@ export default function ContactsPage() {
           />
         </div>
         <div className="flex items-center gap-1.5 text-xs">
-          {(['all', 'due', 'converted'] as const).map((mode) => (
+          {(['all', 'due', 'contacted', 'converted'] as const).map((mode) => (
             <button
               key={mode}
               type="button"
@@ -161,6 +179,7 @@ export default function ContactsPage() {
             >
               {mode === 'all' && 'Tous'}
               {mode === 'due' && `À relancer (${followUpsDue})`}
+              {mode === 'contacted' && `Contactés (${contactedCount})`}
               {mode === 'converted' && `Convertis (${convertedCount})`}
             </button>
           ))}
@@ -186,11 +205,12 @@ export default function ContactsPage() {
           {filtered.map((contact) => {
             const dueSoon = isFollowUpDue(contact);
             const statusInfo = STATUS_MAP[contact.status || 'a_contacter'];
+            const isContacted = contact.status === 'contacte';
             return (
               <Link
                 key={contact.id}
                 href={`/contacts/${contact.id}`}
-                className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-black/[0.02] transition-colors"
+                className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-black/[0.02] transition-colors group"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <UserAvatar src={contact.avatar_url} name={contact.full_name} size="sm" />
@@ -222,8 +242,38 @@ export default function ContactsPage() {
                     )}
                   </div>
                 </div>
-                <div className="text-[11px] text-mv-ink-faint font-mono shrink-0" style={MONO}>
-                  {contact.email || contact.phone || '—'}
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="text-[11px] text-mv-ink-faint font-mono hidden sm:block" style={MONO}>
+                    {contact.email || contact.phone || '—'}
+                  </div>
+                  {!isContacted && !contact.converted_to_lead_id ? (
+                    <button
+                      type="button"
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setContacts((prev) =>
+                          prev.map((c) => (c.id === contact.id ? { ...c, status: 'contacte' } : c))
+                        );
+                        const ok = await updateContact(contact.id, { status: 'contacte' });
+                        if (ok) {
+                          toastSuccess('Contact mis à jour', `${contact.full_name} est désormais marqué comme contacté.`);
+                        } else {
+                          toastError('Erreur', 'Impossible de mettre à jour le statut.');
+                        }
+                      }}
+                      className="h-6 px-2 text-[10.5px] font-mono font-medium rounded border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 transition-colors flex items-center gap-1 shrink-0 cursor-pointer shadow-2xs"
+                      title="Marquer comme contacté"
+                    >
+                      <Check className="w-3 h-3 text-emerald-600" />
+                      <span>Marquer contacté</span>
+                    </button>
+                  ) : isContacted ? (
+                    <span className="h-6 px-2 text-[10.5px] font-mono font-medium rounded border border-zinc-200 bg-zinc-50 text-zinc-600 flex items-center gap-1 shrink-0">
+                      <CheckCircle2 className="w-3 h-3 text-zinc-400" />
+                      <span>Contacté</span>
+                    </span>
+                  ) : null}
                 </div>
               </Link>
             );

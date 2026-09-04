@@ -339,7 +339,7 @@ export function QualityChecklistRunner({
                   <tr
                     key={point.id}
                     className={cn(
-                      'h-[34px] transition-colors group select-none',
+                      'h-9 transition-colors group select-none',
                       point.passed
                         ? 'hover:bg-emerald-50/20'
                         : point.critical
@@ -348,7 +348,7 @@ export function QualityChecklistRunner({
                     )}
                   >
                     {/* Statut Toggle Checkbox */}
-                    <td className="py-1.5 px-3 text-center">
+                    <td className="py-1 px-3 text-center whitespace-nowrap">
                       <button
                         onClick={() => togglePoint(point.id)}
                         className="cursor-pointer text-zinc-400 hover:text-emerald-600 transition-colors inline-flex items-center justify-center"
@@ -365,12 +365,12 @@ export function QualityChecklistRunner({
                     </td>
 
                     {/* # Index */}
-                    <td className="py-1.5 px-2.5 font-mono text-[11px] text-zinc-400">
+                    <td className="py-1 px-2.5 font-mono text-[11px] text-zinc-400 whitespace-nowrap" style={MONO}>
                       {pointIndexStr}
                     </td>
 
                     {/* Titre Point de Contrôle */}
-                    <td className="py-1.5 px-3 font-medium text-zinc-900">
+                    <td className="py-1 px-3 font-medium text-zinc-900 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <span className={cn(point.passed && 'line-through text-zinc-400 font-normal')}>
                           {point.title}
@@ -379,34 +379,34 @@ export function QualityChecklistRunner({
                     </td>
 
                     {/* Catégorie */}
-                    <td className="py-1.5 px-3">
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono text-zinc-600 bg-zinc-100 border border-zinc-200/80">
+                    <td className="py-1 px-3 whitespace-nowrap">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono text-zinc-600 bg-zinc-100 border border-zinc-200/80" style={MONO}>
                         {point.category_label}
                       </span>
                     </td>
 
                     {/* Sévérité */}
-                    <td className="py-1.5 px-3">
+                    <td className="py-1 px-3 whitespace-nowrap">
                       {point.critical ? (
-                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9.5px] font-mono font-bold text-rose-700 bg-rose-50 border border-rose-200 uppercase">
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9.5px] font-mono font-bold text-rose-700 bg-rose-50 border border-rose-200 uppercase" style={MONO}>
                           CRITIQUE
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9.5px] font-mono text-zinc-500 bg-zinc-100 border border-zinc-200 uppercase">
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9.5px] font-mono text-zinc-500 bg-zinc-100 border border-zinc-200 uppercase" style={MONO}>
                           STANDARD
                         </span>
                       )}
                     </td>
 
                     {/* Détail Technique */}
-                    <td className="py-1.5 px-3 text-[11px] text-zinc-500 truncate max-w-[340px]" title={point.description}>
+                    <td className="py-1 px-3 text-[11px] text-zinc-500 truncate max-w-[340px]" title={point.description}>
                       {point.description}
                     </td>
 
                     {/* Action Button */}
-                    <td className="py-1.5 px-3 text-right">
+                    <td className="py-1 px-3 text-right whitespace-nowrap">
                       {point.passed ? (
-                        <span className="inline-flex items-center gap-1 text-[10.5px] font-mono text-emerald-600 font-medium">
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-mono text-emerald-600 font-medium" style={MONO}>
                           <CheckCircle2 size={11} />
                           <span>Pass</span>
                         </span>
@@ -415,6 +415,7 @@ export function QualityChecklistRunner({
                           onClick={() => handleTriggerAction(point.id, actionLabel)}
                           disabled={isTesting}
                           className="h-5.5 px-2 text-[10.5px] font-mono font-medium text-zinc-700 bg-white hover:bg-zinc-50 border border-zinc-200 hover:border-zinc-300 rounded shadow-2xs inline-flex items-center gap-1 transition-colors cursor-pointer"
+                          style={MONO}
                         >
                           {isTesting ? (
                             <Loader2 size={10} className="animate-spin text-emerald-600" />

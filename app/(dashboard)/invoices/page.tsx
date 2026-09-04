@@ -94,6 +94,18 @@ export default function InvoicesHubPage() {
 
   useEffect(() => {
     loadData();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'n') {
+        const target = e.target as HTMLElement | null;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+        e.preventDefault();
+        setModalType('invoice');
+        setShowCreateModal(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const [syncingStripe, setSyncingStripe] = useState(false);
@@ -309,382 +321,443 @@ export default function InvoicesHubPage() {
   }
 
   return (
-    <PageFadeIn className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto">
-      {/* ── Header ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-mv-border pb-6">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-mv-green text-white flex items-center justify-center shadow-mv-sm">
-              <Receipt className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-2xl font-bold font-display tracking-tight text-mv-ink">Facturation & Finance</h1>
-                <Badge variant="green" className="font-semibold">
-                  Taxes QC (TPS + TVQ)
-                </Badge>
-              </div>
-              <p className="text-xs text-mv-ink-soft">
-                Gestion des factures clients, devis signables, encaissements Stripe et prévisions de trésorerie.
-              </p>
-            </div>
+    <PageFadeIn className="space-y-3 max-w-7xl mx-auto pb-16">
+      {/* ── 1. Linear-Style Toolbar Strip (h-10 / 40px) ── */}
+      <div className="h-10 bg-white border border-zinc-200 rounded-lg px-3.5 flex items-center justify-between shadow-2xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-mono" style={MONO}>
+            <span>Minerva</span>
+            <span>/</span>
+            <span className="text-zinc-600 font-medium">Finance</span>
           </div>
+          <span className="text-zinc-200">|</span>
+          <h1 className="text-xs sm:text-sm font-semibold text-zinc-900 tracking-tight truncate">
+            Facturation & Trésorerie
+          </h1>
+          <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded font-mono" style={MONO}>
+            Taxes QC (TPS + TVQ)
+          </span>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <Button
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
             onClick={handleSyncStripe}
             disabled={syncingStripe}
-            variant="outline"
-            className="gap-1.5 text-xs font-semibold cursor-pointer"
+            className="h-7 px-2 text-xs font-medium rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 flex items-center gap-1 transition-colors cursor-pointer"
+            title="Synchroniser les factures Stripe"
           >
-            <RefreshCw size={14} className={cn(syncingStripe && 'animate-spin')} />
-            <span>{syncingStripe ? 'Synchronisation…' : 'Synchroniser Stripe'}</span>
-          </Button>
+            <RefreshCw size={12} className={cn(syncingStripe && 'animate-spin')} />
+            <span className="hidden md:inline">{syncingStripe ? 'Sync...' : 'Sync Stripe'}</span>
+          </button>
 
-          <Button
+          <button
+            type="button"
             onClick={() => {
               setModalType('quote');
               setShowCreateModal(true);
             }}
-            variant="outline"
-            className="gap-1.5 text-xs font-semibold cursor-pointer"
+            className="h-7 px-2.5 text-xs font-medium rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 flex items-center gap-1 transition-colors cursor-pointer"
           >
-            <FileText size={14} />
-            <span>Nouveau Devis</span>
-          </Button>
+            <FileText size={12} />
+            <span>+ Devis</span>
+          </button>
 
-          <Button
+          <button
+            type="button"
             onClick={() => {
               setModalType('invoice');
               setShowCreateModal(true);
             }}
-            className="gap-1.5 bg-mv-green hover:bg-mv-green/90 text-white text-xs font-semibold cursor-pointer"
+            className="h-7 px-2.5 text-xs font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
+            title="Nouvelle Facture (⌘+N)"
           >
-            <Plus size={14} />
-            <span>Nouvelle Facture</span>
-          </Button>
+            <Plus size={13} />
+            <span>+ Facture</span>
+            <kbd className="hidden lg:inline text-[9.5px] font-mono bg-emerald-700/60 text-emerald-100 px-1 py-0.2 rounded ml-0.5">⌘N</kbd>
+          </button>
         </div>
       </div>
 
-      {/* ── Key Financial Stats Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5 bg-mv-surface border-mv-border rounded-xl space-y-1 shadow-mv-sm">
-          <div className="flex items-center justify-between text-xs text-mv-ink-faint font-medium">
+      {/* ── 2. Monolithic Financial Ribbon (divide-x) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-zinc-200 rounded-lg divide-x divide-zinc-100 shadow-2xs overflow-hidden">
+        {/* Metric 1: CA Total Facturé */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
             <span>CA Total Facturé</span>
-            <DollarSign size={16} className="text-mv-green" />
+            <DollarSign size={13} className="text-zinc-400" />
           </div>
-          <div className="text-2xl font-bold text-mv-ink" style={MONO}>
-            $<AnimatedNumber value={summary?.totalInvoicedCad || 0} />
-            <span className="text-xs font-normal text-mv-ink-faint ml-1">CAD</span>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+              $<AnimatedNumber value={summary?.totalInvoicedCad || 0} />
+            </span>
+            <span className="text-[10.5px] text-zinc-400 font-mono">CAD</span>
           </div>
-          <p className="text-[11px] text-mv-ink-soft">{summary?.invoicesCount || 0} factures émises</p>
-        </Card>
-
-        <Card className="p-5 bg-mv-surface border-mv-border rounded-xl space-y-1 shadow-mv-sm">
-          <div className="flex items-center justify-between text-xs text-mv-ink-faint font-medium">
-            <span>Encaissements Réalisés</span>
-            <CheckCircle2 size={16} className="text-emerald-600" />
-          </div>
-          <div className="text-2xl font-bold text-emerald-700" style={MONO}>
-            $<AnimatedNumber value={summary?.totalCollectedCad || 0} />
-            <span className="text-xs font-normal text-emerald-600/70 ml-1">CAD</span>
-          </div>
-          <p className="text-[11px] text-mv-ink-soft">{summary?.paidInvoicesCount || 0} factures réglées</p>
-        </Card>
-
-        <Card className="p-5 bg-mv-surface border-mv-border rounded-xl space-y-1 shadow-mv-sm">
-          <div className="flex items-center justify-between text-xs text-mv-ink-faint font-medium">
-            <span>En Attente / En Cours</span>
-            <Clock size={16} className="text-blue-600" />
-          </div>
-          <div className="text-2xl font-bold text-blue-700" style={MONO}>
-            $<AnimatedNumber value={summary?.totalPendingCad || 0} />
-            <span className="text-xs font-normal text-blue-600/70 ml-1">CAD</span>
-          </div>
-          <p className="text-[11px] text-mv-ink-soft">{summary?.pendingInvoicesCount || 0} factures en attente</p>
-        </Card>
-
-        <Card className="p-5 bg-mv-surface border-mv-border rounded-xl space-y-1 shadow-mv-sm">
-          <div className="flex items-center justify-between text-xs text-mv-ink-faint font-medium">
-            <span>Retainers & MRR</span>
-            <TrendingUp size={16} className="text-purple-600" />
-          </div>
-          <div className="text-2xl font-bold text-purple-700" style={MONO}>
-            $<AnimatedNumber value={summary?.mrrCad || 0} />
-            <span className="text-xs font-normal text-purple-600/70 ml-1">/ mois</span>
-          </div>
-          <p className="text-[11px] text-mv-ink-soft">Revenus récurrents prévisibles</p>
-        </Card>
-      </div>
-
-      {/* ── Main Tab Navigation ── */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-mv-border pb-2">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setActiveTab('invoices')}
-              className={cn(
-                'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer',
-                activeTab === 'invoices'
-                  ? 'bg-mv-green text-white shadow-xs'
-                  : 'text-mv-ink-soft hover:bg-black/[0.05] hover:text-mv-ink'
-              )}
-            >
-              Factures & Règlements ({invoices.filter((i) => i.type !== 'quote').length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('quotes')}
-              className={cn(
-                'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer',
-                activeTab === 'quotes'
-                  ? 'bg-mv-green text-white shadow-xs'
-                  : 'text-mv-ink-soft hover:bg-black/[0.05] hover:text-mv-ink'
-              )}
-            >
-              Devis & Propositions ({invoices.filter((i) => i.type === 'quote').length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('cashflow')}
-              className={cn(
-                'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer',
-                activeTab === 'cashflow'
-                  ? 'bg-mv-green text-white shadow-xs'
-                  : 'text-mv-ink-soft hover:bg-black/[0.05] hover:text-mv-ink'
-              )}
-            >
-              Prévisions de Cashflow
-            </button>
-          </div>
-
-          {activeTab !== 'cashflow' && (
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-mv-ink-faint" />
-                <input
-                  type="text"
-                  placeholder="Rechercher numéro ou client..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 pr-3 py-1 text-xs rounded-lg bg-mv-surface border border-mv-border focus:outline-none focus:border-mv-green w-48"
-                />
-              </div>
-
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-2.5 py-1 text-xs rounded-lg bg-mv-surface border border-mv-border text-mv-ink-soft focus:outline-none cursor-pointer"
-              >
-                <option value="all">Tous les statuts</option>
-                <option value="paid">Payé</option>
-                <option value="sent">Envoyé</option>
-                <option value="draft">Brouillon</option>
-                <option value="overdue">En retard</option>
-              </select>
-            </div>
-          )}
+          <span className="text-[11px] text-zinc-400 font-mono mt-0.5" style={MONO}>
+            {summary?.invoicesCount || 0} factures émises
+          </span>
         </div>
 
-        {/* ── Factures & Devis List Table ── */}
-        {(activeTab === 'invoices' || activeTab === 'quotes') && (
-          <div className="space-y-3">
-            {filteredInvoices.length === 0 ? (
-              <Card className="p-12 text-center bg-mv-surface border-mv-border rounded-xl space-y-2">
-                <Receipt className="w-8 h-8 text-mv-ink-faint mx-auto" />
-                <h3 className="text-sm font-bold text-mv-ink">
-                  {activeTab === 'invoices' ? 'Aucune facture trouvée' : 'Aucun devis trouvé'}
-                </h3>
-                <p className="text-xs text-mv-ink-soft max-w-sm mx-auto">
-                  {activeTab === 'invoices'
-                    ? 'Créez votre première facture ou convertissez un devis accepté.'
-                    : 'Créez un devis détaillé avec calcul de taxes québécoises en quelques clics.'}
-                </p>
-                <div className="pt-2">
-                  <Button
-                    onClick={() => {
-                      setModalType(activeTab === 'invoices' ? 'invoice' : 'quote');
-                      setShowCreateModal(true);
-                    }}
-                    className="gap-1.5 text-xs bg-mv-green text-white"
-                  >
-                    <Plus size={13} />
-                    <span>Créer maintenant</span>
-                  </Button>
-                </div>
-              </Card>
-            ) : (
-              <div className="border border-mv-border rounded-xl bg-mv-surface overflow-hidden divide-y divide-mv-border shadow-xs">
-                {filteredInvoices.map((inv) => {
-                  const isPaid = inv.status === 'paid';
-                  const isSent = inv.status === 'sent';
-                  const isOverdue = inv.status === 'overdue';
+        {/* Metric 2: Encaissements Réalisés */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <span>Encaissements Réalisés</span>
+            <CheckCircle2 size={13} className="text-emerald-600" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-emerald-700" style={MONO}>
+              $<AnimatedNumber value={summary?.totalCollectedCad || 0} />
+            </span>
+            <span className="text-[10.5px] text-emerald-600/70 font-mono">CAD</span>
+          </div>
+          <span className="text-[11px] text-emerald-600 font-mono mt-0.5" style={MONO}>
+            {summary?.paidInvoicesCount || 0} factures réglées
+          </span>
+        </div>
 
-                  return (
-                    <div
-                      key={inv.id}
-                      className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-black/[0.015] transition-colors"
-                    >
-                      <div className="flex items-start md:items-center gap-3.5 min-w-0">
-                        <div
-                          className={cn(
-                            'w-9 h-9 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs',
-                            isPaid
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : isSent
-                              ? 'bg-blue-100 text-blue-800'
-                              : isOverdue
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-zinc-100 text-zinc-700'
-                          )}
-                        >
-                          {inv.type === 'quote' ? 'DEV' : 'INV'}
-                        </div>
+        {/* Metric 3: En Attente / En Cours */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <span>En Attente / Échéance</span>
+            <Clock size={13} className="text-amber-600" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-amber-700" style={MONO}>
+              $<AnimatedNumber value={summary?.totalPendingCad || 0} />
+            </span>
+            <span className="text-[10.5px] text-amber-600/70 font-mono">CAD</span>
+          </div>
+          <span className="text-[11px] text-zinc-400 font-mono mt-0.5" style={MONO}>
+            {summary?.pendingInvoicesCount || 0} factures en attente
+          </span>
+        </div>
 
-                        <div className="space-y-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-xs text-mv-ink font-mono">{inv.invoice_number}</span>
-                            <span className="text-xs text-mv-ink-faint">•</span>
-                            <span className="text-xs font-semibold text-mv-ink truncate">{inv.client_name}</span>
-                            {inv.project_name && (
-                              <Badge variant="neutral" className="text-[10px] hidden sm:inline-flex">
-                                {inv.project_name}
-                              </Badge>
-                            )}
-                          </div>
+        {/* Metric 4: Retainers & MRR */}
+        <div className="px-3.5 py-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <span>Retainers & MRR</span>
+            <TrendingUp size={13} className="text-purple-600" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="text-lg font-bold font-mono tabular-nums text-purple-700" style={MONO}>
+              $<AnimatedNumber value={summary?.mrrCad || 0} />
+            </span>
+            <span className="text-[10.5px] text-purple-600/70 font-mono">/ mois</span>
+          </div>
+          <span className="text-[11px] text-zinc-400 font-mono mt-0.5" style={MONO}>
+            Revenus récurrents
+          </span>
+        </div>
+      </div>
 
-                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-mv-ink-faint">
-                            <span>Émis le : {new Date(inv.issue_date).toLocaleDateString('fr-CA')}</span>
-                            {inv.due_date && (
-                              <span>Échéance : {new Date(inv.due_date).toLocaleDateString('fr-CA')}</span>
-                            )}
-                            {inv.items && inv.items.length > 0 && (
-                              <span>
-                                {inv.items.length} article{inv.items.length > 1 ? 's' : ''}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+      {/* ── 3. Main Filter & Segmented Control Strip (h-8) ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="h-8 p-0.5 bg-zinc-100 border border-zinc-200 rounded-md inline-flex items-center gap-0.5 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setActiveTab('invoices')}
+            className={cn(
+              'h-7 px-2.5 text-xs font-medium rounded transition-colors cursor-pointer whitespace-nowrap',
+              activeTab === 'invoices' ? 'bg-white text-zinc-900 font-semibold shadow-2xs' : 'text-zinc-500 hover:text-zinc-900'
+            )}
+          >
+            Factures & Règlements ({invoices.filter((i) => i.type !== 'quote').length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('quotes')}
+            className={cn(
+              'h-7 px-2.5 text-xs font-medium rounded transition-colors cursor-pointer whitespace-nowrap',
+              activeTab === 'quotes' ? 'bg-white text-zinc-900 font-semibold shadow-2xs' : 'text-zinc-500 hover:text-zinc-900'
+            )}
+          >
+            Devis & Propositions ({invoices.filter((i) => i.type === 'quote').length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('cashflow')}
+            className={cn(
+              'h-7 px-2.5 text-xs font-medium rounded transition-colors cursor-pointer whitespace-nowrap',
+              activeTab === 'cashflow' ? 'bg-white text-zinc-900 font-semibold shadow-2xs' : 'text-zinc-500 hover:text-zinc-900'
+            )}
+          >
+            Flux de Trésorerie
+          </button>
+        </div>
 
-                      <div className="flex items-center justify-between md:justify-end gap-4 shrink-0">
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-mv-ink" style={MONO}>
-                            ${Number(inv.total_cad).toLocaleString('fr-CA', { minimumFractionDigits: 2 })} {inv.currency}
-                          </div>
-                          <div className="text-[10.5px] text-mv-ink-faint">
-                            Sous-total : ${Number(inv.subtotal_cad).toFixed(2)} + taxes
-                          </div>
-                        </div>
+        {activeTab !== 'cashflow' && (
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <input
+                type="text"
+                placeholder="Filtrer réf ou client..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-44 sm:w-48 h-7 pl-7 pr-2 text-xs rounded-md bg-white border border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-600"
+              />
+            </div>
 
-                        <Badge
-                          variant={isPaid ? 'green' : isSent ? 'blue' : isOverdue ? 'red' : 'neutral'}
-                          className="text-[10.5px] uppercase font-semibold tracking-wide"
-                        >
-                          {inv.status === 'paid'
-                            ? 'Payé'
-                            : inv.status === 'sent'
-                            ? 'Envoyé'
-                            : inv.status === 'overdue'
-                            ? 'En retard'
-                            : inv.status === 'draft'
-                            ? 'Brouillon'
-                            : inv.status}
-                        </Badge>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-7 px-2 text-xs rounded-md bg-white border border-zinc-200 text-zinc-700 focus:outline-none focus:border-emerald-600 cursor-pointer font-mono"
+              style={MONO}
+            >
+              <option value="all">Tous statuts</option>
+              <option value="paid">Payé</option>
+              <option value="sent">Envoyé</option>
+              <option value="draft">Brouillon</option>
+              <option value="overdue">En retard</option>
+            </select>
+          </div>
+        )}
+      </div>
 
-                        <div className="flex items-center gap-1">
-                          {inv.type === 'quote' && inv.status !== 'paid' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleConvertToInvoice(inv.id)}
-                              disabled={actionLoading === inv.id}
-                              title="Convertir ce devis en facture"
-                              className="h-7 px-2 text-[11px] gap-1 cursor-pointer"
-                            >
-                              <Sparkles size={12} className="text-purple-600" />
-                              <span className="hidden sm:inline">Facturer</span>
-                            </Button>
-                          )}
-
-                          {inv.type !== 'quote' && !isPaid && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleUpdateStatus(inv.id, 'paid')}
-                              disabled={actionLoading === inv.id}
-                              title="Marquer comme payé"
-                              className="h-7 px-2 text-[11px] gap-1 text-emerald-700 hover:bg-emerald-50 cursor-pointer"
-                            >
-                              <CheckCircle2 size={12} />
-                              <span className="hidden sm:inline">Payé</span>
-                            </Button>
-                          )}
-
-                          <Link
-                            href={`/invoices/${inv.id}`}
-                            className="p-1.5 text-mv-ink-soft hover:text-mv-ink rounded-md hover:bg-black/[0.05] transition-colors"
-                            title="Aperçu & Impression PDF"
-                          >
-                            <Printer size={15} />
-                          </Link>
-
-                          {inv.stripe_hosted_invoice_url ? (
-                            <a
-                              href={inv.stripe_hosted_invoice_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1.5 text-mv-ink-soft hover:text-blue-600 rounded-md hover:bg-black/[0.05] transition-colors"
-                              title="Ouvrir la facture Stripe"
-                            >
-                              <CreditCard size={15} />
-                            </a>
-                          ) : inv.type !== 'quote' && !isPaid ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleSendViaStripe(inv.id)}
-                              disabled={actionLoading === inv.id}
-                              title="Envoyer cette facture via Stripe"
-                              className="h-7 px-2 text-[11px] gap-1 text-blue-700 hover:bg-blue-50 cursor-pointer"
-                            >
-                              <CreditCard size={12} />
-                              <span className="hidden sm:inline">Envoyer via Stripe</span>
-                            </Button>
-                          ) : null}
-
-                          {inv.stripe_payment_link_url && (
-                            <a
-                              href={inv.stripe_payment_link_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1.5 text-mv-ink-soft hover:text-blue-600 rounded-md hover:bg-black/[0.05] transition-colors"
-                              title="Ouvrir le lien de paiement Stripe"
-                            >
-                              <ArrowUpRight size={15} />
-                            </a>
-                          )}
-
+      {/* ── 4. Dense High-Precision DataTable (36px per row) ── */}
+      {(activeTab === 'invoices' || activeTab === 'quotes') && (
+        <div className="bg-white border border-zinc-200 rounded-lg shadow-2xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-zinc-200/80 bg-zinc-50/75 text-[10px] uppercase font-mono tracking-wider text-zinc-400">
+                  <th className="py-2 px-3 font-semibold w-24"># RÉF</th>
+                  <th className="py-2 px-3 font-semibold min-w-[180px]">CLIENT</th>
+                  <th className="py-2 px-3 font-semibold w-24">ÉMISSION</th>
+                  <th className="py-2 px-3 font-semibold w-24">ÉCHÉANCE</th>
+                  <th className="py-2 px-3 font-semibold w-28 text-right">MONTANT HT</th>
+                  <th className="py-2 px-3 font-semibold w-24 text-right">TPS/TVQ</th>
+                  <th className="py-2 px-3 font-semibold w-32 text-right">TOTAL TTC</th>
+                  <th className="py-2 px-3 font-semibold w-24 text-center">STATUT</th>
+                  <th className="py-2 px-3 font-semibold w-32 text-right">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {filteredInvoices.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="py-8 text-center text-xs text-zinc-400">
+                      <div className="space-y-1.5 max-w-sm mx-auto">
+                        <Receipt className="w-6 h-6 text-zinc-300 mx-auto" />
+                        <p className="font-medium text-zinc-600">
+                          {activeTab === 'invoices' ? 'Aucune facture trouvée' : 'Aucun devis trouvé'}
+                        </p>
+                        <p className="text-[11px] text-zinc-400">
+                          {activeTab === 'invoices'
+                            ? 'Créez votre première facture ou synchronisez depuis Stripe.'
+                            : 'Créez un devis avec calcul automatique des taxes québécoises.'}
+                        </p>
+                        <div className="pt-1">
                           <button
                             type="button"
-                            onClick={() => handleDeleteInvoice(inv.id)}
-                            disabled={actionLoading === inv.id}
-                            className="p-1.5 text-mv-ink-faint hover:text-red-600 rounded-md hover:bg-black/[0.05] transition-colors cursor-pointer"
-                            title="Supprimer"
+                            onClick={() => {
+                              setModalType(activeTab === 'invoices' ? 'invoice' : 'quote');
+                              setShowCreateModal(true);
+                            }}
+                            className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium inline-flex items-center gap-1 cursor-pointer transition-colors"
                           >
-                            <Trash2 size={15} />
+                            <Plus size={12} />
+                            <span>Créer maintenant</span>
                           </button>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredInvoices.map((inv) => {
+                    const isPaid = inv.status === 'paid';
+                    const isSent = inv.status === 'sent';
+                    const isOverdue = inv.status === 'overdue';
+                    const isQuote = inv.type === 'quote';
+
+                    const subtotal = Number(inv.subtotal_cad || 0);
+                    const total = Number(inv.total_cad || 0);
+                    const taxes = Math.max(0, total - subtotal);
+
+                    return (
+                      <tr
+                        key={inv.id}
+                        className="h-9 hover:bg-zinc-50/80 transition-colors group select-none"
+                      >
+                        {/* Ref number */}
+                        <td className="py-1.5 px-3 font-mono text-[11.5px] font-semibold text-zinc-900 whitespace-nowrap">
+                          <Link href={`/invoices/${inv.id}`} className="hover:text-emerald-700 hover:underline">
+                            {inv.invoice_number}
+                          </Link>
+                        </td>
+
+                        {/* Client name */}
+                        <td className="py-1.5 px-3 min-w-0">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="font-medium text-zinc-900 truncate">{inv.client_name}</span>
+                            {inv.project_name && (
+                              <span className="text-[10px] font-mono text-zinc-400 bg-zinc-100 px-1 rounded truncate hidden md:inline">
+                                {inv.project_name}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Issue date */}
+                        <td className="py-1.5 px-3 font-mono text-[11px] text-zinc-500 whitespace-nowrap" style={MONO}>
+                          {new Date(inv.issue_date).toLocaleDateString('fr-CA')}
+                        </td>
+
+                        {/* Due date */}
+                        <td className="py-1.5 px-3 font-mono text-[11px] text-zinc-500 whitespace-nowrap" style={MONO}>
+                          {inv.due_date ? new Date(inv.due_date).toLocaleDateString('fr-CA') : '—'}
+                        </td>
+
+                        {/* Montant HT */}
+                        <td className="py-1.5 px-3 font-mono text-[11.5px] text-zinc-600 text-right whitespace-nowrap" style={MONO}>
+                          ${subtotal.toLocaleString('fr-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+
+                        {/* Taxes */}
+                        <td className="py-1.5 px-3 font-mono text-[11px] text-zinc-400 text-right whitespace-nowrap" style={MONO}>
+                          +${taxes.toFixed(2)}
+                        </td>
+
+                        {/* Total TTC */}
+                        <td className="py-1.5 px-3 font-mono text-xs font-bold text-zinc-900 text-right whitespace-nowrap" style={MONO}>
+                          ${total.toLocaleString('fr-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {inv.currency}
+                        </td>
+
+                        {/* Status badge */}
+                        <td className="py-1.5 px-3 text-center whitespace-nowrap">
+                          <span
+                            className={cn(
+                              'inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold uppercase tracking-wider',
+                              isPaid
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : isSent
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : isOverdue
+                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                : 'bg-zinc-100 text-zinc-600 border border-zinc-200'
+                            )}
+                          >
+                            {isPaid
+                              ? 'Payé'
+                              : isSent
+                              ? 'Envoyé'
+                              : isOverdue
+                              ? 'En retard'
+                              : inv.status === 'draft'
+                              ? 'Brouillon'
+                              : inv.status}
+                          </span>
+                        </td>
+
+                        {/* Actions (visible on row hover) */}
+                        <td className="py-1.5 px-3 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {isQuote && inv.status !== 'paid' && (
+                              <button
+                                type="button"
+                                onClick={() => handleConvertToInvoice(inv.id)}
+                                disabled={actionLoading === inv.id}
+                                title="Convertir ce devis en facture"
+                                className="h-6 px-1.5 text-[10.5px] font-mono rounded border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 inline-flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <Sparkles size={11} />
+                                <span>Facturer</span>
+                              </button>
+                            )}
+
+                            {!isQuote && !isPaid && (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateStatus(inv.id, 'paid')}
+                                disabled={actionLoading === inv.id}
+                                title="Marquer comme payé"
+                                className="h-6 px-1.5 text-[10.5px] font-mono rounded border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 inline-flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <CheckCircle2 size={11} />
+                                <span>Payé</span>
+                              </button>
+                            )}
+
+                            <Link
+                              href={`/invoices/${inv.id}`}
+                              className="p-1 text-zinc-400 hover:text-zinc-900 rounded hover:bg-zinc-100 transition-colors"
+                              title="Aperçu & Impression PDF"
+                            >
+                              <Printer size={13} />
+                            </Link>
+
+                            {inv.stripe_hosted_invoice_url ? (
+                              <a
+                                href={inv.stripe_hosted_invoice_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1 text-zinc-400 hover:text-blue-600 rounded hover:bg-zinc-100 transition-colors"
+                                title="Ouvrir la facture Stripe"
+                              >
+                                <CreditCard size={13} />
+                              </a>
+                            ) : !isQuote && !isPaid ? (
+                              <button
+                                type="button"
+                                onClick={() => handleSendViaStripe(inv.id)}
+                                disabled={actionLoading === inv.id}
+                                title="Envoyer cette facture via Stripe"
+                                className="h-6 px-1.5 text-[10.5px] font-mono rounded border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 inline-flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <CreditCard size={11} />
+                                <span>Stripe</span>
+                              </button>
+                            ) : null}
+
+                            {inv.stripe_payment_link_url && (
+                              <a
+                                href={inv.stripe_payment_link_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1 text-zinc-400 hover:text-blue-600 rounded hover:bg-zinc-100 transition-colors"
+                                title="Ouvrir le lien de paiement Stripe"
+                              >
+                                <ArrowUpRight size={13} />
+                              </a>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteInvoice(inv.id)}
+                              disabled={actionLoading === inv.id}
+                              className="p-1 text-zinc-400 hover:text-rose-600 rounded hover:bg-zinc-100 transition-colors cursor-pointer"
+                              title="Supprimer"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+
+          {/* Bottom Fast Row */}
+          <div className="h-8 px-3.5 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-between text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setModalType(activeTab === 'invoices' ? 'invoice' : 'quote');
+                setShowCreateModal(true);
+              }}
+              className="text-zinc-500 hover:text-zinc-900 transition-colors flex items-center gap-1 font-mono text-[11px] cursor-pointer"
+              style={MONO}
+            >
+              <span>+ {activeTab === 'invoices' ? 'Créer une nouvelle facture... [ ⌘ + N ]' : 'Créer un nouveau devis...'}</span>
+            </button>
+            <span className="text-[10px] text-zinc-400 font-mono" style={MONO}>
+              {filteredInvoices.length} élément{filteredInvoices.length > 1 ? 's' : ''}
+            </span>
+          </div>
+        </div>
+      )}
 
         {/* ── Prévisions de Cashflow Tab ── */}
         {activeTab === 'cashflow' && (
@@ -749,7 +822,6 @@ export default function InvoicesHubPage() {
             </Card>
           </div>
         )}
-      </div>
 
       {/* ── Create / Edit Invoice Modal ── */}
       {showCreateModal && (

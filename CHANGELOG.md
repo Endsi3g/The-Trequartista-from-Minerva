@@ -2,14 +2,37 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
-## 2026-09-04 (v2.25.0) — Graphiques Sparklines Overview, Suppression Leads/Clients, Stripe Portail, Hub Vidéo Organique & Dé-mock Gemini IA
+## 2026-09-04 (v2.25.0) — Standard Linear & Raycast (MDS-01), Graphiques Recharts Émeraude, Roadmaps Découplées & Minerva Flow Live
 
 Mise à jour majeure du cockpit exécutif et des flux opérationnels de l'agence Minerva :
 
+- **Standard Architectural Linear & Raycast (MDS-01)** :
+  - Élimination des cartes blanches isolées empilées au profit de conteneurs continus monolithiques divisés par bordures 1px (`divide-x divide-zinc-100`, `border-zinc-200`).
+  - Single Viewport First : rubans métriques 4 à 6 colonnes (hauteur ≤ 64px), barres d'outils compactes 40px et ratio 65/35 sur les formulaires et guides de déploiement.
+  - Pilotage clavier natif (`⌘ + Entrée`, `Échap`, `C`, `N`) et alignement monospace strict `tabular-nums font-mono` sur toutes les métriques, devises et dates.
 - **Graphiques Sparklines & Métriques Dynamiques (`overview` & `ManagingOverview`)** :
   - Remplacement des 4 carrés statiques passifs par 4 courbes de tendance et aires interactives Recharts (`MetricSparkline`) : Santé Globale (tendance 30j), MRR Agence (progression 6 mois), Capacité Équipe (charge sprint hebdomadaire), et Rétention Cohortes (LTV 6 mois).
-  - Normalisation stricte en MAJUSCULES des noms du classement d'équipe (`.toUpperCase()`).
-  - Suppression intégrale des fausses données hardcodées (`30h/s`, points arbitraires) au profit de l'état honnête « — pts / À configurer » avec lien direct vers `/classement`.
+  - Couleur Vert Émeraude `#059669` uniforme avec tooltips dynamiques affichant la date/période et la valeur numérique exacte. Cartes agrandies à `h-16` et retrait des pills d'état superflus.
+  - Normalisation stricte en MAJUSCULES des noms du classement d'équipe (`.toUpperCase()`) et conservation exclusive des 5 collaborateurs officiels réels (Kael Belceus, Manpreet Singh, Rayan, Samuel Olamide Adeleke, Amine Yahya Karroubi).
+- **Réseau & CRM Contacts (`/contacts`)** :
+  - Bouton d'action rapide 1-clic `[ ✓ Marquer contacté ]` directement sur chaque ligne du tableau avec mise à jour optimiste et persistance Supabase (`status: 'contacte'`).
+  - Ruban métrique continu 4-colonnes avec décompte des contacts traités et filtre d'onglet dédié « Contactés ».
+- **Facturation & Finance (`/invoices`)** :
+  - Remplacement de l'empty state blanc par un ruban financier continu 4-colonnes (CA facturé, Encaissements, En attente, MRR Stripe) et une DataTable dense 36px avec calculs automatiques des taxes TPS/TVQ québécoises.
+  - Raccourci clavier de création `⌘+N` et ligne d'insertion rapide active intégrée.
+- **Charge de Travail & Équilibrage (`/team/workload` & `/workload`)** :
+  - Redirection automatique et fluide de `/workload` vers `/team/workload`.
+  - Matrice de Staffing Heatmap 42px/ligne avec jauges de charge tri-couleurs (verte ≤80%, ambre 81-100%, rose >100%) et tags de tâches techniques.
+  - Sécurisation anti-crash avec clauses catch défensives sur l'ensemble des promesses parallèles.
+- **Roadmap Projet & Guide de Déploiement (`/projects/[id]/roadmap`)** :
+  - Remplacement du bandeau noir de 200px et des 5 cartes accordéons par un Split-View 65/35 monolithique.
+  - Détection contextuelle de secteur d'activité : guide adapté Bâtiment/Toiture (simulateur d'estimation toiture, grille tarifaire, devis interactif avec signature et acompte 50%, campagne d'avis Google GMB) pour Toitures Beauchemin, et guide Restauration 0% commission pour Minerva Flow.
+  - Jalons cliquables ouvrant la page dédiée `/projects/[id]/roadmap/[milestoneId]` avec gestion des documents attachés (Figma, Framer, PDF, Drive), sous-tâches interactives et notifications client.
+- **Données Minerva Flow dans l'Espace Client (`/portal/[token]`)** :
+  - Nouvel onglet direct « Données Minerva Flow » intégrant les métriques de commandes en direct, le volume brut, les économies 0% de commissions préservées et un accès SSO immédiat vers `https://minerva-flow.vercel.app`.
+- **Console Tech & Protocole QA 20-Points (`/tech`)** :
+  - Tableau QA 36px sans chevauchement de texte avec `whitespace-nowrap` sur l'ensemble des colonnes.
+  - Ligne d'insertion rapide de tâche technique pleine largeur (`col-span-full`) et onglet direct vers le Changelog.
 - **Écosystème Minerva & Prévisualisations OpenGraph Réelles (`/ecosystem`)** :
   - Intégration d'un extracteur de métadonnées OpenGraph générique (`fetchGenericWebPreview` dans `lib/services/link-preview.ts`) extrayant `og:image`, `twitter:image`, `og:title` et description des applications Minerva Reach, Minerva Flow, Composio, etc.
   - Transformation en grille visuelle bento 2 colonnes style Raycast avec boutons d'actions directes (Copier le lien, Lancer/Visiter) et élimination des tags superflus.

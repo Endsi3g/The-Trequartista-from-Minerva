@@ -845,7 +845,7 @@ export interface Contact {
   biggest_problem: string | null;
   open_to_collaborate: boolean | null;
   preferred_contact_method: 'email' | 'reseaux_sociaux' | 'site_web' | 'autre' | null;
-  status: 'a_contacter' | 'rencontre_proposee' | 'entrevue_minerva' | 'collaboration_en_cours';
+  status: 'a_contacter' | 'contacte' | 'rencontre_proposee' | 'entrevue_minerva' | 'collaboration_en_cours';
   source: 'manual' | 'self_submitted';
   created_by: string | null;
   created_at: string;

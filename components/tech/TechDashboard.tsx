@@ -482,6 +482,13 @@ export function TechDashboard() {
           >
             <span>📖 Specs & SOPs</span>
           </button>
+
+          <Link
+            href="/changelog"
+            className="h-7 px-2.5 text-xs rounded transition-all cursor-pointer flex items-center gap-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-white/60"
+          >
+            <span>📜 Changelog (v2.25.0)</span>
+          </Link>
         </div>
 
         {/* Action Shortcut Label */}
@@ -751,9 +758,11 @@ export function TechDashboard() {
                         }}
                         className="hover:bg-zinc-50/90 transition-colors cursor-pointer border-b border-dashed border-zinc-200"
                       >
-                        <td colSpan={6} className="py-2 px-3 text-[11px] font-mono text-zinc-400 hover:text-zinc-700 flex items-center gap-2">
-                          <Plus size={12} className="text-emerald-600" />
-                          <span>+ Ajouter une tâche technique ou un bug (Appuyer sur "C")...</span>
+                        <td colSpan={6} className="py-2 px-3 text-[11px] font-mono text-zinc-400 hover:text-zinc-700">
+                          <div className="flex items-center gap-2">
+                            <Plus size={12} className="text-emerald-600" />
+                            <span>+ Ajouter une tâche technique ou un bug (Appuyer sur "C")...</span>
+                          </div>
                         </td>
                       </tr>
                     )}
