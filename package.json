@@ -1,6 +1,6 @@
 {
   "name": "centurions-minerva",
-  "version": "2.30.4",
+  "version": "2.30.5",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "playwright test",
+    "verify:design": "node scripts/verify-design-tokens.mjs",
     "changelog:screenshots": "node scripts/capture-changelog-screenshots.mjs",
     "deploy:supabase": "bash ./scripts/deploy-supabase.sh"
   },

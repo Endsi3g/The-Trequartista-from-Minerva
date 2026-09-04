@@ -2,6 +2,18 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.30.5) — Charte Design System Minerva, 20 Lois UX & Audit Automatisé des Tokens
+
+- **Charte Minerva Design System & UX (`DESIGN_SYSTEM.md`)** :
+  - **Tokens Officiels Minerva (Section 0)** : Ancrage des valeurs de référence : Vert Émeraude `#059669` (hover `#047857`, fond `#ECFDF5`, bordure `#A7F3D0`), Palette Neutre Light Haute Densité (Canvas `#FAFAFA`, Surfaces blanches `#FFFFFF`, Bordures hairline 1px `#E4E4E7`, Texte `#18181B` / `#71717A`), Typographie `Inter` + `JetBrains Mono tabular-nums`, Spacing multiple de 4/8px, Rayons `8px`/`12px`/`16px` et ombres near-flat `shadow-2xs`.
+  - **15 Instructions de Design Visuel** : Règle d'or de l'accent unique, contraste ≥ 4.5:1, échelle modulaire, formulaires une colonne, états complets (hover, focus-visible, active, disabled, loading, empty, error), et protocole *Finish Pass* 10 points.
+  - **20 Lois d'Ergonomie UX** : Intégration systématique des lois cognitives (Hick, Fitts, Jakob, Proximité, Miller, Seuil de Doherty < 400ms, Von Restorff, Peak-End Rule, Zeigarnik, etc.).
+- **Directive Système Permanente (`GEMINI.md`)** :
+  - Mise à jour de la Section 5 pour contraindre tous les futurs développements et assistants IA au respect impératif de `DESIGN_SYSTEM.md`.
+- **Outillage de Validation Automatisé (`scripts/verify-design-tokens.mjs`)** :
+  - Script d'audit scannant pages et composants pour mesurer le taux de conformité aux tokens et repérer les valeurs hexadécimales arbitraires.
+  - Commande dédiée ajoutée au `package.json` : `npm run verify:design`.
+
 ## 2026-09-04 (v2.30.4) — Académie SOP-DEV-02 (Framer) Alignée & Packages GSAP / Supabase Server
 
 - **SOP-DEV-02 Framer Restructuré & Dé-dupliqué (`/academy/sop-dev-02-framer`)** :
