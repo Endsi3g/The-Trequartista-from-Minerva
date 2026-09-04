@@ -1328,6 +1328,8 @@ export interface ClientPortalData {
     health_score?: number | null;
     portal_token: string;
     account_manager_name?: string;
+    mrr?: number | null;
+    stripe_customer_id?: string | null;
   };
   projects: Array<{
     id: string;

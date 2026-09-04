@@ -37,6 +37,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   FileText,
+  Trash2,
 } from 'lucide-react';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { AreaChart } from '@/components/charts/AreaChart';
@@ -52,6 +53,7 @@ import {
   fetchProjects,
   fetchTasks,
   updateClient,
+  deleteClient,
   fetchClientMrrHistory,
   logClientMrrChange,
 } from '@/lib/services/supabase-data';
@@ -376,6 +378,22 @@ export default function ClientDetailPage() {
     }
   };
 
+  const handleDeleteClient = async () => {
+    if (!client) return;
+    if (!confirm(`Supprimer définitivement le compte client « ${client.name} » ? Attention, cette action supprimera également toutes les données associées.`)) return;
+    try {
+      const ok = await deleteClient(client.id);
+      if (ok) {
+        toastSuccess('Client supprimé', `Le compte client ${client.name} a été supprimé.`);
+        router.push('/clients');
+      } else {
+        toastError('Erreur', 'Impossible de supprimer ce client.');
+      }
+    } catch {
+      toastError('Erreur', 'Une erreur est survenue lors de la suppression.');
+    }
+  };
+
   // Unified items for Livrables & Tâches
   const unifiedProductionItems = useMemo(() => {
     const list: {
@@ -520,6 +538,15 @@ export default function ClientDetailPage() {
             <span className="hidden lg:inline">Ouvrir Flow</span>
             <ArrowUpRight className="w-2.5 h-2.5 opacity-60" />
           </a>
+
+          <button
+            onClick={handleDeleteClient}
+            className="h-7 px-2 text-xs font-medium rounded-md border border-zinc-200 bg-white text-zinc-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 flex items-center gap-1 transition-colors cursor-pointer"
+            title="Supprimer ce client"
+          >
+            <Trash2 className="w-3 h-3" />
+            <span className="hidden sm:inline">Supprimer</span>
+          </button>
 
           <Link
             href={`/clients/${client.id}/roi-tracker`}

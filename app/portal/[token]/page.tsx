@@ -62,6 +62,63 @@ export default function ClientPortalPublicPage() {
   const [messageContent, setMessageContent] = useState('');
   const [authorName, setAuthorName] = useState('');
 
+  // Stripe Checkout & Portal States
+  const [isStartingCheckout, setIsStartingCheckout] = useState(false);
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('payment') === 'success') {
+        toastSuccess('Paiement validé !', 'Votre abonnement Minerva est maintenant actif.');
+      }
+    }
+  }, []);
+
+  const handleStartStripeSubscription = async () => {
+    if (!client?.id) return;
+    setIsStartingCheckout(true);
+    try {
+      const res = await fetch('/api/stripe/checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id, returnUrl: window.location.href }),
+      });
+      const data = await res.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        toastError('Erreur Stripe', data?.error || "Impossible d'initier le paiement.");
+      }
+    } catch {
+      toastError('Erreur réseau', 'Échec de communication avec le serveur Stripe.');
+    } finally {
+      setIsStartingCheckout(false);
+    }
+  };
+
+  const handleOpenCustomerPortal = async () => {
+    if (!client?.id) return;
+    setIsOpeningPortal(true);
+    try {
+      const res = await fetch('/api/stripe/customer-portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id, returnUrl: window.location.href }),
+      });
+      const data = await res.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        toastError('Erreur Stripe', data?.error || "Impossible d'ouvrir le portail client.");
+      }
+    } catch {
+      toastError('Erreur réseau', 'Échec de communication avec le portail Stripe.');
+    } finally {
+      setIsOpeningPortal(false);
+    }
+  };
+
   const loadPortalData = async () => {
     try {
       const res = await fetch(`/api/portal/${token}`);
@@ -671,13 +728,66 @@ export default function ClientPortalPublicPage() {
               </div>
             </div>
 
-            {/* Colonne Droite (35% - 4 cols on lg) : Action Center Prioritaire Ancré */}
-            <div className="lg:col-span-4 bg-white border border-zinc-200 rounded-lg p-3.5 shadow-2xs divide-y divide-zinc-100 sticky top-14 space-y-3">
-              {/* Header */}
-              <div className="flex items-center justify-between pb-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                  Action Requise Client
-                </span>
+            {/* Colonne Droite (35% - 4 cols on lg) : Action Center & Stripe Billing Card */}
+            <div className="lg:col-span-4 space-y-3 sticky top-14">
+              {/* Stripe Monthly Subscription Module */}
+              <div className="p-3.5 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-white rounded-lg border border-emerald-500/30 shadow-md space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                      Mon Forfait Mensuel
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" style={MONO}>
+                    Stripe Sécurisé
+                  </span>
+                </div>
+
+                <div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black font-mono tracking-tight" style={MONO}>
+                      {(client?.mrr || 500).toLocaleString('fr-CA')} $ CAD
+                    </span>
+                    <span className="text-xs text-zinc-400">/ mois</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-300 mt-1 leading-snug">
+                    Accès complet à la plateforme Flow, maintenance continue et support dédié garanti.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5 pt-1">
+                  <button
+                    onClick={handleStartStripeSubscription}
+                    disabled={isStartingCheckout}
+                    className="w-full h-8 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-zinc-950 text-xs font-bold rounded-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                  >
+                    {isStartingCheckout ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    )}
+                    <span>Payer / Activer l’abonnement en 1-clic</span>
+                  </button>
+
+                  <button
+                    onClick={handleOpenCustomerPortal}
+                    disabled={isOpeningPortal}
+                    className="w-full h-7 bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium rounded-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-white/10"
+                  >
+                    <ExternalLink className="w-3 h-3 text-zinc-400" />
+                    <span>Gérer ma carte bancaire &amp; reçus</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Center Prioritaire Ancré */}
+              <div className="bg-white border border-zinc-200 rounded-lg p-3.5 shadow-2xs divide-y divide-zinc-100 space-y-3">
+                {/* Header */}
+                <div className="flex items-center justify-between pb-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                    Action Requise Client
+                  </span>
                 {priorityDeliverable ? (
                   <span className="text-[10px] font-mono text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded font-semibold" style={MONO}>
                     Prioritaire
@@ -807,7 +917,8 @@ export default function ClientPortalPublicPage() {
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {/* ── Tab 2: Livrables & Approbation ── */}
         {activeTab === 'deliverables' && (

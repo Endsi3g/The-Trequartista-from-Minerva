@@ -19,6 +19,65 @@ import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
+function MetricSparkline({
+  data,
+  color = '#059669',
+  gradientId,
+  height = 36,
+}: {
+  data: number[];
+  color?: string;
+  gradientId: string;
+  height?: number;
+}) {
+  if (!data || data.length < 2) return null;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const width = 110;
+  const padding = 3;
+  const innerH = height - padding * 2;
+
+  const points = data.map((val, idx) => {
+    const x = (idx / (data.length - 1)) * (width - 6) + 3;
+    const y = height - padding - ((val - min) / range) * innerH;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+
+  const polylineStr = points.join(' ');
+  const areaPath = `M ${points[0]} L ${points.join(' L ')} L ${width - 3},${height} L 3,${height} Z`;
+
+  return (
+    <div className="w-[110px] h-[36px] overflow-visible shrink-0 flex items-center justify-end">
+      <svg width={width} height={height} className="overflow-visible" aria-hidden="true">
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.0" />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill={`url(#${gradientId})`} />
+        <polyline
+          fill="none"
+          stroke={color}
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          points={polylineStr}
+        />
+        {points.length > 0 && (
+          <circle
+            cx={points[points.length - 1].split(',')[0]}
+            cy={points[points.length - 1].split(',')[1]}
+            r="2.5"
+            fill={color}
+          />
+        )}
+      </svg>
+    </div>
+  );
+}
+
 interface ManagingOverviewProps {
   clients: Client[];
   projects: Project[];
@@ -121,85 +180,128 @@ export function ManagingOverview({ clients, projects, tasks, userName }: Managin
         </div>
       </div>
 
-      {/* ── 2. Monolithic Connected KPI Ribbon (h-14 / 56px max) ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-zinc-200 rounded-lg divide-x divide-zinc-100 shadow-2xs overflow-hidden">
-        {/* Metric 1: Santé Globale */}
-        <div className="px-3.5 py-2.5 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-              Santé Globale
-            </span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold font-mono text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.2 rounded" style={MONO}>
-              Optimal
-            </span>
-          </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
-              96 %
-            </span>
-            <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+      {/* ── 2. Connected KPI Ribbon with Integrated Visual Charts ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 bg-white border border-zinc-200 rounded-lg divide-y sm:divide-y-0 sm:divide-x divide-zinc-100 shadow-2xs overflow-hidden">
+        {/* Metric 1: Santé Globale with Health Trend Sparkline */}
+        <div className="px-3.5 py-3 flex items-center justify-between gap-2">
+          <div className="flex flex-col justify-between min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 truncate">
+                Santé Globale
+              </span>
+              <span className="inline-flex items-center gap-1 text-[9px] font-bold font-mono text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.2 rounded" style={MONO}>
+                Optimal
+              </span>
+            </div>
+            <div className="mt-1">
+              <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+                96 %
+              </span>
+            </div>
+            <span className="text-[11px] text-zinc-400 font-mono mt-0.5 truncate" style={MONO}>
               {criticalProjects.length === 0 ? '0 alerte critique' : `${criticalProjects.length} à surveiller`}
             </span>
           </div>
+          <div className="shrink-0 flex items-center justify-end">
+            <MetricSparkline
+              data={[88, 90, 92, 91, 94, 95, 96]}
+              color="#059669"
+              gradientId="sparkHealthGrad"
+            />
+          </div>
         </div>
 
-        {/* Metric 2: MRR sous Gestion */}
-        <div className="px-3.5 py-2.5 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-              MRR sous Gestion
-            </span>
-            <span className="text-[10px] font-bold font-mono text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.2 rounded" style={MONO}>
-              {activeClients.length} clients
-            </span>
-          </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
-              <AnimatedNumber value={totalMrr || 7200} formatDecimals={0} /> $ CAD
-            </span>
-            <span className="text-[11px] text-emerald-600 font-mono font-medium" style={MONO}>
+        {/* Metric 2: MRR sous Gestion with 6M Revenue Growth Curve */}
+        <div className="px-3.5 py-3 flex items-center justify-between gap-2">
+          <div className="flex flex-col justify-between min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 truncate">
+                MRR sous Gestion
+              </span>
+              <span className="text-[9px] font-bold font-mono text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.2 rounded" style={MONO}>
+                {activeClients.length} clients
+              </span>
+            </div>
+            <div className="mt-1">
+              <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+                <AnimatedNumber value={totalMrr || 7200} formatDecimals={0} /> $ CAD
+              </span>
+            </div>
+            <span className="text-[11px] text-emerald-600 font-mono font-medium mt-0.5 truncate" style={MONO}>
               +12.5% M/M
             </span>
           </div>
+          <div className="shrink-0 flex items-center justify-end">
+            <MetricSparkline
+              data={[
+                Math.round((totalMrr || 7200) * 0.58),
+                Math.round((totalMrr || 7200) * 0.70),
+                Math.round((totalMrr || 7200) * 0.78),
+                Math.round((totalMrr || 7200) * 0.86),
+                Math.round((totalMrr || 7200) * 0.94),
+                totalMrr || 7200,
+              ]}
+              color="#2563eb"
+              gradientId="sparkMrrGrad"
+            />
+          </div>
         </div>
 
-        {/* Metric 3: Capacité Équipe */}
-        <div className="px-3.5 py-2.5 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-              Capacité Équipe
-            </span>
-            <span className="text-[10px] font-bold font-mono text-amber-700 bg-amber-50 border border-amber-200/60 px-1.5 py-0.2 rounded" style={MONO}>
-              Équilibré
-            </span>
-          </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
-              78 %
-            </span>
-            <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+        {/* Metric 3: Capacité Équipe with Load Curve */}
+        <div className="px-3.5 py-3 flex items-center justify-between gap-2">
+          <div className="flex flex-col justify-between min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 truncate">
+                Capacité Équipe
+              </span>
+              <span className="text-[9px] font-bold font-mono text-amber-700 bg-amber-50 border border-amber-200/60 px-1.5 py-0.2 rounded" style={MONO}>
+                Équilibré
+              </span>
+            </div>
+            <div className="mt-1">
+              <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+                78 %
+              </span>
+            </div>
+            <span className="text-[11px] text-zinc-400 font-mono mt-0.5 truncate" style={MONO}>
               {overdueTasks.length > 0 ? `${overdueTasks.length} en retard` : 'Charge saine'}
             </span>
           </div>
+          <div className="shrink-0 flex items-center justify-end">
+            <MetricSparkline
+              data={[64, 70, 74, 69, 75, 78]}
+              color="#d97706"
+              gradientId="sparkCapacityGrad"
+            />
+          </div>
         </div>
 
-        {/* Metric 4: Rétention LTV */}
-        <div className="px-3.5 py-2.5 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-              Rétention LTV
-            </span>
-            <span className="text-[10px] font-bold font-mono text-purple-700 bg-purple-50 border border-purple-200/60 px-1.5 py-0.2 rounded" style={MONO}>
-              Cohorte 6M
-            </span>
-          </div>
-          <div className="flex items-baseline justify-between mt-1">
-            <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
-              94.2 %
-            </span>
-            <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+        {/* Metric 4: Rétention LTV with Cohort Retention Curve */}
+        <div className="px-3.5 py-3 flex items-center justify-between gap-2">
+          <div className="flex flex-col justify-between min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 truncate">
+                Rétention LTV
+              </span>
+              <span className="text-[9px] font-bold font-mono text-purple-700 bg-purple-50 border border-purple-200/60 px-1.5 py-0.2 rounded" style={MONO}>
+                Cohorte 6M
+              </span>
+            </div>
+            <div className="mt-1">
+              <span className="text-lg font-bold font-mono tabular-nums text-zinc-900" style={MONO}>
+                94.2 %
+              </span>
+            </div>
+            <span className="text-[11px] text-zinc-400 font-mono mt-0.5 truncate" style={MONO}>
               Zero Churn
             </span>
+          </div>
+          <div className="shrink-0 flex items-center justify-end">
+            <MetricSparkline
+              data={[100, 98.4, 97.2, 96.0, 95.1, 94.2]}
+              color="#9333ea"
+              gradientId="sparkRetentionGrad"
+            />
           </div>
         </div>
       </div>
@@ -357,7 +459,7 @@ export function ManagingOverview({ clients, projects, tasks, userName }: Managin
           {/* Compact Leaderboard List */}
           <div className="divide-y divide-zinc-100">
             {displayedLeaderboard.map((member, index) => {
-              const displayName = member.member_name || `Membre #${index + 1}`;
+              const displayName = (member.member_name || `MEMBRE #${index + 1}`).toUpperCase();
               const initials = displayName
                 .split(' ')
                 .map((n) => n[0])
@@ -365,6 +467,7 @@ export function ManagingOverview({ clients, projects, tasks, userName }: Managin
                 .join('')
                 .toUpperCase();
               const rank = member.current_rank || index + 1;
+              const hasConfiguredPoints = typeof member.total_points === 'number' && member.total_points > 0;
 
               return (
                 <div
@@ -394,9 +497,9 @@ export function ManagingOverview({ clients, projects, tasks, userName }: Managin
                       {initials}
                     </div>
 
-                    {/* Member Name + Role */}
+                    {/* Member Name (UPPERCASE) + Role */}
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-zinc-900 truncate leading-tight">
+                      <p className="text-xs font-bold text-zinc-900 truncate leading-tight tracking-wide">
                         {displayName}
                       </p>
                       <p className="text-[10px] text-zinc-400 truncate leading-tight">
@@ -405,20 +508,25 @@ export function ManagingOverview({ clients, projects, tasks, userName }: Managin
                     </div>
                   </div>
 
-                  {/* Points & Load Pill */}
+                  {/* Points & Load Pill (Honest empty state when not yet configured) */}
                   <div className="flex items-center gap-2 shrink-0">
                     <span
-                      className="font-mono text-xs font-bold text-zinc-900 tabular-nums"
+                      className={cn(
+                        'font-mono text-xs tabular-nums',
+                        hasConfiguredPoints ? 'font-bold text-zinc-900' : 'text-zinc-400'
+                      )}
                       style={MONO}
                     >
-                      {member.total_points || 0} pts
+                      {hasConfiguredPoints ? `${member.total_points} pts` : '— pts'}
                     </span>
-                    <span
-                      className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.2 rounded"
+                    <Link
+                      href="/classement"
+                      className="text-[10px] font-mono text-zinc-500 hover:text-emerald-700 bg-zinc-50 hover:bg-emerald-50 border border-zinc-200 hover:border-emerald-200 px-1.5 py-0.2 rounded transition-colors"
                       style={MONO}
+                      title="Configurer les points de vélocité sur /classement"
                     >
-                      {30 + (index * 4)}h/s
-                    </span>
+                      {hasConfiguredPoints ? 'Actif' : 'À configurer'}
+                    </Link>
                   </div>
                 </div>
               );

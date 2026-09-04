@@ -12,8 +12,10 @@ import {
   Download,
   X,
   Search,
+  Trash2,
 } from 'lucide-react';
-import { fetchClients } from '@/lib/services/supabase-data';
+import { fetchClients, deleteClient, deleteMultipleClients } from '@/lib/services/supabase-data';
+import { useToast } from '@/components/providers/ToastProvider';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import type { Client } from '@/lib/types';
 import { PageFadeIn } from '@/components/ui/page-transition';
@@ -48,21 +50,58 @@ export default function ClientsPage() {
   const [statusTab, setStatusTab] = useState<Client['status'] | 'Trial' | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const { toastSuccess, toastError } = useToast();
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchClients();
+      setClients(data);
+    } catch (err) {
+      console.warn('[Clients] Error loading data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const data = await fetchClients();
-        setClients(data);
-      } catch (err) {
-        console.warn('[Clients] Error loading data:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
     loadData();
   }, []);
+
+  const handleDeleteClient = async (clientId: string, clientName: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!confirm(`Supprimer définitivement le client « ${clientName} » ? Attention, cette action supprimera également les données associées.`)) return;
+    const ok = await deleteClient(clientId);
+    if (ok) {
+      toastSuccess('Client supprimé', `Le client ${clientName} a été supprimé.`);
+      setSelected((prev) => {
+        const next = new Set(prev);
+        next.delete(clientId);
+        return next;
+      });
+      loadData();
+    } else {
+      toastError('Erreur', 'Impossible de supprimer ce client.');
+    }
+  };
+
+  const handleBulkDeleteClients = async () => {
+    const ids = Array.from(selected);
+    if (!ids.length) return;
+    if (!confirm(`Supprimer définitivement ces ${ids.length} clients sélectionnés ? Cette action est irréversible.`)) return;
+    try {
+      const ok = await deleteMultipleClients(ids);
+      if (ok) {
+        toastSuccess('Clients supprimés', `${ids.length} clients ont été supprimés.`);
+        setSelected(new Set());
+        loadData();
+      } else {
+        toastError('Erreur', 'Impossible de supprimer les clients sélectionnés.');
+      }
+    } catch {
+      toastError('Erreur', 'Une erreur est survenue lors de la suppression.');
+    }
+  };
 
   const totalMrr = clients.reduce((acc, c) => acc + (c.mrr || 0), 0);
   const activeClients = clients.filter((c) => c.status === 'Active');
@@ -496,14 +535,23 @@ export default function ClientsPage() {
                         )}
                       </div>
 
-                      <Link
-                        href={`/clients/${client.id}/roi-tracker`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-mv-green font-semibold inline-flex items-center gap-1 text-[11px]"
-                      >
-                        <span>Portail ROI</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/clients/${client.id}/roi-tracker`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-mv-green font-semibold inline-flex items-center gap-1 text-[11px]"
+                        >
+                          <span>Portail ROI</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                        <button
+                          onClick={(e) => handleDeleteClient(client.id, client.name, e)}
+                          className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                          title="Supprimer ce client"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -526,6 +574,14 @@ export default function ClientsPage() {
           >
             <Download className="w-3.5 h-3.5" />
             <span>Exporter CSV</span>
+          </button>
+          <div className="h-4 w-px bg-zinc-700" />
+          <button
+            onClick={handleBulkDeleteClients}
+            className="text-xs font-medium text-rose-400 hover:text-rose-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Supprimer la sélection</span>
           </button>
           <button
             onClick={() => setSelected(new Set())}

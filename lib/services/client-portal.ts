@@ -227,6 +227,8 @@ export async function fetchClientPortalData(token: string): Promise<ClientPortal
         health_score: client.health_score || 100,
         portal_token: token,
         account_manager_name: (client.account_manager as any)?.full_name || 'Équipe Minerva',
+        mrr: client.mrr ?? 500,
+        stripe_customer_id: client.stripe_customer_id || null,
       },
       projects: (projectsData || []).map((p: any) => ({
         id: p.id,
@@ -329,6 +331,8 @@ function getFallbackPortalData(token: string): ClientPortalData {
       health_score: 98,
       portal_token: token,
       account_manager_name: 'Maxime (Minerva Operations)',
+      mrr: 750,
+      stripe_customer_id: null,
     },
     projects: [
       {

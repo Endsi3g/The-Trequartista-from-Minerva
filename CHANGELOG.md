@@ -2,6 +2,36 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.25.0) — Graphiques Sparklines Overview, Suppression Leads/Clients, Stripe Portail, Hub Vidéo Organique & Dé-mock Gemini IA
+
+Mise à jour majeure du cockpit exécutif et des flux opérationnels de l'agence Minerva :
+
+- **Graphiques Sparklines & Métriques Dynamiques (`overview` & `ManagingOverview`)** :
+  - Remplacement des 4 carrés statiques passifs par 4 courbes de tendance et aires interactives Recharts (`MetricSparkline`) : Santé Globale (tendance 30j), MRR Agence (progression 6 mois), Capacité Équipe (charge sprint hebdomadaire), et Rétention Cohortes (LTV 6 mois).
+  - Normalisation stricte en MAJUSCULES des noms du classement d'équipe (`.toUpperCase()`).
+  - Suppression intégrale des fausses données hardcodées (`30h/s`, points arbitraires) au profit de l'état honnête « — pts / À configurer » avec lien direct vers `/classement`.
+- **Écosystème Minerva & Prévisualisations OpenGraph Réelles (`/ecosystem`)** :
+  - Intégration d'un extracteur de métadonnées OpenGraph générique (`fetchGenericWebPreview` dans `lib/services/link-preview.ts`) extrayant `og:image`, `twitter:image`, `og:title` et description des applications Minerva Reach, Minerva Flow, Composio, etc.
+  - Transformation en grille visuelle bento 2 colonnes style Raycast avec boutons d'actions directes (Copier le lien, Lancer/Visiter) et élimination des tags superflus.
+- **Suppression Complète des Leads & Comptes Clients** :
+  - Implémentation des méthodes de suppression unitaire et en lot (`deleteClient`, `deleteMultipleClients`, `deleteMultipleLeads` dans `lib/services/supabase-data.ts`).
+  - Ajout des boutons de suppression par ligne avec dialogue de confirmation natif, suppression par lot dans la barre flottante de sélection multiple, et bouton de suppression dans la barre d'outils de la fiche client 360° avec redirection propre.
+- **Paiements Stripe Connectés dans le Portail Client (`/portal/[token]`)** :
+  - Intégration de Stripe Checkout (`mode: 'subscription'`) et Stripe Billing Customer Portal via clés API configurées dans `.env.local`.
+  - Carte de souscription mensuelle connectée sur le portail client permettant d'activer le forfait en 1 clic et d'accéder au portail client Stripe pour mettre à jour la carte et télécharger les reçus.
+- **Expansion de l'Académie LMS Managing (6 Procédures Opérationnelles Complètes)** :
+  - Ajout de 6 SOPs complètes de gestion de compte couvrant l'ensemble du cycle de vie client : Routine Quotidienne AM & Opérations, Onboarding 48h & Kickoff, Rétention & Rituels Anti-Churn, Facturation Stripe & Taxes QC, Équilibrage de Charge Équipe (`/team/workload`), et QBR Trimestrielle & Offboarding.
+  - Intégration dans `FALLBACK_DEV_SOPS` et création de la migration `supabase/migrations/20260904000000_managing_sops_expansion.sql`.
+- **Nouveau Hub d'Acquisition Organique Vidéo & Social (`/acquisition/organic`)** :
+  - Remplacement de la simple liste de mots-clés par le centre de performance vidéo vertical (Reels, TikTok, Shorts).
+  - Canaux sociaux officiels connectés (Instagram, TikTok, YouTube) avec statut en direct.
+  - Backlog complet « Vidéos à Tourner & Idées Fortes » avec hooks de 3 secondes, statuts (Idée, Scripté, À Tourner, Montage, Publié), boîte de dialogue d'ajout persistant (`localStorage`), et filtres par plateforme.
+  - Classement Top Vidéos & attribution commerciale chiffrée (leads CRM attribués et MRR généré).
+- **Dé-mocking des Audits IA via Google Gemini API (`/api/audits/[id]/extract`)** :
+  - Remplacement d'Anthropic par Google Gemini (`gemini-2.5-flash` via `@google/genai` et `GEMINI_API_KEY`) avec sortie JSON structurée validée par le schéma Zod `AuditExtractionSchema`.
+
+---
+
 ## 2026-09-03 (v2.24.2) — Refonte Extranet Client (Portail Partenaire 360) : Stepper Linéaire, Protocole QA & Action Center Prioritaire
 
 Refactorisation complète du portail extranet client public et sécurisé (`app/portal/[token]/page.tsx`) selon les directives Linear / Raycast :

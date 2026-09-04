@@ -148,12 +148,8 @@ function instagramPreviewStub(url: string): LinkPreview {
   };
 }
 
-export async function fetchLinkPreview(url: string): Promise<LinkPreview> {
-  const platform = detectPlatform(url);
-  if (platform === 'youtube') return fetchYouTubePreview(url);
-  if (platform === 'tiktok') return fetchTikTokPreview(url);
-  if (platform === 'instagram') return instagramPreviewStub(url);
-  return {
+async function fetchGenericWebPreview(url: string): Promise<LinkPreview> {
+  const base: LinkPreview = {
     platform: 'other',
     url,
     title: null,
@@ -164,4 +160,67 @@ export async function fetchLinkPreview(url: string): Promise<LinkPreview> {
     durationSeconds: null,
     available: false,
   };
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml',
+      },
+    });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const html = await res.text();
+
+      // Match og:image or twitter:image
+      const ogImgMatch =
+        html.match(/<meta[^>]+(?:property|name)=["'](?:og:image|twitter:image)["'][^>]+content=["']([^"']+)["']/i) ||
+        html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["'](?:og:image|twitter:image)["']/i);
+      if (ogImgMatch?.[1]) {
+        let img = ogImgMatch[1];
+        if (img.startsWith('/')) {
+          try {
+            const u = new URL(url);
+            img = `${u.origin}${img}`;
+          } catch {}
+        }
+        base.thumbnailUrl = img;
+        base.available = true;
+      }
+
+      // Match og:title or <title>
+      const ogTitleMatch =
+        html.match(/<meta[^>]+(?:property|name)=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
+        html.match(/<title[^>]*>([^<]+)<\/title>/i);
+      if (ogTitleMatch?.[1]) {
+        base.title = ogTitleMatch[1].replace(/&amp;/g, '&').trim();
+        base.available = true;
+      }
+
+      // Match og:description or meta description
+      const ogDescMatch =
+        html.match(/<meta[^>]+(?:property|name)=["'](?:og:description|description)["'][^>]+content=["']([^"']+)["']/i) ||
+        html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["'](?:og:description|description)["']/i);
+      if (ogDescMatch?.[1]) {
+        base.description = ogDescMatch[1].replace(/&amp;/g, '&').trim();
+        base.available = true;
+      }
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+
+  return base;
+}
+
+export async function fetchLinkPreview(url: string): Promise<LinkPreview> {
+  const platform = detectPlatform(url);
+  if (platform === 'youtube') return fetchYouTubePreview(url);
+  if (platform === 'tiktok') return fetchTikTokPreview(url);
+  if (platform === 'instagram') return instagramPreviewStub(url);
+  return fetchGenericWebPreview(url);
 }

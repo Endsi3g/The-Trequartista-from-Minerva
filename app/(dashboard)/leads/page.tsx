@@ -26,8 +26,9 @@ import {
   PhoneCall,
   AlertTriangle,
   Flame,
+  Trash2,
 } from 'lucide-react';
-import { fetchClients, fetchLeads } from '@/lib/services/supabase-data';
+import { fetchClients, fetchLeads, deleteLead, deleteMultipleLeads } from '@/lib/services/supabase-data';
 import type { Client, Lead, LeadStage } from '@/lib/types';
 import { useSupabaseRealtime } from '@/components/providers/SupabaseRealtimeProvider';
 import { AnimatedNumber } from '@/components/ui/animated-number';
@@ -202,6 +203,41 @@ function LeadsCrmContent() {
       else next.add(id);
       return next;
     });
+  };
+
+  const handleDeleteLead = async (leadId: string, leadName: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!confirm(`Supprimer définitivement le lead « ${leadName} » ? Cette action est irréversible.`)) return;
+    const ok = await deleteLead(leadId);
+    if (ok) {
+      toastSuccess('Lead supprimé', `Le lead ${leadName} a été supprimé.`);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(leadId);
+        return next;
+      });
+      loadData();
+    } else {
+      toastError('Erreur', 'Impossible de supprimer ce lead.');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    if (!ids.length) return;
+    if (!confirm(`Supprimer définitivement ces ${ids.length} leads sélectionnés ? Cette action est irréversible.`)) return;
+    try {
+      const ok = await deleteMultipleLeads(ids);
+      if (ok) {
+        toastSuccess('Leads supprimés', `${ids.length} leads ont été supprimés.`);
+        setSelectedIds(new Set());
+        loadData();
+      } else {
+        toastError('Erreur', 'Impossible de supprimer les leads sélectionnés.');
+      }
+    } catch {
+      toastError('Erreur', 'Une erreur est survenue lors de la suppression.');
+    }
   };
 
   return (
@@ -453,7 +489,8 @@ function LeadsCrmContent() {
                 <th className="px-2 text-left font-medium">Étape Pipeline</th>
                 <th className="px-2 text-right font-medium">Valeur ($)</th>
                 <th className="px-2 text-left font-medium">Contact & Courriel</th>
-                <th className="pr-3.5 pl-2 text-right font-medium">Date</th>
+                <th className="px-2 text-right font-medium">Date</th>
+                <th className="pr-3.5 pl-2 text-right font-medium w-10">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -521,8 +558,17 @@ function LeadsCrmContent() {
                     <td className="px-2 py-1 text-[11.5px] text-zinc-500 font-mono truncate max-w-[180px]" style={MONO}>
                       {lead.contact_email || lead.contact_phone || '—'}
                     </td>
-                    <td className="pr-3.5 pl-2 py-1 text-right text-[10.5px] text-zinc-400 font-mono whitespace-nowrap" style={MONO}>
+                    <td className="px-2 py-1 text-right text-[10.5px] text-zinc-400 font-mono whitespace-nowrap" style={MONO}>
                       {new Date(lead.created_at).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })}
+                    </td>
+                    <td className="pr-3.5 pl-2 py-1 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => handleDeleteLead(lead.id, lead.company_name || lead.contact_name, e)}
+                        className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Supprimer ce lead"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </td>
                   </tr>
                 );
@@ -804,6 +850,14 @@ function LeadsCrmContent() {
           >
             <Download className="w-3.5 h-3.5" />
             <span>Exporter sélection CSV</span>
+          </button>
+          <div className="h-4 w-px bg-zinc-700" />
+          <button
+            onClick={handleBulkDelete}
+            className="text-xs font-medium text-rose-400 hover:text-rose-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Supprimer la sélection</span>
           </button>
           <button
             onClick={() => setSelectedIds(new Set())}

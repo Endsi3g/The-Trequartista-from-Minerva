@@ -6,7 +6,7 @@ import { GoogleGenAI } from '@google/genai';
 // key, never fabricate a response when the key is missing), but Gemini
 // rather than Claude per an explicit product decision. Both bots stay
 // inert in this environment until GEMINI_API_KEY is set in production.
-export const GEMINI_MODEL = 'gemini-3.6-flash';
+export const GEMINI_MODEL = 'gemini-2.5-flash';
 
 export function getGeminiClient(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -31,10 +31,10 @@ export async function generateGeminiText(prompt: string, fallback: string): Prom
     const text = response.text?.trim();
     if (text) return text;
   } catch (err) {
-    console.warn(`[Gemini] ${GEMINI_MODEL} failed, trying fallback model gemini-3.6-flash:`, err);
+    console.warn(`[Gemini] ${GEMINI_MODEL} failed, trying fallback model gemini-1.5-flash:`, err);
     try {
       const fallbackRes = await client.models.generateContent({
-        model: 'gemini-3.6-flash',
+        model: 'gemini-1.5-flash',
         contents: prompt,
       });
       const text = fallbackRes.text?.trim();

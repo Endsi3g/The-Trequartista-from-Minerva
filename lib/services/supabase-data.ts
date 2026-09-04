@@ -95,6 +95,25 @@ export async function updateClient(
   return data as Client;
 }
 
+export async function deleteClient(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from('clients').delete().eq('id', id);
+  if (error) {
+    console.error('[Supabase] Error deleting client:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteMultipleClients(ids: string[]): Promise<boolean> {
+  if (!ids.length) return true;
+  const { error } = await getSupabase().from('clients').delete().in('id', ids);
+  if (error) {
+    console.error('[Supabase] Error deleting multiple clients:', error);
+    return false;
+  }
+  return true;
+}
+
 // ----------------------------------------------------
 // 1a-bis. 14-DAY ACCOMPANIED TRIAL LIFECYCLE (MINERVA FLOW)
 // ----------------------------------------------------
@@ -654,6 +673,140 @@ const FALLBACK_DEV_SOPS: AcademySOP[] = [
     is_onboarding_step: true,
     sort_order: 6,
   },
+  {
+    id: 'sop-mng-01-routine',
+    title: 'Routine Quotidienne de l’Account Manager & Opérations',
+    description: 'Structure de la journée de l’AM : cockpit /overview, rituels matinaux, suivi des jalons de production et synchronisation client.',
+    category: 'Gestion de compte',
+    target_workspace: 'managing',
+    pillar: 'agency',
+    content_markdown: '# SOP-MNG-01 — Routine Quotidienne de l’Account Manager & Opérations\n\n## 1. Ouverture de Journée (08h30 - 09h15)\n1. Consulter le cockpit /overview : vérifier le score de santé global du portefeuille.\n2. Contrôler les alertes Stripe : vérifier que les prélèvements d’abonnements MRR sont passés sans échec.\n3. Scanner la boîte de support du portail client (/portal) et traiter les demandes prioritaires sous 60 minutes.\n\n## 2. Point de Synchronisation Technique (11h00)\n- Contrôler l’avancement des livrables de production (vidéos, refontes web, QR Flow).\n- Mettre à jour les jalons de projet pour que les clients voient l’état d’avancement dans leur portail.\n\n## 3. Clôture de Journée (17h00)\n- Valider que chaque question client en suspens a reçu un accusé de réception ou une réponse résolue.\n- Vérifier la charge d’équipe sur /team/workload pour anticiper le sprint du lendemain.',
+    author: 'Kael Belceus & Operations Lead',
+    read_time_min: 8,
+    is_essential: true,
+    is_featured: true,
+    is_onboarding_step: true,
+    sort_order: 1,
+    checklist_items: [
+      'Vérifier le tableau de bord /overview et les alertes clients',
+      'Contrôler les encaissements Stripe et les abonnements MRR',
+      'Traiter les tickets et retours livrables du portail client',
+      'Faire le point technique avec l’équipe de dev et production média',
+      'Envoyer un récapitulatif aux clients ayant un jalon livré aujourd’hui',
+    ],
+    script_template: 'Bonjour [Prénom du Client],\n\nVoici le point d’étape quotidien sur votre projet chez Minerva :\n- Jalon complété : [Nom du jalon]\n- Prochaine étape : Déploiement prévu le [Date]\n\nVotre portail est à jour : vous pouvez consulter les aperçus en direct.\n\nBien cordialement,\n[Votre Prénom] — Minerva Operations',
+  },
+  {
+    id: 'sop-mng-02-onboarding',
+    title: 'Playbook d’Onboarding Client 48h & Kickoff Immersion',
+    description: 'Protocole standardisé de prise en charge dès la signature de la proposition : création du portail, canal dédié et atelier de cadrage.',
+    category: 'Onboarding',
+    target_workspace: 'managing',
+    pillar: 'agency',
+    content_markdown: '# SOP-MNG-02 — Playbook d’Onboarding Client 48h\n\n## 1. Phase H+2 (Immédiate après acompte)\n- Dès la signature électronique et l’acompte 50% Stripe, le client est automatiquement créé dans Trequartista.\n- Générer et tester son jeton de portail client sécurisé (/portal/[token]).\n- Créer le canal Slack/WhatsApp dédié ou inviter le contact principal aux rituels Minerva.\n\n## 2. Phase J+1 (Atelier Kickoff 45 min)\n- Présentation de l’Account Manager dédié et des engagements contractuels.\n- Collecte des accès : Stripe, Google Business Profile, Instagram, domaine Web.\n- Définition du rétroplanning 30 jours avec les 4 jalons clés.\n\n## 3. Phase J+2 (Livraison du Pack de Bienvenue)\n- Envoi de la vidéo de bienvenue personnalisée Loom (2 min).\n- Validation du premier livrable d’étape dans le portail client.',
+    author: 'Kael Belceus & Operations Lead',
+    read_time_min: 10,
+    is_essential: true,
+    is_featured: true,
+    is_onboarding_step: true,
+    sort_order: 2,
+    checklist_items: [
+      'Vérifier la réception de l’acompte Stripe 50%',
+      'Générer le jeton de portail client et configurer son espace',
+      'Planifier la session d’immersion Kickoff (45 min)',
+      'Récupérer les accès nécessaires (réseaux, Stripe, domaine)',
+      'Envoyer le lien du portail client avec la checklist de bienvenue',
+    ],
+    script_template: 'Bonjour [Prénom],\n\nToute l’équipe Minerva est ravie de vous compter parmi nos partenaires privilégiés !\n\nVotre portail dédié est d’ores et déjà accessible via ce lien direct :\n👉 [Lien du portail client]\n\nNous nous retrouvons pour notre atelier de cadrage ce [Jour] à [Heure].\n\nÀ très vite,\n[Votre Prénom] — Account Manager Minerva',
+  },
+  {
+    id: 'sop-mng-03-retention',
+    title: 'Rétention & Rituels Hebdomadaires Anti-Churn',
+    description: 'Stratégie de communication proactive, suivi du score de santé client, détection des signaux faibles et rituels de satisfaction.',
+    category: 'Gestion de compte',
+    target_workspace: 'managing',
+    pillar: 'agency',
+    content_markdown: '# SOP-MNG-03 — Rétention & Rituels Anti-Churn\n\n## 1. La Philosophie Anti-Churn de Minerva\nUn client ne churn jamais par surprise : le désengagement commence toujours par des silences ou des micro-frustrations non exprimées. Notre rôle est de devancer chaque attente.\n\n## 2. Suivi du Score de Santé Client (0 à 100)\n- **Vert (> 80) :** Client ravi, promoteur actif. Idéal pour demander un témoignage vidéo ou initier un upsell.\n- **Ambre (60 - 79) :** Attention requise, retard de validation de livrable ou questions techniques en attente. Appel proactif obligatoire sous 48h.\n- **Rouge (< 60) :** Alerte churn critique. Déclenchement immédiat d’une réunion de déblocage avec le Lead Operations.\n\n## 3. Les Rituels Hebdomadaires\n- Vendredi 15h : Synthèse d’impact hebdomadaire transmise via le portail client (métriques de visites, commandes générées, livrables validés).\n- Aucun client ne doit passer 7 jours ouvrés sans nouvelle tangible de l’équipe.',
+    author: 'Kael Belceus & Operations Lead',
+    read_time_min: 9,
+    is_essential: true,
+    is_featured: false,
+    is_onboarding_step: true,
+    sort_order: 3,
+    checklist_items: [
+      'Passer en revue les scores de santé de chaque compte client',
+      'Repérer les livrables en attente de révision depuis plus de 4 jours',
+      'Envoyer la synthèse hebdomadaire vendredi avant 16h',
+      'Appeler les clients ayant un score inférieur à 70',
+    ],
+    script_template: 'Bonjour [Prénom],\n\nC’est [Votre Prénom] de Minerva. Je voulais m’assurer que tout se déroule parfaitement suite à la livraison de notre dernier module.\n\nAuriez-vous 5 minutes demain pour un échange rapide de calage ?\n\nÀ votre écoute,\n[Votre Prénom]',
+  },
+  {
+    id: 'sop-mng-04-billing',
+    title: 'Facturation Stripe, Taxes QC & Recouvrement Automatisé',
+    description: 'Gestion des abonnements récurrents MRR, application automatique TPS (5%) et TVQ (9.975%), et protocole de dunning en cas d’échec de paiement.',
+    category: 'Outils & Systèmes',
+    target_workspace: 'managing',
+    pillar: 'agency',
+    content_markdown: '# SOP-MNG-04 — Facturation Stripe, Taxes QC & Recouvrement\n\n## 1. Structure Fiscale Québécoise\nChaque facture émise par Minerva Trequartista inclut :\n- Sous-total des services (ex: abonnement mensuel 500 $ CAD).\n- TPS (5.000%).\n- TVQ (9.975%).\n- Montant Total TTC débité via la passerelle Stripe.\n\n## 2. Déclenchement des Abonnements\n- Le client active son abonnement en 1 clic directement depuis son portail (/portal/[token]).\n- La facture correspondante est automatiquement archivée et téléchargeable en PDF.\n\n## 3. Procédure de Recouvrement (Dunning 3 Étapes)\n1. **J+0 (Échec Stripe) :** Notification automatique par email avec lien vers le Stripe Billing Customer Portal pour mettre à jour la carte.\n2. **J+3 :** Message personnalisé de l’AM par SMS ou email d’assistance bienveillante.\n3. **J+7 :** Suspension temporaire des livrables non essentiels jusqu’à régularisation.',
+    author: 'Kael Belceus & Finance Lead',
+    read_time_min: 7,
+    is_essential: true,
+    is_featured: false,
+    is_onboarding_step: true,
+    sort_order: 4,
+    checklist_items: [
+      'Vérifier que les clés Stripe sont actives et synchronisées',
+      'Contrôler le journal des échecs de paiement hebdomadaires',
+      'Vérifier l’exactitude des taux TPS et TVQ sur les factures émises',
+      'Accompagner le client dans la mise à jour de son moyen de paiement',
+    ],
+    script_template: 'Bonjour [Prénom],\n\nNous avons constaté un léger souci lors du renouvellement automatique de votre abonnement Minerva via votre carte bancaire.\n\nVous pouvez mettre à jour vos coordonnées bancaires en toute sécurité en 1 clic ici :\n👉 [Lien Portail Facturation Stripe]\n\nN’hésitez pas si vous avez la moindre question !\n\nBien à vous,\nL’équipe Facturation Minerva',
+  },
+  {
+    id: 'sop-mng-05-workload',
+    title: 'Rôle, Équilibrage de Charge & Capacité d’Équipe (/team/workload)',
+    description: 'Méthodologie de répartition des tâches, maintien du taux d’occupation optimal (75%-85%) et prévention de l’engorgement.',
+    category: 'Gestion de compte',
+    target_workspace: 'managing',
+    pillar: 'agency',
+    content_markdown: '# SOP-MNG-05 — Équilibrage de Charge d’Équipe & Capacité\n\n## 1. La Règle d’Or des 80%\nUne équipe d’agence saturée à 100% ne produit pas plus : elle accumule des retards, génère des erreurs et frustre les clients. Chez Minerva, la zone de performance idéale se situe entre 75% et 85% de charge nominale.\n\n## 2. Les 4 Niveaux de Vigilance sur /team/workload\n- **Vert (< 75%) :** Capacité disponible pour absorber de nouveaux projets ou former de nouveaux collaborateurs.\n- **Émeraude (75% - 85%) :** Régime de croisière optimal.\n- **Ambre (85% - 95%) :** Attention requise, gel des nouveaux lancements sur ce membre.\n- **Rouge (> 95%) :** Surcharge critique, réaffectation obligatoire de tâches sous 24h.\n\n## 3. Répartition Agile des Sprints\nL’Account Manager réassigne chaque lundi les tickets en retard pour garantir le respect strict des dates d’engagement contractuelles.',
+    author: 'Kael Belceus & Operations Lead',
+    read_time_min: 9,
+    is_essential: true,
+    is_featured: false,
+    is_onboarding_step: true,
+    sort_order: 5,
+    checklist_items: [
+      'Consulter /team/workload chaque lundi matin',
+      'Identifier les collaborateurs en zone ambre ou rouge',
+      'Répartir les tâches secondaires vers les collaborateurs disponibles',
+      'Valider la capacité de production avant d’accepter une commande studio urgente',
+    ],
+    script_template: 'Note d’arbitrage de charge :\n- Collaborateur : [Nom]\n- Charge actuelle : [X]%\n- Action : Transfert de la tâche [Titre] vers [Nouveau responsable] pour ramener la charge à [Y]%.',
+  },
+  {
+    id: 'sop-mng-06-qbr',
+    title: 'Revue Trimestrielle (QBR), Upsell & Offboarding Respectueux',
+    description: 'Conduite de la revue d’impact à 90 jours, présentation du ROI réel, proposition d’extensions studio et protocole de sortie propre.',
+    category: 'Stratégie & Offre',
+    target_workspace: 'managing',
+    pillar: 'agency',
+    content_markdown: '# SOP-MNG-06 — Revue Trimestrielle (QBR), Upsell & Offboarding\n\n## 1. La Revue Trimestrielle d’Impact (QBR)\nTous les 90 jours, l’Account Manager organise une revue stratégique de 30 minutes avec le dirigeant client :\n- Bilan chiffré des gains : commandes directes captées, économies de commissions tierces, nouveaux avis clients.\n- Restitution des métriques d’acquisition et de conversion.\n\n## 2. Opportunités d’Upsell Naturel\nLorsque les résultats dépassent les attentes, proposer l’intégration de modules complémentaires du catalogue Studio :\n- Production vidéo cinéma 9:16 mensuelle récurrente.\n- Automatisation des réservations et agent vocal IA.\n- Refonte Framer de page événementielle.\n\n## 3. Offboarding Respectueux & Clé en Main\nSi un client souhaite suspendre son partenariat :\n- Zéro friction, aucune rétention d’otage de code ou de données.\n- Export complet de la base de données clients et des visuels livrés.\n- Clôture propre dans Stripe et conservation d’une relation cordiale pour de futurs projets.',
+    author: 'Kael Belceus & Operations Lead',
+    read_time_min: 11,
+    is_essential: true,
+    is_featured: true,
+    is_onboarding_step: true,
+    sort_order: 6,
+    checklist_items: [
+      'Générer le rapport de performance trimestriel sur /portal',
+      'Fixer le rendez-vous QBR 15 jours avant l’échéance des 90 jours',
+      'Identifier les leviers d’optimisation et offres studio pertinentes',
+      'En cas d’offboarding, exporter les assets et révoquer les accès proprement',
+    ],
+    script_template: 'Bonjour [Prénom],\n\nVoilà déjà 3 mois que nous collaborons ensemble sur l’accélération de votre établissement !\n\nJe serais ravi de vous présenter notre bilan d’impact trimestriel et les perspectives pour le trimestre à venir lors d’un échange de 30 minutes.\n\nQuelles seraient vos disponibilités la semaine prochaine ?\n\nBien à vous,\n[Votre Prénom] — Account Manager Minerva',
+  },
 ];
 
 // ----------------------------------------------------
@@ -977,6 +1130,16 @@ export async function deleteLead(leadId: string): Promise<boolean> {
   const { error } = await getSupabase().from('leads').delete().eq('id', leadId);
   if (error) {
     console.error('[Supabase] Error deleting lead:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteMultipleLeads(ids: string[]): Promise<boolean> {
+  if (!ids.length) return true;
+  const { error } = await getSupabase().from('leads').delete().in('id', ids);
+  if (error) {
+    console.error('[Supabase] Error deleting multiple leads:', error);
     return false;
   }
   return true;
