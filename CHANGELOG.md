@@ -2,6 +2,26 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.30.0) — Documentation Académie 3-Colonnes (GitBook/Stripe Docs) & SOP-DEV-03 The 6-Step Loop
+
+- **Refonte Documentaire Complète en Layout 3-Colonnes (`/academy/[id]`)** :
+  - **Mise en page Split-View 3-Colonnes (`grid-cols-1 lg:grid-cols-[220px_1fr_280px] max-w-7xl mx-auto px-4`)** remplaçant la colonne centrale étroite par un espace de travail technique haute densité style GitBook, Stripe Docs et Linear Guides.
+  - **Toolbar d'Actions 42px** : Fil d'ariane compact, titre, badges d'état (`● Fondatrice`, temps de lecture, workspace), bouton `[ ⧉ Copier MD ]`, bouton `[ ✦ Résumé IA ]`, bouton `[ ↗ Partager ]` et bouton de validation d'application `[ ✓ Appliqué ]`.
+  - **Colonne Gauche (Sommaire Dynamique & Scrollspy)** : Extraction automatique de toutes les sections `H2` et `H3` du Markdown de la SOP avec défilement fluide vers les ancres et surbrillance active émeraude `#059669`.
+  - **Colonne Centrale (Moteur Technique Haute Fidélité)** : Intégration du composant `SopMarkdownRenderer` avec blocs de code sombres `#18181B` (Zinc 900), barre d'en-tête de langage, bouton copier individuel par snippet, typographie sans-serif technique Inter/Geist et barre d'outils Notion AI intégrée.
+  - **Colonne Droite (Checklist d'Exécution & QA Sidebar)** : Checklist de contrôle qualité interactive persistante (`localStorage`) avec compteur dynamique (`0/N Validés`), jauge de progression, bouton reset et badge d'homologation lorsque complétée.
+  - **Ressources Rapides Contextualisées** : Liens directs adaptés selon l'espace de travail (Supabase DB Console, Vercel Deployments, Protocole QA 20-Points et Workload pour le pôle Tech ; Minerva Reach, Pipeline CRM Leads, Devis 50% pour la Prospection ; Overview, Rétention Clients et Facturation Stripe pour Managing).
+- **Enrichissement Technique Exhaustif de SOP-DEV-03 (The 6-Step Loop)** :
+  - Restructuration intégrale du guide technique en 6 étapes indispensables :
+    1. *Architecture The 6-Step Loop* : Matrice de flux séquentiel entre base, types, services, UI et App Router.
+    2. *Schéma DB & Migrations RLS* : Définition SQL avec contraintes, indexation et politiques d'isolation multi-tenant strictes `auth.uid() = user_id`.
+    3. *Typage TypeScript Strict* : Contrats d'interfaces dans `lib/types/` avec types union et zéro `any`.
+    4. *Services Supabase Data* : Patterns de requêtes avec `withTimeout` et fallback gracieux sans blocage UI.
+    5. *Composant UI & Micro-Tokens (MDS-01)* : Règles d'intégration 1px hairline, `tabular-nums font-mono` pour les métriques, hauteurs `h-8`/`h-9` et zéro scroll superflu.
+    6. *Route App Router, Raccourcis & Realtime* : Navigation clavier `⌘K`, souscription aux changements PostgreSQL et synchronisation optimiste.
+  - Remplacement du template de prospection restaurant erroné par le **Playbook Terminal Recommandé** (`git checkout -b`, `npm run dev`, `npx tsc --noEmit`, etc.).
+  - Synchronisation dans `FALLBACK_DEV_SOPS` (`lib/services/supabase-data.ts`) et dans `supabase/deploy_production_complete.sql`.
+
 ## 2026-09-04 (v2.29.0) — Module de Réservation Cal.com/Linear, Automatisations CRM Supabase, Overview Exécutif & Hub Écosystème Épuré
 
 - **Module Public de Réservation Haute Conversion (`/book`, `/book/[id]`, `/rendez-vous`)** :

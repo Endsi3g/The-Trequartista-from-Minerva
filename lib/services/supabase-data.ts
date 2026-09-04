@@ -619,17 +619,252 @@ const FALLBACK_DEV_SOPS: AcademySOP[] = [
   },
   {
     id: 'sop-dev-03-features',
-    title: 'Guide Pratique : Créer de Nouvelles Fonctionnalités à Travers les Apps Minerva',
-    description: 'Guide technique pas-à-pas pour implémenter de nouvelles fonctionnalités : Schéma Supabase, Typescript, Tailwind et App Router.',
+    title: 'SOP-DEV-03 : Implémenter une Fonctionnalité Minerva (The 6-Step Loop)',
+    description: 'Protocole d’ingénierie pas-à-pas pour implémenter de nouvelles fonctionnalités : Schéma Supabase & RLS, Typage TypeScript strict, Service data, UI tokens 1px et App Router.',
     category: 'IA & Ingénierie',
     pillar: 'transversal',
-    content_markdown: '# SOP-DEV-03 — Guide Pratique : Créer de Nouvelles Fonctionnalités à Travers les Apps Minerva\n\n## 1. The 6-Step Loop\n1. Schéma Postgres & RLS dans supabase/migrations/\n2. Typage TypeScript Strict dans lib/types/index.ts\n3. Service de Données dans lib/services/supabase-data.ts\n4. Composants UI haute densité\n5. Route App Router dans app/(dashboard)/...\n6. Raccourcis Clavier & Realtime',
+    target_workspace: 'tech',
+    content_markdown: `# SOP-DEV-03 — Guide Pratique : Implémenter une Fonctionnalité Minerva (The 6-Step Loop)
+
+Ce guide définit le protocole d'ingénierie obligatoire pour implémenter une nouvelle fonctionnalité sur les applications de l'écosystème Minerva (Minerva Trequartista, Minerva Reach, Minerva Flow) en respectant les standards de résilience, de sécurité et d'ergonomie haute densité.
+
+---
+
+## 1. Architecture The 6-Step Loop
+
+Toute fonctionnalité ajoutée dans le codebase Minerva suit rigoureusement la boucle en 6 étapes :
+
+\`\`\`
+1. Schéma Postgres & RLS  ──►  2. Typage Strict TypeScript  ──►  3. Service Supabase
+           ▲                                                              │
+           │                                                              ▼
+6. QA 20-Points & Commit  ◄──  5. Route Next.js App Router  ◄──  4. Composant UI MDS-01
+\`\`\`
+
+Cette chaîne garantit une traçabilité intégrale : la sécurité des données est verrouillée en base par RLS avant même que le composant visuel ne soit esquissé.
+
+---
+
+## 2. Schéma DB & Migrations RLS
+
+Toute nouvelle entité persistante commence par un script SQL idempotent dans \`supabase/migrations/\` avec activation obligatoire du Row Level Security (RLS) :
+
+\`\`\`sql
+-- supabase/migrations/20260904_add_user_features.sql
+CREATE TABLE IF NOT EXISTS public.user_features (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'planned' CHECK (status IN ('planned', 'in_progress', 'completed')),
+  metrics JSONB DEFAULT '{"count": 0, "impact_arr": 0}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+-- Indexation chirurgicale sur les clés de filtre
+CREATE INDEX IF NOT EXISTS idx_user_features_user_id ON public.user_features(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_features_status ON public.user_features(status);
+
+-- 1. Activer RLS
+ALTER TABLE public.user_features ENABLE ROW LEVEL SECURITY;
+
+-- 2. Politiques d'isolation multi-tenant strictes
+DROP POLICY IF EXISTS "Users can view own features" ON public.user_features;
+CREATE POLICY "Users can view own features"
+  ON public.user_features FOR SELECT
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own features" ON public.user_features;
+CREATE POLICY "Users can insert own features"
+  ON public.user_features FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own features" ON public.user_features;
+CREATE POLICY "Users can update own features"
+  ON public.user_features FOR UPDATE
+  USING (auth.uid() = user_id);
+\`\`\`
+
+---
+
+## 3. Typage TypeScript Strict
+
+Les contrats de données sont centralisés dans \`lib/types/\` sans aucun type \`any\`. Les énumérations d'état sont modélisées par des union types stricts :
+
+\`\`\`typescript
+// lib/types/features.ts
+export type FeatureStatus = 'planned' | 'in_progress' | 'completed';
+
+export interface FeatureMetrics {
+  count: number;
+  impactARR: number;
+}
+
+export interface MinervaFeature {
+  id: string;
+  userId: string;
+  title: string;
+  status: FeatureStatus;
+  metrics: FeatureMetrics;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateFeatureInput {
+  title: string;
+  status?: FeatureStatus;
+  metrics?: Partial<FeatureMetrics>;
+}
+\`\`\`
+
+---
+
+## 4. Services Supabase Data
+
+Les accès base de données sont encapsulés dans \`lib/services/supabase-data.ts\` en utilisant \`withTimeout\` et un fallback gracieux pour éviter tout freeze de l'interface :
+
+\`\`\`typescript
+// lib/services/supabase-data.ts
+import { getSupabase, withTimeout } from '@/lib/supabase/client';
+import type { MinervaFeature, CreateFeatureInput } from '@/lib/types';
+
+export async function fetchUserFeatures(userId: string): Promise<MinervaFeature[]> {
+  return withTimeout(
+    (async () => {
+      const { data, error } = await getSupabase()
+        .from('user_features')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error || !data) {
+        console.warn('[Supabase] fetchUserFeatures error, fallback empty:', error);
+        return [];
+      }
+
+      return data.map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        title: row.title,
+        status: row.status,
+        metrics: row.metrics || { count: 0, impactARR: 0 },
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }));
+    })(),
+    []
+  );
+}
+\`\`\`
+
+---
+
+## 5. Composant UI & Micro-Tokens (MDS-01)
+
+L'interface doit respecter le Minerva Design System :
+- **Fond primaire :** \`#FAFAFA\` (\`bg-zinc-50\`) et cartes blanches \`#FFFFFF\` (\`bg-white\`).
+- **Bordures 1px hairline :** \`border border-zinc-200\`.
+- **Hauteur standard :** Boutons compacts \`h-8\` (32px) ou \`h-7\` (28px) en toolbar, lignes de table \`h-9\` (36px).
+- **Accents de marque :** Vert émeraude \`#059669\` (\`bg-emerald-600\`, hover \`bg-emerald-700\`, tag \`bg-emerald-50 text-emerald-700 border-emerald-200\`).
+- **Chiffres financiers & compteurs :** Toujours typés \`font-mono tabular-nums\`.
+
+\`\`\`tsx
+// components/features/FeatureCard.tsx
+import React from 'react';
+import { Badge } from '@/components/ui/badge';
+import type { MinervaFeature } from '@/lib/types';
+
+export function FeatureCard({ feature }: { feature: MinervaFeature }) {
+  return (
+    <div className="flex items-center justify-between p-3.5 bg-white border border-zinc-200 rounded-lg hover:border-zinc-300 transition-colors shadow-2xs">
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+        <span className="text-xs font-semibold text-zinc-900 truncate font-sans">
+          {feature.title}
+        </span>
+      </div>
+      <div className="flex items-center gap-3 shrink-0">
+        <span className="text-xs font-mono tabular-nums text-zinc-500">
+          \${feature.metrics.impactARR.toLocaleString()} CAD
+        </span>
+        <Badge variant={feature.status === 'completed' ? 'green' : 'neutral'} className="text-[10px] font-mono">
+          {feature.status}
+        </Badge>
+      </div>
+    </div>
+  );
+}
+\`\`\`
+
+---
+
+## 6. Route App Router, Raccourcis Clavier & Realtime
+
+Les vues principales s'intègrent dans \`app/(dashboard)/...\` avec gestion d'état réactive, raccourcis clavier (\`⌘K\`, \`⌘+Entrée\`) et abonnement Realtime Supabase :
+
+\`\`\`tsx
+// app/(dashboard)/features/page.tsx
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { fetchUserFeatures } from '@/lib/services/supabase-data';
+import type { MinervaFeature } from '@/lib/types';
+
+export default function FeaturesPage() {
+  const [features, setFeatures] = useState<MinervaFeature[]>([]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    // Souscription Realtime
+    const channel = supabase
+      .channel('realtime:features')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_features' }, () => {
+        // Re-synchronisation optimiste
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-6 py-6 px-4">
+      {/* Composants haute densité */}
+    </div>
+  );
+}
+\`\`\`
+`,
     author: 'Kael Belceus & Lead Architect',
     read_time_min: 15,
     is_essential: true,
     is_featured: true,
     is_onboarding_step: false,
     sort_order: 3,
+    checklist_items: [
+      'Migration SQL avec RLS multi-tenant testée',
+      'Typage TypeScript strict (zéro any)',
+      'Service Supabase avec gestion d’erreurs et fallback gracieux',
+      'Composant UI conforme aux tokens 1px et tabular-nums',
+      'Route App Router & navigation clavier testées',
+      'Protocole QA 20-points & npx tsc --noEmit validés',
+    ],
+    script_template: `// 1. Initialiser la branche de travail dédiée
+git checkout main && git pull origin main
+git checkout -b feat/nom-de-fonctionnalite
+
+// 2. Démarrer le serveur de développement local
+npm run dev
+
+// 3. Valider strictement le typage (0 erreur requise)
+npx tsc --noEmit
+
+// 4. Valider le protocole QA 20-points et committer
+git add .
+git commit -m "feat(module): implémentation conforme the 6-step loop"
+git push -u origin feat/nom-de-fonctionnalite`,
   },
   {
     id: 'sop-app-01-reach',
