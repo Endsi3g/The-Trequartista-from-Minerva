@@ -1,6 +1,6 @@
 {
   "name": "centurions-minerva",
-  "version": "2.30.0",
+  "version": "2.30.2",
   "private": true,
   "scripts": {
     "dev": "next dev",

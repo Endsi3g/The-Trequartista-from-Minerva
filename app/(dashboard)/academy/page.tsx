@@ -134,6 +134,25 @@ export default function AcademyPage() {
     });
   }, [visibleSopsByRole, selectedWorkspace, effectiveUserWorkspace]);
 
+  // Dynamic Workspace Counts
+  const workspaceCounts = useMemo(() => {
+    return {
+      prospection: visibleSopsByRole.filter((s) => {
+        if (s.target_workspace) return s.target_workspace === 'prospection';
+        return s.category === 'Ventes & Prospection' || s.pillar === 'flow' || s.pillar === 'reach';
+      }).length,
+      managing: visibleSopsByRole.filter((s) => {
+        if (s.target_workspace) return s.target_workspace === 'managing';
+        return s.category === 'Gestion de compte' || s.category === 'Onboarding';
+      }).length,
+      tech: visibleSopsByRole.filter((s) => {
+        if (s.target_workspace) return s.target_workspace === 'tech';
+        return TECH_IA_CATEGORIES.includes(s.category) || s.category === 'Support & QA';
+      }).length,
+      all: visibleSopsByRole.length,
+    };
+  }, [visibleSopsByRole]);
+
   // Workload / Workspace Progress
   const activeWorkspaceTarget = selectedWorkspace === 'my-workspace' ? effectiveUserWorkspace : selectedWorkspace;
   const currentWorkspaceSops = useMemo(() => {
@@ -223,27 +242,27 @@ export default function AcademyPage() {
   return (
     <PageFadeIn className="space-y-4 max-w-7xl mx-auto pb-16">
       {/* ── 1. Header Bar ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-white border border-zinc-200 rounded-lg p-3 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-7 h-7 rounded-[5px] bg-zinc-100 border border-mv-border flex items-center justify-center text-zinc-900 shrink-0">
-            <GraduationCap className="w-4 h-4 text-mv-green" />
+          <div className="w-7 h-7 rounded-md bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
+            <GraduationCap className="w-4 h-4 text-emerald-700" />
           </div>
           <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-[15px] font-semibold text-mv-ink tracking-tight truncate">
+            <h1 className="text-[15px] font-semibold text-zinc-900 tracking-tight truncate">
               Académie & SOPs Minerva
             </h1>
-            <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+            <span className="text-xs text-zinc-400 font-mono tabular-nums" style={MONO}>
               ({sops.length} process)
             </span>
           </div>
         </div>
 
         {/* Right Controls */}
-        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
           {/* YouTube Curator Trigger */}
           <button
             onClick={() => setIsYouTubeModalOpen(true)}
-            className="h-7 px-2.5 rounded-[4px] border border-red-200 bg-red-50/50 hover:bg-red-50 text-red-700 text-[11.5px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
+            className="h-8 px-2.5 rounded-md border border-red-200 bg-red-50/60 hover:bg-red-50 text-red-700 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
             title="Dénicher des vidéos YouTube de formation et analyse"
           >
             <Youtube className="w-3.5 h-3.5 text-red-600" />
@@ -251,11 +270,11 @@ export default function AcademyPage() {
           </button>
 
           {/* Segmented Control [ Grille | Liste ] */}
-          <div className="flex items-center bg-zinc-100/80 border border-mv-border rounded-[5px] p-0.5 text-[11px] font-medium">
+          <div className="flex items-center bg-zinc-100 border border-zinc-200 rounded-md p-0.5 text-xs font-medium h-8">
             <button
               onClick={() => setViewMode('grid')}
               className={cn(
-                'px-2.5 py-1 rounded-[4px] transition-all cursor-pointer flex items-center gap-1.5',
+                'h-7 px-2.5 rounded-[4px] transition-all cursor-pointer flex items-center gap-1.5',
                 viewMode === 'grid'
                   ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
                   : 'text-zinc-500 hover:text-zinc-900'
@@ -267,7 +286,7 @@ export default function AcademyPage() {
             <button
               onClick={() => setViewMode('list')}
               className={cn(
-                'px-2.5 py-1 rounded-[4px] transition-all cursor-pointer flex items-center gap-1.5',
+                'h-7 px-2.5 rounded-[4px] transition-all cursor-pointer flex items-center gap-1.5',
                 viewMode === 'list'
                   ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
                   : 'text-zinc-500 hover:text-zinc-900'
@@ -283,7 +302,7 @@ export default function AcademyPage() {
               const doc = await addDocument('Brief Prospect — Nouveau Client', null);
               if (doc) router.push(`/documents/${doc.id}`);
             }}
-            className="h-7 px-2.5 rounded-[4px] border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-[11.5px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
+            className="h-8 px-2.5 rounded-md border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
             title="Créer un document de travail vierge"
           >
             <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
@@ -293,7 +312,7 @@ export default function AcademyPage() {
           {can('publish_academy_sop') && (
             <Link
               href="/academy/new"
-              className="h-7 px-3 rounded-[4px] bg-mv-green hover:bg-emerald-700 text-white text-[11.5px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
+              className="h-8 px-3 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
               title="Nouvelle SOP (Touche C)"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -304,19 +323,20 @@ export default function AcademyPage() {
       </div>
 
       {/* ── 1.2 WORKSPACE SELECTOR TABS ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[8px] p-2 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="bg-white border border-zinc-200 rounded-lg p-1.5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-2.5">
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
           {[
             {
               id: 'my-workspace',
-              label: `Mon Workspace (${effectiveUserWorkspace})`,
+              label: 'Mon Espace',
+              count: workspaceCounts[effectiveUserWorkspace] || 0,
               icon: Sparkles,
-              color: 'text-emerald-700',
+              color: 'text-emerald-600',
             },
-            { id: 'prospection', label: 'Prospection (6)', icon: Target, color: 'text-emerald-700' },
-            { id: 'managing', label: 'Managing (6)', icon: Building2, color: 'text-amber-700' },
-            { id: 'tech', label: 'Tech (6)', icon: Code2, color: 'text-blue-700' },
-            { id: 'all', label: 'Toutes les SOPs', icon: LayoutGrid, color: 'text-zinc-600' },
+            { id: 'prospection', label: 'Prospection', count: workspaceCounts.prospection, icon: Target, color: 'text-emerald-600' },
+            { id: 'managing', label: 'Managing', count: workspaceCounts.managing, icon: Building2, color: 'text-amber-600' },
+            { id: 'tech', label: 'Tech', count: workspaceCounts.tech, icon: Code2, color: 'text-blue-600' },
+            { id: 'all', label: 'Toutes les SOPs', count: workspaceCounts.all, icon: LayoutGrid, color: 'text-zinc-500' },
           ].map((tab) => {
             const Icon = tab.icon;
             const active = selectedWorkspace === tab.id;
@@ -328,14 +348,17 @@ export default function AcademyPage() {
                   setSelectedCategory('all');
                 }}
                 className={cn(
-                  'px-3 py-1.5 rounded-[5px] text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap',
+                  'h-8 px-2.5 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap',
                   active
-                    ? 'bg-zinc-900 text-white shadow-2xs'
-                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+                    ? 'bg-zinc-900 text-white shadow-2xs font-semibold'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70'
                 )}
               >
                 <Icon className={cn('w-3.5 h-3.5', active ? 'text-emerald-400' : tab.color)} />
                 <span>{tab.label}</span>
+                <span className={cn('text-[11px] font-mono tabular-nums opacity-70 ml-0.5', active ? 'text-emerald-300' : 'text-zinc-400')} style={MONO}>
+                  ({tab.count})
+                </span>
               </button>
             );
           })}
@@ -343,16 +366,16 @@ export default function AcademyPage() {
 
         {/* Workspace Progress Indicator */}
         {activeWorkspaceTarget !== 'all' && (
-          <div className="flex items-center gap-2.5 px-3 py-1 bg-zinc-50 border border-zinc-200 rounded-[5px] text-[11px] shrink-0">
-            <span className="font-semibold text-zinc-700 capitalize">
+          <div className="flex items-center gap-2.5 px-2.5 h-8 bg-zinc-50 border border-zinc-200 rounded-md text-[11px] shrink-0 font-sans">
+            <span className="font-medium text-zinc-600 capitalize">
               Parcours {activeWorkspaceTarget} :
             </span>
-            <span className="font-mono font-bold text-emerald-700" style={MONO}>
+            <span className="font-mono font-bold text-emerald-700 tabular-nums" style={MONO}>
               {workspaceDoneCount}/{workspaceTotalCount} validés
             </span>
             <div className="h-1.5 w-16 bg-zinc-200 rounded-full overflow-hidden shrink-0">
               <div
-                className="h-full bg-mv-green rounded-full transition-all duration-300"
+                className="h-full bg-emerald-600 rounded-full transition-all duration-300"
                 style={{ width: `${Math.min(100, (workspaceDoneCount / Math.max(1, workspaceTotalCount)) * 100)}%` }}
               />
             </div>
@@ -362,22 +385,26 @@ export default function AcademyPage() {
 
       {/* ── 1.5 Parcours d'intégration (Ordre suggéré) ── */}
       {onboardingPath.length > 0 && (
-        <div className="bg-mv-surface border border-mv-border rounded-[8px] p-5 shadow-2xs space-y-3.5">
+        <div className="bg-white border border-zinc-200 rounded-lg p-4 shadow-2xs space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 bg-mv-green-tint text-mv-green border border-mv-green/30 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded">
                   <GraduationCap className="w-3 h-3" />
                   <span>Parcours Prioritaire</span>
                 </span>
               </div>
-              <p className="text-xs text-mv-ink-soft">
-                Étapes structurantes pour votre montée en compétences — {onboardingDoneCount}/{onboardingPath.length} complétées.
+              <p className="text-xs text-zinc-500">
+                Étapes structurantes pour votre montée en compétences —{' '}
+                <span className="font-mono font-medium text-emerald-700 tabular-nums" style={MONO}>
+                  {onboardingDoneCount}/{onboardingPath.length}
+                </span>{' '}
+                complétées.
               </p>
             </div>
-            <div className="h-1.5 w-full sm:w-40 bg-black/[0.06] rounded-full overflow-hidden shrink-0">
+            <div className="h-1.5 w-full sm:w-40 bg-zinc-100 rounded-full overflow-hidden shrink-0 border border-zinc-200/50">
               <div
-                className="h-full bg-mv-green rounded-full transition-all duration-300"
+                className="h-full bg-emerald-600 rounded-full transition-all duration-300"
                 style={{ width: `${(onboardingDoneCount / onboardingPath.length) * 100}%` }}
               />
             </div>
@@ -390,22 +417,22 @@ export default function AcademyPage() {
                   <Link
                     href={`/academy/${sop.id}`}
                     className={cn(
-                      'flex items-start gap-2 p-3 rounded-[6px] border transition-colors h-full',
+                      'flex items-start gap-2.5 p-2.5 rounded-md border transition-all h-full group',
                       done
-                        ? 'bg-mv-green-tint/40 border-mv-green/30'
-                        : 'bg-mv-cream-soft border-mv-border hover:border-mv-green/40'
+                        ? 'bg-emerald-50/40 border-emerald-200 hover:border-emerald-300'
+                        : 'bg-zinc-50/50 border-zinc-200 hover:bg-white hover:border-zinc-300'
                     )}
                   >
                     {done ? (
-                      <CheckCircle2 className="w-4 h-4 text-mv-green shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                     ) : (
-                      <Circle className="w-4 h-4 text-mv-ink-faint shrink-0 mt-0.5" />
+                      <Circle className="w-4 h-4 text-zinc-300 group-hover:text-zinc-400 shrink-0 mt-0.5" />
                     )}
                     <div className="min-w-0">
-                      <span className="text-[10px] font-mono font-bold text-mv-ink-faint" style={MONO}>
+                      <span className="text-[10px] font-mono font-bold text-zinc-400 group-hover:text-emerald-700 transition-colors" style={MONO}>
                         ÉTAPE {idx + 1}
                       </span>
-                      <p className="text-[12px] font-semibold text-mv-ink leading-snug line-clamp-2">
+                      <p className="text-xs font-medium text-zinc-900 leading-snug line-clamp-2">
                         {sop.title}
                       </p>
                     </div>
@@ -418,9 +445,9 @@ export default function AcademyPage() {
       )}
 
       {/* ── 3. Search & Filter Bar ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] p-2.5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+      <div className="bg-white border border-zinc-200 rounded-lg p-2 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-2.5">
         {/* Left Search Bar with '/' Shortcut */}
-        <div className="relative shrink-0 w-full sm:w-64">
+        <div className="relative shrink-0 w-full sm:w-72">
           <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5 pointer-events-none" />
           <input
             id="academy-search-input"
@@ -428,17 +455,17 @@ export default function AcademyPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Rechercher une SOP... (Touche /)"
-            className="w-full h-8 pl-8 pr-7 text-[11.5px] rounded-[4px] border border-mv-border bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-mv-green transition-colors"
+            className="w-full h-8 pl-8 pr-8 text-xs rounded-md border border-zinc-200 bg-zinc-50/50 hover:bg-white focus:bg-white text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all"
           />
           {searchQuery ? (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-2 text-zinc-400 hover:text-zinc-700 cursor-pointer"
+              className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-700 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           ) : (
-            <kbd className="absolute right-2 top-2 px-1 rounded bg-zinc-100 border border-zinc-200 text-[9px] font-mono text-zinc-400 pointer-events-none">
+            <kbd className="absolute right-2 top-2 px-1.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-[10px] font-mono text-zinc-400 pointer-events-none">
               /
             </kbd>
           )}
@@ -450,7 +477,7 @@ export default function AcademyPage() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="h-7 pl-2 pr-6 text-[11px] font-medium bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-[4px] text-zinc-700 focus:outline-none cursor-pointer appearance-none"
+              className="h-8 pl-2.5 pr-7 text-xs font-medium bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-md text-zinc-700 focus:outline-none cursor-pointer appearance-none transition-colors"
             >
               <option value="all">Toutes les catégories ({workspaceFilteredSops.length})</option>
               {categories.map((cat) => (
@@ -459,43 +486,58 @@ export default function AcademyPage() {
                 </option>
               ))}
             </select>
-            <ChevronDown className="w-3 h-3 text-zinc-400 absolute right-1.5 top-2 pointer-events-none" />
+            <ChevronDown className="w-3 h-3 text-zinc-400 absolute right-2 top-2.5 pointer-events-none" />
           </div>
 
-          <div className="h-4 w-px bg-zinc-200 shrink-0" />
+          <div className="h-5 w-px bg-zinc-200 shrink-0" />
 
           <button
             onClick={() => setSelectedCategory('all')}
             className={cn(
-              'px-2.5 py-1 text-[11px] font-medium rounded-[4px] transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0',
+              'h-8 px-2.5 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0',
               selectedCategory === 'all'
-                ? 'bg-zinc-900 text-white font-semibold'
-                : 'bg-zinc-100 hover:bg-zinc-200/80 text-zinc-600'
+                ? 'bg-zinc-900 text-white font-semibold shadow-2xs'
+                : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70 border border-transparent'
             )}
           >
             <span>Toutes</span>
-            <span className="font-mono text-[10px] opacity-80" style={MONO}>
+            <span
+              className={cn(
+                'font-mono text-[10px] tabular-nums px-1 py-0.2 rounded',
+                selectedCategory === 'all' ? 'bg-white/20 text-white' : 'bg-zinc-100 text-zinc-500'
+              )}
+              style={MONO}
+            >
               {workspaceFilteredSops.length}
             </span>
           </button>
 
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={cn(
-                'px-2.5 py-1 text-[11px] font-medium rounded-[4px] transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0',
-                selectedCategory === cat
-                  ? 'bg-emerald-700 text-white font-semibold'
-                  : 'bg-zinc-100 hover:bg-zinc-200/80 text-zinc-600'
-              )}
-            >
-              <span>{cat}</span>
-              <span className="font-mono text-[10px] opacity-80" style={MONO}>
-                {categoryCounts[cat]}
-              </span>
-            </button>
-          ))}
+          {categories.map((cat) => {
+            const isSelected = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={cn(
+                  'h-8 px-2.5 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0',
+                  isSelected
+                    ? 'bg-emerald-700 text-white font-semibold shadow-2xs'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70 border border-transparent'
+                )}
+              >
+                <span>{cat}</span>
+                <span
+                  className={cn(
+                    'font-mono text-[10px] tabular-nums px-1 py-0.2 rounded',
+                    isSelected ? 'bg-white/20 text-white' : 'bg-zinc-100 text-zinc-500'
+                  )}
+                  style={MONO}
+                >
+                  {categoryCounts[cat]}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -503,7 +545,7 @@ export default function AcademyPage() {
       {loading ? (
         <SkeletonCards count={6} />
       ) : visibleSops.length === 0 ? (
-        <div className="bg-mv-surface border border-mv-border rounded-[6px] p-12 text-center space-y-2">
+        <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center space-y-2 shadow-2xs">
           <BookOpen className="w-8 h-8 text-zinc-300 mx-auto" />
           <p className="text-xs font-semibold text-zinc-700">Aucun guide dans cette sélection</p>
           <p className="text-[11px] text-zinc-400">Essayez un autre mot-clé ou réinitialisez les filtres.</p>
@@ -522,24 +564,30 @@ export default function AcademyPage() {
                   key={sop.id}
                   onClick={() => router.push(`/academy/${sop.id}`)}
                   className={cn(
-                    'bg-mv-surface border rounded-[6px] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between group space-y-3',
+                    'bg-white border rounded-lg p-4 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between group space-y-3',
                     isDone
-                      ? 'border-emerald-200/90 bg-emerald-50/20'
+                      ? 'border-emerald-200/90 bg-emerald-50/15 hover:border-emerald-300'
                       : isPillar
                       ? 'border-emerald-200 hover:border-emerald-300'
-                      : 'border-zinc-200/80 hover:border-zinc-300'
+                      : 'border-zinc-200 hover:border-zinc-300'
                   )}
                 >
                   {/* Card Header */}
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="bg-zinc-100 text-zinc-700 text-[10px] font-medium px-2 py-0.5 rounded border border-zinc-200/60">
+                      {isPillar && (
+                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          Fondatrice
+                        </span>
+                      )}
+                      <span className="bg-zinc-100 text-zinc-700 text-[10px] font-medium px-2 py-0.5 rounded border border-zinc-200/60 font-mono">
                         {sop.category}
                       </span>
                       {sop.target_workspace && sop.target_workspace !== 'all' && (
                         <span
                           className={cn(
-                            'text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider',
+                            'text-[9px] font-mono font-bold px-1.5 py-0.5 rounded uppercase tracking-wider',
                             sop.target_workspace === 'prospection'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : sop.target_workspace === 'tech'
@@ -551,21 +599,35 @@ export default function AcademyPage() {
                         </span>
                       )}
                       {hasVideo && (
-                        <span className="bg-red-50 text-red-700 border border-red-200 text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                        <span className="bg-red-50 text-red-700 border border-red-200 text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
                           <Youtube className="w-2.5 h-2.5" />
                           <span>VIDÉO</span>
                         </span>
                       )}
                     </div>
-                    <span className="flex items-center gap-1 text-[11px] text-zinc-400 font-mono" style={MONO}>
-                      <Clock className="w-3 h-3 text-zinc-400" />
-                      <span>{sop.read_time_min || 10} min</span>
-                    </span>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isDone ? (
+                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          Validé
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono text-zinc-400 bg-zinc-50 border border-zinc-200/80 px-1.5 py-0.5 rounded font-medium flex items-center gap-1">
+                          <Circle className="w-2.5 h-2.5 text-zinc-300" />
+                          À étudier
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1 text-[11px] text-zinc-400 font-mono tabular-nums" style={MONO}>
+                        <Clock className="w-3 h-3 text-zinc-400" />
+                        <span>{sop.read_time_min || 10}m</span>
+                      </span>
+                    </div>
                   </div>
 
                   {/* Title & Description */}
                   <div>
-                    <h3 className="text-[13.5px] font-semibold text-zinc-900 leading-snug group-hover:text-mv-green transition-colors line-clamp-2">
+                    <h3 className="text-[13.5px] font-semibold text-zinc-900 leading-snug group-hover:text-emerald-700 transition-colors line-clamp-2">
                       {sop.title}
                     </h3>
                     <p className="text-[11.5px] text-zinc-500 line-clamp-2 leading-relaxed mt-1">
@@ -574,21 +636,17 @@ export default function AcademyPage() {
                   </div>
 
                   {/* Card Footer */}
-                  <div className="pt-2.5 border-t border-zinc-100 flex items-center justify-between text-[12px]">
-                    <div className="flex items-center gap-1.5 text-zinc-500 text-[11px]">
-                      {isDone ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      ) : (
-                        <div className="w-4 h-4 rounded-[3px] bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center text-[9px] font-bold">
-                          M
-                        </div>
-                      )}
-                      <span>{sop.author || 'Minerva'}</span>
+                  <div className="pt-2.5 border-t border-zinc-100 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1.5 text-zinc-600 text-[11.5px]">
+                      <div className="w-4 h-4 rounded-[3px] bg-zinc-100 border border-zinc-200 text-zinc-700 flex items-center justify-center text-[9px] font-bold font-mono">
+                        {(sop.author || 'Minerva').charAt(0).toUpperCase()}
+                      </div>
+                      <span className="truncate max-w-[120px]">{sop.author || 'Minerva'}</span>
                     </div>
 
-                    <span className="text-[11.5px] font-medium text-emerald-700 group-hover:text-emerald-800 group-hover:underline inline-flex items-center gap-0.5">
+                    <span className="text-[11.5px] font-medium text-emerald-700 group-hover:text-emerald-800 group-hover:underline inline-flex items-center gap-1">
                       <span>{isDone ? 'Revoir' : 'Consulter'}</span>
-                      <ArrowRight className="w-3 h-3" />
+                      <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                     </span>
                   </div>
                 </div>
@@ -601,7 +659,7 @@ export default function AcademyPage() {
             <div className="pt-2 text-center">
               <button
                 onClick={() => setShowAllSops(true)}
-                className="h-8 px-4 rounded-[5px] bg-zinc-100 hover:bg-zinc-200/80 border border-zinc-200 text-zinc-700 text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                className="h-8 px-4 rounded-md bg-zinc-100 hover:bg-zinc-200/80 border border-zinc-200 text-zinc-700 text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs font-sans"
               >
                 <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
                 <span>Afficher tous les guides (+{remainingCount} restants)</span>
@@ -613,9 +671,9 @@ export default function AcademyPage() {
             <div className="pt-2 text-center">
               <button
                 onClick={() => setShowAllSops(false)}
-                className="h-7 px-3 rounded-[4px] bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-500 text-[11px] font-medium transition-colors inline-flex items-center gap-1 cursor-pointer"
+                className="h-8 px-3.5 rounded-md bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-600 text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs font-sans"
               >
-                <ChevronUp className="w-3 h-3" />
+                <ChevronUp className="w-3.5 h-3.5 text-zinc-500" />
                 <span>Réduire la vue</span>
               </button>
             </div>
@@ -624,28 +682,30 @@ export default function AcademyPage() {
       ) : (
         /* ── 36px DataTable View ── */
         <div className="space-y-4">
-          <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
+          <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden shadow-2xs">
             <table className="w-full text-[12.5px] border-collapse">
               <thead>
-                <tr className="h-7 bg-black/[0.02] border-b border-mv-border text-[10.5px] font-medium uppercase tracking-wider text-zinc-400">
-                  <th className="pl-3.5 pr-2 text-left font-medium">Titre de la SOP</th>
-                  <th className="px-2 text-left font-medium">Catégorie</th>
-                  <th className="px-2 text-left font-medium">Workspace</th>
-                  <th className="px-2 text-left font-medium">Temps</th>
-                  <th className="px-2 text-left font-medium">Auteur</th>
-                  <th className="pr-3.5 pl-2 text-right font-medium">Action</th>
+                <tr className="h-8 bg-zinc-50/80 border-b border-zinc-200 text-[10.5px] font-mono uppercase tracking-wider text-zinc-500">
+                  <th className="pl-3.5 pr-2 text-left font-semibold">Titre de la SOP</th>
+                  <th className="px-2 text-left font-semibold">Statut</th>
+                  <th className="px-2 text-left font-semibold">Catégorie</th>
+                  <th className="px-2 text-left font-semibold">Workspace</th>
+                  <th className="px-2 text-left font-semibold">Temps</th>
+                  <th className="px-2 text-left font-semibold">Auteur</th>
+                  <th className="pr-3.5 pl-2 text-right font-semibold">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {visibleSops.map((sop) => {
+                  const isPillar = !!sop.pillar || sop.is_featured;
                   const isDone = completedIds.includes(sop.id);
                   return (
                     <tr
                       key={sop.id}
                       onClick={() => router.push(`/academy/${sop.id}`)}
                       className={cn(
-                        'h-9 border-b border-mv-border last:border-0 hover:bg-black/[0.02] transition-colors cursor-pointer group',
-                        isDone && 'bg-emerald-50/20'
+                        'h-9 border-b border-zinc-100 last:border-0 hover:bg-zinc-50/80 transition-colors cursor-pointer group',
+                        isDone && 'bg-emerald-50/20 hover:bg-emerald-50/40'
                       )}
                     >
                       <td className="pl-3.5 pr-2 py-1.5 min-w-0 max-w-[320px]">
@@ -655,34 +715,63 @@ export default function AcademyPage() {
                           ) : (
                             <BookOpen className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                           )}
-                          <span className="font-semibold text-zinc-900 truncate group-hover:text-mv-green transition-colors">
+                          <span className="font-semibold text-zinc-900 truncate group-hover:text-emerald-700 transition-colors">
                             {sop.title}
                           </span>
+                          {isPillar && (
+                            <span className="text-[9px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.2 rounded font-semibold shrink-0">
+                              Fondatrice
+                            </span>
+                          )}
                           {(sop.video_url || sop.pillar === 'reach') && (
                             <Youtube className="w-3.5 h-3.5 text-red-500 shrink-0" />
                           )}
                         </div>
                       </td>
+                      <td className="px-2 py-1.5 whitespace-nowrap">
+                        {isDone ? (
+                          <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                            Validé
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono text-zinc-400 bg-zinc-50 border border-zinc-200/80 px-1.5 py-0.5 rounded font-medium inline-flex items-center gap-1">
+                            <Circle className="w-2.5 h-2.5 text-zinc-300" />
+                            À étudier
+                          </span>
+                        )}
+                      </td>
                       <td className="px-2 py-1.5">
-                        <span className="bg-zinc-100 text-zinc-700 text-[10px] font-medium px-2 py-0.5 rounded border border-zinc-200/60 whitespace-nowrap">
+                        <span className="bg-zinc-100 text-zinc-700 text-[10px] font-mono font-medium px-2 py-0.5 rounded border border-zinc-200/60 whitespace-nowrap">
                           {sop.category}
                         </span>
                       </td>
                       <td className="px-2 py-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">
+                        <span
+                          className={cn(
+                            'text-[9px] font-mono font-bold px-1.5 py-0.5 rounded uppercase tracking-wider',
+                            sop.target_workspace === 'prospection'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : sop.target_workspace === 'tech'
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              : sop.target_workspace === 'managing'
+                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              : 'text-zinc-500 bg-zinc-100 border border-zinc-200'
+                          )}
+                        >
                           {sop.target_workspace || 'transversal'}
                         </span>
                       </td>
-                      <td className="px-2 py-1.5 font-mono text-[11px] text-zinc-500 whitespace-nowrap" style={MONO}>
+                      <td className="px-2 py-1.5 font-mono text-[11px] text-zinc-500 tabular-nums whitespace-nowrap" style={MONO}>
                         {sop.read_time_min || 10} min
                       </td>
                       <td className="px-2 py-1.5 text-zinc-600 text-[11.5px] whitespace-nowrap">
                         {sop.author || 'Minerva'}
                       </td>
                       <td className="pr-3.5 pl-2 py-1.5 text-right whitespace-nowrap">
-                        <span className="text-[11px] font-medium text-emerald-700 group-hover:underline inline-flex items-center gap-0.5">
+                        <span className="text-[11.5px] font-medium text-emerald-700 group-hover:underline inline-flex items-center gap-0.5">
                           <span>{isDone ? 'Revoir' : 'Ouvrir'}</span>
-                          <ArrowRight className="w-3 h-3" />
+                          <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                         </span>
                       </td>
                     </tr>
@@ -695,10 +784,10 @@ export default function AcademyPage() {
       )}
 
       {/* ── 5. Storage Drawer ── */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
+      <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden shadow-2xs">
         <button
           onClick={() => setIsStorageOpen(!isStorageOpen)}
-          className="w-full h-9 px-3.5 flex items-center justify-between text-[12px] font-medium text-zinc-700 hover:bg-black/[0.02] transition-colors cursor-pointer"
+          className="w-full h-9 px-3.5 flex items-center justify-between text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors cursor-pointer"
         >
           <div className="flex items-center gap-2">
             <FolderOpen className="w-3.5 h-3.5 text-zinc-500" />
@@ -719,7 +808,7 @@ export default function AcademyPage() {
         </button>
 
         {isStorageOpen && (
-          <div className="p-3.5 border-t border-mv-border bg-mv-cream-soft">
+          <div className="p-3.5 border-t border-zinc-200 bg-zinc-50/50">
             <StorageBrowser defaultBucket="academy-media" title="Médiathèque de l’Académie" />
           </div>
         )}

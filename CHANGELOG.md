@@ -2,6 +2,35 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.30.2) — Catalogue Académie : Harmonisation Visuelle Pure (Style Linear), Badges d'État & Contrôles Haute Densité 32px
+
+- **Harmonisation Visuelle du Hub Académie (`/academy`)** :
+  - **Onglets Workspaces & Filtres 32px (`h-8`)** : Hauteurs standardisées style Linear avec décompte dynamique calculé (`prospection`, `managing`, `tech`, `all`) en `font-mono tabular-nums`.
+  - **Barre de Recherche & Filtres Catégories** : Champ de recherche avec indicateur de raccourci clavier `/`, focus ring émeraude et jetons de catégories avec badges numériques compacts.
+  - **Cartes Denses de SOPs (Mode Grille)** : Cartes épurées avec badges hiérarchisés (`● Fondatrice` avec pulsation verte pour les guides structurants, workspace micro-badge, catégorie, vidéo, statut `● Validé` ou `○ À étudier`, et temps de lecture `Clock` + `Xm` en `tabular-nums`).
+  - **Tableau Haute Densité 36px (Mode Liste)** : 7 colonnes structurées (Titre avec badge Fondatrice, Statut interactif, Catégorie, Workspace, Temps monospace, Auteur, Action d'ouverture/relecture).
+  - **Parcours Prioritaire & Médiathèque Storage** : Alignement visuel sur les conteneurs blancs `border-zinc-200 shadow-2xs` et jauge de progression émeraude.
+
+## 2026-09-04 (v2.30.1) — SOPs Académie : Layout CSS Grid 3-Colonnes (Stripe Docs), Top Bar Dense 28px (Linear) & Mode Plein Écran Zen
+
+- **Layout CSS Grid 3-Colonnes Réel (`/academy/[id]` & `/share/academy/[id]`)** :
+  - Restructuration du conteneur en grille stricte `grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_300px] gap-8 items-start` sur largeur maximale 1440px (`max-w-[1440px] mx-auto px-6 py-6`).
+  - **Sommaire Sticky à Gauche** (`top-16 max-h-[calc(100vh-5rem)]`) : Navigation avec scroll-spy en temps réel et indicateur de bordure émeraude `border-l-2 border-emerald-600`.
+  - **Colonne Centrale Dédiée** (`min-w-0 bg-white border border-zinc-200 rounded-xl p-8 shadow-xs`) : Rétablissement du flux de lecture naturel du Markdown sans blocs Sommaire/Checklist intercalés au-dessus.
+  - **Checklist & Accès Rapides Sticky à Droite** (`top-16 space-y-4`) : Contrôle de conformité interactif avec sauvegarde locale `localStorage`, jauge de progression, reset, et liens rapides adaptés au workspace (`GitHub`, `Vercel`, `Supabase DB`, `QA 20-Points`, etc.).
+- **Top Bar Épurée & Dense (Hauteur 28px / `h-7`, Style Linear / Raycast)** :
+  - **Fil d'Ariane Non Tronqué** : `← Académie / [Titre]` avec `flex-1 min-w-0 truncate` et titre actif en `font-semibold text-zinc-900`.
+  - **Badge & Métadonnées Réconciliés** : Suppression du badge redondant "TECH", conservation exclusive du badge statut `● Fondatrice` et affichage du temps de lecture en texte secondaire séparé par une puce (`· 15 min de lecture`).
+  - **Actions Groupées à Droite** :
+    1. Action IA : `[ ✦ Résumé IA ]` (`h-7 px-2.5 text-xs`).
+    2. Utilitaires compacts : `[ ⧉ Copier MD ]`, `[ ↗ Partager ]` et `[ ⛶ Plein Écran ]` (`h-7 w-7`).
+    3. Action Principale : `[ ✓ Marquer appliqué ]` (`h-7 px-3 text-xs bg-emerald-600`).
+- **Suppression Définitive de la Duplication des Boutons IA** :
+  - Élimination des barres d'outils IA répétitives (`AiPageToolbar`) dans le corps de lecture pour éviter tout bouton en boucle.
+  - Conservation exclusive du widget flottant universel unique dans `AppShell.tsx` (`AiAssistantSpeedDial`) et du bouton d'en-tête `[ ✦ Résumé IA ]`.
+- **Mode Plein Écran Zen / Inset Immersion** :
+  - Bascule instantanée en plein écran (`fixed inset-0 z-50 bg-[#FAFAFA] overflow-y-auto`) via le bouton `[ ⛶ ]` ou la touche clavier `F`, et sortie avec `Échap`.
+
 ## 2026-09-04 (v2.30.0) — Documentation Académie 3-Colonnes (GitBook/Stripe Docs) & SOP-DEV-03 The 6-Step Loop
 
 - **Refonte Documentaire Complète en Layout 3-Colonnes (`/academy/[id]`)** :

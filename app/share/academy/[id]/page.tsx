@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -15,16 +15,38 @@ import {
   ExternalLink,
   ShieldCheck,
   Building2,
-  FileCode,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { SopMarkdownRenderer, slugifyHeading } from '@/components/academy/SopMarkdownRenderer';
 import { fetchAcademySop } from '@/lib/services/supabase-data';
 import type { AcademySOP } from '@/lib/types';
-import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
-import { PageFadeIn } from '@/components/ui/page-transition';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
+
+interface TocItem {
+  id: string;
+  title: string;
+  level: 2 | 3;
+}
+
+function extractToc(markdown: string): TocItem[] {
+  const items: TocItem[] = [];
+  const lines = markdown.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('## ')) {
+      const title = trimmed.replace(/^##\s+/, '').trim();
+      items.push({ id: slugifyHeading(title), title, level: 2 });
+    } else if (trimmed.startsWith('### ')) {
+      const title = trimmed.replace(/^###\s+/, '').trim();
+      items.push({ id: slugifyHeading(title), title, level: 3 });
+    }
+  }
+  return items;
+}
 
 export default function PublicSopSharePage() {
   const params = useParams();
@@ -33,7 +55,8 @@ export default function PublicSopSharePage() {
   const [sop, setSop] = useState<AcademySOP | null>(null);
   const [loading, setLoading] = useState(true);
   const [copiedUrl, setCopiedUrl] = useState(false);
-  const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [activeSectionId, setActiveSectionId] = useState<string>('');
 
   useEffect(() => {
     if (!rawId) return;
@@ -48,18 +71,63 @@ export default function PublicSopSharePage() {
     })();
   }, [rawId]);
 
+  // Extract Table of Contents
+  const tocItems = useMemo(() => {
+    if (!sop?.content_markdown) return [];
+    return extractToc(sop.content_markdown);
+  }, [sop?.content_markdown]);
+
+  // Keyboard shortcut listener for Fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const targetTag = (e.target as HTMLElement)?.tagName;
+      if (['INPUT', 'TEXTAREA'].includes(targetTag)) return;
+
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      } else if (e.key === 'f' || e.key === 'F') {
+        setIsFullscreen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
+  // Scrollspy for TOC
+  useEffect(() => {
+    if (tocItems.length === 0) return;
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      let currentId = tocItems[0]?.id || '';
+      for (const item of tocItems) {
+        const el = document.getElementById(item.id);
+        if (el && el.offsetTop - 140 <= scrollY) {
+          currentId = item.id;
+        }
+      }
+      setActiveSectionId(currentId);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [tocItems]);
+
+  const scrollToHeading = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActiveSectionId(id);
+    }
+  };
+
   const handleCopyLink = () => {
     if (typeof window !== 'undefined') {
       navigator.clipboard.writeText(window.location.href);
       setCopiedUrl(true);
       setTimeout(() => setCopiedUrl(false), 2000);
     }
-  };
-
-  const handleCopyCode = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedCodeId(id);
-    setTimeout(() => setCopiedCodeId(null), 2000);
   };
 
   const handlePrint = () => {
@@ -70,15 +138,17 @@ export default function PublicSopSharePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F0EDE0] text-zinc-900 py-10 px-4 sm:px-6 flex justify-center">
-        <div className="max-w-3xl w-full space-y-4">
-          <SkeletonText className="w-32 h-3" />
-          <SkeletonText className="w-3/4 h-8" />
-          <div className="h-64 bg-white/60 rounded-lg p-6 space-y-3">
-            <SkeletonText className="w-full" />
-            <SkeletonText className="w-full" />
-            <SkeletonText className="w-5/6" />
+      <div className="w-full min-h-screen bg-[#FAFAFA] text-zinc-900">
+        <header className="border-b border-zinc-200 bg-white sticky top-0 z-20 px-6 py-2.5">
+          <div className="max-w-[1440px] mx-auto flex items-center justify-between">
+            <div className="h-6 w-64 bg-zinc-100 rounded animate-pulse" />
+            <div className="h-7 w-32 bg-zinc-100 rounded animate-pulse" />
           </div>
+        </header>
+        <div className="max-w-[1440px] mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_300px] gap-8 items-start">
+          <div className="h-64 bg-zinc-100 rounded-lg animate-pulse hidden lg:block" />
+          <div className="h-96 bg-zinc-100 rounded-xl animate-pulse" />
+          <div className="h-80 bg-zinc-100 rounded-lg animate-pulse hidden lg:block" />
         </div>
       </div>
     );
@@ -86,16 +156,16 @@ export default function PublicSopSharePage() {
 
   if (!sop) {
     return (
-      <div className="min-h-screen bg-[#F0EDE0] text-zinc-900 py-16 px-4 sm:px-6 flex justify-center">
-        <div className="max-w-md w-full text-center space-y-4 bg-white border border-stone-200/80 rounded-xl p-8 shadow-sm">
-          <BookOpen className="w-10 h-10 text-stone-400 mx-auto" />
-          <h1 className="text-lg font-bold font-serif text-zinc-900">Document introuvable</h1>
+      <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 py-16 px-4 sm:px-6 flex justify-center">
+        <div className="max-w-md w-full text-center space-y-4 bg-white border border-zinc-200 rounded-xl p-8 shadow-xs">
+          <BookOpen className="w-10 h-10 text-zinc-400 mx-auto" />
+          <h1 className="text-lg font-bold font-display text-zinc-900">Document introuvable</h1>
           <p className="text-xs text-zinc-500">
             Ce guide ou processus de l'Académie n'est pas accessible ou a été mis à jour.
           </p>
           <Link
             href="/academy"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 px-4 py-2 rounded border border-emerald-200 hover:bg-emerald-100 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 px-4 py-2 rounded-md border border-emerald-200 hover:bg-emerald-100 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Consulter l'Académie</span>
@@ -106,235 +176,247 @@ export default function PublicSopSharePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F0EDE0] text-zinc-900 antialiased selection:bg-emerald-200 selection:text-emerald-950">
-      {/* ── Public Brand Top Header ── */}
-      <header className="sticky top-0 z-30 bg-[#F0EDE0]/90 backdrop-blur-md border-b border-stone-300/70 px-4 sm:px-8 py-3 print:hidden">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded bg-zinc-900 text-white flex items-center justify-center font-bold text-xs font-serif shadow-xs">
-              M
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold font-serif tracking-tight text-zinc-900">MINERVA</span>
-                <span className="text-[10px] uppercase font-mono font-semibold text-emerald-800 bg-emerald-100/80 px-1.5 py-0.2 rounded border border-emerald-300/60" style={MONO}>
-                  Processus Public
-                </span>
-              </div>
-              <p className="text-[10.5px] text-zinc-500 hidden sm:block">
-                Académie &amp; Systèmes Opérationnels
-              </p>
-            </div>
+    <div
+      className={cn(
+        'w-full min-h-screen bg-[#FAFAFA] text-zinc-900',
+        isFullscreen && 'fixed inset-0 z-50 overflow-y-auto'
+      )}
+    >
+      {/* ── Top Bar Publique (Style Linear / Raycast dense 28px) ── */}
+      <header className="border-b border-zinc-200 bg-white sticky top-0 z-20 px-6 py-2.5 print:hidden">
+        <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-4">
+          {/* Breadcrumb + Titre + Badges */}
+          <div className="flex items-center gap-2 text-xs text-zinc-500 font-sans flex-1 min-w-0">
+            <Link
+              href="/academy"
+              className="hover:text-zinc-900 transition-colors flex items-center gap-1.5 shrink-0 text-zinc-500"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Académie</span>
+            </Link>
+            <span className="text-zinc-300">/</span>
+            <span className="font-semibold text-zinc-900 truncate">
+              {sop.title}
+            </span>
+
+            {sop.is_featured && (
+              <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold shrink-0 ml-1">
+                ● Fondatrice
+              </span>
+            )}
+
+            <span className="text-xs text-zinc-400 font-sans ml-2 shrink-0 hidden sm:inline">
+              · {sop.read_time_min || 15} min de lecture
+            </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleCopyLink}
-              className="h-8 px-3 text-xs font-medium bg-white hover:bg-stone-50 border border-stone-300 rounded-[5px] text-zinc-700 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
-              title="Copier le lien public de cette page"
-            >
-              {copiedUrl ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-700 font-semibold">Copié !</span>
-                </>
-              ) : (
-                <>
-                  <Share2 className="w-3.5 h-3.5 text-zinc-500" />
-                  <span className="hidden sm:inline">Copier le lien</span>
-                </>
-              )}
-            </button>
+          {/* Boutons d'actions à droite (Hauteur 28px) */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="h-7 px-2.5 text-xs font-sans border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 rounded-md shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Copier le lien public"
+              >
+                {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-zinc-500" />}
+                <span className="hidden sm:inline">{copiedUrl ? 'Lien copié !' : 'Partager'}</span>
+              </button>
 
-            <button
-              onClick={handlePrint}
-              className="h-8 px-3 text-xs font-medium bg-white hover:bg-stone-50 border border-stone-300 rounded-[5px] text-zinc-700 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
-              title="Imprimer ou enregistrer en PDF"
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="h-7 w-7 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md border border-zinc-200 flex items-center justify-center transition-colors cursor-pointer"
+                title="Imprimer / Exporter en PDF"
+              >
+                <Printer className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                className={cn(
+                  'h-7 w-7 rounded-md border border-zinc-200 flex items-center justify-center transition-colors cursor-pointer',
+                  isFullscreen
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                    : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
+                )}
+                title={isFullscreen ? 'Quitter le mode plein écran (Échap ou F)' : 'Activer la vue plein écran (F)'}
+              >
+                {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+
+            <Link
+              href="/academy"
+              className="h-7 px-3 text-xs font-sans font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-md shadow-xs flex items-center gap-1.5 transition-colors"
             >
-              <Printer className="w-3.5 h-3.5 text-zinc-500" />
-              <span className="hidden sm:inline">Imprimer / PDF</span>
-            </button>
+              <span>Accéder à l’Académie</span>
+            </Link>
           </div>
         </div>
       </header>
 
-      {/* ── Main Public Reader Body ── */}
-      <main className="max-w-4xl mx-auto py-8 sm:py-12 px-4 sm:px-6 space-y-6">
-        <PageFadeIn className="space-y-6">
-          {/* Article Header Card */}
-          <div className="bg-white border border-stone-200/90 rounded-xl p-6 sm:p-8 shadow-xs space-y-4">
+      {/* ── Grille Principale 3-Colonnes (CSS Grid Stripe Docs) ── */}
+      <div className="max-w-[1440px] mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_300px] gap-8 items-start">
+        {/* COLONNE GAUCHE : Sommaire Sticky */}
+        <aside className="hidden lg:block sticky top-16 max-h-[calc(100vh-5rem)] overflow-y-auto pr-2 print:hidden">
+          <div className="text-[11px] font-mono uppercase font-semibold text-zinc-400 mb-3 tracking-wider">
+            Sommaire
+          </div>
+          <nav className="space-y-1 text-xs border-l border-zinc-200 pl-3">
+            {tocItems.map((item) => {
+              const isActive = activeSectionId === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => scrollToHeading(item.id)}
+                  className={cn(
+                    'w-full text-left py-1 px-2 rounded-md transition-all truncate block text-xs cursor-pointer font-sans',
+                    item.level === 3 && 'pl-4 text-[11.5px]',
+                    isActive
+                      ? 'font-semibold text-emerald-800 bg-emerald-50/80 -ml-[13px] pl-[11px] border-l-2 border-emerald-600'
+                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/60'
+                  )}
+                  title={item.title}
+                >
+                  {item.title}
+                </button>
+              );
+            })}
+
+            {tocItems.length === 0 && (
+              <p className="text-xs text-zinc-400 italic py-2">Sommaire en cours de génération...</p>
+            )}
+          </nav>
+        </aside>
+
+        {/* COLONNE CENTRALE : Contenu de la SOP */}
+        <main className="min-w-0 bg-white border border-zinc-200 rounded-xl p-8 shadow-xs space-y-8">
+          {/* Header de la SOP */}
+          <div className="space-y-4 border-b border-zinc-100 pb-6">
             <div className="flex items-center gap-2 flex-wrap text-xs">
-              <span className="bg-stone-100 text-stone-700 font-semibold text-[11px] px-2.5 py-0.5 rounded border border-stone-200">
+              <Badge variant="neutral" className="text-xs font-semibold">
                 {sop.category}
-              </span>
-              <span className="text-zinc-400 font-mono flex items-center gap-1 text-[11px]" style={MONO}>
-                <Clock className="w-3 h-3 text-stone-400" />
-                <span>{sop.read_time_min || 15} min de lecture</span>
-              </span>
-              {sop.author && (
-                <>
-                  <span className="text-zinc-300">·</span>
-                  <span className="text-zinc-500 text-[11px]">Auteur : <strong className="text-zinc-700 font-medium">{sop.author}</strong></span>
-                </>
+              </Badge>
+              {sop.is_featured && (
+                <Badge variant="green" className="text-xs font-bold uppercase tracking-wider">
+                  FONDATRICE
+                </Badge>
               )}
+              <span className="text-xs font-mono text-zinc-400 flex items-center gap-1 ml-auto" style={MONO}>
+                <Clock className="w-3.5 h-3.5" />
+                <span>{sop.read_time_min || 15} min</span>
+              </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold font-serif text-zinc-900 tracking-tight leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-zinc-950 tracking-tight leading-tight">
               {sop.title}
             </h1>
 
             {sop.description && (
-              <p className="text-sm sm:text-base text-zinc-600 leading-relaxed border-l-2 border-emerald-600 pl-3.5 italic bg-emerald-50/30 py-1.5 rounded-r">
+              <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed border-l-2 border-emerald-600 pl-3.5 py-1 bg-emerald-50/30 rounded-r-lg font-sans">
                 {sop.description}
               </p>
             )}
           </div>
 
-          {/* Markdown Content Container */}
-          <article className="bg-white border border-stone-200/90 rounded-xl p-6 sm:p-10 shadow-xs prose prose-zinc max-w-none prose-headings:font-serif prose-headings:tracking-tight prose-a:text-emerald-700 prose-a:underline prose-code:text-emerald-900 prose-code:bg-stone-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:before:content-none prose-code:after:content-none">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                h1: ({ children }) => (
-                  <h1 className="text-xl sm:text-2xl font-bold font-serif text-zinc-900 border-b border-stone-200 pb-2.5 mt-8 mb-4">
-                    {children}
-                  </h1>
-                ),
-                h2: ({ children }) => (
-                  <h2 className="text-lg sm:text-xl font-bold font-serif text-zinc-850 mt-8 mb-3 flex items-center gap-2">
-                    <span className="text-emerald-600">§</span>
-                    <span>{children}</span>
-                  </h2>
-                ),
-                h3: ({ children }) => (
-                  <h3 className="text-base font-bold text-zinc-800 mt-6 mb-2">
-                    {children}
-                  </h3>
-                ),
-                p: ({ children }) => (
-                  <p className="text-sm leading-relaxed text-zinc-700 my-3">
-                    {children}
-                  </p>
-                ),
-                ul: ({ children }) => (
-                  <ul className="space-y-1.5 my-3 text-sm text-zinc-700 list-disc list-inside">
-                    {children}
-                  </ul>
-                ),
-                ol: ({ children }) => (
-                  <ol className="space-y-1.5 my-3 text-sm text-zinc-700 list-decimal list-inside">
-                    {children}
-                  </ol>
-                ),
-                li: ({ children }) => (
-                  <li className="text-sm leading-relaxed text-zinc-700">
-                    {children}
-                  </li>
-                ),
-                blockquote: ({ children }) => (
-                  <div className="relative my-4 p-4 rounded-lg bg-emerald-50/50 border border-emerald-200 text-zinc-800 text-sm leading-relaxed not-italic">
-                    <div className="font-serif text-zinc-800">{children}</div>
-                  </div>
-                ),
-                table: ({ children }) => (
-                  <div className="overflow-x-auto my-4 border border-stone-200 rounded-lg">
-                    <table className="w-full text-left text-xs divide-y divide-stone-200">
-                      {children}
-                    </table>
-                  </div>
-                ),
-                thead: ({ children }) => (
-                  <thead className="bg-stone-50 font-semibold text-zinc-700">
-                    {children}
-                  </thead>
-                ),
-                th: ({ children }) => (
-                  <th className="px-3.5 py-2.5 font-semibold text-zinc-700">
-                    {children}
-                  </th>
-                ),
-                td: ({ children }) => (
-                  <td className="px-3.5 py-2 text-zinc-600 border-t border-stone-100">
-                    {children}
-                  </td>
-                ),
-                code: ({ className, children, ...props }) => {
-                  const match = /language-(\w+)/.exec(className || '');
-                  const codeString = String(children).replace(/\n$/, '');
-                  const codeId = Math.random().toString(36).substring(2, 9);
-                  const isBlock = Boolean(match) || codeString.includes('\n');
+          {/* Technical Documentation Content */}
+          <div className="prose-container">
+            {sop.content_markdown ? (
+              <SopMarkdownRenderer content={sop.content_markdown} />
+            ) : (
+              <p className="text-xs text-zinc-400 py-12 text-center">Contenu en cours de rédaction.</p>
+            )}
+          </div>
 
-                  if (isBlock) {
-                    return (
-                      <div className="relative my-4 rounded-lg overflow-hidden border border-zinc-800 bg-zinc-950 text-zinc-100 not-prose">
-                        <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900 border-b border-zinc-800 text-[11px] text-zinc-400 font-mono" style={MONO}>
-                          <span>{match ? match[1] : 'code'}</span>
-                          <button
-                            onClick={() => handleCopyCode(codeString, codeId)}
-                            className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer text-[10.5px]"
-                          >
-                            {copiedCodeId === codeId ? (
-                              <>
-                                <Check className="w-3 h-3 text-emerald-400" />
-                                <span className="text-emerald-400 font-semibold">Copié !</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3 h-3" />
-                                <span>Copier</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                        <pre className="p-4 text-xs font-mono overflow-x-auto leading-relaxed text-zinc-200" style={MONO}>
-                          <code>{codeString}</code>
-                        </pre>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <code className="text-xs bg-stone-100 text-zinc-900 px-1 py-0.5 rounded font-mono border border-stone-200" style={MONO} {...props}>
-                      {children}
-                    </code>
-                  );
-                },
-              }}
-            >
-              {sop.content_markdown}
-            </ReactMarkdown>
-          </article>
-
-          {/* ── Public Footer Card ── */}
-          <div className="bg-white border border-stone-200/90 rounded-xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
+          {/* Footer Card */}
+          <div className="border-t border-zinc-100 pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-800">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
                 <span>Minerva — Systèmes &amp; Ingénierie</span>
               </div>
               <p className="text-[11.5px] text-zinc-500">
-                Agence-studio hybride à Montréal · Tous droits réservés © {new Date().getFullYear()}
+                Studio-agence hybride à Montréal · Tous droits réservés © {new Date().getFullYear()}
               </p>
             </div>
 
             <div className="flex items-center gap-2">
               <Link
                 href="/academy"
-                className="px-3.5 py-1.5 rounded-[5px] bg-stone-100 hover:bg-stone-200 text-zinc-800 text-xs font-medium transition-colors"
+                className="px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-medium transition-colors"
               >
                 Toutes les SOPs
               </Link>
               <Link
                 href="/company"
-                className="px-3.5 py-1.5 rounded-[5px] bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold transition-colors flex items-center gap-1"
+                className="px-3 py-1.5 rounded-md bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium transition-colors flex items-center gap-1"
               >
-                <Building2 className="w-3 h-3" />
+                <Building2 className="w-3.5 h-3.5" />
                 <span>Découvrir Minerva</span>
               </Link>
             </div>
           </div>
-        </PageFadeIn>
-      </main>
+        </main>
+
+        {/* COLONNE DROITE : Métadonnées & Accès Rapides */}
+        <aside className="hidden lg:block sticky top-16 space-y-4 print:hidden">
+          <div className="bg-white border border-zinc-200 rounded-lg p-4 shadow-xs space-y-3">
+            <div className="text-[11px] font-mono uppercase font-semibold text-zinc-500 tracking-wider border-b border-zinc-100 pb-2">
+              Informations Guide
+            </div>
+
+            <div className="space-y-2 text-xs font-sans text-zinc-600">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400 font-mono text-[10px] uppercase">Rédacteur</span>
+                <span className="font-semibold text-zinc-800 truncate max-w-[120px]">{sop.author || 'Minerva Lead'}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400 font-mono text-[10px] uppercase">Diffusion</span>
+                <span className="text-emerald-700 font-mono font-medium">Standard Public</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400 font-mono text-[10px] uppercase">Format</span>
+                <span className="text-zinc-700 font-mono">SOP Markdown</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-zinc-200 rounded-lg p-4 shadow-xs space-y-2.5">
+            <div className="text-[11px] font-mono uppercase font-semibold text-zinc-500 tracking-wider border-b border-zinc-100 pb-2">
+              Accès Rapides
+            </div>
+
+            <div className="space-y-1 text-xs font-sans">
+              <Link
+                href="/academy"
+                className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Portail Académie Interne</span>
+                </div>
+                <ExternalLink className="w-3 h-3 text-zinc-400" />
+              </Link>
+
+              <a
+                href="https://minervaflow.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Site Officiel Minerva</span>
+                </div>
+                <ExternalLink className="w-3 h-3 text-zinc-400" />
+              </a>
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

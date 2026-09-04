@@ -14,8 +14,8 @@ import {
   FileText,
   Sparkles,
   Share2,
-  ListChecks,
-  AlertTriangle,
+  Maximize2,
+  Minimize2,
   Lightbulb,
   ChevronRight,
   Target,
@@ -23,7 +23,6 @@ import {
   Zap,
   ExternalLink,
   Info,
-  Youtube,
   Search,
   Database,
   ShieldCheck,
@@ -32,11 +31,9 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { SopMarkdownRenderer, slugifyHeading } from '@/components/academy/SopMarkdownRenderer';
-import { AiPageToolbar } from '@/components/documents/AiPageToolbar';
 import { VideoAssetPlayer } from '@/components/media/VideoAssetPlayer';
 import { YouTubeCuratorModal } from '@/components/academy/YouTubeCuratorModal';
 import { createClient } from '@/lib/supabase/client';
-import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 import {
   fetchAcademySop,
   fetchCompletedSopIds,
@@ -44,10 +41,8 @@ import {
   unmarkSopCompleted,
   addDocument,
 } from '@/lib/services/supabase-data';
-import { markdownToBlocks } from '@/lib/utils/markdown-to-blocks';
 import type { AcademySOP } from '@/lib/types';
 import { useToast } from '@/components/providers/ToastProvider';
-import { PageFadeIn } from '@/components/ui/page-transition';
 import { CaseStudyScriptStudio } from '@/components/academy/CaseStudyScriptStudio';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -94,6 +89,24 @@ export default function SopDetailPage() {
   const [creatingDoc, setCreatingDoc] = useState(false);
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
   const [activeSectionId, setActiveSectionId] = useState<string>('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Keyboard shortcut listener for Fullscreen (Escape to exit, F to toggle)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const targetTag = (e.target as HTMLElement)?.tagName;
+      if (['INPUT', 'TEXTAREA'].includes(targetTag)) return;
+
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      } else if (e.key === 'f' || e.key === 'F') {
+        setIsFullscreen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
 
   // Interactive Checklist steps with localStorage persistence
   const [checkedSteps, setCheckedSteps] = useState<Record<string, boolean>>({});
@@ -243,26 +256,19 @@ export default function SopDetailPage() {
     }
   };
 
-  // Robust block computation for Notion AI toolbar
-  const activeBlocks = useMemo(() => {
-    if (!sop) return [];
-    if (sop.content_json?.blocks && sop.content_json.blocks.length > 0) {
-      return sop.content_json.blocks;
-    }
-    if (sop.content_markdown) {
-      return markdownToBlocks(sop.content_markdown);
-    }
-    return [];
-  }, [sop]);
-
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto space-y-6 py-8 px-4">
-        <div className="h-10 w-64 bg-zinc-100 rounded-lg animate-pulse" />
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_280px] gap-6">
-          <div className="h-64 bg-zinc-100 rounded-xl animate-pulse hidden lg:block" />
+      <div className="w-full min-h-screen bg-[#FAFAFA] -m-3 sm:-m-4 md:-m-6 lg:-m-8 min-h-full">
+        <header className="border-b border-zinc-200 bg-white sticky top-0 z-20 px-6 py-2.5">
+          <div className="max-w-[1440px] mx-auto flex items-center justify-between">
+            <div className="h-6 w-64 bg-zinc-100 rounded animate-pulse" />
+            <div className="h-7 w-48 bg-zinc-100 rounded animate-pulse" />
+          </div>
+        </header>
+        <div className="max-w-[1440px] mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_300px] gap-8 items-start">
+          <div className="h-64 bg-zinc-100 rounded-lg animate-pulse hidden lg:block" />
           <div className="h-96 bg-zinc-100 rounded-xl animate-pulse" />
-          <div className="h-80 bg-zinc-100 rounded-xl animate-pulse hidden lg:block" />
+          <div className="h-80 bg-zinc-100 rounded-lg animate-pulse hidden lg:block" />
         </div>
       </div>
     );
@@ -270,7 +276,7 @@ export default function SopDetailPage() {
 
   if (!sop) {
     return (
-      <PageFadeIn className="max-w-4xl mx-auto py-12 space-y-4 px-4">
+      <div className="max-w-4xl mx-auto py-12 space-y-4 px-4">
         <Link href="/academy" className="text-xs font-medium text-emerald-700 hover:underline flex items-center gap-1.5 w-fit">
           <ArrowLeft className="w-3.5 h-3.5" /> Retour à l’académie
         </Link>
@@ -279,7 +285,7 @@ export default function SopDetailPage() {
           <p className="text-sm font-bold text-zinc-900">SOP introuvable</p>
           <p className="text-xs text-zinc-500">Ce guide a peut-être été déplacé ou archivé.</p>
         </Card>
-      </PageFadeIn>
+      </div>
     );
   }
 
@@ -381,150 +387,146 @@ export default function SopDetailPage() {
   const isAllChecked = checkedCount === checklistItems.length && checklistItems.length > 0;
 
   return (
-    <PageFadeIn className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 pb-20">
-      {/* ── 1. Top Navigation Strip & Actions Toolbar (42px) ── */}
-      <div className="h-[42px] bg-white border border-zinc-200 rounded-lg px-3 shadow-2xs flex items-center justify-between gap-4">
-        {/* Left: Breadcrumbs & Badges */}
-        <div className="flex items-center gap-2 text-xs text-zinc-500 font-medium truncate min-w-0">
-          <Link
-            href="/academy"
-            className="hover:text-zinc-900 transition-colors flex items-center gap-1 font-mono text-[11px] shrink-0"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 text-zinc-400" />
-            <span>Académie</span>
-          </Link>
-          <span className="text-zinc-300 font-mono">/</span>
-          <span className="text-zinc-500 font-mono text-[11px] truncate hidden sm:inline">{sop.category}</span>
-          <span className="text-zinc-300 font-mono hidden sm:inline">/</span>
-          <span className="text-zinc-900 font-semibold truncate text-xs">{sop.title}</span>
+    <div
+      className={cn(
+        'w-full min-h-screen bg-[#FAFAFA] text-zinc-900',
+        isFullscreen ? 'fixed inset-0 z-50 overflow-y-auto' : '-m-3 sm:-m-4 md:-m-6 lg:-m-8 min-h-full pb-16'
+      )}
+    >
+      {/* ── Top Bar de la SOP (Style Linear / Raycast dense 28px) ── */}
+      <header className="border-b border-zinc-200 bg-white sticky top-0 z-20 px-6 py-2.5">
+        <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-4">
+          {/* Breadcrumb + Titre + Badges */}
+          <div className="flex items-center gap-2 text-xs text-zinc-500 font-sans flex-1 min-w-0">
+            <Link
+              href="/academy"
+              className="hover:text-zinc-900 transition-colors flex items-center gap-1.5 shrink-0 text-zinc-500"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Académie</span>
+            </Link>
+            <span className="text-zinc-300">/</span>
+            <span className="font-semibold text-zinc-900 truncate">
+              {sop.title}
+            </span>
 
-          {/* Badges */}
-          <div className="hidden md:flex items-center gap-1.5 pl-2 shrink-0">
             {sop.is_featured && (
-              <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded font-semibold">
+              <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold shrink-0 ml-1">
                 ● Fondatrice
               </span>
             )}
-            <span className="text-[10px] font-mono text-zinc-400 bg-zinc-50 border border-zinc-200 px-1.5 py-0.2 rounded">
-              ⏱ {sop.read_time_min || 8} min lecture
-            </span>
-            <span className="text-[10px] font-mono text-zinc-500 bg-zinc-50 border border-zinc-200 px-1.5 py-0.2 rounded uppercase">
-              {effectiveWorkspace}
+
+            <span className="text-xs text-zinc-400 font-sans ml-2 shrink-0 hidden sm:inline">
+              · {sop.read_time_min || 15} min de lecture
             </span>
           </div>
-        </div>
 
-        {/* Right: Action Buttons */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={handleCopyMarkdown}
-            className="h-7 px-2.5 text-xs border border-zinc-200 bg-white hover:bg-zinc-50 rounded-md text-zinc-700 font-sans inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Copier le Markdown brut"
-          >
-            {copiedMarkdown ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-zinc-400" />}
-            <span className="hidden sm:inline">{copiedMarkdown ? 'Copié !' : 'Copier MD'}</span>
-          </button>
+          {/* Boutons d'actions à droite (Hauteur 28px) */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* 1. Action IA */}
+            <button
+              type="button"
+              onClick={handleAiSummary}
+              className="h-7 px-2.5 text-xs font-sans border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 rounded-md shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Synthèse IA exécutive"
+            >
+              <Sparkles className="w-3 h-3 text-emerald-600" />
+              <span className="hidden sm:inline">Résumé IA</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={handleAiSummary}
-            className="h-7 px-2.5 text-xs bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-md border border-zinc-200 font-sans inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Synthèse IA"
-          >
-            <Sparkles className="w-3 h-3 text-emerald-600" />
-            <span className="hidden sm:inline">Résumé IA</span>
-          </button>
+            {/* 2. Actions Utilitaires (Groupe d'icônes compact) */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleCopyMarkdown}
+                className="h-7 w-7 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md border border-zinc-200 flex items-center justify-center transition-colors cursor-pointer"
+                title="Copier le Markdown brut"
+              >
+                {copiedMarkdown ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
 
-          <button
-            type="button"
-            onClick={handleSharePublic}
-            className="h-7 px-2 text-xs border border-zinc-200 bg-white hover:bg-zinc-50 rounded-md text-zinc-600 inline-flex items-center gap-1 transition-colors cursor-pointer"
-            title="Partager le guide public"
-          >
-            <Share2 className="w-3 h-3" />
-          </button>
+              <button
+                type="button"
+                onClick={handleSharePublic}
+                className="h-7 w-7 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md border border-zinc-200 flex items-center justify-center transition-colors cursor-pointer"
+                title="Partager le guide public"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+              </button>
 
-          <Button
-            size="sm"
-            onClick={toggleCompleted}
-            disabled={saving}
-            className={cn(
-              'h-7 px-3 text-xs font-medium rounded-md shadow-xs cursor-pointer transition-all gap-1.5',
-              completed
-                ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-            )}
-          >
-            {completed ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <Circle className="w-3.5 h-3.5" />}
-            <span>{completed ? 'Appliqué' : 'Marquer comme appliqué'}</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* ── 2. Split-View 3-Colonnes Grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_280px] gap-6 items-start">
-        {/* ── 2A. Colonne Gauche : Sommaire & Table of Contents (Sticky) ── */}
-        <aside className="hidden lg:block sticky top-6 space-y-4">
-          <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 font-mono">
-                Sur cette page
-              </span>
-              <span className="text-[10px] font-mono text-zinc-400 tabular-nums">
-                {tocItems.length} sections
-              </span>
+              <button
+                type="button"
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                className={cn(
+                  'h-7 w-7 rounded-md border border-zinc-200 flex items-center justify-center transition-colors cursor-pointer',
+                  isFullscreen
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                    : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
+                )}
+                title={isFullscreen ? 'Quitter le mode plein écran (Échap ou F)' : 'Activer la vue plein écran (F)'}
+              >
+                {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              </button>
             </div>
 
-            <nav className="space-y-1 text-xs font-sans">
-              {tocItems.map((item) => {
-                const isActive = activeSectionId === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => scrollToHeading(item.id)}
-                    className={cn(
-                      'w-full text-left py-1 px-2 rounded-md transition-all truncate block text-xs cursor-pointer',
-                      item.level === 3 && 'pl-4 text-[11.5px]',
-                      isActive
-                        ? 'border-l-2 border-emerald-600 font-semibold text-emerald-800 bg-emerald-50/60'
-                        : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
-                    )}
-                    title={item.title}
-                  >
-                    {item.title}
-                  </button>
-                );
-              })}
-
-              {tocItems.length === 0 && (
-                <p className="text-xs text-zinc-400 italic py-2">Sommaire en cours de génération...</p>
+            {/* 3. Action Principale */}
+            <Button
+              size="sm"
+              onClick={toggleCompleted}
+              disabled={saving}
+              className={cn(
+                'h-7 px-3 text-xs font-sans font-medium rounded-md shadow-xs cursor-pointer transition-all flex items-center gap-1.5',
+                completed
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
               )}
-            </nav>
+            >
+              {completed ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <Circle className="w-3.5 h-3.5" />}
+              <span>{completed ? 'Appliqué' : 'Marquer appliqué'}</span>
+            </Button>
           </div>
+        </div>
+      </header>
 
-          {/* Quick Info Badge Card */}
-          <div className="bg-white border border-zinc-200 rounded-xl p-3.5 shadow-2xs space-y-2 text-[11px] text-zinc-500 font-sans">
-            <div className="flex items-center justify-between">
-              <span className="text-zinc-400 font-mono text-[10px] uppercase">Rédigé par</span>
-              <span className="font-semibold text-zinc-800 truncate max-w-[120px]">{sop.author || 'Minerva Lead'}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-zinc-400 font-mono text-[10px] uppercase">Statut</span>
-              <span className="text-emerald-700 font-mono font-medium">v2.29 Production</span>
-            </div>
-            <div className="flex items-center justify-between pt-1 border-t border-zinc-100">
-              <span className="text-zinc-400 font-mono text-[10px] uppercase">Espace</span>
-              <span className="capitalize text-zinc-700 font-medium">{effectiveWorkspace}</span>
-            </div>
+      {/* ── Grille Principale 3-Colonnes (CSS Grid Stripe Docs) ── */}
+      <div className="max-w-[1440px] mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_300px] gap-8 items-start">
+        {/* COLONNE GAUCHE : Sommaire Sticky */}
+        <aside className="hidden lg:block sticky top-16 max-h-[calc(100vh-5rem)] overflow-y-auto pr-2">
+          <div className="text-[11px] font-mono uppercase font-semibold text-zinc-400 mb-3 tracking-wider">
+            Sommaire
           </div>
+          <nav className="space-y-1 text-xs border-l border-zinc-200 pl-3">
+            {tocItems.map((item) => {
+              const isActive = activeSectionId === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => scrollToHeading(item.id)}
+                  className={cn(
+                    'w-full text-left py-1 px-2 rounded-md transition-all truncate block text-xs cursor-pointer font-sans',
+                    item.level === 3 && 'pl-4 text-[11.5px]',
+                    isActive
+                      ? 'font-semibold text-emerald-800 bg-emerald-50/80 -ml-[13px] pl-[11px] border-l-2 border-emerald-600'
+                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/60'
+                  )}
+                  title={item.title}
+                >
+                  {item.title}
+                </button>
+              );
+            })}
+
+            {tocItems.length === 0 && (
+              <p className="text-xs text-zinc-400 italic py-2">Sommaire en cours de génération...</p>
+            )}
+          </nav>
         </aside>
 
-        {/* ── 2B. Colonne Centrale : Contenu Technique & Snippets Réels ── */}
-        <main className="min-w-0 space-y-6">
-          {/* Header Card */}
-          <Card className="bg-white border-zinc-200 rounded-xl p-6 sm:p-8 shadow-2xs space-y-4">
+        {/* COLONNE CENTRALE : Contenu de la SOP */}
+        <main className="min-w-0 bg-white border border-zinc-200 rounded-xl p-8 shadow-xs space-y-8">
+          {/* Header de la SOP */}
+          <div className="space-y-4 border-b border-zinc-100 pb-6">
             <div className="flex items-center gap-2 flex-wrap text-xs">
               <Badge variant="neutral" className="text-xs font-semibold">
                 {sop.category}
@@ -548,7 +550,7 @@ export default function SopDetailPage() {
               )}
               <span className="text-xs font-mono text-zinc-400 flex items-center gap-1 ml-auto" style={MONO}>
                 <Clock className="w-3.5 h-3.5" />
-                <span>{sop.read_time_min || 8} min</span>
+                <span>{sop.read_time_min || 15} min</span>
               </span>
             </div>
 
@@ -562,7 +564,7 @@ export default function SopDetailPage() {
               </p>
             )}
 
-            {/* Quick Pillar Links */}
+            {/* Accès Piliers direct */}
             <div className="pt-2 flex items-center gap-2 flex-wrap text-xs">
               {isTechSop && (
                 <>
@@ -624,11 +626,11 @@ export default function SopDetailPage() {
                 </>
               )}
             </div>
-          </Card>
+          </div>
 
-          {/* Embedded Video Section if present */}
+          {/* Démonstration Vidéo si existante */}
           {sop.video_url && (
-            <Card className="bg-white border-zinc-200 rounded-xl p-5 shadow-2xs space-y-3">
+            <div className="rounded-xl border border-zinc-200 p-5 bg-zinc-50/50 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-bold text-zinc-900">
                   <Sparkles className="w-4 h-4 text-emerald-600" />
@@ -645,36 +647,11 @@ export default function SopDetailPage() {
                 </Button>
               </div>
               <VideoAssetPlayer src={sop.video_url} title={sop.title} />
-            </Card>
-          )}
-
-          {/* Notion AI Toolbar */}
-          {activeBlocks.length > 0 && (
-            <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200 flex items-center justify-between gap-4">
-              <AiPageToolbar
-                blocks={activeBlocks}
-                documentTitle={sop.title}
-                onApplyBlocks={async (newBlocks) => {
-                  try {
-                    await addDocument(
-                      `Extrait IA : ${sop.title}`,
-                      userId || null,
-                      {
-                        category: 'sop',
-                        contentJson: { blocks: newBlocks },
-                      }
-                    );
-                    toastSuccess('Document d\'équipe créé avec le contenu IA extrait !');
-                  } catch {
-                    toastError('Erreur', 'Impossible de créer le document.');
-                  }
-                }}
-              />
             </div>
           )}
 
-          {/* Technical Documentation Content (ReactMarkdown Engine) */}
-          <Card className="bg-white border-zinc-200 rounded-xl p-6 sm:p-8 shadow-2xs">
+          {/* Contenu Markdown Technique Sans Boucle de Boutons IA */}
+          <div>
             {sop.content_markdown ? (
               <SopMarkdownRenderer content={sop.content_markdown} />
             ) : (
@@ -683,7 +660,7 @@ export default function SopDetailPage() {
                 <span>Contenu en cours de rédaction.</span>
               </div>
             )}
-          </Card>
+          </div>
 
           {/* Actionable Terminal / Script Playbook Box */}
           <div className="bg-white border border-zinc-200 rounded-xl p-5 space-y-3 shadow-2xs">
@@ -720,7 +697,7 @@ export default function SopDetailPage() {
             </pre>
           </div>
 
-          {/* Studio de Scripting Cas Client 60s (if master sop) */}
+          {/* Studio de Scripting Cas Client 60s (si SOP Fondatrice) */}
           {(isMasterSop || isPillar4) && (
             <div className="pt-2">
               <CaseStudyScriptStudio
@@ -731,14 +708,13 @@ export default function SopDetailPage() {
           )}
         </main>
 
-        {/* ── 2C. Colonne Droite : QA Sidebar & Ressources Contextuelles (Sticky) ── */}
-        <aside className="sticky top-6 space-y-5">
-          {/* Interactive Checklist Card */}
-          <div className="bg-white border border-zinc-200 rounded-xl p-4.5 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 font-mono">
-                {isTechSop ? 'Contrôle Qualité Feature' : 'Checklist d’Exécution'}
-              </span>
+        {/* COLONNE DROITE : Checklist & Métadonnées Sticky */}
+        <aside className="hidden lg:block sticky top-16 space-y-4">
+          <div className="bg-white border border-zinc-200 rounded-lg p-4 shadow-xs space-y-3">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
+              <div className="text-[11px] font-mono uppercase font-semibold text-zinc-500 tracking-wider">
+                Checklist de Conformité
+              </div>
               <button
                 type="button"
                 onClick={handleResetChecklist}
@@ -750,10 +726,10 @@ export default function SopDetailPage() {
               </button>
             </div>
 
-            {/* Progress status */}
+            {/* Progression */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs font-mono" style={MONO}>
-                <span className="text-zinc-500 text-[11px]">Progression</span>
+                <span className="text-zinc-400 text-[10px] uppercase">Progression</span>
                 <span className="font-semibold text-zinc-900 text-xs">
                   {checkedCount}/{checklistItems.length} validés
                 </span>
@@ -768,8 +744,8 @@ export default function SopDetailPage() {
               </div>
             </div>
 
-            {/* Checkboxes */}
-            <div className="space-y-2 text-xs text-zinc-800">
+            {/* Checkboxes interactives */}
+            <div className="space-y-2 pt-1 text-xs text-zinc-800">
               {checklistItems.map((step, idx) => {
                 const stepKey = `step-${idx}`;
                 const isChecked = !!checkedSteps[stepKey];
@@ -777,7 +753,7 @@ export default function SopDetailPage() {
                   <label
                     key={idx}
                     className={cn(
-                      'flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors shadow-2xs',
+                      'flex items-start gap-2.5 p-2 rounded-lg border cursor-pointer transition-colors shadow-2xs',
                       isChecked
                         ? 'bg-emerald-50/40 border-emerald-200 text-zinc-500'
                         : 'bg-white border-zinc-200 hover:bg-zinc-50 text-zinc-800'
@@ -800,31 +776,28 @@ export default function SopDetailPage() {
             {isAllChecked && (
               <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2 text-xs text-emerald-800 font-medium">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Prêt pour validation / homologué.</span>
+                <span>Checklist validée à 100%.</span>
               </div>
             )}
           </div>
 
-          {/* Contextual Resources Card */}
-          <div className="bg-white border border-zinc-200 rounded-xl p-4.5 shadow-2xs space-y-3">
-            <div className="border-b border-zinc-100 pb-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 font-mono">
-                Ressources Rapides
-              </span>
+          <div className="bg-white border border-zinc-200 rounded-lg p-4 shadow-xs space-y-2.5">
+            <div className="text-[11px] font-mono uppercase font-semibold text-zinc-500 mb-2 tracking-wider border-b border-zinc-100 pb-2">
+              Accès Rapides
             </div>
 
-            <div className="space-y-1.5 text-xs font-sans">
+            <div className="space-y-1 text-xs font-sans">
               {isTechSop ? (
                 <>
                   <a
-                    href="https://supabase.com/dashboard/project/_/sql"
+                    href="https://github.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between p-2 rounded-lg text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+                    className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <Database className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Supabase Database Console</span>
+                      <GitBranch className="w-3.5 h-3.5 text-zinc-700" />
+                      <span>GitHub Repository & PRs</span>
                     </div>
                     <ExternalLink className="w-3 h-3 text-zinc-400" />
                   </a>
@@ -833,7 +806,7 @@ export default function SopDetailPage() {
                     href="https://vercel.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between p-2 rounded-lg text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+                    className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-xs">▲</span>
@@ -842,20 +815,33 @@ export default function SopDetailPage() {
                     <ExternalLink className="w-3 h-3 text-zinc-400" />
                   </a>
 
+                  <a
+                    href="https://supabase.com/dashboard/project/_/sql"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Database className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Supabase Database Console</span>
+                    </div>
+                    <ExternalLink className="w-3 h-3 text-zinc-400" />
+                  </a>
+
                   <Link
                     href="/tech"
-                    className="flex items-center justify-between p-2 rounded-lg text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+                    className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Ouvrir Protocole QA 20-Points</span>
+                      <span>Protocole QA 20-Points</span>
                     </div>
                     <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
                   </Link>
 
                   <Link
                     href="/team/workload"
-                    className="flex items-center justify-between p-2 rounded-lg text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+                    className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <Building2 className="w-3.5 h-3.5 text-purple-600" />
@@ -870,7 +856,7 @@ export default function SopDetailPage() {
                     href="https://minerva-os-lite-desktop.vercel.app/today"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between p-2 rounded-lg text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+                    className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <Target className="w-3.5 h-3.5 text-blue-600" />
@@ -881,7 +867,7 @@ export default function SopDetailPage() {
 
                   <Link
                     href="/leads"
-                    className="flex items-center justify-between p-2 rounded-lg text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+                    className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <Zap className="w-3.5 h-3.5 text-emerald-600" />
@@ -892,7 +878,7 @@ export default function SopDetailPage() {
 
                   <Link
                     href="/proposals"
-                    className="flex items-center justify-between p-2 rounded-lg text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+                    className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <FileText className="w-3.5 h-3.5 text-amber-600" />
@@ -903,7 +889,7 @@ export default function SopDetailPage() {
 
                   <Link
                     href="/acquisition"
-                    className="flex items-center justify-between p-2 rounded-lg text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+                    className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <Target className="w-3.5 h-3.5 text-zinc-600" />
@@ -916,7 +902,7 @@ export default function SopDetailPage() {
                 <>
                   <Link
                     href="/overview"
-                    className="flex items-center justify-between p-2 rounded-lg text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+                    className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <Zap className="w-3.5 h-3.5 text-purple-600" />
@@ -927,7 +913,7 @@ export default function SopDetailPage() {
 
                   <Link
                     href="/clients"
-                    className="flex items-center justify-between p-2 rounded-lg text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+                    className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <Building2 className="w-3.5 h-3.5 text-blue-600" />
@@ -938,7 +924,7 @@ export default function SopDetailPage() {
 
                   <Link
                     href="/team/workload"
-                    className="flex items-center justify-between p-2 rounded-lg text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+                    className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
@@ -949,7 +935,7 @@ export default function SopDetailPage() {
 
                   <Link
                     href="/invoices"
-                    className="flex items-center justify-between p-2 rounded-lg text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
+                    className="flex items-center justify-between p-1.5 rounded-md text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <FileText className="w-3.5 h-3.5 text-zinc-600" />
@@ -961,14 +947,13 @@ export default function SopDetailPage() {
               )}
             </div>
 
-            {/* Button to create document */}
             <div className="pt-2 border-t border-zinc-100">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleCreateProspectDoc}
                 disabled={creatingDoc}
-                className="w-full text-xs h-8 text-zinc-700 hover:text-zinc-900 border-zinc-200 hover:bg-zinc-50 gap-1.5 cursor-pointer"
+                className="w-full text-xs h-7 text-zinc-700 hover:text-zinc-900 border-zinc-200 hover:bg-zinc-50 gap-1.5 cursor-pointer"
               >
                 <FileText className="w-3.5 h-3.5 text-emerald-600" />
                 <span>+ Fiche de travail</span>
@@ -984,6 +969,6 @@ export default function SopDetailPage() {
         onClose={() => setIsYouTubeModalOpen(false)}
         defaultCategory={effectiveWorkspace === 'tech' ? 'tech' : effectiveWorkspace === 'managing' ? 'managing' : 'prospection'}
       />
-    </PageFadeIn>
+    </div>
   );
 }
