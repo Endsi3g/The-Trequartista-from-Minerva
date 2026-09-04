@@ -71,11 +71,18 @@ export default function PublicSopSharePage() {
     })();
   }, [rawId]);
 
+  // Clean markdown content to avoid any duplicate title rendered by ReactMarkdown
+  const sanitizedMarkdown = useMemo(() => {
+    if (!sop?.content_markdown) return '';
+    // Strip leading h1 `# Title` if present since the page header already displays sop.title
+    return sop.content_markdown.replace(/^#\s+[^\n]+\n+/, '');
+  }, [sop?.content_markdown]);
+
   // Extract Table of Contents
   const tocItems = useMemo(() => {
-    if (!sop?.content_markdown) return [];
-    return extractToc(sop.content_markdown);
-  }, [sop?.content_markdown]);
+    if (!sanitizedMarkdown) return [];
+    return extractToc(sanitizedMarkdown);
+  }, [sanitizedMarkdown]);
 
   // Keyboard shortcut listener for Fullscreen
   useEffect(() => {
@@ -295,20 +302,17 @@ export default function PublicSopSharePage() {
         {/* COLONNE CENTRALE : Contenu de la SOP */}
         <main className="min-w-0 bg-white border border-zinc-200 rounded-xl p-8 shadow-xs space-y-8">
           {/* Header de la SOP */}
-          <div className="space-y-4 border-b border-zinc-100 pb-6">
+          <div className="space-y-3 border-b border-zinc-100 pb-5">
             <div className="flex items-center gap-2 flex-wrap text-xs">
-              <Badge variant="neutral" className="text-xs font-semibold">
-                {sop.category}
-              </Badge>
-              {sop.is_featured && (
-                <Badge variant="green" className="text-xs font-bold uppercase tracking-wider">
-                  FONDATRICE
-                </Badge>
-              )}
-              <span className="text-xs font-mono text-zinc-400 flex items-center gap-1 ml-auto" style={MONO}>
-                <Clock className="w-3.5 h-3.5" />
-                <span>{sop.read_time_min || 15} min</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 text-zinc-800 border border-zinc-200 text-xs font-medium font-sans">
+                <span>{sop.category.includes('Framer') ? '🎨' : '⚡'}</span>
+                <span>{sop.category}</span>
               </span>
+              {sop.pillar && (
+                <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider" style={MONO}>
+                  Spec Pilier : {sop.pillar}
+                </span>
+              )}
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-zinc-950 tracking-tight leading-tight">
@@ -324,8 +328,8 @@ export default function PublicSopSharePage() {
 
           {/* Technical Documentation Content */}
           <div className="prose-container">
-            {sop.content_markdown ? (
-              <SopMarkdownRenderer content={sop.content_markdown} />
+            {sanitizedMarkdown ? (
+              <SopMarkdownRenderer content={sanitizedMarkdown} />
             ) : (
               <p className="text-xs text-zinc-400 py-12 text-center">Contenu en cours de rédaction.</p>
             )}

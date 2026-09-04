@@ -139,11 +139,18 @@ export default function SopDetailPage() {
     })();
   }, [rawId]);
 
+  // Clean markdown content to avoid any duplicate title rendered by ReactMarkdown
+  const sanitizedMarkdown = useMemo(() => {
+    if (!sop?.content_markdown) return '';
+    // Strip leading h1 `# Title` if present since the page header already displays sop.title
+    return sop.content_markdown.replace(/^#\s+[^\n]+\n+/, '');
+  }, [sop?.content_markdown]);
+
   // Extract Table of Contents
   const tocItems = useMemo(() => {
-    if (!sop?.content_markdown) return [];
-    return extractToc(sop.content_markdown);
-  }, [sop?.content_markdown]);
+    if (!sanitizedMarkdown) return [];
+    return extractToc(sanitizedMarkdown);
+  }, [sanitizedMarkdown]);
 
   // Scrollspy for TOC
   useEffect(() => {
@@ -322,6 +329,19 @@ export default function SopDetailPage() {
   // Dynamic Actionable Script Template
   const sampleOutreachScript = sop.script_template
     ? sop.script_template
+    : sop.id === 'sop-dev-02-framer' || sop.category === 'Design Framer'
+    ? `// Configuration Webhook Framer -> Minerva OS (/api/webhooks/roi-event)
+{
+  "event": "lead_captured",
+  "client_id": "tb-toitures-beauchemin",
+  "data": {
+    "full_name": "Marc Tremblay",
+    "email": "marc@toituresbeauchemin.ca",
+    "phone": "+1 (514) 555-0199",
+    "service_interet": "Refonte Complète Framer",
+    "source": "Landing Page Framer Hero CTA"
+  }
+}`
     : isTechSop
     ? `// Protocole Terminal Minerva Standard\ngit checkout main && git pull origin main\ngit checkout -b feat/nom-de-branche\nnpm run dev\n// Vérification stricte TypeScript obligatoire\nnpx tsc --noEmit\ngit commit -m "feat(module): description conforme"\ngit push -u origin feat/nom-de-branche`
     : isPillar1
@@ -348,6 +368,16 @@ export default function SopDetailPage() {
         }
       }
       if (extracted.length > 0) return extracted;
+    }
+    if (sop.id === 'sop-dev-02-framer' || sop.category === 'Design Framer') {
+      return [
+        'Structure 6 sections validée (Hero, Preuve, Offres, Bento, Avis, Footer)',
+        'Breakpoints Responsive vérifiés (Desktop 1200px, Tablet 810px, Mobile 390px)',
+        'Webhook Formulaire testé vers /api/webhooks/roi-event (Status 200)',
+        'Titres H1/H2, Métadonnées SEO et Balises OpenGraph configurés',
+        'Images et vidéos compressées au format WebP / MP4 léger',
+        'Domaine personnalisé relié et certificat SSL actif',
+      ];
     }
     if (isTechSop) {
       return [
@@ -526,32 +556,17 @@ export default function SopDetailPage() {
         {/* COLONNE CENTRALE : Contenu de la SOP */}
         <main className="min-w-0 bg-white border border-zinc-200 rounded-xl p-8 shadow-xs space-y-8">
           {/* Header de la SOP */}
-          <div className="space-y-4 border-b border-zinc-100 pb-6">
+          <div className="space-y-3 border-b border-zinc-100 pb-5">
             <div className="flex items-center gap-2 flex-wrap text-xs">
-              <Badge variant="neutral" className="text-xs font-semibold">
-                {sop.category}
-              </Badge>
-              <Badge
-                variant={
-                  effectiveWorkspace === 'prospection'
-                    ? 'green'
-                    : effectiveWorkspace === 'tech'
-                    ? 'blue'
-                    : 'amber'
-                }
-                className="text-xs font-bold uppercase tracking-wider"
-              >
-                {effectiveWorkspace}
-              </Badge>
-              {sop.is_featured && (
-                <Badge variant="green" className="text-xs font-bold uppercase tracking-wider">
-                  FONDATRICE
-                </Badge>
-              )}
-              <span className="text-xs font-mono text-zinc-400 flex items-center gap-1 ml-auto" style={MONO}>
-                <Clock className="w-3.5 h-3.5" />
-                <span>{sop.read_time_min || 15} min</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 text-zinc-800 border border-zinc-200 text-xs font-medium font-sans">
+                <span>{sop.category.includes('Framer') ? '🎨' : '⚡'}</span>
+                <span>{sop.category}</span>
               </span>
+              {sop.pillar && (
+                <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider" style={MONO}>
+                  Spec Pilier : {sop.pillar}
+                </span>
+              )}
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-extrabold font-display text-zinc-950 tracking-tight leading-tight">
@@ -652,8 +667,8 @@ export default function SopDetailPage() {
 
           {/* Contenu Markdown Technique Sans Boucle de Boutons IA */}
           <div>
-            {sop.content_markdown ? (
-              <SopMarkdownRenderer content={sop.content_markdown} />
+            {sanitizedMarkdown ? (
+              <SopMarkdownRenderer content={sanitizedMarkdown} />
             ) : (
               <div className="flex items-center gap-2 text-xs text-zinc-400 py-12 justify-center">
                 <Info className="w-4 h-4" />
@@ -666,7 +681,12 @@ export default function SopDetailPage() {
           <div className="bg-white border border-zinc-200 rounded-xl p-5 space-y-3 shadow-2xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-bold text-zinc-900">
-                {isTechSop ? (
+                {sop.id === 'sop-dev-02-framer' || sop.category === 'Design Framer' ? (
+                  <>
+                    <Terminal className="w-4 h-4 text-emerald-600" />
+                    <span>Configuration Webhook Framer (Payload JSON /api/webhooks/roi-event)</span>
+                  </>
+                ) : isTechSop ? (
                   <>
                     <Terminal className="w-4 h-4 text-emerald-600" />
                     <span>Protocole Terminal Recommandé</span>

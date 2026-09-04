@@ -1047,6 +1047,108 @@ WHERE NOT EXISTS (
   WHERE title = 'SOP-DEV-03 : Implémenter une Fonctionnalité Minerva (The 6-Step Loop)'
 );
 
+-- Insertion idempotente de la SOP-DEV-02 (Design Framer)
+INSERT INTO public.academy_sops (
+  title, description, category, target_workspace, content_markdown, read_time_min, author, is_essential, is_featured, is_onboarding_step, sort_order, pillar, checklist_items, script_template
+)
+SELECT
+  'Guide Pratique : Créer & Déployer un Site Framer Haute Conversion pour Clients',
+  'Architecture standard 6 sections, design tokens Minerva, intégration du Webhook ROI leads et protocole de mise en production.',
+  'Design Framer',
+  'tech',
+  'Ce standard d''agence définit la méthodologie obligatoire pour prototyper, intégrer et livrer un site Framer client en 7 jours (J+7) avec connexion directe au CRM Minerva OS via Webhooks temps réel.
+
+---
+
+## 1. Architecture & Structure Standard
+
+Chaque site vitrine ou landing page client développé sous Framer respecte rigoureusement la hiérarchie en 6 sections :
+
+1. **Hero Section Haute Conversion** : Proposition de valeur claire, badge de réassurance locale, appel à l''action principal (CTA vers modal formulaire ou appel direct) et visuel immersif.
+2. **Preuve Sociale Immédiate** : Bandeau de logos clients, note Google Business 5 étoiles et métrique d''impact chiffrée.
+3. **Offres Phares & Tarification** : Présentation des packs de services sous forme de cartes denses avec prix indicatifs et inclusions détaillées.
+4. **Bento Grid Visuel** : Galerie interactive illustrant les réalisations, l''équipe et les détails du savoir-faire artisanal ou technique.
+5. **Avis Clients & Témoignages** : Avis vérifiés avec photos authentiques et mentions géographiques de proximité.
+6. **Formulaire de Capture & Footer Légal** : Formulaire ultra-simple (4 champs max) avec déclencheur de webhook et pied de page institutionnel conforme.
+
+---
+
+## 2. Intégration du Webhook ROI Leads
+
+Tous les formulaires natifs Framer doivent transmettre les demandes de devis et réservations directement à l''API Minerva Trequartista (`/api/webhooks/roi-event`) sans passer par un service tiers payant.
+
+### Schéma du Payload Envoyé :
+
+```json
+// Configuration Webhook Framer -> Minerva OS (/api/webhooks/roi-event)
+{
+  "event": "lead_captured",
+  "client_id": "tb-toitures-beauchemin",
+  "data": {
+    "full_name": "Marc Tremblay",
+    "email": "marc@toituresbeauchemin.ca",
+    "phone": "+1 (514) 555-0199",
+    "service_interet": "Refonte Complète Framer",
+    "source": "Landing Page Framer Hero CTA"
+  }
+}
+```
+
+Le gestionnaire de webhook crée automatiquement l''opportunité dans le CRM Minerva, calcule l''attribution de canal et déclenche la notification SMS / Email d''accusé de réception.
+
+---
+
+## 3. Optimisation Performance & SEO
+
+Avant toute présentation client, le site Framer doit atteindre un score Google Lighthouse > 90 :
+
+- **Breakpoints Responsive** : Validation visuelle sur Desktop (1200px+), Tablette (810px) et Mobile (390px).
+- **Compression d''Images** : Conversion systématique au format WebP ou AVIF (taille unitaire < 150 Ko pour les visuels, < 1.5 Mo pour les boucles vidéo MP4).
+- **Structure Sémantique** : Un seul tag H1 par page, hiérarchie H2/H3 logique, et textes alternatifs (alt tags) renseignés sur chaque illustration.
+- **Métadonnées Sociales** : Titre OpenGraph (OG Title), description accrocheuse et image de partage 1200x630 px configurée.
+
+---
+
+## 4. Déploiement & Connexion Domaine
+
+Le passage en production s''effectue en 4 étapes vérifiées :
+
+1. **Configuration DNS** : Ajout des enregistrements CNAME (`sites.framer.app`) et A (`52.223.50.187`) chez le registrar du client (GoDaddy, Namecheap, Cloudflare).
+2. **Génération SSL / HTTPS** : Vérification de la propagation du certificat Let''s Encrypt automatique dans Framer.
+3. **Redirection 301** : Redirection stricte du sous-domaine `www` vers la racine (ou inversement selon la préférence client).
+4. **Recette en Direct** : Soumission d''un formulaire de test réel pour certifier la réception du lead dans la console Minerva Trequartista.',
+  12,
+  'Kael Belceus & UI/UX Architect',
+  true,
+  true,
+  false,
+  2,
+  'agency',
+  '[
+    "Structure 6 sections validée (Hero, Preuve, Offres, Bento, Avis, Footer)",
+    "Breakpoints Responsive vérifiés (Desktop 1200px, Tablet 810px, Mobile 390px)",
+    "Webhook Formulaire testé vers /api/webhooks/roi-event (Status 200)",
+    "Titres H1/H2, Métadonnées SEO et Balises OpenGraph configurés",
+    "Images et vidéos compressées au format WebP / MP4 léger",
+    "Domaine personnalisé relié et certificat SSL actif"
+  ]'::jsonb,
+  '// Configuration Webhook Framer -> Minerva OS (/api/webhooks/roi-event)
+{
+  "event": "lead_captured",
+  "client_id": "tb-toitures-beauchemin",
+  "data": {
+    "full_name": "Marc Tremblay",
+    "email": "marc@toituresbeauchemin.ca",
+    "phone": "+1 (514) 555-0199",
+    "service_interet": "Refonte Complète Framer",
+    "source": "Landing Page Framer Hero CTA"
+  }
+}'
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.academy_sops
+  WHERE title = 'Guide Pratique : Créer & Déployer un Site Framer Haute Conversion pour Clients'
+);
+
 
 -- ── 15. Télémétrie & Logs Notion AI ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.ai_generation_logs (

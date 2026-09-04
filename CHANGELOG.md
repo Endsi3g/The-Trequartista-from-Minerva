@@ -2,6 +2,19 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.30.4) — Académie SOP-DEV-02 (Framer) Alignée & Packages GSAP / Supabase Server
+
+- **SOP-DEV-02 Framer Restructuré & Dé-dupliqué (`/academy/sop-dev-02-framer`)** :
+  - **Suppression du Titre Redondant H1** : Sanitization systématique de `content_markdown` pour éliminer le titre H1 Markdown d'en-tête redondant avec le titre de la vue centrale.
+  - **Nettoyage Visuel des Badges Centraux** : Conservation exclusive du badge catégorie `[ 🎨 Design Framer ]` et du lien direct vers la spécification `[ ↗ Spec ]`, élimination des badges de statut et durées dupliqués avec la top bar.
+  - **Checklist QA Framer 6 Points** : Remplacement des items git génériques par la checklist d'audit Framer (Breakpoints Desktop 1200 / Tablette 810 / Mobile 390, Webhook ROI Leads `/api/webhooks/roi-event`, Balises SEO / OpenGraph, Médias WebP & MP4, Domaine personnalisé & SSL).
+  - **Snippet JSON Webhook Framer** : Remplacement de la boucle git par le payload JSON réel d'intégration Framer avec bouton de copie instantanée et en-tête d'exemple.
+  - **Table des Matières 4 Sections** : Navigation latérale gauche synchronisée avec les 4 piliers méthodologiques Framer.
+- **Packages & Infrastructure** :
+  - Installation et configuration des dépendances d'animation GSAP (`gsap@3.15.0`, `@gsap/react@2.1.2`).
+  - Configuration sécurisée des variables d'environnement Supabase (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_JWKS_URL`).
+  - Synchronisation idempotente de la table `academy_sops` dans `supabase/deploy_production_complete.sql`.
+
 ## 2026-09-04 (v2.30.3) — Double Refonte Synchronisée : Extranet Client (/portal/[token]) & Console Rétention Client (/clients/[id])
 
 - **Portail Client Extranet Haute Densité (`/portal/[token]`, Style Linear / Stripe)** :

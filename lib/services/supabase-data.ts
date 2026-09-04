@@ -606,10 +606,91 @@ const FALLBACK_DEV_SOPS: AcademySOP[] = [
   {
     id: 'sop-dev-02-framer',
     title: 'Guide Pratique : Créer & Déployer un Site Framer Haute Conversion pour Clients',
-    description: 'Architecture de page client, design tokens Minerva, intégration de formulaires webhooks et publication en ligne.',
+    description: 'Architecture standard 6 sections, design tokens Minerva, intégration du Webhook ROI leads et protocole de mise en production.',
     category: 'Design Framer',
     pillar: 'agency',
-    content_markdown: '# SOP-DEV-02 — Guide Pratique : Créer & Déployer un Site Framer Haute Conversion pour Clients\n\n## 1. Structure Standard\n1. Hero Section avec CTA\n2. Preuve Sociale & Avis\n3. Menu & Offres Phares\n4. Galerie Bento Grid\n5. Témoignages & Avis Google\n6. Formulaire connecté & Footer\n\n## 2. Webhooks Minerva\n- Envoi POST vers /api/webhooks/roi-event\n- Payload : clientId, name, email, phone, channel, value',
+    target_workspace: 'tech',
+    content_markdown: `Ce standard d'agence définit la méthodologie obligatoire pour prototyper, intégrer et livrer un site Framer client en 7 jours (J+7) avec connexion directe au CRM Minerva OS via Webhooks temps réel.
+
+---
+
+## 1. Architecture & Structure Standard
+
+Chaque site vitrine ou landing page client développé sous Framer respecte rigoureusement la hiérarchie en 6 sections :
+
+1. **Hero Section Haute Conversion** : Proposition de valeur claire, badge de réassurance locale, appel à l'action principal (CTA vers modal formulaire ou appel direct) et visuel immersif.
+2. **Preuve Sociale Immédiate** : Bandeau de logos clients, note Google Business 5 étoiles et métrique d'impact chiffrée.
+3. **Offres Phares & Tarification** : Présentation des packs de services sous forme de cartes denses avec prix indicatifs et inclusions détaillées.
+4. **Bento Grid Visuel** : Galerie interactive illustrant les réalisations, l'équipe et les détails du savoir-faire artisanal ou technique.
+5. **Avis Clients & Témoignages** : Avis vérifiés avec photos authentiques et mentions géographiques de proximité.
+6. **Formulaire de Capture & Footer Légal** : Formulaire ultra-simple (4 champs max) avec déclencheur de webhook et pied de page institutionnel conforme.
+
+---
+
+## 2. Intégration du Webhook ROI Leads
+
+Tous les formulaires natifs Framer doivent transmettre les demandes de devis et réservations directement à l'API Minerva Trequartista (\`/api/webhooks/roi-event\`) sans passer par un service tiers payant.
+
+### Schéma du Payload Envoyé :
+
+\`\`\`json
+// Configuration Webhook Framer -> Minerva OS (/api/webhooks/roi-event)
+{
+  "event": "lead_captured",
+  "client_id": "tb-toitures-beauchemin",
+  "data": {
+    "full_name": "Marc Tremblay",
+    "email": "marc@toituresbeauchemin.ca",
+    "phone": "+1 (514) 555-0199",
+    "service_interet": "Refonte Complète Framer",
+    "source": "Landing Page Framer Hero CTA"
+  }
+}
+\`\`\`
+
+Le gestionnaire de webhook crée automatiquement l'opportunité dans le CRM Minerva, calcule l'attribution de canal et déclenche la notification SMS / Email d'accusé de réception.
+
+---
+
+## 3. Optimisation Performance & SEO
+
+Avant toute présentation client, le site Framer doit atteindre un score Google Lighthouse > 90 :
+
+- **Breakpoints Responsive** : Validation visuelle sur Desktop (1200px+), Tablette (810px) et Mobile (390px).
+- **Compression d'Images** : Conversion systématique au format WebP ou AVIF (taille unitaire < 150 Ko pour les visuels, < 1.5 Mo pour les boucles vidéo MP4).
+- **Structure Sémantique** : Un seul tag H1 par page, hiérarchie H2/H3 logique, et textes alternatifs (alt tags) renseignés sur chaque illustration.
+- **Métadonnées Sociales** : Titre OpenGraph (OG Title), description accrocheuse et image de partage 1200x630 px configurée.
+
+---
+
+## 4. Déploiement & Connexion Domaine
+
+Le passage en production s'effectue en 4 étapes vérifiées :
+
+1. **Configuration DNS** : Ajout des enregistrements CNAME (\`sites.framer.app\`) et A (\`52.223.50.187\`) chez le registrar du client (GoDaddy, Namecheap, Cloudflare).
+2. **Génération SSL / HTTPS** : Vérification de la propagation du certificat Let's Encrypt automatique dans Framer.
+3. **Redirection 301** : Redirection stricte du sous-domaine \`www\` vers la racine (ou inversement selon la préférence client).
+4. **Recette en Direct** : Soumission d'un formulaire de test réel pour certifier la réception du lead dans la console Minerva Trequartista.`,
+    checklist_items: [
+      'Structure 6 sections validée (Hero, Preuve, Offres, Bento, Avis, Footer)',
+      'Breakpoints Responsive vérifiés (Desktop 1200px, Tablet 810px, Mobile 390px)',
+      'Webhook Formulaire testé vers /api/webhooks/roi-event (Status 200)',
+      'Titres H1/H2, Métadonnées SEO et Balises OpenGraph configurés',
+      'Images et vidéos compressées au format WebP / MP4 léger',
+      'Domaine personnalisé relié et certificat SSL actif',
+    ],
+    script_template: `// Configuration Webhook Framer -> Minerva OS (/api/webhooks/roi-event)
+{
+  "event": "lead_captured",
+  "client_id": "tb-toitures-beauchemin",
+  "data": {
+    "full_name": "Marc Tremblay",
+    "email": "marc@toituresbeauchemin.ca",
+    "phone": "+1 (514) 555-0199",
+    "service_interet": "Refonte Complète Framer",
+    "source": "Landing Page Framer Hero CTA"
+  }
+}`,
     author: 'Kael Belceus & UI/UX Architect',
     read_time_min: 12,
     is_essential: true,
