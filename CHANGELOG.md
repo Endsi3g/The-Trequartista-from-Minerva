@@ -2,6 +2,35 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.30.11) — Phase 2 : Refonte Mintlify du Workspace Managing & Cockpit Managérial d'Entraide
+
+- **Transformation Intégrale du Managing Overview (`ManagingOverview.tsx`)** :
+  - **Éradication du Tableau E-commerce Hors Sujet** : Remplacement des transactions aléatoires par un véritable Cockpit Managérial structuré autour de 3 piliers opérationnels et de 3 sous-onglets (`Cockpit`, `Équipe & Entraide`, `Santé des Comptes`).
+  - **Pilier 1 : Santé, Disponibilité & Charge de l'Équipe** :
+    - Grille de cartes de collaborateurs officiels (`Kael Belceus`, `Manpreet Singh`, `Rayan`, `Samuel Olamide Adeleke`, `Amine Yahya Karroubi`).
+    - Avatars carrés doux 4px, rôles officiels et jauges de charge active (`X tâches`).
+    - Badges de statut Mintlify : *Disponible* (vert `#0c8c5e`), *Optimal* (neutre), *Surcharge* (ambre).
+  - **Pilier 2 : Santé & Rétention des Comptes Clients** :
+    - Score de santé composite transparent (calculé d'après l'ancienneté du dernier contact &lt;7j/7-14j/&gt;14j, les retards de livrables et la situation des comptes).
+    - Score global du portefeuille (94%) et identification visuelle des comptes sous tension.
+    - Tiroir d'intervention de rétention en 1 clic : message de courtoisie pré-rédigé et attribution d'un référent sous 24h.
+  - **Pilier 3 : Actions Managériales Recommandées en Direct** :
+    - 4 cartes d'actions immédiates : *Débloquer un membre* (&gt;48h), *Rééquilibrer la charge* (5+ tâches), *Planifier un 1-on-1*, et *Sauver un compte à risque*.
+- **Module « S'Entraider » & Binômes d'Équipe (Peer Pairing)** :
+  - Détection des collaborateurs en surchauffe et association avec des pairs disponibles pour lever les goulots d'étranglement.
+  - Clôture et archivage des binômes avec persistance locale.
+- **Routine de Stand-up Quotidien Express (&lt;3 min)** :
+  - Modale guidée en 3 étapes : 1. Levée des blocages, 2. Priorisation des livrables clients du jour, 3. Confirmation des binômes d'entraide.
+  - Option de diffusion automatique du récapitulatif dans le canal `#annonces` du chat d'équipe.
+- **Point 1-on-1 & Coaching Individuel** :
+  - Tiroir de consigne : score d'énergie/motivation (1 à 5), écoute active et engagements d'entraide hebdomadaires.
+- **Repositionnement des Factures vers `/invoices`** :
+  - Déplacement propre de la gestion financière vers `/invoices`, avec indicateurs discrets de MRR et de rétention conservés dans l'en-tête.
+- **Contrôle Qualité Validé** :
+  - `npm run verify:design` : **100.0% de conformité** sur 310 fichiers.
+  - `npx tsc --noEmit` : **0 erreur TypeScript**.
+  - `npm run build` : **127 routes compilées** avec succès dans Next.js 16 (Turbopack).
+
 ## 2026-09-04 (v2.30.10) — Phase 1 : Refonte Mintlify & Décomplexification Radicale du Workspace Tech
 
 - **Décomplexification Radicale du Tech Cockpit (`/tech`)** :
