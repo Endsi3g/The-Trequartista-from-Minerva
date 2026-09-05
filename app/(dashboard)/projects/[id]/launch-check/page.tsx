@@ -93,7 +93,7 @@ export default function LaunchCheckPage() {
         particleCount: 120,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#1c9a6f', '#dfff5f', '#ffffff'],
+        colors: ['#059669', '#34d399', '#ffffff'],
       });
       setIsModalOpen(true);
     }

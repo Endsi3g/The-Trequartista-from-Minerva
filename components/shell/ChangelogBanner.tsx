@@ -28,7 +28,7 @@ export function ChangelogBanner() {
     <div className="flex items-center justify-center gap-2.5 px-4 py-2 bg-[#059669] text-white text-xs relative z-50 border-b border-mv-green-dark">
       <div className="flex items-center gap-2 flex-wrap justify-center pr-6">
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/30 text-white text-[11px] font-bold shrink-0">
-          <Sparkles className="w-3 h-3 text-[#dfff5f]" />
+          <Sparkles className="w-3 h-3 text-[#a7f3d0]" />
           {entry.version ? `v${entry.version}` : 'Nouveauté'}
         </span>
 
@@ -38,7 +38,7 @@ export function ChangelogBanner() {
 
         <Link
           href="/changelog"
-          className="inline-flex items-center gap-1 text-[#dfff5f] hover:underline font-bold text-xs shrink-0"
+          className="inline-flex items-center gap-1 text-[#a7f3d0] hover:underline font-bold text-xs shrink-0"
         >
           <span>Lire la suite</span>
           <ArrowRight className="w-3 h-3" />

@@ -26,7 +26,7 @@ export function BarChart({
   subtitle,
   height = 200,
   color = '#059669',
-  secondaryColor = '#6ba585',
+  secondaryColor = '#34d399',
   valuePrefix = '',
   valueSuffix = '',
 }: BarChartProps) {
@@ -133,7 +133,7 @@ export function BarChart({
                       width="90"
                       height="22"
                       rx="4"
-                      fill="#1a1f1c"
+                      fill="#18181b"
                     />
                     <text
                       x={centerX}

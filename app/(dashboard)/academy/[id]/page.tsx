@@ -710,7 +710,7 @@ export default function SopDetailPage() {
             </div>
 
             <pre
-              className="p-4 bg-[#0E0E10] border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 whitespace-pre-wrap leading-relaxed shadow-inner overflow-x-auto"
+              className="p-4 bg-[#09090b] border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 whitespace-pre-wrap leading-relaxed shadow-inner overflow-x-auto"
               style={MONO}
             >
               {sampleOutreachScript}

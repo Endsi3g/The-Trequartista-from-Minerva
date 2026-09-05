@@ -2,6 +2,16 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.30.6) — Généralisation Exhaustive du Design System Minerva (100% Tokens)
+
+- **Harmonisation Globale des Tokens sur 306 Fichiers (`100.0% de Conformité`)** :
+  - **Élimination Complète des Couleurs Arbitraires** : Remplacement systématique des 61 occurrences de valeurs hexadécimales non-standard par les tokens officiels Minerva dans `DESIGN_SYSTEM.md`.
+  - **Authentification & Onboarding Unifiés (`/login`, `/signup`, `/onboarding`)** : Éradication de `#0f261a` au profit du token officiel `--mv-green-darker` (`#065f46`), et migration intégrale de l'échelle `neutral-*` vers l'échelle officielle `zinc-*`.
+  - **Moteur Graphique & Dataviz Conformes (`BarChart`, `GaugeChart`, `PerformanceBarChart`, `ImpactEffortMatrix`, `ProcessFlowDiagram`)** : Remplacement des teintes non conformes (`#6ba585`, `#dfff5f`, infobulles `#1a1f1c`) par l'accent Émeraude `#059669`, le tint `#ecfdf5`, le jalon `#34d399` et la surface d'infobulle `#18181b`. Restructuration des statuts du diagramme de flux d'audit (`#fef2f2`, `#ef4444`, `#e4e4e7`).
+  - **Vues Métiers & Shell Système** : Alignement des indicateurs de tendance dans l'Overview (`trendColor: #ef4444` au lieu de `#e11d48`), des confettis du lancement projet (`launch-check`), des badges de département (`/team`), des blocs de code Markdown (`#09090b`), de la bannière de changelog (`#a7f3d0`), du document de proposition PDF et de l'image de partage réseaux OpenGraph (`opengraph-image.tsx`).
+- **Validation du Contrôle Automatisé (`npm run verify:design`)** :
+  - Audit validé avec un score parfait de 100.0% de conformité sur l'intégralité du produit.
+
 ## 2026-09-04 (v2.30.5) — Charte Design System Minerva, 20 Lois UX & Audit Automatisé des Tokens
 
 - **Charte Minerva Design System & UX (`DESIGN_SYSTEM.md`)** :

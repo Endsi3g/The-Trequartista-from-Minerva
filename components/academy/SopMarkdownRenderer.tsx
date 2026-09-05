@@ -140,7 +140,7 @@ export function SopMarkdownRenderer({ content, className }: SopMarkdownRendererP
             if (isBlock) {
               const lang = match ? match[1] : 'code';
               return (
-                <div className="relative my-5 rounded-xl overflow-hidden border border-zinc-800 bg-[#121214] text-zinc-100 not-prose shadow-sm">
+                <div className="relative my-5 rounded-xl overflow-hidden border border-zinc-800 bg-[#09090b] text-zinc-100 not-prose shadow-sm">
                   {/* Top Bar */}
                   <div className="flex items-center justify-between px-3.5 py-2 bg-[#18181B] border-b border-zinc-800/80 text-[11px] text-zinc-400 font-mono" style={MONO}>
                     <div className="flex items-center gap-2">
@@ -168,7 +168,7 @@ export function SopMarkdownRenderer({ content, className }: SopMarkdownRendererP
                   </div>
                   {/* Code Body */}
                   <pre
-                    className="p-4 text-xs font-mono overflow-x-auto leading-relaxed text-zinc-200 bg-[#0E0E10] selection:bg-emerald-500/30"
+                    className="p-4 text-xs font-mono overflow-x-auto leading-relaxed text-zinc-200 bg-[#09090b] selection:bg-emerald-500/30"
                     style={MONO}
                   >
                     <code>{codeString}</code>

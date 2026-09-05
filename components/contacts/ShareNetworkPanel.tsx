@@ -16,7 +16,7 @@ export function ShareNetworkPanel() {
 
   useEffect(() => {
     if (!open || !url) return;
-    QRCode.toDataURL(url, { width: 240, margin: 1, color: { dark: '#1a1a1a', light: '#ffffff' } })
+    QRCode.toDataURL(url, { width: 240, margin: 1, color: { dark: '#18181b', light: '#ffffff' } })
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(null));
   }, [open, url]);

@@ -22,7 +22,7 @@ export function ProcessFlowDiagram({ steps, height = 480 }: ProcessFlowDiagramPr
       id: 'before-label',
       position: { x: 0, y: -60 },
       data: { label: 'AVANT (processus actuel)' },
-      style: { background: 'transparent', border: 'none', fontWeight: 800, fontSize: 12, color: '#a8ab9f', width: COL_WIDTH },
+      style: { background: 'transparent', border: 'none', fontWeight: 800, fontSize: 12, color: '#71717a', width: COL_WIDTH },
       draggable: false,
       selectable: false,
     });
@@ -46,8 +46,8 @@ export function ProcessFlowDiagram({ steps, height = 480 }: ProcessFlowDiagramPr
         sourcePosition: Position.Right,
         style: {
           width: COL_WIDTH,
-          background: isFriction ? '#fdeceb' : '#f7f6f0',
-          border: isFriction ? '1.5px solid #d9483a' : '1px solid #e5e3da',
+          background: isFriction ? '#fef2f2' : '#ffffff',
+          border: isFriction ? '1.5px solid #ef4444' : '1px solid #e4e4e7',
           borderRadius: 10,
           padding: 10,
           fontSize: 11,
@@ -63,7 +63,7 @@ export function ProcessFlowDiagram({ steps, height = 480 }: ProcessFlowDiagramPr
           targetPosition: Position.Left,
           style: {
             width: COL_WIDTH,
-            background: '#e6f5ee',
+            background: '#ecfdf5',
             border: '1.5px solid #059669',
             borderRadius: 10,
             padding: 10,
@@ -90,7 +90,7 @@ export function ProcessFlowDiagram({ steps, height = 480 }: ProcessFlowDiagramPr
   return (
     <div style={{ height }} className="bg-mv-cream-soft border border-mv-border rounded-xl overflow-hidden">
       <ReactFlow nodes={nodes} edges={edges} fitView fitViewOptions={{ padding: 0.3 }} proOptions={{ hideAttribution: true }} nodesDraggable={false} nodesConnectable={false}>
-        <Background color="#e5e3da" gap={20} />
+        <Background color="#e4e4e7" gap={20} />
         <Controls showInteractive={false} />
       </ReactFlow>
     </div>

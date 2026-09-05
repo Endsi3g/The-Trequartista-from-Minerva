@@ -14,11 +14,11 @@ export default function SignupPage() {
         {/* Scrims -- guarantee text legibility regardless of the gradient motion underneath */}
         <div
           className="absolute inset-x-0 top-0 pointer-events-none"
-          style={{ height: '11rem', background: 'linear-gradient(to bottom, #0f261a 0%, #0f261a 35%, transparent 100%)' }}
+          style={{ height: '11rem', background: 'linear-gradient(to bottom, #065f46 0%, #065f46 35%, transparent 100%)' }}
         />
         <div
           className="absolute inset-x-0 bottom-0 pointer-events-none"
-          style={{ height: '24rem', background: 'linear-gradient(to top, #0f261a 0%, #0f261a 45%, transparent 100%)' }}
+          style={{ height: '24rem', background: 'linear-gradient(to top, #065f46 0%, #065f46 45%, transparent 100%)' }}
         />
         <div className="relative z-10 flex flex-col justify-between p-10 xl:p-14 w-full h-full">
           <Link href="/" className="drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">

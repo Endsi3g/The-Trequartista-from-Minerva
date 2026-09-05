@@ -27,6 +27,8 @@ const ALLOWED_HEX_TOKENS = new Set([
   '#2563eb', '#eff6ff', '#1d4ed8', '#3b82f6', // Blue / Tech
   '#7c3aed', '#f3e8ff', '#6d28d9', '#8b5cf6', // Purple / Fondatrice
   '#0284c7', '#0369a1', '#e0f2fe', // Sky
+  // Third-party official brand logos (Google OAuth SSO SVG)
+  '#4285f4', '#34a853', '#fbbc05', '#ea4335',
 ]);
 
 // Ignored files (third-party, SVG illustrations, generated icons)

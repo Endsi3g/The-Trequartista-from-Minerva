@@ -46,7 +46,7 @@ export function ImpactEffortMatrix({ points, title, subtitle, height = 320 }: Im
       <div className="relative w-full overflow-hidden">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible">
           {/* Quadrant backgrounds */}
-          <rect x={padding} y={padding} width={plotSize / 2} height={plotSize / 2} fill="#dfff5f" opacity={0.12} />
+          <rect x={padding} y={padding} width={plotSize / 2} height={plotSize / 2} fill="#ecfdf5" opacity={0.6} />
           <rect x={padding + plotSize / 2} y={padding} width={plotSize / 2} height={plotSize / 2} fill="#059669" opacity={0.12} />
           <rect x={padding} y={padding + plotSize / 2} width={plotSize / 2} height={plotSize / 2} fill="var(--mv-border)" opacity={0.15} />
           <rect x={padding + plotSize / 2} y={padding + plotSize / 2} width={plotSize / 2} height={plotSize / 2} fill="var(--mv-amber)" opacity={0.1} />
@@ -66,7 +66,7 @@ export function ImpactEffortMatrix({ points, title, subtitle, height = 320 }: Im
             const isActive = activeId === p.id;
             return (
               <g key={p.id} onMouseEnter={() => setActiveId(p.id)} onMouseLeave={() => setActiveId(null)} className="cursor-pointer">
-                <circle cx={x} cy={y} r={isActive ? 9 : 7} fill={isActive ? '#dfff5f' : '#059669'} stroke="#ffffff" strokeWidth="2" className="transition-all duration-150" />
+                <circle cx={x} cy={y} r={isActive ? 9 : 7} fill={isActive ? '#34d399' : '#059669'} stroke="#ffffff" strokeWidth="2" className="transition-all duration-150" />
               </g>
             );
           })}

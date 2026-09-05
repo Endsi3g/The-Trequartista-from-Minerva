@@ -342,7 +342,7 @@ export default function OverviewPage() {
           sublabel: lateProjects.length === 0 ? 'Tout est à jour' : `${lateProjects.length} à surveiller`,
           alert: lateProjects.length > 0,
           trendData: [Math.max(1, projects.length - 1), projects.length, Math.max(1, projects.length)],
-          trendColor: lateProjects.length > 0 ? '#e11d48' : '#059669',
+          trendColor: lateProjects.length > 0 ? '#ef4444' : '#059669',
         },
         {
           key: 'calls',
@@ -389,7 +389,7 @@ export default function OverviewPage() {
           sublabel: lateProjects.length === 0 ? 'Tout est à jour' : `${lateProjects.length} à surveiller`,
           alert: lateProjects.length > 0,
           trendData: [Math.max(1, projects.length - 1), projects.length],
-          trendColor: lateProjects.length > 0 ? '#e11d48' : '#059669',
+          trendColor: lateProjects.length > 0 ? '#ef4444' : '#059669',
         },
         {
           key: 'calls',

@@ -89,11 +89,11 @@ const DEPARTMENT_COLORS: Record<string, { bg: string; text: string; dot: string 
   Ventes: { bg: 'bg-sky-50 border-sky-200', text: 'text-sky-800', dot: 'bg-sky-500' },
   'Tech & IA': { bg: 'bg-purple-50 border-purple-200', text: 'text-purple-800', dot: 'bg-purple-500' },
   Engineering: { bg: 'bg-purple-50 border-purple-200', text: 'text-purple-800', dot: 'bg-purple-500' },
-  Operations: { bg: 'bg-slate-100 border-slate-200', text: 'text-slate-800', dot: 'bg-slate-500' },
+  Operations: { bg: 'bg-zinc-100 border-zinc-200', text: 'text-zinc-800', dot: 'bg-zinc-500' },
 };
 
 function getDepartmentStyle(dept: string | null) {
-  if (!dept) return { bg: 'bg-gray-100 border-gray-200', text: 'text-gray-700', dot: 'bg-gray-400' };
+  if (!dept) return { bg: 'bg-zinc-100 border-zinc-200', text: 'text-zinc-700', dot: 'bg-zinc-400' };
   return DEPARTMENT_COLORS[dept] || { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-800', dot: 'bg-emerald-500' };
 }
 

@@ -19,7 +19,7 @@ export function HalftoneImage({
   src,
   className,
   dotSpacing = 6,
-  dotColor = '#1a1f1c',
+  dotColor = '#18181b',
   backgroundColor = '#ffffff',
 }: HalftoneImageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
