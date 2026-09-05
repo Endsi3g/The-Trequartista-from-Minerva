@@ -32,6 +32,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { AnimatedNumber } from '@/components/ui/animated-number';
+import { Tooltip } from '@/components/ui/tooltip';
+import { CopyButton } from '@/components/ui/copy-button';
 import { useToast } from '@/components/providers/ToastProvider';
 import { SkeletonRows } from '@/components/ui/skeleton';
 import type { Invoice, InvoiceType, InvoiceStatus, InvoiceCurrency, FinancialSummary, Client } from '@/lib/types';
@@ -516,7 +518,7 @@ export default function InvoicesHubPage() {
 
       {/* ── 4. Dense High-Precision DataTable (36px per row) ── */}
       {(activeTab === 'invoices' || activeTab === 'quotes') && (
-        <div className="bg-white border border-zinc-200 rounded-lg shadow-2xs overflow-hidden">
+        <div className="bg-white border border-zinc-200 rounded-2xl shadow-2xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
@@ -525,10 +527,26 @@ export default function InvoicesHubPage() {
                   <th className="py-2 px-3 font-semibold min-w-[180px]">CLIENT</th>
                   <th className="py-2 px-3 font-semibold w-24">ÉMISSION</th>
                   <th className="py-2 px-3 font-semibold w-24">ÉCHÉANCE</th>
-                  <th className="py-2 px-3 font-semibold w-28 text-right">MONTANT HT</th>
-                  <th className="py-2 px-3 font-semibold w-24 text-right">TPS/TVQ</th>
-                  <th className="py-2 px-3 font-semibold w-32 text-right">TOTAL TTC</th>
-                  <th className="py-2 px-3 font-semibold w-24 text-center">STATUT</th>
+                  <th className="py-2 px-3 font-semibold w-28 text-right">
+                    <Tooltip content="Montant hors taxes (avant TPS 5% et TVQ 9.975%)">
+                      <span className="cursor-help">MONTANT HT</span>
+                    </Tooltip>
+                  </th>
+                  <th className="py-2 px-3 font-semibold w-24 text-right">
+                    <Tooltip content="Total combiné des taxes provinciale et fédérale québécoises">
+                      <span className="cursor-help">TPS/TVQ</span>
+                    </Tooltip>
+                  </th>
+                  <th className="py-2 px-3 font-semibold w-32 text-right">
+                    <Tooltip content="Montant total final à payer en devise locale">
+                      <span className="cursor-help">TOTAL TTC</span>
+                    </Tooltip>
+                  </th>
+                  <th className="py-2 px-3 font-semibold w-24 text-center">
+                    <Tooltip content="État d'encaissement ou d'émission de la facture">
+                      <span className="cursor-help">STATUT</span>
+                    </Tooltip>
+                  </th>
                   <th className="py-2 px-3 font-semibold w-32 text-right">ACTIONS</th>
                 </tr>
               </thead>
@@ -553,7 +571,7 @@ export default function InvoicesHubPage() {
                               setModalType(activeTab === 'invoices' ? 'invoice' : 'quote');
                               setShowCreateModal(true);
                             }}
-                            className="h-7 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium inline-flex items-center gap-1 cursor-pointer transition-colors"
+                            className="h-7 px-3 bg-[#08090a] hover:bg-zinc-800 text-white rounded text-xs font-medium inline-flex items-center gap-1 cursor-pointer transition-colors"
                           >
                             <Plus size={12} />
                             <span>Créer maintenant</span>
@@ -576,13 +594,21 @@ export default function InvoicesHubPage() {
                     return (
                       <tr
                         key={inv.id}
-                        className="h-9 hover:bg-zinc-50/80 transition-colors group select-none"
+                        className={cn(
+                          'h-9 hover:bg-zinc-50/80 transition-colors group select-none',
+                          isPaid && 'opacity-65 bg-zinc-50/40 hover:opacity-100'
+                        )}
                       >
                         {/* Ref number */}
                         <td className="py-1.5 px-3 font-mono text-[11.5px] font-semibold text-zinc-900 whitespace-nowrap">
-                          <Link href={`/invoices/${inv.id}`} className="hover:text-emerald-700 hover:underline">
-                            {inv.invoice_number}
-                          </Link>
+                          <div className="flex items-center gap-1">
+                            <Link href={`/invoices/${inv.id}`} className="hover:text-emerald-700 hover:underline">
+                              {inv.invoice_number}
+                            </Link>
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <CopyButton text={inv.invoice_number} tooltipText="Copier le numéro" />
+                            </div>
+                          </div>
                         </td>
 
                         {/* Client name */}

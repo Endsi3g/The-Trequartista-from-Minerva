@@ -28,6 +28,8 @@ import { PaginatedColumn } from '@/components/ui/paginated-column';
 import { SkeletonKanban, SkeletonRows } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { AnimatedNumber } from '@/components/ui/animated-number';
+import { Tooltip } from '@/components/ui/tooltip';
+import { CopyButton } from '@/components/ui/copy-button';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { cn } from '@/lib/utils';
 
@@ -550,7 +552,7 @@ export default function TasksPage() {
               })}
             </div>
           ) : (
-            <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
+            <div className="bg-mv-surface border border-mv-border rounded-2xl overflow-hidden shadow-2xs">
               <table className="w-full text-[12.5px] border-collapse">
                 <thead>
                   <tr className="h-7 bg-black/[0.02] border-b border-mv-border text-[10.5px] font-medium uppercase tracking-wider text-zinc-400">
@@ -565,9 +567,21 @@ export default function TasksPage() {
                     <th className="px-2 text-left font-medium">Tâche</th>
                     <th className="px-2 text-left font-medium">Projet / Client</th>
                     <th className="px-2 text-left font-medium">Assigné</th>
-                    <th className="px-2 text-left font-medium">Priorité</th>
-                    <th className="px-2 text-left font-medium">Statut</th>
-                    <th className="pr-3.5 pl-2 text-right font-medium">Échéance</th>
+                    <th className="px-2 text-left font-medium">
+                      <Tooltip content="Niveau de criticité et d'urgence opérationnelle">
+                        <span className="cursor-help">Priorité</span>
+                      </Tooltip>
+                    </th>
+                    <th className="px-2 text-left font-medium">
+                      <Tooltip content="Étape actuelle de complétion de la tâche">
+                        <span className="cursor-help">Statut</span>
+                      </Tooltip>
+                    </th>
+                    <th className="pr-3.5 pl-2 text-right font-medium">
+                      <Tooltip content="Date limite de livraison planifiée">
+                        <span className="cursor-help">Échéance</span>
+                      </Tooltip>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -576,19 +590,27 @@ export default function TasksPage() {
                     const overdue = isOverdue(task);
                     const priorityMeta = PRIORITY_META[task.priority] ?? PRIORITY_META.medium;
                     const statusMeta = STATUS_COLUMNS.find((c) => c.key === task.status);
+                    const isDone = task.status === 'done';
                     return (
                       <tr
                         key={task.id}
-                        className={cn('h-9 border-b border-mv-border last:border-0 transition-colors', isSelected ? 'bg-emerald-50/40' : 'hover:bg-black/[0.02]')}
+                        className={cn(
+                          'h-9 border-b border-mv-border last:border-0 transition-colors group',
+                          isSelected ? 'bg-emerald-50/40' : 'hover:bg-black/[0.02]',
+                          isDone && 'opacity-65 bg-zinc-50/40 hover:opacity-100'
+                        )}
                       >
                         <td className="pl-3.5 pr-2 py-1" onClick={(e) => toggleOne(task.id, e)}>
                           <input type="checkbox" checked={isSelected} onChange={() => {}} className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-0 cursor-pointer" />
                         </td>
                         <td className="px-2 py-1 font-semibold text-zinc-900 truncate max-w-[240px]">
                           <div className="flex items-center gap-1.5 truncate">
-                            <Link href={`/tasks/${task.id}`} className="hover:text-mv-green transition-colors truncate">
+                            <Link href={`/tasks/${task.id}`} className={cn('hover:text-mv-green transition-colors truncate', isDone && 'line-through text-zinc-500')}>
                               {task.title}
                             </Link>
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <CopyButton text={task.title} tooltipText="Copier le titre" />
+                            </div>
                           </div>
                         </td>
                         <td className="px-2 py-1 text-[11.5px] text-zinc-600 truncate max-w-[140px]">
@@ -598,15 +620,15 @@ export default function TasksPage() {
                           {task.assignee_name || 'Sans assigné'}
                         </td>
                         <td className="px-2 py-1 whitespace-nowrap">
-                          <Badge variant={priorityMeta.variant} className="text-[10px] px-1.5 py-0">{priorityMeta.label}</Badge>
+                          <Badge variant={priorityMeta.variant} className="text-[10px] px-1.5 py-0 rounded">{priorityMeta.label}</Badge>
                         </td>
                         <td className="px-2 py-1 whitespace-nowrap">
-                          <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[3px] text-[11px] font-medium border', 'bg-zinc-100 text-zinc-800 border-zinc-200/60')}>
-                            <span className="w-1.5 h-1.5 rounded-full bg-mv-green" />
+                          <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border', 'bg-zinc-100 text-zinc-800 border-zinc-200/60')}>
+                            <span className={cn('w-1.5 h-1.5 rounded', isDone ? 'bg-zinc-400' : 'bg-mv-green')} />
                             {statusMeta?.label || task.status}
                           </span>
                         </td>
-                        <td className={cn('pr-3.5 pl-2 py-1 text-right text-[10.5px] font-mono whitespace-nowrap', overdue ? 'text-mv-red font-semibold' : 'text-zinc-400')} style={MONO}>
+                        <td className={cn('pr-3.5 pl-2 py-1 text-right text-[10.5px] font-mono whitespace-nowrap tabular-nums', overdue ? 'text-mv-red font-semibold' : 'text-zinc-400')} style={MONO}>
                           {task.due_date ? new Date(task.due_date).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' }) : '—'}
                         </td>
                       </tr>

@@ -34,6 +34,9 @@ import { useSupabaseRealtime } from '@/components/providers/SupabaseRealtimeProv
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { ReachSyncModal } from '@/components/crm/ReachSyncModal';
 import { useToast } from '@/components/providers/ToastProvider';
+import { Tooltip } from '@/components/ui/tooltip';
+import { CopyButton } from '@/components/ui/copy-button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -471,111 +474,153 @@ function LeadsCrmContent() {
         />
       ) : viewMode === 'table' ? (
         /* Commutable 36px DataTable View */
-        <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
-          <table className="w-full text-[12.5px] border-collapse">
-            <thead>
-              <tr className="h-7 bg-black/[0.02] border-b border-mv-border text-[10.5px] font-medium uppercase tracking-wider text-zinc-400">
-                <th className="pl-3.5 pr-2 w-8 text-left">
-                  <input
-                    type="checkbox"
-                    checked={allVisibleSelected}
-                    onChange={toggleAll}
-                    className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-0 cursor-pointer"
-                  />
-                </th>
-                <th className="px-2 text-left font-medium">Prospect / Entreprise</th>
-                <th className="px-2 text-left font-medium">Score IA</th>
-                <th className="px-2 text-left font-medium">Service</th>
-                <th className="px-2 text-left font-medium">Étape Pipeline</th>
-                <th className="px-2 text-right font-medium">Valeur ($)</th>
-                <th className="px-2 text-left font-medium">Contact & Courriel</th>
-                <th className="px-2 text-right font-medium">Date</th>
-                <th className="pr-3.5 pl-2 text-right font-medium w-10">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLeads.map((lead) => {
-                const isSelected = selectedIds.has(lead.id);
-                const dealVal = (lead.mrr_value ? `${lead.mrr_value} $/mo` : null) || (lead.one_time_value ? `${lead.one_time_value} $` : '—');
-                return (
-                  <tr
-                    key={lead.id}
-                    onClick={() => router.push(`/leads/${lead.id}`)}
-                    className={cn(
-                      'h-9 border-b border-mv-border last:border-0 transition-colors cursor-pointer',
-                      isSelected ? 'bg-emerald-50/40' : 'hover:bg-black/[0.02]'
-                    )}
-                  >
-                    <td className="pl-3.5 pr-2 py-1" onClick={(e) => toggleOne(lead.id, e)}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => {}}
-                        className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-0 cursor-pointer"
-                      />
-                    </td>
-                    <td className="px-2 py-1 font-semibold text-zinc-900 truncate max-w-[200px]">
-                      <div className="flex items-center gap-1.5 truncate">
-                        <span className="truncate">{lead.company_name || lead.contact_name}</span>
-                        {lead.reach_id && (
-                          <span className="px-1 py-0.2 rounded text-[9px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
-                            Reach
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-2 py-1 whitespace-nowrap">
-                      {lead.ai_score !== undefined && lead.ai_score !== null ? (
-                        <span
-                          className={cn(
-                            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-mono font-bold',
-                            lead.ai_score >= 80
-                              ? 'bg-mv-green/15 text-mv-green border border-mv-green/30'
-                              : lead.ai_score >= 60
-                              ? 'bg-mv-amber/15 text-mv-amber border border-mv-amber/30'
-                              : 'bg-zinc-100 text-zinc-600 border border-zinc-200'
-                          )}
-                        >
-                          <Sparkles className="w-2.5 h-2.5" />
-                          <span>{lead.ai_score}</span>
-                        </span>
-                      ) : (
-                        <span className="text-[11px] text-zinc-400 font-mono">—</span>
+        filteredLeads.length === 0 ? (
+          <EmptyState
+            title="Aucun prospect trouvé"
+            description="Aucun lead ne correspond à vos critères de recherche ou aux filtres sélectionnés."
+            actionLabel="Réinitialiser la recherche"
+            onAction={() => { setSearchQuery(''); setSelectedClientId('all'); }}
+          />
+        ) : (
+          <div className="bg-mv-surface border border-mv-border rounded-2xl overflow-hidden shadow-2xs">
+            <table className="w-full text-[12.5px] border-collapse">
+              <thead>
+                <tr className="h-7 bg-black/[0.02] border-b border-mv-border text-[10.5px] font-medium uppercase tracking-wider text-zinc-400">
+                  <th className="pl-3.5 pr-2 w-8 text-left">
+                    <input
+                      type="checkbox"
+                      checked={allVisibleSelected}
+                      onChange={toggleAll}
+                      className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-0 cursor-pointer"
+                    />
+                  </th>
+                  <th className="px-2 text-left font-medium">Prospect / Entreprise</th>
+                  <th className="px-2 text-left font-medium">
+                    <Tooltip content="Score prédictif d'intention d'achat (0-100) calculé par IA">
+                      <span className="cursor-help">Score IA</span>
+                    </Tooltip>
+                  </th>
+                  <th className="px-2 text-left font-medium">Service</th>
+                  <th className="px-2 text-left font-medium">
+                    <Tooltip content="Étape de conversion dans l'entonnoir de prospection">
+                      <span className="cursor-help">Étape Pipeline</span>
+                    </Tooltip>
+                  </th>
+                  <th className="px-2 text-right font-medium">
+                    <Tooltip content="Valeur estimée du deal (MRR mensuel ou contrat unique)">
+                      <span className="cursor-help">Valeur ($)</span>
+                    </Tooltip>
+                  </th>
+                  <th className="px-2 text-left font-medium">Contact & Courriel</th>
+                  <th className="px-2 text-right font-medium">
+                    <Tooltip content="Date d'intégration du prospect dans le CRM">
+                      <span className="cursor-help">Date</span>
+                    </Tooltip>
+                  </th>
+                  <th className="pr-3.5 pl-2 text-right font-medium w-16">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLeads.map((lead) => {
+                  const isSelected = selectedIds.has(lead.id);
+                  const isInactive = lead.stage === 'perdu' || lead.status === 'Perdu';
+                  const dealVal = (lead.mrr_value ? `${lead.mrr_value} $/mo` : null) || (lead.one_time_value ? `${lead.one_time_value} $` : '—');
+                  return (
+                    <tr
+                      key={lead.id}
+                      onClick={() => router.push(`/leads/${lead.id}`)}
+                      className={cn(
+                        'h-9 border-b border-mv-border last:border-0 transition-colors cursor-pointer group',
+                        isSelected ? 'bg-emerald-50/40' : 'hover:bg-black/[0.02]',
+                        isInactive && 'opacity-65 bg-zinc-50/40 hover:opacity-100'
                       )}
-                    </td>
-                    <td className="px-2 py-1 text-[11.5px] text-zinc-600 truncate max-w-[140px]">
-                      {lead.service_requested || 'Général'}
-                    </td>
-                    <td className="px-2 py-1 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[3px] bg-zinc-100 text-zinc-800 text-[11px] font-medium border border-zinc-200/60">
-                        <span className="w-1.5 h-1.5 rounded-full bg-mv-green" />
-                        {lead.stage || lead.status}
-                      </span>
-                    </td>
-                    <td className="px-2 py-1 text-right font-mono font-semibold text-zinc-900 whitespace-nowrap" style={MONO}>
-                      {dealVal}
-                    </td>
-                    <td className="px-2 py-1 text-[11.5px] text-zinc-500 font-mono truncate max-w-[180px]" style={MONO}>
-                      {lead.contact_email || lead.contact_phone || '—'}
-                    </td>
-                    <td className="px-2 py-1 text-right text-[10.5px] text-zinc-400 font-mono whitespace-nowrap" style={MONO}>
-                      {new Date(lead.created_at).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })}
-                    </td>
-                    <td className="pr-3.5 pl-2 py-1 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={(e) => handleDeleteLead(lead.id, lead.company_name || lead.contact_name, e)}
-                        className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                        title="Supprimer ce lead"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    >
+                      <td className="pl-3.5 pr-2 py-1" onClick={(e) => toggleOne(lead.id, e)}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}}
+                          className="w-3.5 h-3.5 rounded border-mv-border text-mv-green focus:ring-0 cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-2 py-1 font-semibold text-zinc-900 truncate max-w-[200px]">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="truncate">{lead.company_name || lead.contact_name}</span>
+                          {lead.reach_id && (
+                            <span className="px-1 py-0.2 rounded text-[9px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+                              Reach
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-2 py-1 whitespace-nowrap">
+                        {lead.ai_score !== undefined && lead.ai_score !== null ? (
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-mono font-bold',
+                              lead.ai_score >= 80
+                                ? 'bg-mv-green/15 text-mv-green border border-mv-green/30'
+                                : lead.ai_score >= 60
+                                ? 'bg-mv-amber/15 text-mv-amber border border-mv-amber/30'
+                                : 'bg-zinc-100 text-zinc-600 border border-zinc-200'
+                            )}
+                          >
+                            <Sparkles className="w-2.5 h-2.5" />
+                            <span>{lead.ai_score}</span>
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-zinc-400 font-mono">—</span>
+                        )}
+                      </td>
+                      <td className="px-2 py-1 text-[11.5px] text-zinc-600 truncate max-w-[140px]">
+                        {lead.service_requested || 'Général'}
+                      </td>
+                      <td className="px-2 py-1 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-100 text-zinc-800 text-[11px] font-medium border border-zinc-200/60">
+                          <span className="w-1.5 h-1.5 rounded bg-mv-green" />
+                          {lead.stage || lead.status}
+                        </span>
+                      </td>
+                      <td className="px-2 py-1 text-right font-mono font-semibold text-zinc-900 whitespace-nowrap tabular-nums" style={MONO}>
+                        {dealVal}
+                      </td>
+                      <td className="px-2 py-1 text-[11.5px] text-zinc-500 font-mono truncate max-w-[180px]" style={MONO}>
+                        <div className="flex items-center gap-1">
+                          <span className="truncate">{lead.contact_email || lead.contact_phone || '—'}</span>
+                          {(lead.contact_email || lead.contact_phone) && (
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <CopyButton
+                                text={lead.contact_email || lead.contact_phone || ''}
+                                tooltipText="Copier le contact"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-2 py-1 text-right text-[10.5px] text-zinc-400 font-mono whitespace-nowrap tabular-nums" style={MONO}>
+                        {new Date(lead.created_at).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })}
+                      </td>
+                      <td className="pr-3.5 pl-2 py-1 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        {/* Low-explicitness contextual actions revealed on hover */}
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Tooltip content="Supprimer ce lead">
+                            <button
+                              onClick={(e) => handleDeleteLead(lead.id, lead.company_name || lead.contact_name, e)}
+                              className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                              aria-label="Supprimer ce lead"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </Tooltip>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
       ) : (
         /* ── Triage Inbound & Qualification Dashboard ── */
         <div className="space-y-4">

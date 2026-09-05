@@ -2,6 +2,35 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-05 (v2.30.15) — Intégration des 3 Piliers Dashboards de Kole Jain & Standard Section 24
+
+- **Gouvernance & Design System (`DESIGN_SYSTEM.md`)** :
+  - Inscription formelle de la **Section 24 : Data Tables, Progressive Disclosure & Invisible UI Standard (Kole Jain Masterclass)**.
+  - Règles normatives pour le choix du conteneur, l'alignement numérique strict à droite, le muting intelligent des lignes inactives et la divulgation progressive.
+- **Pillier 1 : Laisser la Donnée Dicter la Forme (Data-Driven Form)** :
+  - **Alignement Numérique Strict** : Colonnes monétaires (`Valeur ($)`, `MRR Mensuel`, `Montant HT`, `TPS/TVQ`, `Total TTC`) et temporelles rigoureusement alignées à droite en `font-mono tabular-nums`.
+  - **Chips 4px pour Options Finies** : Statuts et étapes de conversion encapsulés dans des badges carrés à 4px (`rounded`), éliminant tout statut flottant en texte brut.
+  - **Muting Intelligent des Lignes (Row Contrast)** : Atténuation visuelle à 65% d'opacité avec fond neutre doux (`opacity-65 bg-zinc-50/40`) pour les entités fermées ou inactives (leads perdus, factures soldées, tâches terminées, clients archivés), avec reprise de contraste à 100% au survol (`hover:opacity-100`).
+  - **Résolution du « Wrong Container » via `ActivityTimeline.tsx`** : Création d'une timeline verticale interactive remplaçant les tableaux tabulaires inadaptés pour les flux d'activités récents. Nœuds visuels 4px par catégorie (Ventes `#0c8c5e`, Rétention `#2563eb`, Tech `#7c3aed`, Alertes `#d97706`), connecteur vertical, avatars des acteurs, horodatage relatif discret en JetBrains Mono et filtres de catégorie.
+- **Pillier 2 : Divulgation Progressive & Spectre d'Explicitness (Progressive Disclosure)** :
+  - **Haute Explicitness** : Recherche globale, filtres d'état et actions primaires (`+ Nouveau Lead`, `+ Créer`) toujours visibles.
+  - **Basse Explicitness (Contextual on Hover)** : Actions secondaires de ligne (copie rapide, suppression, aperçu) masquées par défaut (`opacity-0`) et révélées au survol de la ligne (`group-hover:opacity-100 transition-opacity`), supprimant la surcharge cognitive sur les tableaux denses.
+- **Pillier 3 : L'Interface Invisible & Tooltips Universels (The Invisible UI)** :
+  - **Modernisation du Composant `Tooltip.tsx`** : Typage TypeScript strict (0 `any`), style Mintlify (Ink Black `#08090a`, rayon 4px, texte blanc, délai 200ms).
+  - **Info-Bulles Systématiques sur En-têtes Calculés** : Explications contextuelles sur `Score IA`, `Valeur ($)`, `MRR Mensuel`, `Santé Client`, `Priorité` et `Échéance`.
+  - **Bouton Micro-État Invisible `CopyButton.tsx`** : Copie dans le presse-papier en 1 clic avec badge de confirmation dynamique (« Copié ! ») pendant 1,8 seconde.
+  - **Modernisation du Composant `EmptyState.tsx`** : Standard Paper White `#ffffff` 16px, conteneur d'icône carré 4px dépoli, bouton d'action Ink Black `#08090a` et bouton de réinitialisation de recherche en 1 clic.
+- **Tables & Vues Refondues** :
+  - Vue Globale (`/overview`) : Table projets récents, table MRR clients et intégration de la nouvelle `ActivityTimeline`.
+  - CRM Leads (`/leads`) : Alignement numérique, chips 4px, muting des leads perdus, info-bulles et empty state.
+  - Comptes Clients (`/clients`) : Alignement MRR, muting des comptes archivés/en pause, actions au survol.
+  - Facturation & Devis (`/invoices`) : Alignement monétaire, muting des factures payées, info-bulles de taxes.
+  - Tâches (`/tasks`) : Muting des tâches terminées, chips 4px, info-bulles de priorité et d'échéance.
+- **Contrôle Qualité Validé** :
+  - `npm run verify:design` : **100.0% de conformité** sur 320 fichiers (1223 tokens vérifiés).
+  - `npx tsc --noEmit` : **0 erreur TypeScript**.
+  - `npm run build` : **127/127 routes compilées** avec succès dans Next.js 16 (Turbopack).
+
 ## 2026-09-05 (v2.30.14) — Intégration des 5 Patterns Mobbin & Onglet Flagship « Momentum & Live »
 
 - **Architecture Unifiée « Momentum & Live » (`/overview?tab=momentum`)** :

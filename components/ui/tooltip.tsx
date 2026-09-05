@@ -2,8 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
-interface TooltipProps {
-  content?: string;
+export interface TooltipProps {
+  content?: React.ReactNode;
   children: React.ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right';
   delay?: number;
@@ -14,7 +14,7 @@ export function Tooltip({
   content,
   children,
   position = 'top',
-  delay = 300,
+  delay = 200,
   className = '',
 }: TooltipProps) {
   const [visible, setVisible] = useState(false);
@@ -36,24 +36,24 @@ export function Tooltip({
   }, []);
 
   const positionClasses: Record<string, string> = {
-    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
-    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
-    left: 'right-full top-1/2 -translate-y-1/2 mr-2',
-    right: 'left-full top-1/2 -translate-y-1/2 ml-2',
+    top: 'bottom-full left-1/2 -translate-x-1/2 mb-1.5',
+    bottom: 'top-full left-1/2 -translate-x-1/2 mt-1.5',
+    left: 'right-full top-1/2 -translate-y-1/2 mr-1.5',
+    right: 'left-full top-1/2 -translate-y-1/2 ml-1.5',
   };
 
   const arrowClasses: Record<string, string> = {
-    top: 'top-full left-1/2 -translate-x-1/2 border-t-mv-ink border-x-transparent border-b-transparent border-4',
-    bottom: 'bottom-full left-1/2 -translate-x-1/2 border-b-mv-ink border-x-transparent border-t-transparent border-4',
-    left: 'left-full top-1/2 -translate-y-1/2 border-l-mv-ink border-y-transparent border-r-transparent border-4',
-    right: 'right-full top-1/2 -translate-y-1/2 border-r-mv-ink border-y-transparent border-l-transparent border-4',
+    top: 'top-full left-1/2 -translate-x-1/2 border-t-[#08090a] border-x-transparent border-b-transparent border-4',
+    bottom: 'bottom-full left-1/2 -translate-x-1/2 border-b-[#08090a] border-x-transparent border-t-transparent border-4',
+    left: 'left-full top-1/2 -translate-y-1/2 border-l-[#08090a] border-y-transparent border-r-transparent border-4',
+    right: 'right-full top-1/2 -translate-y-1/2 border-r-[#08090a] border-y-transparent border-l-transparent border-4',
   };
 
   if (!content) return <>{children}</>;
 
   return (
     <div
-      className={`relative inline-flex ${className}`}
+      className={`relative inline-flex items-center ${className}`}
       onMouseEnter={show}
       onMouseLeave={hide}
       onFocus={show}
@@ -63,9 +63,9 @@ export function Tooltip({
       {visible && (
         <div
           role="tooltip"
-          className={`absolute z-50 pointer-events-none ${positionClasses[position]}`}
+          className={`absolute z-50 pointer-events-none transition-opacity duration-150 ${positionClasses[position]}`}
         >
-          <div className="bg-mv-ink text-white text-[11px] font-medium px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-mv-lg animate-mv-fade-in">
+          <div className="bg-[#08090a] text-white text-[11px] font-normal leading-tight px-2.5 py-1 rounded shadow-md border border-zinc-800 whitespace-nowrap">
             {content}
           </div>
           <div className={`absolute w-0 h-0 ${arrowClasses[position]}`} />
@@ -75,14 +75,22 @@ export function Tooltip({
   );
 }
 
-export function TooltipProvider({ children, delayDuration }: { children: React.ReactNode; delayDuration?: number }) {
+export function TooltipProvider({ children }: { children: React.ReactNode; delayDuration?: number }) {
   return <>{children}</>;
 }
 
-export function TooltipTrigger({ children, asChild, ...props }: any) {
+export function TooltipTrigger({ children, asChild, ...props }: React.HTMLAttributes<HTMLDivElement> & { asChild?: boolean }) {
   return <div {...props}>{children}</div>;
 }
 
-export function TooltipContent({ children, ...props }: any) {
-  return <div {...props}>{children}</div>;
+export function TooltipContent({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      role="tooltip"
+      className="bg-[#08090a] text-white text-[11px] font-normal leading-tight px-2.5 py-1 rounded shadow-md border border-zinc-800 whitespace-nowrap"
+      {...props}
+    >
+      {children}
+    </div>
+  );
 }

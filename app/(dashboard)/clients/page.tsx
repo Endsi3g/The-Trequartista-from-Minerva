@@ -20,6 +20,9 @@ import { SkeletonRows } from '@/components/ui/skeleton';
 import type { Client } from '@/lib/types';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { AnimatedNumber } from '@/components/ui/animated-number';
+import { Tooltip } from '@/components/ui/tooltip';
+import { CopyButton } from '@/components/ui/copy-button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -341,23 +344,33 @@ export default function ClientsPage() {
                   </th>
                   <th className="px-2 text-left font-medium">Entreprise</th>
                   <th className="px-2 text-left font-medium">Secteur</th>
-                  <th className="px-2 text-right font-medium">MRR Mensuel</th>
-                  <th className="px-2 text-left font-medium">Statut & Santé</th>
+                  <th className="px-2 text-right font-medium">
+                    <Tooltip content="Revenu Mensuel Récurrent contractuel en CAD">
+                      <span className="cursor-help">MRR Mensuel</span>
+                    </Tooltip>
+                  </th>
+                  <th className="px-2 text-left font-medium">
+                    <Tooltip content="Statut du compte et indicateur de santé rétention">
+                      <span className="cursor-help">Statut & Santé</span>
+                    </Tooltip>
+                  </th>
                   <th className="px-2 text-left font-medium hidden md:table-cell">Contact</th>
-                  <th className="pr-3.5 pl-2 text-right font-medium">Action</th>
+                  <th className="pr-3.5 pl-2 text-right font-medium w-24">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {visibleClients.map((client) => {
                   const isSelected = selected.has(client.id);
                   const isAtRisk = client.health_status === 'At Risk';
+                  const isInactive = client.status === 'Paused' || client.status === 'Archived';
                   return (
                     <tr
                       key={client.id}
                       onClick={() => router.push(`/clients/${client.id}`)}
                       className={cn(
-                        'h-10 border-b border-mv-border last:border-0 transition-colors cursor-pointer',
-                        isSelected ? 'bg-emerald-50/40' : 'hover:bg-black/[0.02]'
+                        'h-10 border-b border-mv-border last:border-0 transition-colors cursor-pointer group',
+                        isSelected ? 'bg-emerald-50/40' : 'hover:bg-black/[0.02]',
+                        isInactive && 'opacity-65 bg-zinc-50/40 hover:opacity-100'
                       )}
                     >
                       <td className="pl-3.5 pr-2 py-1.5" onClick={(e) => toggleOne(client.id, e)}>
@@ -370,21 +383,24 @@ export default function ClientsPage() {
                       </td>
                       <td className="px-2 py-1.5 min-w-0 max-w-[200px]">
                         <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-[3px] bg-zinc-100 border border-mv-border flex items-center justify-center text-[9.5px] font-semibold text-zinc-900 shrink-0">
+                          <div className="w-5 h-5 rounded bg-zinc-100 border border-mv-border flex items-center justify-center text-[9.5px] font-semibold text-zinc-900 shrink-0">
                             {getInitials(client.name)}
                           </div>
                           <span className="font-semibold text-zinc-900 truncate" title={`Réf: ${client.id.slice(0, 8)}`}>
                             {client.name}
                           </span>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <CopyButton text={client.name} tooltipText="Copier le nom" />
+                          </div>
                         </div>
                       </td>
                       <td className="px-2 py-1.5 whitespace-nowrap">
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-[3px] bg-zinc-100/90 text-zinc-700 text-[10.5px] font-medium border border-zinc-200/50">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-100/90 text-zinc-700 text-[10.5px] font-medium border border-zinc-200/50">
                           {client.industry || 'Général'}
                         </span>
                       </td>
-                      <td className="px-2 py-1.5 text-right font-mono font-semibold text-zinc-900 whitespace-nowrap" style={MONO}>
-                        {(client.mrr || 0).toLocaleString('fr-CA')} $ <span className="text-[10px] text-zinc-400 font-normal">/ mo</span>
+                      <td className="px-2 py-1.5 text-right font-mono font-semibold text-zinc-900 whitespace-nowrap tabular-nums" style={MONO}>
+                        {(client.mrr || 0).toLocaleString('fr-CA')} $ <span className="text-[10px] text-zinc-400 font-normal font-sans">/ mo</span>
                       </td>
                       <td className="px-2 py-1.5 whitespace-nowrap">
                         {client.trial_status === 'active' ? (
@@ -413,7 +429,7 @@ export default function ClientsPage() {
                           })()
                         ) : client.trial_status === 'converted' ? (
                           <div className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-mv-green shrink-0" />
+                            <span className="w-1.5 h-1.5 rounded bg-mv-green shrink-0" />
                             <span className="text-[11.5px] font-medium text-emerald-800">
                               Converti Flow · {client.health_status || 'On Track'}
                             </span>
@@ -422,7 +438,7 @@ export default function ClientsPage() {
                           <div className="flex items-center gap-1.5">
                             <span
                               className={cn(
-                                'w-1.5 h-1.5 rounded-full shrink-0',
+                                'w-1.5 h-1.5 rounded shrink-0',
                                 client.status === 'Active'
                                   ? isAtRisk
                                     ? 'bg-amber-500'
@@ -442,14 +458,16 @@ export default function ClientsPage() {
                         <span className="font-medium text-zinc-800">{client.contact_name || '—'}</span>
                       </td>
                       <td className="pr-3.5 pl-2 py-1.5 text-right whitespace-nowrap">
-                        <Link
-                          href={`/clients/${client.id}/roi-tracker`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 text-[11px] font-medium text-mv-green hover:underline"
-                        >
-                          <span>Suivi ROI</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </Link>
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Link
+                            href={`/clients/${client.id}/roi-tracker`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-mv-green hover:underline px-1.5 py-0.5 rounded hover:bg-emerald-50 transition-colors"
+                          >
+                            <span>Suivi ROI</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   );

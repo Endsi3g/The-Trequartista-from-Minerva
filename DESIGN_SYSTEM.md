@@ -528,4 +528,27 @@ Les tableaux de bord qui marquent les esprits et créent un attachement produit 
   - Lors des pics, accélérations ou anomalies, intégrer un bandeau d'explication inline succinct explicitant la cause et la recommandation.
   - Proposer un point d'entrée contextuel direct vers l'Assistant IA (`⌘J`) pour approfondir l'analyse en langage naturel.
 
+---
+
+## 24. Data Tables, Progressive Disclosure & Invisible UI Standard (Kole Jain Masterclass)
+
+Un tableau de bord fonctionnel gère la complexité du monde réel sans submerger l'utilisateur. Toute interface de données Minerva doit obligatoirement respecter les 3 piliers anti-amateurs de Kole Jain :
+
+* **1. Data-Driven Form (Laisser la donnée dicter la forme)** :
+  - **Alignement numérique strict à droite** : Toute colonne contenant des montants financiers (`CAD`, `$`), des scores, pourcentages ou dates doit être rigoureusement alignée à droite (`text-right font-mono tabular-nums`). Les chiffres s'alignent ainsi naturellement par valeur de position (unités sous unités, dizaines sous dizaines).
+  - **Chips 4px pour options finies** : Les statuts, étapes de pipeline, priorités et catégories finies doivent être encapsulés dans des badges carrés à 4px (`rounded text-[11px] font-medium border px-2 py-0.5`). Ne jamais laisser de statuts en texte brut sans repère visuel.
+  - **Muting intelligent des lignes (Row Shading & Contrast)** : Les entités inactives, fermées, perdues ou complétées (leads perdus, factures payées, tâches soldées, clients archivés) sont atténuées à 65% d'opacité avec fond neutre doux (`opacity-65 bg-zinc-50/40`), puis retrouvent 100% de contraste au survol (`hover:opacity-100 transition-opacity`). Les lignes actives ressortent ainsi instantanément au premier regard.
+  - **Règle du conteneur adéquat (Container Selection)** : Les journaux d'activité séquentiels et flux d'événements temporels ne doivent JAMAIS être confinés dans des tables statiques à colonnes d'horodatage. Utiliser systématiquement une timeline verticale (`ActivityTimeline`) avec nœuds visuels, avatars d'acteurs et horodatage relatif.
+  - **Couleur fonctionnelle** : La couleur porte une signification stricte et n'est jamais décorative. Avatars réels pour identifier instantanément les acteurs.
+
+* **2. Progressive Disclosure & Spectrum of Explicitness (Divulgation Progressive)** :
+  - **Haute Explicitness (Always Visible)** : Barre de recherche, filtres primaires et bouton d'action principal (`+ Nouveau Lead`, etc.) sont constamment visibles et accessibles.
+  - **Basse Explicitness (Contextual on Hover)** : Les actions secondaires par ligne (copier l'adresse email/téléphone, aperçu rapide, suppression) sont masquées par défaut (`opacity-0`) et ne se révèlent qu'au survol de la ligne (`group-hover:opacity-100 transition-opacity`). Un menu déroulant compact (`...`) regroupe les actions rares pour éliminer tout encombrement visuel.
+  - **Découverte séquentielle** : Éviter les modales de 6 paragraphes ou les écrans d'accueil surchargés. Privilégier les info-bulles contextuelles et les micro-étapes séquentielles.
+
+* **3. The Invisible UI & Tooltips Universels (L'Interface Invisible)** :
+  - **Info-Bulles Obligatoires sur Métriques & En-têtes Calculés** : Chaque en-tête de colonne non triviale (`Score IA`, `Valeur ($)`, `MRR`, `Santé Client`, `Quota`) doit comporter une info-bulle explicative au survol (`Tooltip`), détaillant sa définition, son calcul et ses seuils.
+  - **Micro-États & Retours Instantanés** : Bouton de copie rapide au clic sur un email, numéro ou identifiant avec badge de retour dynamique (« *Copié !* ») pendant 1,8s.
+  - **États Vides Soignés (Empty States)** : En cas de filtre retournant 0 résultat ou de tableau vierge, afficher un composant `EmptyState` Paper White avec icône en conteneur carré 4px, titre explicite, sous-titre rassurant et bouton d'action immédiat pour réinitialiser les filtres ou créer un enregistrement.
+
 

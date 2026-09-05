@@ -33,6 +33,9 @@ import { TechDashboard } from '@/components/tech/TechDashboard';
 import { ManagingOverview } from '@/components/dashboard/ManagingOverview';
 import { ProspectionOverview } from '@/components/dashboard/ProspectionOverview';
 import { MomentumLiveTab } from '@/components/dashboard/momentum/MomentumLiveTab';
+import { ActivityTimeline } from '@/components/dashboard/ActivityTimeline';
+import { Tooltip } from '@/components/ui/tooltip';
+import { CopyButton } from '@/components/ui/copy-button';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -453,21 +456,46 @@ export default function OverviewPage() {
           <p className="text-xs text-mv-ink-faint py-6 text-center">Aucun projet actif pour le moment.</p>
         ) : (
           <table className="w-full text-[12.5px] border-collapse">
+            <thead>
+              <tr className="border-b border-mv-border text-[10.5px] uppercase tracking-wider text-zinc-400 bg-zinc-50/50">
+                <th className="pl-3.5 pr-2 py-1.5 text-left font-medium">Projet</th>
+                <th className="px-2 py-1.5 text-left font-medium hidden sm:table-cell">Client</th>
+                <th className="px-2 py-1.5 text-left font-medium hidden md:table-cell">Étape</th>
+                <th className="px-2 py-1.5 text-right font-medium">
+                  <Tooltip content="Date limite calculée de livraison">
+                    <span className="cursor-help">Échéance</span>
+                  </Tooltip>
+                </th>
+                <th className="px-2.5 py-1.5 text-right font-medium hidden lg:table-cell">
+                  <Tooltip content="Pourcentage de progression des jalons">
+                    <span className="cursor-help">Progression</span>
+                  </Tooltip>
+                </th>
+                <th className="pl-2 pr-3.5 py-1.5 text-right font-medium">Santé</th>
+              </tr>
+            </thead>
             <tbody>
               {recentProjects.map((p) => {
                 const isAlert = p.health === 'Needs Review' || (p.due_date && new Date(p.due_date) < now);
+                const isCompleted = p.progress_pct === 100;
                 return (
                   <tr
                     key={p.id}
                     onClick={() => router.push(`/projects/${p.id}/roadmap`)}
-                    className="h-9 border-b border-mv-border last:border-0 hover:bg-black/[0.02] transition-colors cursor-pointer"
+                    className={cn(
+                      'h-9 border-b border-mv-border last:border-0 hover:bg-black/[0.02] transition-colors cursor-pointer group',
+                      isCompleted && 'opacity-65 bg-zinc-50/40 hover:opacity-100'
+                    )}
                   >
                     <td className="pl-3.5 pr-2 py-1.5 min-w-0 max-w-[220px]">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${isAlert ? 'bg-mv-red' : 'bg-mv-green'}`}
+                          className={`w-1.5 h-1.5 rounded shrink-0 ${isAlert ? 'bg-mv-red' : 'bg-mv-green'}`}
                         />
                         <span className="font-medium text-mv-ink truncate">{p.name}</span>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                          <CopyButton text={p.name} tooltipText="Copier le nom" />
+                        </div>
                       </div>
                     </td>
                     <td className="px-2 py-1.5 text-[11.5px] text-mv-ink-soft truncate max-w-[130px] hidden sm:table-cell">
@@ -476,25 +504,25 @@ export default function OverviewPage() {
                     <td className="px-2 py-1.5 text-[11px] text-mv-ink-faint whitespace-nowrap hidden md:table-cell">
                       {p.current_stage || 'En production'}
                     </td>
-                    <td className="px-2 py-1.5 text-[11px] text-mv-ink-soft whitespace-nowrap text-right" style={MONO}>
+                    <td className="px-2 py-1.5 text-[11px] text-mv-ink-soft whitespace-nowrap text-right font-mono tabular-nums" style={MONO}>
                       {getDueDateLabel(p.due_date)}
                     </td>
                     <td className="px-2.5 py-1.5 w-24 hidden lg:table-cell">
-                      <div className="flex items-center gap-1.5">
-                        <div className="flex-1 h-1 bg-black/[0.06] rounded-full overflow-hidden">
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <div className="w-12 h-1 bg-black/[0.06] rounded overflow-hidden">
                           <div
-                            className={`h-full rounded-full ${isAlert ? 'bg-mv-red' : 'bg-mv-green'}`}
+                            className={`h-full rounded ${isAlert ? 'bg-mv-red' : 'bg-mv-green'}`}
                             style={{ width: `${p.progress_pct || 0}%` }}
                           />
                         </div>
-                        <span className="text-[10px] text-mv-ink-faint w-7 text-right" style={MONO}>
+                        <span className="text-[10px] text-mv-ink-faint w-8 text-right font-mono tabular-nums" style={MONO}>
                           {p.progress_pct || 0}%
                         </span>
                       </div>
                     </td>
                     <td className="pl-2 pr-3.5 py-1.5 text-right whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center text-[10.5px] font-medium px-1.5 py-0.5 rounded-[4px] ${
+                        className={`inline-flex items-center text-[10.5px] font-medium px-1.5 py-0.5 rounded ${
                           isAlert ? 'bg-mv-red/10 text-mv-red' : 'bg-mv-green/10 text-mv-green'
                         }`}
                       >
@@ -510,7 +538,7 @@ export default function OverviewPage() {
       </div>
 
       {/* MRR Breakdown Table */}
-      <div className="bg-mv-surface border border-mv-border rounded-[6px] overflow-hidden shadow-2xs">
+      <div className="bg-mv-surface border border-mv-border rounded-2xl overflow-hidden shadow-2xs">
         <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-mv-border bg-black/[0.01]">
           <div>
             <span className="text-[11px] font-medium uppercase tracking-wider text-mv-ink-soft">
@@ -520,7 +548,7 @@ export default function OverviewPage() {
           </div>
           <div className="flex items-center gap-3">
             <MrrSparkline data={mrrTrendData} />
-            <span className="text-[13px] font-semibold text-mv-ink" style={MONO}>
+            <span className="text-[13px] font-semibold text-mv-ink font-mono tabular-nums" style={MONO}>
               {moneyFmt(totalMrr)}
             </span>
           </div>
@@ -531,6 +559,21 @@ export default function OverviewPage() {
           <p className="text-xs text-mv-ink-faint py-6 text-center">Aucun client actif pour le moment.</p>
         ) : (
           <table className="w-full text-[12.5px] border-collapse">
+            <thead>
+              <tr className="border-b border-mv-border text-[10.5px] uppercase tracking-wider text-zinc-400 bg-zinc-50/50">
+                <th className="pl-3.5 pr-2 py-1.5 text-left font-medium">Client</th>
+                <th className="px-3 py-1.5 text-left font-medium">
+                  <Tooltip content="Part de contribution au revenu récurrent total">
+                    <span className="cursor-help">Part relative</span>
+                  </Tooltip>
+                </th>
+                <th className="pl-2 pr-3.5 py-1.5 text-right font-medium">
+                  <Tooltip content="Montant facturé mensuellement en CAD">
+                    <span className="cursor-help">MRR Mensuel</span>
+                  </Tooltip>
+                </th>
+              </tr>
+            </thead>
             <tbody>
               {topClientsByMrr.map((c) => {
                 const pctOfTotal = totalMrr > 0 ? Math.round((c.mrr / totalMrr) * 100) : 0;
@@ -538,26 +581,31 @@ export default function OverviewPage() {
                   <tr
                     key={c.name}
                     onClick={() => c.id && router.push(`/clients/${c.id}`)}
-                    className="h-9 border-b border-mv-border last:border-0 hover:bg-black/[0.02] transition-colors cursor-pointer"
+                    className="h-9 border-b border-mv-border last:border-0 hover:bg-black/[0.02] transition-colors cursor-pointer group"
                   >
                     <td className="pl-3.5 pr-2 py-1.5 font-medium text-mv-ink truncate max-w-[150px]">
-                      {c.name}
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate">{c.name}</span>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <CopyButton text={c.name} tooltipText="Copier le nom" />
+                        </div>
+                      </div>
                     </td>
                     <td className="px-3 py-1.5 w-full">
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-black/[0.05] rounded-full overflow-hidden">
+                        <div className="flex-1 h-1.5 bg-black/[0.05] rounded overflow-hidden">
                           <div
-                            className="h-full bg-mv-green rounded-full transition-all duration-300"
+                            className="h-full bg-mv-green rounded transition-all duration-300"
                             style={{ width: `${(c.mrr / maxClientMrr) * 100}%` }}
                           />
                         </div>
-                        <span className="text-[10px] text-mv-ink-faint w-8 text-right" style={MONO}>
+                        <span className="text-[10px] text-mv-ink-faint w-8 text-right font-mono tabular-nums" style={MONO}>
                           {pctOfTotal}%
                         </span>
                       </div>
                     </td>
-                    <td className="pl-2 pr-3.5 py-1.5 text-right font-medium text-mv-ink whitespace-nowrap text-[12.5px]" style={MONO}>
-                      {moneyFmt(c.mrr)} <span className="text-[10px] text-mv-ink-faint font-normal">/ mois</span>
+                    <td className="pl-2 pr-3.5 py-1.5 text-right font-medium text-mv-ink whitespace-nowrap text-[12.5px] font-mono tabular-nums" style={MONO}>
+                      {moneyFmt(c.mrr)} <span className="text-[10px] text-mv-ink-faint font-normal font-sans">/ mois</span>
                     </td>
                   </tr>
                 );
@@ -694,13 +742,8 @@ export default function OverviewPage() {
         )}
       </div>
 
-      {/* Emplacement réservé pour un futur widget personnalisable --
-          honnête (aucune donnée fictive), pas encore configurable. */}
-      <div className="border border-dashed border-mv-border rounded-[6px] p-3.5 flex items-center justify-center text-center">
-        <p className="text-[11px] text-mv-ink-faint">
-          Emplacement libre — un prochain widget personnalisable viendra ici.
-        </p>
-      </div>
+      {/* Flux d'activité séquentiel (Kole Jain Masterclass - Container Selection) */}
+      <ActivityTimeline limit={5} />
     </>
   );
 
