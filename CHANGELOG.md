@@ -2,6 +2,34 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.30.8) — Intégration AuthSectionOne WebGL Shaders & Éradication Strictes des Pills / Avatars Arrondis
+
+- **Authentification Unifiée avec WebGL Shaders (`AuthSectionOne`)** :
+  - **Composant Modulaire & Réactif (`components/ui/auth-section-1.tsx`)** : Remplacement complet des anciennes pages `/login` et `/signup` par `AuthSectionOne`, propulsé par les shaders WebGL `GrainGradient` de `@paper-design/shaders-react`.
+  - **Dégradé Hero Teal Mintlify** : Palette de shaders adaptée aux tokens officiels (`#FFFFFF`, `#0c8c5e`, `#075037`, `#053323`) avec grain cinématique et lisibilité textuelle garantie par scrims subtils.
+  - **Connexion Supabase Réelle & Non Mockée** : Intégration complète de l'authentification Email + Mot de passe (`signInWithPassword` / `signUp`), Google OAuth SSO (`signInWithOAuth`), bascule de visibilité mot de passe, redirections dynamiques d'URL (`?next=...`) et gestion d'erreurs réelles.
+  - **Passerelle Écosystème Minerva Reach** : Bouton d'action du panneau shader reliant directement vers l'application desktop terrain compagnon `https://minerva-os-lite-desktop.vercel.app/today`.
+  - **Composant Démo (`components/ui/demo.tsx`)** : Ajout du composant de prévisualisation isolée.
+- **Règles Strictes Anti-Pill & Élimination des Avatars Arrondis** :
+  - **Géométrie Cohérente (4px / 16px / 24px)** : Suppression formelle des classes `rounded-full` et `rounded-9999px` sur l'ensemble des composants (avatars utilisateur `user-avatar.tsx`, squelettes de chargement `skeleton.tsx`, badges de statut `FeatureRequestStatusCard.tsx` et `FeatureRequestHistory.tsx`, indicateurs réseau `OfflineStatusIndicator.tsx`, chat `realtime-chat.tsx` et speed dial IA `AiAssistantSpeedDial.tsx`).
+  - **Avatars & Badges en Carrés Doux** : Conversion systématique vers des rayons de 4px (`rounded`) et micro-indicateurs à 2px (`rounded-[2px]`).
+  - **Typographie Inter Exclusif** : Retrait définitif de `Playfair_Display` du layout racine (`app/layout.tsx`) et suppression des overrides display au profit d'Inter sur 100% de l'interface.
+- **Validation Qualité Stricte & Déploiement** :
+  - `npm run verify:design` : **100.0% de conformité** sur 308 fichiers (0 violation de tokens).
+  - `npx tsc --noEmit` : **0 erreur TypeScript** en mode strict.
+  - `npm run build` : **126/126 routes compilées** avec succès dans Next.js 16 (Turbopack).
+
+## 2026-09-04 (v2.30.7) — Adoption Globale de la Charte Mintlify : Monastic White, Ink Black & Hero Teal
+
+- **Standard Mintlify Intégré Globalement** :
+  - **Palette Chromatique Mintlify** : Canvas Paper White `#ffffff` monastique, diviseurs Mist Gray `#f2f2f2`, bordures d'inputs Cloud Gray `#dddddd`, texte de lecture True Black `#000000`, et l'accent Mint Green `#0c8c5e` comme unique étincelle chromatique pour les états actifs, liens de marque et badges.
+  - **Boutons Primaires Ink Black & Géométrie Carrée** : Boutons d'action prioritaires en Ink Black `#08090a` (texte blanc, rayon 4px `rounded`), suppression des boutons pilules au profit des rayons stricts (4px boutons/inputs/badges, 16px cartes `rounded-2xl`, 24px grands conteneurs `rounded-3xl`).
+  - **Élévation Murmurée (0.03 - 0.05)** : Remplacement des ombres par l'élévation subtile Mintlify (`0 2px 4px 0 rgba(0,0,0,0.03)` pour les boutons, `0 2px 4px 0 rgba(0,0,0,0.05)` pour les cartes).
+  - **Dégradé Signature Hero Teal** : Refonte des écrans d'authentification (`/login`, `/signup`) avec le dégradé `linear-gradient(135deg, #0c8c5e 0%, #075037 60%, #053323 100%)` et typographie Inter blanche.
+  - **Primitives UI Mises à Niveau** : `button.tsx`, `card.tsx`, `badge.tsx`, `input.tsx` synchronisés avec la géométrie et les tokens Mintlify.
+- **Audit Automatisé des Tokens (`npm run verify:design`)** :
+  - Validation confirmée avec un score de **100.0% de conformité** sur les 306 fichiers analysés.
+
 ## 2026-09-04 (v2.30.6) — Généralisation Exhaustive du Design System Minerva (100% Tokens)
 
 - **Harmonisation Globale des Tokens sur 306 Fichiers (`100.0% de Conformité`)** :

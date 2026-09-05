@@ -294,14 +294,14 @@ export function FeatureRequestForm({
         {/* ── Submit Button & Realtime Notice ── */}
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-[11.5px] text-zinc-500 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="w-2 h-2 rounded-[2px] bg-emerald-500" />
             <span>Votre demande sera synchronisée en direct avec l&apos;équipe de développement.</span>
           </div>
 
           <Button
             type="submit"
             disabled={submitting || !title.trim() || !description.trim()}
-            className="w-full sm:w-auto h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+            className="w-full sm:w-auto h-10 px-5 bg-[#08090a] hover:bg-black/85 text-white font-medium text-xs rounded shadow-mv-sm flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
           >
             {submitting ? (
               <>

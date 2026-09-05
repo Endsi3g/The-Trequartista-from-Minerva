@@ -7,7 +7,7 @@ import React from 'react';
 export function StatusDot({ active, className = '' }: { active: boolean; className?: string }) {
   return (
     <span
-      className={`w-2 h-2 rounded-full shrink-0 ${active ? 'bg-mv-green' : 'bg-mv-ink-faint/50 border border-mv-ink-faint'} ${className}`}
+      className={`w-2 h-2 rounded-[2px] shrink-0 ${active ? 'bg-mv-green' : 'bg-mv-ink-faint/50 border border-mv-ink-faint'} ${className}`}
     />
   );
 }

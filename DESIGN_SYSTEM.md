@@ -10,46 +10,56 @@ Follow these instructions whenever you build, style, or revise a user interface.
 
 Project tokens always override these defaults. If the project defines a color, type scale, spacing scale, radius, or component, use it and do not invent a parallel one.
 
-## 0. Project Tokens (Minerva Trequartista)
+## 0. Project Tokens (Minerva Trequartista — Mintlify Standard)
 
 * **Accent color**:
-  - Primaire : Vert Émeraude `#059669` (`text-emerald-600`, `bg-emerald-600`, `border-emerald-600`)
-  - Hover : `#047857` (`hover:bg-emerald-700`)
-  - Fond Subtil / Tint : `#ECFDF5` (`bg-emerald-50`)
-  - Bordure Subtile : `#A7F3D0` (`border-emerald-200`)
-  - Focus Ring : `ring-2 ring-emerald-600 ring-offset-1`
-* **Neutral scale (Light Haute Densité exclusif style Stripe / Linear)**:
-  - Background Canvas : `#FAFAFA` / `#F4F4F5` (`bg-zinc-50` / `bg-zinc-100`)
-  - Surfaces / Cartes : `#FFFFFF` (`bg-white`)
-  - Bordures : `#E4E4E7` (`border-zinc-200`), hairline 1px
-  - Texte Principal : `#18181B` (`text-zinc-900`)
-  - Texte Secondaire : `#71717A` (`text-zinc-500`)
-  - Texte Atténué / Mute : `#A1A1AA` (`text-zinc-400`)
+  - Primaire / Brand : Mint Green `#0c8c5e` (`--color-mint-green`) — Liens de marque, états actifs nav, icônes de fonctionnalités, points d'eyebrow, soulignement sur références de code inline. L'unique étincelle chromatique du système.
+  - Hover : `#09734d`
+  - Fond Subtil / Tint : `#ecfdf5` (rgba(12, 140, 94, 0.06))
+  - Bordure Subtile : `#a7f3d0`
+  - Focus Ring : `ring-2 ring-[#0c8c5e] ring-offset-1`
+* **Neutral scale (Mintlify Monastic White & Inks)**:
+  - Background Canvas : Paper White `#ffffff` (`--color-paper-white`) — Toile blanche monastique intégrale.
+  - Surfaces / Cartes : Paper White `#ffffff`
+  - Diviseurs & Bordures capillaires : Mist Gray `#f2f2f2` (`--color-mist-gray`)
+  - Bordures d'inputs & hover de cartes : Cloud Gray `#dddddd` (`--color-cloud-gray`)
+  - Texte de Corps : True Black `#000000` (`--color-true-black`)
+  - Titres Majeurs & Boutons Primaires : Ink Black `#08090a` (`--color-ink-black`)
+  - Texte Secondaire : `#71717a` (`text-zinc-500`)
+  - Texte Atténué / Mute : `#a1a1aa` (`text-zinc-400`)
+* **Buttons & Actions**:
+  - Bouton Primaire (Highest-weight action) : Fond Ink Black `#08090a`, texte blanc `#ffffff`, rayon `4px`, padding 8px 16px, Inter 14-15px weight 500. Ombre murmurée 0.03.
+  - Bouton Secondaire (Ghost) : Fond transparent, texte True Black `#000000`, hover fond Mist Gray `#f2f2f2`.
+  - Bouton Mint (Accent) : Fond Mint Green `#0c8c5e`, texte blanc `#ffffff`.
 * **Semantic & Status hues (Strictement réservés aux statuts & badges métiers)**:
-  - Succès / Validé : `#059669` (`bg-emerald-50 text-emerald-700 border-emerald-200`)
-  - En cours / Warning / Attention : `#D97706` (`bg-amber-50 text-amber-700 border-amber-200`)
-  - Erreur / Alerte critique / Bloqué : `#EF4444` (`bg-red-50 text-red-700 border-red-200`)
-  - Information / Tech / Système : `#2563EB` (`bg-blue-50 text-blue-700 border-blue-200`)
-  - Guide Fondatrice / VIP : `#7C3AED` (`bg-purple-50 text-purple-700 border-purple-200`)
+  - Succès / Validé : `#0c8c5e` (`bg-emerald-50 text-emerald-700 border-emerald-200`)
+  - En cours / Warning / Attention : `#d97706` (`bg-amber-50 text-amber-700 border-amber-200`)
+  - Erreur / Alerte critique / Bloqué : `#ef4444` (`bg-red-50 text-red-700 border-red-200`)
+  - Information / Tech / Système : `#2563eb` (`bg-blue-50 text-blue-700 border-blue-200`)
+  - Guide Fondatrice / VIP : `#7c3aed` (`bg-purple-50 text-purple-700 border-purple-200`)
 * **Typeface**:
-  - Interface & Texte Courant : `Inter`, `-apple-system`, `BlinkMacSystemFont`, `sans-serif` (`font-sans`)
-  - Code, Chiffres Financiers & Compteurs : `JetBrains Mono`, `monospace` (`font-mono tabular-nums`)
+  - `Inter` universel pour toute l'interface (titres, corps, nav, boutons, inputs, code).
+  - Poids : 400 (regular), 500 (medium), 600 (semibold).
+  - OpenType : `"ss01" on, "cv11" on`.
+  - Chiffres Financiers & Compteurs : `Inter` / `JetBrains Mono` (`font-mono tabular-nums`).
 * **Type scale**:
-  - `11px` (`text-[11px]`) : Micro-labels en uppercase (`tracking-wider font-semibold`)
-  - `12px` (`text-xs`) : Badges denses, métadonnées secondaires, légendes
-  - `14px` (`text-sm`) : Texte d'interface courant, boutons, entrées de formulaire, tables
-  - `16px` (`text-base`) : Corps de texte de lecture (SOP, documents, guides)
-  - `20px` (`text-xl`) : Titres de sections et cartes principales
-  - `24px` (`text-2xl`) : Titres de pages et modales
-  - `30px` (`text-3xl`) : Titres majeurs de dashboards
+  - `13px` (`--text-caption`, 1.5 leading, +0.65px tracking) : Eyebrow labels en uppercase, micro-labels
+  - `14px` : Boutons, navigation, inputs
+  - `16px` (`--text-body`, 1.5 leading, -0.16px tracking) : Corps de texte de lecture
+  - `20px` (`--text-subheading`, 1.3 leading, -0.2px tracking) : Sous-titres
+  - `24px` (`--text-heading-sm`, 1.33 leading, -0.24px tracking) : Titres de cartes et sections
+  - `40px` (`--text-heading`, 1.15 leading, -0.4px tracking) : Grands titres
+  - `57px` (`--text-display`, 1.1 leading, -1.14px tracking) : Display hero
 * **Spacing scale**:
-  - Multiples stricts de 4px / 8px : `4px (1)`, `8px (2)`, `12px (3)`, `16px (4)`, `24px (6)`, `32px (8)`, `48px (12)`, `64px (16)`
-* **Corner radius**:
-  - Boutons, Badges & Inputs : `8px` (`rounded-lg`), `6px` (`rounded-md` pour haute densité compacte)
-  - Cartes & Conteneurs : `12px` (`rounded-xl`)
-  - Modales & Tiroirs : `16px` (`rounded-2xl`)
-* **Shadow**:
-  - Style Near-Flat / Stripe Docs : `shadow-2xs` (`0 1px 2px rgba(26,30,22,.05)`), `shadow-xs`, ou sans ombre (`shadow-none`) avec bordure 1px `#E4E4E7`.
+  - `4px, 5px, 6px, 7px, 8px, 10px, 12px, 16px, 24px, 28px, 32px, 48px, 64px, 72px, 96px, 201px`.
+* **Corner radius (Mintlify Square Geometry)**:
+  - Boutons, Inputs, Tags & Badges : `4px` (`rounded`)
+  - Cartes : `16px` (`rounded-2xl`)
+  - Grands Conteneurs & Modales : `24px` (`rounded-3xl`)
+  - Règle stricte : Pas de boutons pilules, pas de rayons 9999px ni d'avatars arrondis (avatars en carrés doux 4px ou 16px). Inter pour 100% de l'interface sans police display concurrente.
+* **Shadow (Whispered Elevation)**:
+  - Élévation légère 0.03 : `0 2px 4px 0 rgba(0, 0, 0, 0.03)` (`--shadow-sm`)
+  - Cartes & surfaces élevées 0.05 : `0 2px 4px 0 rgba(0, 0, 0, 0.05)` (`--shadow-sm-2`)
 * **Icon library**:
   - `lucide-react` exclusivement (16px inline `w-4 h-4`, 20px boutons `w-5 h-5`, 24px standalone `w-6 h-6`).
 * **Component library or directory**:

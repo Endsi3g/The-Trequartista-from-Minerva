@@ -20,7 +20,7 @@ export function Card({ children, className = '', id, header, footer, contentClas
   return (
     <div
       id={id}
-      className={`bg-mv-surface border border-mv-border rounded-xl shadow-mv-sm overflow-hidden transition-all duration-200 hover:border-mv-border/80 ${className}`}
+      className={`bg-mv-surface border border-mv-border rounded-2xl shadow-mv-sm overflow-hidden transition-all duration-200 hover:border-[#dddddd] ${className}`}
     >
       {header && (
         <div className="px-6 py-4 border-b border-mv-border flex items-center justify-between">

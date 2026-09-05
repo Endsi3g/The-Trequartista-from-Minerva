@@ -110,7 +110,7 @@ function NavLink({
         {item.isNew && (
           <span
             className={cn(
-              'shrink-0 w-1.5 h-1.5 rounded-full',
+              'shrink-0 w-1.5 h-1.5 rounded-[1px]',
               active ? 'bg-white' : 'bg-mv-green'
             )}
             title="Nouveau"
@@ -640,9 +640,9 @@ export function AppSidebar() {
                   {doneCount}/{onboardingTotal} étapes ({onboardingPct}%)
                 </span>
               </div>
-              <div className="h-1 w-full bg-black/[0.06] rounded-full overflow-hidden">
+              <div className="h-1 w-full bg-black/[0.06] rounded overflow-hidden">
                 <div
-                  className="h-full bg-mv-green rounded-full transition-all duration-300"
+                  className="h-full bg-mv-green rounded transition-all duration-300"
                   style={{ width: `${onboardingPct}%` }}
                 />
               </div>

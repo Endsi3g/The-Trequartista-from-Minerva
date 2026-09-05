@@ -86,7 +86,7 @@ export function MobileBottomNav() {
             )}
           >
             {isActive && (
-              <span className="absolute -top-1.5 w-6 h-0.5 rounded-full bg-emerald-600" />
+              <span className="absolute -top-1.5 w-6 h-0.5 rounded-[1px] bg-emerald-600" />
             )}
             <Icon className={cn('w-5 h-5 mb-0.5', isActive && 'stroke-[2.25] text-emerald-600')} />
             <span className="text-[10px] tracking-tight">{tab.label}</span>

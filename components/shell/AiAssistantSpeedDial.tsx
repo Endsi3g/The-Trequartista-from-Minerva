@@ -193,16 +193,16 @@ export function AiAssistantSpeedDial() {
         <button
           onClick={() => setIsOpen((prev) => !prev)}
           className={cn(
-            'group relative flex items-center gap-2 px-3 h-9 rounded-full shadow-mv-lg transition-all duration-200 cursor-pointer border',
+            'group relative flex items-center gap-2 px-3 h-9 rounded shadow-mv-lg transition-all duration-200 cursor-pointer border',
             isOpen
-              ? 'bg-mv-ink text-white border-mv-ink'
-              : 'bg-mv-green hover:bg-mv-green-dark text-white border-mv-green-dark/40'
+              ? 'bg-[#08090a] text-white border-[#08090a]'
+              : 'bg-[#08090a] hover:bg-black/85 text-white border-black/40'
           )}
           title="Assistant IA Minerva (⌘J)"
           aria-label="Ouvrir l'Assistant IA Minerva"
         >
           <Sparkles className={cn('w-4 h-4 text-white transition-transform duration-300', isOpen && 'rotate-90')} />
-          <span className="text-xs font-bold tracking-tight pr-1">Assistant IA</span>
+          <span className="text-xs font-medium tracking-tight pr-1">Assistant IA</span>
           <kbd className="hidden sm:inline-flex text-[9px] font-mono bg-white/20 px-1 py-0.5 rounded text-white/90">
             ⌘J
           </kbd>
@@ -285,10 +285,10 @@ export function AiAssistantSpeedDial() {
             {messages.length === 0 ? (
               /* Empty state: mascotte centrée + prompts suggérés, à la Notion AI */
               <div className="flex-1 flex flex-col items-center justify-end px-5 pb-6 gap-5 overflow-y-auto bg-mv-cream-soft/40">
-                <div className="w-16 h-16 rounded-full bg-mv-green-tint border border-mv-green/25 flex items-center justify-center overflow-hidden shrink-0 p-3.5">
+                <div className="w-16 h-16 rounded-2xl bg-mv-green-tint border border-mv-green/25 flex items-center justify-center overflow-hidden shrink-0 p-3.5">
                   <LogoMark size={36} />
                 </div>
-                <h2 className="text-lg font-bold font-display text-mv-ink text-center">Quelle est ta question aujourd&apos;hui ?</h2>
+                <h2 className="text-lg font-semibold text-mv-ink text-center">Quelle est ta question aujourd&apos;hui ?</h2>
                 <div className="w-full space-y-1">
                   {QUICK_PROMPTS.map((p, idx) => {
                     const Icon = p.icon;
@@ -296,7 +296,7 @@ export function AiAssistantSpeedDial() {
                       <button
                         key={idx}
                         onClick={() => handleSendMessage(p.label)}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-mv-ink-soft hover:bg-mv-surface hover:text-mv-ink border border-transparent hover:border-mv-border transition-colors cursor-pointer text-[13px]"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded text-left text-mv-ink-soft hover:bg-mv-surface hover:text-mv-ink border border-transparent hover:border-mv-border transition-colors cursor-pointer text-[13px]"
                       >
                         <Icon className="w-4 h-4 text-mv-ink-faint shrink-0" />
                         <span className="truncate">{p.label}</span>
@@ -313,13 +313,13 @@ export function AiAssistantSpeedDial() {
                   return (
                     <div key={m.id} className={cn('flex gap-2.5', isUser ? 'justify-end' : 'justify-start')}>
                       {!isUser && (
-                        <div className="w-6 h-6 rounded-full bg-mv-green-tint border border-mv-green/25 flex items-center justify-center overflow-hidden shrink-0 mt-0.5 p-1">
+                        <div className="w-6 h-6 rounded bg-mv-green-tint border border-mv-green/25 flex items-center justify-center overflow-hidden shrink-0 mt-0.5 p-1">
                           <LogoMark size={16} />
                         </div>
                       )}
                       <div
                         className={cn(
-                          'max-w-[85%] rounded-lg p-2.5 space-y-1.5 leading-relaxed',
+                          'max-w-[85%] rounded p-2.5 space-y-1.5 leading-relaxed',
                           isUser
                             ? 'bg-mv-green text-white rounded-br-none'
                             : 'bg-mv-surface border border-mv-border text-mv-ink rounded-bl-none shadow-2xs'
@@ -351,7 +351,7 @@ export function AiAssistantSpeedDial() {
                         fullName ? (
                           <UserAvatar name={fullName} src={avatarUrl} size="xs" className="w-6 h-6 text-[10px] shrink-0 mt-0.5" />
                         ) : (
-                          <div className="w-6 h-6 rounded-full bg-mv-border text-mv-ink-soft flex items-center justify-center shrink-0 mt-0.5">
+                          <div className="w-6 h-6 rounded bg-mv-border text-mv-ink-soft flex items-center justify-center shrink-0 mt-0.5">
                             <User className="w-3.5 h-3.5" />
                           </div>
                         )
@@ -361,7 +361,7 @@ export function AiAssistantSpeedDial() {
                 })}
                 {sending && (
                   <div className="flex gap-2.5 items-center text-xs text-mv-ink-faint">
-                    <div className="w-6 h-6 rounded-full bg-mv-green-tint text-mv-green flex items-center justify-center shrink-0 animate-spin">
+                    <div className="w-6 h-6 rounded bg-mv-green-tint text-mv-green flex items-center justify-center shrink-0 animate-spin">
                       <RefreshCw className="w-3 h-3" />
                     </div>
                     <span className="italic">L’IA réfléchit et consulte les SOPs…</span>
@@ -446,7 +446,7 @@ export function AiAssistantSpeedDial() {
                   <button
                     type="submit"
                     disabled={(!draft.trim() && !pendingAttachment) || sending}
-                    className="w-6 h-6 rounded-full bg-mv-green hover:bg-mv-green-dark disabled:opacity-30 disabled:hover:bg-mv-green text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                    className="w-6 h-6 rounded bg-[#08090a] hover:bg-black/85 disabled:opacity-30 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
                     aria-label="Envoyer"
                   >
                     <Send className="w-3 h-3" />

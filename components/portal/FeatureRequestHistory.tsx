@@ -393,8 +393,8 @@ export function FeatureRequestHistory({
                     </span>
                   </div>
 
-                  <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border self-start sm:self-auto', st.bg, st.text, st.border)}>
-                    <span className={cn('w-1.5 h-1.5 rounded-full', st.dot)} />
+                  <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-bold border self-start sm:self-auto', st.bg, st.text, st.border)}>
+                    <span className={cn('w-1.5 h-1.5 rounded-[2px]', st.dot)} />
                     <span>{st.label}</span>
                   </span>
                 </div>
@@ -446,8 +446,8 @@ export function FeatureRequestHistory({
                       {new Date(req.created_at).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })}
                     </td>
                     <td className="py-3 px-4">
-                      <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-bold border', st.bg, st.text, st.border)}>
-                        <span className={cn('w-1.5 h-1.5 rounded-full', st.dot)} />
+                      <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10.5px] font-bold border', st.bg, st.text, st.border)}>
+                        <span className={cn('w-1.5 h-1.5 rounded-[2px]', st.dot)} />
                         <span>{st.label}</span>
                       </span>
                     </td>

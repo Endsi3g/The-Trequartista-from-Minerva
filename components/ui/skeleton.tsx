@@ -15,11 +15,11 @@ export function SkeletonText({ className, ...props }: React.HTMLAttributes<HTMLD
 }
 
 export function SkeletonAvatar({ size = 32, className }: { size?: number; className?: string }) {
-  return <Skeleton className={cn('rounded-full shrink-0', className)} style={{ width: size, height: size }} />;
+  return <Skeleton className={cn('rounded shrink-0', className)} style={{ width: size, height: size }} />;
 }
 
 export function SkeletonBadge({ className }: { className?: string }) {
-  return <SkeletonText className={cn('h-5 w-16 rounded-full', className)} />;
+  return <SkeletonText className={cn('h-5 w-16 rounded', className)} />;
 }
 
 // A single list/table row: avatar + two stacked text lines + a trailing badge.

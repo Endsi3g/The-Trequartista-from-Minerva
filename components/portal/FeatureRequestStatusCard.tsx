@@ -88,10 +88,10 @@ export function FeatureRequestStatusCard({
         </div>
 
         {/* Realtime Connection Indicator */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 border border-zinc-200 text-xs shrink-0 self-start sm:self-auto">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-zinc-100 border border-zinc-200 text-xs shrink-0 self-start sm:self-auto">
           <span
             className={cn(
-              'w-2 h-2 rounded-full',
+              'w-2 h-2 rounded-[2px]',
               isRealtimeConnected ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-400'
             )}
           />
@@ -128,7 +128,7 @@ export function FeatureRequestStatusCard({
 
                       <span
                         className={cn(
-                          'px-2 py-0.5 rounded-full text-[10.5px] font-semibold border',
+                          'px-2 py-0.5 rounded text-[10.5px] font-semibold border',
                           req.priority === 'urgent'
                             ? 'bg-red-50 text-red-700 border-red-200'
                             : req.priority === 'high'
@@ -157,7 +157,7 @@ export function FeatureRequestStatusCard({
                   <div className="shrink-0">
                     <span
                       className={cn(
-                        'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-2xs',
+                        'inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-bold border shadow-2xs',
                         isDelivered
                           ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                           : req.status === 'in_progress' || req.status === 'in_development'
@@ -171,7 +171,7 @@ export function FeatureRequestStatusCard({
                     >
                       <span
                         className={cn(
-                          'w-2 h-2 rounded-full',
+                          'w-2 h-2 rounded-[2px]',
                           isDelivered
                             ? 'bg-emerald-600'
                             : req.status === 'in_progress' || req.status === 'in_development'
@@ -213,7 +213,7 @@ export function FeatureRequestStatusCard({
                           <div key={step.status} className="flex flex-col items-center text-center">
                             <div
                               className={cn(
-                                'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2',
+                                'w-7 h-7 rounded flex items-center justify-center text-xs font-bold transition-all border-2',
                                 isDone
                                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
                                   : isCurrent

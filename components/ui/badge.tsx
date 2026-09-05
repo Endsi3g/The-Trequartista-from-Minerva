@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -19,7 +19,7 @@ export function Badge({ children, variant = 'green', className = '', style }: Ba
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full border transition-all ${variantStyles[variant]} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded border transition-all ${variantStyles[variant]} ${className}`}
       style={style}
     >
       {children}

@@ -15,12 +15,12 @@ const rootDir = path.resolve(__dirname, '..');
 
 // Authorized design tokens (hex format lowercase)
 const ALLOWED_HEX_TOKENS = new Set([
-  // Primary Emerald Accent & variants
-  '#059669', '#047857', '#065f46', '#a7f3d0', '#ecfdf5', '#10b981', '#34d399', '#059669',
-  // Canvas & Surfaces
-  '#fafafa', '#f4f4f5', '#ffffff', '#fff', '#f9fafb', '#f8fafc', '#f8f7f2', '#eae7d9', '#c6c3b7',
-  // Text & Neutrals
-  '#18181b', '#27272a', '#3f3f46', '#52525b', '#71717a', '#a1a1aa', '#d4d4d8', '#e4e4e7', '#ececed', '#09090b',
+  // Primary Emerald / Mintlify Accent & variants
+  '#0c8c5e', '#09734d', '#075037', '#053323', '#059669', '#047857', '#065f46', '#a7f3d0', '#ecfdf5', '#10b981', '#34d399',
+  // Canvas & Surfaces (Mintlify Paper White, Mist Gray, Cloud Gray)
+  '#ffffff', '#fff', '#f2f2f2', '#dddddd', '#ddd', '#fafafa', '#f4f4f5', '#f9fafb', '#f8fafc', '#f8f7f2', '#eae7d9', '#c6c3b7',
+  // Text & Neutrals (Mintlify Ink Black, True Black, Zinc)
+  '#08090a', '#000000', '#000', '#18181b', '#27272a', '#3f3f46', '#52525b', '#71717a', '#a1a1aa', '#d4d4d8', '#e4e4e7', '#ececed', '#09090b',
   // Semantic status hues
   '#ef4444', '#fef2f2', '#dc2626', '#b91c1c', // Red
   '#d97706', '#fef3e2', '#fef3c7', '#b45309', // Amber / Warning

@@ -14,8 +14,16 @@
   :root {
     color-scheme: light;
 
-    --mv-green: #059669;
-    --mv-green-dark: #047857;
+    /* Mintlify Official Design Tokens */
+    --color-mint-green: #0c8c5e;
+    --color-ink-black: #08090a;
+    --color-true-black: #000000;
+    --color-paper-white: #ffffff;
+    --color-mist-gray: #f2f2f2;
+    --color-cloud-gray: #dddddd;
+
+    --mv-green: #0c8c5e;
+    --mv-green-dark: #09734d;
     --mv-green-darker: #065f46;
     --mv-green-light: #a7f3d0;
     --mv-green-tint: #ecfdf5;
@@ -24,25 +32,23 @@
     --mv-warm-dark: #c6c3b7;
     --mv-warm-tint: #f8f7f2;
 
-    /* Clean neutral canvas -- Unified with sidebar background (#F4F4F5),
-       pure white card surfaces (#FFFFFF) and crisp hairline borders (#E4E4E7). */
-    --mv-cream: #F4F4F5;
-    --mv-cream-soft: #F4F4F5;
-    --mv-surface: #FFFFFF;
+    /* Monastic Paper White canvas & Mist/Cloud Gray dividers */
+    --mv-cream: #ffffff;
+    --mv-cream-soft: #ffffff;
+    --mv-surface: #ffffff;
 
-    --mv-ink: #18181B;
+    --mv-ink: #000000;
     --mv-ink-soft: #71717A;
     --mv-ink-faint: #A1A1AA;
     --mv-ink-mute: #D4D4D8;
 
-    --mv-border: #E4E4E7;
-    --mv-border-soft: #ECECED;
+    --mv-border: #f2f2f2;
+    --mv-border-soft: #dddddd;
 
     --mv-red: #ef4444;
     --mv-red-bg: #fef2f2;
 
-    /* Real, distinct status hues -- matches Reach's DESIGN.md lead-pipeline
-       table exactly, no longer aliased to green. */
+    /* Distinct status hues */
     --mv-amber: #d97706;
     --mv-amber-bg: #fef3e2;
     --mv-purple: #7c3aed;
@@ -54,15 +60,16 @@
     --mv-heat-1: #ecfdf5;
     --mv-heat-2: #a7f3d0;
     --mv-heat-3: #34d399;
-    --mv-heat-4: #059669;
-    --mv-heat-5: #047857;
+    --mv-heat-4: #0c8c5e;
+    --mv-heat-5: #09734d;
 
-    /* Shadows -- near-flat, Reach/Flow style (border does most of the work) */
-    --shadow-mv-sm: 0 1px 2px rgba(38, 37, 30, 0.04);
-    --shadow-mv-md: 0 1px 3px rgba(38, 37, 30, 0.05), 0 4px 8px rgba(38, 37, 30, 0.04);
-    --shadow-mv-lg: 0 2px 6px rgba(38, 37, 30, 0.06), 0 12px 24px rgba(38, 37, 30, 0.08);
+    /* Mintlify whispered elevation (0.03 - 0.05 opacity) */
+    --shadow-mv-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.03);
+    --shadow-mv-md: 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+    --shadow-mv-lg: 0 8px 16px 0 rgba(0, 0, 0, 0.06);
 
-    --radius: 0.625rem;
+    /* Mintlify square 4px component radius */
+    --radius: 4px;
 
     --sidebar-background: 0 0% 98%;
 

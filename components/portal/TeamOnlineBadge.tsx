@@ -23,10 +23,10 @@ export function TeamOnlineBadge() {
     : `${members.length} membres Minerva en ligne`;
 
   return (
-    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-mv-green-tint border border-mv-green/30 text-[11px] font-semibold text-mv-green">
+    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-mv-green-tint border border-mv-green/30 text-[11px] font-semibold text-mv-green">
       <span className="relative flex w-1.5 h-1.5">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mv-green opacity-60" />
-        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-mv-green" />
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-[2px] bg-mv-green opacity-60" />
+        <span className="relative inline-flex rounded-[2px] h-1.5 w-1.5 bg-mv-green" />
       </span>
       {label}
     </div>

@@ -41,7 +41,11 @@ module.exports = {
   				'heat-2': 'var(--mv-heat-2)',
   				'heat-3': 'var(--mv-heat-3)',
   				'heat-4': 'var(--mv-heat-4)',
-  				'heat-5': 'var(--mv-heat-5)'
+  				'heat-5': 'var(--mv-heat-5)',
+  				mint: '#0c8c5e',
+  				ink: '#08090a',
+  				mist: '#f2f2f2',
+  				cloud: '#dddddd'
   			},
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',
@@ -55,19 +59,24 @@ module.exports = {
   			}
   		},
   		borderRadius: {
-  			DEFAULT: '8px',
+  			DEFAULT: '4px',
   			sm: '4px',
-  			md: '6px',
+  			md: '4px',
   			lg: '8px',
   			xl: '12px',
   			'2xl': '16px',
-  			'3xl': '20px',
-  			'4xl': '24px'
+  			'3xl': '24px',
+  			'4xl': '24px',
+  			tags: '4px',
+  			buttons: '4px',
+  			inputs: '4px',
+  			cards: '16px',
+  			containers: '24px'
   		},
   		boxShadow: {
-  			'mv-sm': '0 1px 2px rgba(26,30,22,.05)',
-  			'mv-md': '0 2px 4px rgba(26,30,22,.04), 0 8px 20px rgba(26,30,22,.06)',
-  			'mv-lg': '0 8px 16px rgba(26,30,22,.06), 0 24px 48px rgba(26,30,22,.10)'
+  			'mv-sm': '0 2px 4px 0 rgba(0, 0, 0, 0.03)',
+  			'mv-md': '0 2px 4px 0 rgba(0, 0, 0, 0.05)',
+  			'mv-lg': '0 8px 16px 0 rgba(0, 0, 0, 0.06)'
   		},
   		fontFamily: {
   			display: [

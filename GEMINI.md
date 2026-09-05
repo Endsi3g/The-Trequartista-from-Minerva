@@ -1,6 +1,6 @@
 # Minerva Trequartista — Guide Technique & Directives IA (GEMINI.md)
 
-**Version du Système :** v2.30.0  
+**Version du Système :** v2.30.8  
 **Stack Principale :** Next.js 16 (App Router) • Supabase (PostgreSQL + RLS + Realtime) • Tailwind CSS • TypeScript Strict Mode
 
 ---
@@ -61,12 +61,12 @@ Le schéma complet de la base de données est consolidé en un script unique et 
    ```bash
    npx tsc --noEmit
    ```
-2. **Design Tokens & Ergonomie UX (Référence Impérative : `DESIGN_SYSTEM.md`) :**
-   - **Fond & Surfaces** : Canvas `#FAFAFA` / `#F4F4F5` (Light Haute Densité), Cartes & Surfaces blanches `#FFFFFF`, Bordures hairline 1px `#E4E4E7` (`border-zinc-200`).
-   - **Accents & Rangs** : Vert Émeraude `#059669` (hover `#047857`, fond subtil `#ECFDF5`, bordure `#A7F3D0`). Un seul bouton primaire d'accent par vue.
-   - **Statuts Métiers** : Succès `#059669`, En cours/Warning `#D97706`, Alerte/Erreur `#EF4444`, Info/Tech `#2563EB`, Guide/Fondatrice `#7C3AED`. Jamais d'usage décoratif.
-   - **Typographie & Chiffres** : `Inter` pour l'interface (`font-sans`), `JetBrains Mono` (`font-mono tabular-nums`) pour les compteurs, montants financiers et raccourcis clavier.
-   - **Espacements & Grille** : Échelle stricte en multiples de 4px / 8px (`4, 8, 12, 16, 24, 32, 48, 64, 96`).
+2. **Design Tokens & Ergonomie UX (Référence Impérative : `DESIGN_SYSTEM.md` — Standard Mintlify) :**
+   - **Fond & Surfaces** : Canvas Paper White `#FFFFFF` monastique, Cartes & Surfaces `#FFFFFF`, Bordures fines Mist Gray `#F2F2F2` (`border-[#f2f2f2]`) et Cloud Gray `#DDDDDD`.
+   - **Accents & Boutons** : Actions primaires en Ink Black `#08090A` (texte blanc, rayon 4px). L'accent Mint Green `#0C8C5E` (hover `#09734D`, fond subtil `#ECFDF5`) est strictement réservé aux états actifs, liens de marque, icônes et badges.
+   - **Géométrie des Rayons** : Boutons et inputs à 4px (`rounded`), badges à 4px, cartes à 16px (`rounded-2xl`), conteneurs à 24px (`rounded-3xl`). Aucun bouton pilule ni avatar arrondi (avatars en carrés doux 4px ou 16px). Inter exclusif sur toute l'interface.
+   - **Statuts Métiers** : Succès `#0C8C5E`, En cours/Warning `#D97706`, Alerte/Erreur `#EF4444`, Info/Tech `#2563EB`, Guide/Fondatrice `#7C3AED`. Jamais d'usage décoratif.
+   - **Typographie & Chiffres** : `Inter` universel (`font-sans`), `JetBrains Mono` (`font-mono tabular-nums`) pour les compteurs et montants financiers.
    - **20 Lois UX & Finish Pass** : Application stricte des 20 lois (Hick, Fitts, Jakob, Proximité, Miller, Doherty <400ms, Von Restorff, etc.) et contrôle systématique via la *Finish Pass* (1 seul accent, ≤5 tailles de police, 1 bouton primaire, cibles tactiles ≥44px).
    - **Contrôle Automatisé** :
      ```bash

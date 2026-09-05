@@ -97,7 +97,7 @@ export function UserAvatar({
   }, [src]);
 
   const sizeClass = SIZE_MAP[size] || SIZE_MAP.md;
-  const shapeClass = shape === 'circle' ? 'rounded-full' : 'rounded-lg';
+  const shapeClass = 'rounded';
 
   const validSrc = Boolean(
     src &&
@@ -110,7 +110,7 @@ export function UserAvatar({
   return (
     <div
       className={cn(
-        'relative inline-flex shrink-0 select-none items-center justify-center font-display font-bold tracking-wider overflow-hidden ring-1 ring-black/[0.06] shadow-2xs',
+        'relative inline-flex shrink-0 select-none items-center justify-center font-sans font-medium tracking-wider overflow-hidden ring-1 ring-black/[0.06] shadow-2xs',
         sizeClass,
         shapeClass,
         className
@@ -148,7 +148,7 @@ export function UserAvatar({
       {showStatus && (
         <span
           className={cn(
-            'absolute bottom-0 right-0 rounded-full ring-2 ring-white',
+            'absolute bottom-0 right-0 rounded-[2px] ring-2 ring-white',
             STATUS_SIZE_MAP[size] || STATUS_SIZE_MAP.md,
             statusActive ? 'bg-emerald-500' : 'bg-zinc-400'
           )}
