@@ -2,6 +2,30 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.30.13) — Intégration des Standards UX Mobile Nav (34px Safe Zone) & E-Commerce Produit
+
+- **Barre de Navigation Inférieure Mobile Ergonomique (`MobileBottomNav.tsx`)** :
+  - **Zone de Confort du Pouce & Center CTA** : Intégration d'un bouton central d'action surélevé en Ink Black `#08090a` (`+`) avec micro-vibration haptique (`triggerHaptic('medium')`), ouvrant instantanément le tiroir d'actions rapides `QuickActionSheet`.
+  - **Zone de Sécurité Home Indicator (34px)** : Marge inférieure garantie `pb-[max(0.75rem,env(safe-area-inset-bottom,34px))]` sur les appareils modernes bord-à-bord (iOS / Android), éliminant tout risque de fermeture accidentelle de l'application.
+  - **Normalisation des Tailles & Accessibilité** : Icônes standardisées 20-22px avec labels textuels obligatoires 10.5px sous chaque onglet (`Accueil`, `Leads`, `Créer`, `Tâches`, `Menu`).
+  - **Contraste WCAG & Micro-Interactions** : Onglets inactifs à haut contraste (`text-zinc-500` / `#71717a` ≥ 3:1), onglet actif en Mint Green `#0c8c5e` avec micro-indicateur supérieur et retour haptique au tap.
+- **Tiroir d'Actions Rapides au Pouce (`QuickActionSheet.tsx`)** :
+  - Modal / Bottom Sheet animée avec poignée tactile et fond flouté.
+  - 4 raccourcis opérationnels universels : `+ Nouveau Lead CRM`, `✓ Nouvelle Tâche`, `✨ Assistant IA Minerva (⌘J)`, et `📄 Nouveau Devis / Proposition`.
+- **Refonte E-Commerce & Commande Minerva Flow (`minerva-flow/page.tsx`)** :
+  - **Standard Paper White `#ffffff`** : Conversion intégrale du portail client en blanc monastique, cartes à bordures `#f2f2f2` et typographie Inter.
+  - **Boîtes de Contraste d'Icônes sur Images** : Encapsulation de tous les badges et boutons superposés sur des photos dans des conteneurs dépolis (`bg-white/90 backdrop-blur-xs border border-white/80 text-[#08090a]`) pour garantir une lisibilité optimale sur toute texture d'image.
+  - **Suppression des Pilules (`rounded-full`)** : Filtres catégories et badges convertis en géométrie carrée 4px (`rounded`).
+  - **Fiche Produit en Carte Coulissante (Slide-up Sheet)** : Affichage détaillé avec chips de portions rapides prédéfinies (`1 portion`, `2 portions`, `3 portions`), sélecteur de quantité adjacent (`-` [qté] `+`) et barre sticky interne avec calcul de prix dynamique.
+  - **Sticky Purchase Bar Globale** : Barre d'achat flottante ancrée au bas de l'écran dès qu'au moins 1 plat est au panier, avec total calculé en direct dans le bouton Ink Black : `Finaliser la Commande • [Total] $`.
+- **Gouvernance & Charte (`DESIGN_SYSTEM.md`)** :
+  - Ajout formel de la **Section 21** : *Mobile Navigation & Thumb Ergonomics Standard (uxpeak Masterclass)*.
+  - Ajout formel de la **Section 22** : *E-Commerce, Product Pages & Sticky Ordering Standard (uxpeak Masterclass)*.
+- **Contrôle Qualité Validé** :
+  - `npm run verify:design` : **100.0% de conformité** sur 312 fichiers (1081 tokens vérifiés).
+  - `npx tsc --noEmit` : **0 erreur TypeScript**.
+  - `npm run build` : **127 routes compilées** avec succès dans Next.js 16 (Turbopack).
+
 ## 2026-09-04 (v2.30.12) — Phase 3 : Refonte Mintlify du Workspace Prospection & Vente
 
 - **Refonte Complète du Cockpit de Prospection (`ProspectionOverview.tsx`)** :

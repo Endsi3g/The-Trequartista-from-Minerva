@@ -456,3 +456,51 @@ When creating or revising an interface:
 8. Confirm clearly when the goal has been completed.
 
 When laws appear to conflict, prioritize clarity, accessibility, user control, and successful task completion. Do not apply these laws mechanically. Use them to make deliberate decisions based on the user's context and goal.
+
+---
+
+## 21. Mobile Navigation & Thumb Ergonomics Standard (uxpeak Masterclass)
+
+La barre de navigation inférieure mobile (`MobileBottomNav`) représente l'épine dorsale structurelle de l'application sur smartphone. Elle doit obéir à des règles strictes d'ergonomie physique et d'accessibilité :
+
+* **Rôle Exclusif des Destinations Clés** :
+  - Conserver uniquement les 4 destinations structurelles à haute fréquence (`Accueil`, `Leads`, `Tâches`, `Menu`) plus 1 action centrale.
+  - Exclure rigoureusement les utilitaires secondaires (FAQ, mentions légales, boutons de déconnexion, flèches de retour).
+* **Zone de Confort du Pouce & Bouton Central d'Action (Center CTA)** :
+  - Positionner un bouton d'action central surélevé en **Ink Black `#08090a`** avec icône `+` blanche.
+  - Le Center CTA se trouve directement dans la zone d'atteinte naturelle du pouce et ouvre un tiroir d'actions rapides (Quick Action Sheet) sans forcer l'utilisateur à repositionner sa main.
+* **Zone de Sécurité Home Indicator (34px Safe Zone)** :
+  - Sur les smartphones récents bord-à-bord (iOS et Android), réserver impérativement 34px de marge inférieure (`pb-[max(0.75rem,env(safe-area-inset-bottom,34px))]`).
+  - Aucun élément cliquable ni icône ne doit chevaucher la barre de balayage d'accueil de l'OS sous peine de déclencher des fermetures accidentelles d'application.
+* **Normalisation des Tailles & Textes d'Accessibilité** :
+  - Icônes standardisées à 20-24px (`w-5 h-5` ou `w-6 h-6`) avec épaisseur de trait cohérente.
+  - Labels textuels systématiques de 10px à 12px positionnés sous chaque icône. Jamais de barre "icônes seules" afin d'éviter toute ambiguïté cognitive.
+* **Contraste d'État & Micro-Interactions** :
+  - Respect du ratio de contraste WCAG ≥ 3:1 pour les états inactifs (`text-zinc-500` / `#71717a`).
+  - État actif marqué par la teinte **Mint Green `#0c8c5e`** avec indicateur animé glissant sous/sur l'onglet.
+  - Retour tactile haptique immédiat (`triggerHaptic('light')`) lors de chaque tapotement sur un onglet ou sur le bouton central.
+
+---
+
+## 22. E-Commerce, Product Pages & Sticky Ordering Standard (uxpeak Masterclass)
+
+Pour toutes les fiches d'offres, forfaits de services (Studio Packages), devis et pages de commande client (`Minerva Flow`), les principes de conversion sans friction doivent être appliqués :
+
+* **Contraste des Icônes sur Images (Icon Backplate Containers)** :
+  - Ne jamais superposer des icônes ou des boutons de navigation nus directement sur des photos ou des visuels pleins.
+  - Encapsuler chaque icône dans une boîte de contraste dépolie (`bg-white/85 backdrop-blur-xs border border-white/60 text-[#08090a] rounded p-1.5`) assurant une lisibilité parfaite quel que soit le fond.
+* **Sélecteur de Quantité Adjacent & Prix Dynamique dans le Bouton** :
+  - Ne jamais éloigner le sélecteur de quantité du bouton d'achat.
+  - Placer les commandes de quantité (`-` [qté] `+`) immédiatement adjacentes au bouton d'action principal.
+  - Intégrer le montant total calculé directement à l'intérieur du bouton d'achat principal en Ink Black : `Ajouter au Panier • 38,00 $` ou `Commander • 62,50 $`.
+* **Chips de Quantité Prédéfinis (Predefined Quantity Chips)** :
+  - Proposer des boutons de sélection rapide à 4px (`1 portion`, `2 portions`, `3 portions`) pour permettre un choix en un seul tap tout en conservant le sélecteur manuel personnalisé.
+* **Barre d'Achat Collante (Sticky Purchase Bar)** :
+  - Ancrer la barre d'achat au bas du viewport (`sticky bottom-0 z-30 bg-white/95 backdrop-blur-md border-t border-[#f2f2f2]`) dès qu'au moins 1 article est sélectionné ou dans les fiches détaillées.
+  - L'utilisateur peut ainsi faire défiler la page, consulter les descriptions, allergènes et avis sans jamais perdre de vue le coût total ni l'action de confirmation.
+* **Badges & Labels Dé-saturés** :
+  - Géométrie carrée 4px (`rounded`), texte majuscule avec espacement généreux (`tracking-wider text-[10px]`).
+  - Éviter les couleurs rougeoyantes saturées au profit de teintes douces intégrées au canvas Paper White (`#ecfdf5`, `#f4f4f5`, `#fef3c7`).
+* **Carte Coulissante sur le Hero (Slide-up Card Layout)** :
+  - Présenter les détails de l'article dans une carte douce qui coulisse par-dessus l'en-tête visuel lors du défilement, maintenant le titre et le prix visibles à tout moment.
+

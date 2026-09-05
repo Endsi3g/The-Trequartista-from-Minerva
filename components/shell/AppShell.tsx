@@ -55,8 +55,8 @@ function AppShellInner({ children }: AppShellProps) {
             <TopbarActions />
           </header>
 
-          {/* Page Content -- pb-20 on mobile leaves room for MobileBottomNav */}
-          <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 pb-20 md:pb-8 w-full min-w-0 transition-all duration-200 ease-in-out">
+          {/* Page Content -- pb-24 on mobile leaves room for MobileBottomNav with 34px safe zone */}
+          <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 pb-24 md:pb-8 w-full min-w-0 transition-all duration-200 ease-in-out">
             {children}
           </main>
         </div>
