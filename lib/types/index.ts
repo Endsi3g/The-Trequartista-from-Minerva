@@ -1666,3 +1666,24 @@ export interface SystemServiceHealth {
   description: string;
   lastChecked: string;
 }
+
+export type EdgeFunctionId =
+  | 'alert-dispatcher'
+  | 'webhook-validator'
+  | 'launch-check-validator'
+  | 'roi-aggregator';
+
+export interface TechEdgeInvocation {
+  id: string;
+  function_name: EdgeFunctionId;
+  http_status: number;
+  latency_ms: number;
+  payload: Record<string, unknown>;
+  response: Record<string, unknown> | null;
+  error_message: string | null;
+  environment: 'production' | 'staging' | 'preview';
+  triggered_by?: string | null;
+  triggered_by_name?: string | null;
+  created_at: string;
+}
+

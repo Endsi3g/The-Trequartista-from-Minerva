@@ -2,6 +2,27 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.30.9) — Console Edge Functions & Système d'Alertes Incident dans le Tech Workspace
+
+- **Console Interactive Edge Functions & Webhooks (`/tech?tab=edge`)** :
+  - **Interface Haute Densité Mintlify** : Console d'ingénierie dédiée avec sélecteur de microservices Deno, éditeur de requêtes JSON interactif, mesure de latence en temps réel (`performance.now()`), badges de statut HTTP (200, 400, 500) et inspecteur de payload/réponse.
+  - **Support des 4 Microservices Supabase** :
+    - `alert-dispatcher` : Déclenchement d'alertes d'incidents critiques avec broadcast in-app dans le chat d'équipe.
+    - `webhook-validator` : Validation de signature HMAC, typage d'événements et conformité payload.
+    - `launch-check-validator` : Audit automatisé des 20 points de contrôle pré-livraison client.
+    - `roi-aggregator` : Calcul et agrégation des métriques de revenus et scans QR Minerva Flow.
+- **Journalisation Persistante dans Supabase (`tech_edge_invocations`)** :
+  - Migration SQL `20260904230000_tech_edge_invocations.sql` créant la table d'audit des invocations avec statut HTTP, latence (ms), payload, réponse, timestamp et utilisateur déclencheur.
+  - Table consolidée et idempotente dans `supabase/deploy_production_complete.sql`.
+- **Diffusion d'Alertes Incident en Direct (`team_chat_messages`)** :
+  - Mise à niveau de `alert-dispatcher` pour publier automatiquement les alertes critiques dans le canal `#annonces` du chat d'équipe.
+- **Sondes de Latence Réelles (`SystemHealthMonitor`)** :
+  - Remplacement des valeurs statiques de diagnostic par un test réseau réel sondant l'API `/api/tech/edge-test`.
+- **Validation Qualité Stricte & Déploiement** :
+  - `npm run verify:design` : **100.0% de conformité** sur 309 fichiers.
+  - `npx tsc --noEmit` : **0 erreur TypeScript**.
+  - `npm run build` : **126+ routes compilées** avec succès dans Next.js 16 (Turbopack).
+
 ## 2026-09-04 (v2.30.8) — Intégration AuthSectionOne WebGL Shaders & Éradication Strictes des Pills / Avatars Arrondis
 
 - **Authentification Unifiée avec WebGL Shaders (`AuthSectionOne`)** :

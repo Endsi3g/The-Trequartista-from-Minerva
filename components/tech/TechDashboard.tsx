@@ -45,6 +45,7 @@ import { PageFadeIn } from '@/components/ui/page-transition';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { QualityChecklistRunner } from '@/components/tech/QualityChecklistRunner';
 import { SystemHealthMonitor } from '@/components/tech/SystemHealthMonitor';
+import { EdgeFunctionConsole } from '@/components/tech/EdgeFunctionConsole';
 import { fetchTechQaAudits } from '@/lib/services/tech';
 import { fetchProjects, fetchTasks, fetchDocuments, addTask, updateTaskStatus, deleteTask } from '@/lib/services/supabase-data';
 import { createClient } from '@/lib/supabase/client';
@@ -60,8 +61,8 @@ export function TechDashboard() {
   const { role, workspace, loading: userLoading } = useCurrentUser();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState<'overview' | 'qa' | 'infra' | 'docs'>(
-    initialTab === 'qa' || initialTab === 'infra' || initialTab === 'docs' ? initialTab : 'overview'
+  const [activeTab, setActiveTab] = useState<'overview' | 'qa' | 'infra' | 'edge' | 'docs'>(
+    initialTab === 'qa' || initialTab === 'infra' || initialTab === 'edge' || initialTab === 'docs' ? initialTab : 'overview'
   );
   const [audits, setAudits] = useState<TechQaAudit[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -472,6 +473,18 @@ export function TechDashboard() {
           </button>
 
           <button
+            onClick={() => setActiveTab('edge')}
+            className={cn(
+              'h-7 px-2.5 text-xs rounded transition-all cursor-pointer flex items-center gap-1.5',
+              activeTab === 'edge'
+                ? 'bg-white text-zinc-900 font-medium shadow-xs border border-zinc-200/80'
+                : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/60'
+            )}
+          >
+            <span>⚡ Console Edge</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('docs')}
             className={cn(
               'h-7 px-2.5 text-xs rounded transition-all cursor-pointer flex items-center gap-1.5',
@@ -487,7 +500,7 @@ export function TechDashboard() {
             href="/changelog"
             className="h-7 px-2.5 text-xs rounded transition-all cursor-pointer flex items-center gap-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-white/60"
           >
-            <span>📜 Changelog (v2.25.0)</span>
+            <span>📜 Changelog (v2.30.9)</span>
           </Link>
         </div>
 
@@ -952,6 +965,9 @@ export function TechDashboard() {
 
       {/* ── 6. TAB 3: SYSTEM HEALTH MONITOR ── */}
       {activeTab === 'infra' && <SystemHealthMonitor />}
+
+      {/* ── 6.bis TAB 3.bis: EDGE FUNCTION CONSOLE ── */}
+      {activeTab === 'edge' && <EdgeFunctionConsole />}
 
       {/* ── 7. TAB 4: DOCS & ROADMAP ── */}
       {activeTab === 'docs' && (
