@@ -504,3 +504,28 @@ Pour toutes les fiches d'offres, forfaits de services (Studio Packages), devis e
 * **Carte Coulissante sur le Hero (Slide-up Card Layout)** :
   - Présenter les détails de l'article dans une carte douce qui coulisse par-dessus l'en-tête visuel lors du défilement, maintenant le titre et le prix visibles à tout moment.
 
+---
+
+## 23. High-Performing Dashboards Standard (Mobbin Masterclass)
+
+Les tableaux de bord qui marquent les esprits et créent un attachement produit durable (*« Dashboards That Stick »*) ne se contentent pas de présenter des graphiques passifs : ils ont un temps d'avance en guidant l'action suivante de l'utilisateur. Tout tableau de bord Minerva doit respecter ces 5 piliers :
+
+* **1. Prescriptive Insights Over Raw Data (Action Immédiate « Next Best Action »)** :
+  - Ne jamais isoler des courbes sans interprétation.
+  - Positionner un panneau prescriptif immédiatement adjacent aux indicateurs clés synthétisant : l'action prioritaire n°1 calculée par le système, l'explication concise (« Pourquoi maintenant ») et le bouton d'exécution directe en 1 clic.
+* **2. Identité Visuelle Distinctive & Vue Spatiale Temps Réel** :
+  - Remplacer les grilles d'analytique ennuyeuses par des représentations spatiales immersives (ex. `MinervaTerritoryLiveMap` inspirée de Shopify Live View avec pastilles pulsantes géolocalisées).
+  - Fournir des heatmaps d'intensité intuitive où la saturation correspond directement aux pics d'activité.
+* **3. Le Dashboard comme Argument de Vente & 'Screenshot Test'** :
+  - Approximativement 1 application sur 5 utilise le tableau de bord comme écran d'accueil principal. Une capture d'écran unique de ce dashboard doit suffire à convaincre un prospect ou un client.
+  - Règle d'or : *« Est-ce que je prendrais une capture d'écran de ce dashboard, et pourquoi ? »*. Si la réponse est non, éliminer impitoyablement le bruit visuel jusqu'à ce que la clarté soit absolue.
+* **4. Métrique Propriétaire & Moat (Effet d'Attachement)** :
+  - Créer des barrières au changement en forgeant des métriques signatures exclusives :
+    - *Exemples de référence* : Streaks (Duolingo), Readiness Score (Oura), Anneaux fermés (Apple).
+    - *Signature Minerva* : **« Minerva Tri-Ring »** (les 3 anneaux concentriques d'Acquisition, Rétention et Exécution Technique) avec score global sur 100 et compteur de série de jours consécutifs (`🔥 Streak`).
+  - Proposer des synthèses digestes au format consommable (Carrousel en 3 cartes stories : Momentum, Victoires & Jalons, 3 Défis du jour) avec bouton de partage d'équipe 1-clic.
+* **5. IA Contextuelle Embarquée (Context Engine)** :
+  - Lors des pics, accélérations ou anomalies, intégrer un bandeau d'explication inline succinct explicitant la cause et la recommandation.
+  - Proposer un point d'entrée contextuel direct vers l'Assistant IA (`⌘J`) pour approfondir l'analyse en langage naturel.
+
+

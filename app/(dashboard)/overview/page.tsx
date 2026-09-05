@@ -32,6 +32,7 @@ import { useCurrentUser } from '@/hooks/use-current-user';
 import { TechDashboard } from '@/components/tech/TechDashboard';
 import { ManagingOverview } from '@/components/dashboard/ManagingOverview';
 import { ProspectionOverview } from '@/components/dashboard/ProspectionOverview';
+import { MomentumLiveTab } from '@/components/dashboard/momentum/MomentumLiveTab';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -232,6 +233,21 @@ export default function OverviewPage() {
       }
     })();
   }, []);
+
+  const [activeOverviewMode, setActiveOverviewMode] = useState<'workspace' | 'momentum'>('workspace');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const tab = new URLSearchParams(window.location.search).get('tab');
+      if (tab === 'momentum') {
+        setActiveOverviewMode('momentum');
+      }
+    }
+  }, []);
+
+  if (activeOverviewMode === 'momentum') {
+    return <MomentumLiveTab leads={leads} clients={clients} projects={projects} tasks={tasks} />;
+  }
 
   if (workspace === 'tech') {
     return <TechDashboard />;

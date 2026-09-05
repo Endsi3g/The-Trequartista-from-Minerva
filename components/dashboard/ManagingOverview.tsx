@@ -17,6 +17,7 @@ import {
   Sparkles,
   Sliders,
   DollarSign,
+  Flame,
 } from 'lucide-react';
 import { PageFadeIn } from '@/components/ui/page-transition';
 import { useToast } from '@/components/providers/ToastProvider';
@@ -470,6 +471,14 @@ Bonne journée de production à toute l'équipe !`,
               </span>
             )}
           </button>
+
+          <Link
+            href="/overview?tab=momentum"
+            className="h-8 px-3 text-xs rounded font-medium text-zinc-500 hover:text-[#08090a] hover:bg-zinc-50 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+          >
+            <Flame size={13} className="text-amber-500" />
+            <span>⚡ Momentum & Live</span>
+          </Link>
         </div>
 
         {/* Facturation & Trésorerie déplacée vers la page dédiée (Question 16) */}

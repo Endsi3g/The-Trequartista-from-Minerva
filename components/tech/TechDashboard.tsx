@@ -12,6 +12,7 @@ import {
   Rocket,
   BookOpen,
   ArrowRight,
+  Flame,
   Code2,
   Plus,
   CheckSquare,
@@ -577,6 +578,14 @@ export function TechDashboard() {
             <BookOpen size={13} className={cn(activeTab === 'docs' ? 'text-[#0c8c5e]' : 'text-zinc-400')} />
             <span>SOPs & Architecture</span>
           </button>
+
+          <Link
+            href="/overview?tab=momentum"
+            className="h-8 px-3 text-xs rounded font-medium text-zinc-500 hover:text-[#08090a] hover:bg-zinc-50 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+          >
+            <Flame size={13} className="text-amber-500" />
+            <span>⚡ Momentum & Live</span>
+          </Link>
         </div>
 
         <Link

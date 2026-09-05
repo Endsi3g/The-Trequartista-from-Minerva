@@ -2,6 +2,34 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-05 (v2.30.14) — Intégration des 5 Patterns Mobbin & Onglet Flagship « Momentum & Live »
+
+- **Architecture Unifiée « Momentum & Live » (`/overview?tab=momentum`)** :
+  - Création d'un onglet flagship transversal accessible depuis les 3 cockpits d'agences (`prospection`, `managing`, `tech`) avec navigation fluide bidirectionnelle.
+  - Implémentation complète des 5 piliers de la masterclass Mobbin (*« I Studied 2,108 Dashboards To See What Sticks »*).
+- **Pattern 1 : Recommandations Prescriptives Immédiates (`PrescriptiveActionCard.tsx`)** :
+  - Remplacement de l'exposition passive des métriques par une architecture de décision à 2 colonnes.
+  - **Action Héro Prioritaire** : Détection algorithmique du « Next Best Action » avec justification contextuelle d'une phrase (« Pourquoi maintenant ») et bouton d'exécution 1-clic en Ink Black `#08090a`.
+  - **File Secondaire d'Actions** : Badges d'urgence (`Haute`, `Moyenne`, `Optimisation`) avec deep links directs vers les modules opérationnels (`/leads`, `/clients`, `/tasks`).
+- **Pattern 2 : Identité Spatiale & Live View Territoire (`MinervaTerritoryLiveMap.tsx`)** :
+  - Carte vectorielle topographique de Montréal et de la province de Québec style *Shopify Live View*.
+  - Points pulsants temps réel différenciés par couleur métier : Restaurants Minerva Flow actifs (`#0c8c5e`), leads CRM chauds (`#2563eb`), et alertes techniques (`#ef4444`).
+  - Popover d'inspection au survol / clic et bandeau ticker de flux d'activité en direct avec horodatage JetBrains Mono.
+- **Pattern 3 : Test de la Capture d'Écran & Restreinte Visuelle (`DESIGN_SYSTEM.md`)** :
+  - Standardisation formelle dans la **Section 23** du Design System.
+  - Canvas Paper White `#ffffff` monastique, cartes blanches à bordures fines Mist Gray `#f2f2f2`, boutons 4px (`rounded`), cartes 16px (`rounded-2xl`), zéro pilule.
+  - Ratio de contraste strict, 1 seule couleur d'accent par composant, typographie Inter et JetBrains Mono tabular-nums.
+- **Pattern 4 : Métrique Signature Propriétaire « Tri-Ring » & Carrousel (`MinervaTriRing.tsx` & `MinervaDailyBriefCarousel.tsx`)** :
+  - **Minerva Tri-Ring** : 3 anneaux concentriques vectoriels mesurant la dynamique globale de l'agence (Acquisition `#0c8c5e`, Rétention `#2563eb`, Tech & Stabilité `#7c3aed`) avec score agrégé /100 et flamme de streak consécutif.
+  - **Minerva Daily Brief** : Carrousel consumable en 3 diapositives (*Momentum & Streak*, *Victoires & Signatures*, *Défis & Points de friction*) avec bouton d'export 1-clic vers le canal `#annonces`.
+- **Pattern 5 : Moteur d'Explication Contextuelle & IA Intégrée (`MinervaAiContextBanner.tsx`)** :
+  - Analyse causale des variations de performance (ex. +18% de conversion grâce au focus ACER).
+  - Raccourci clavier universel `⌘J` pour invoquer l'assistant IA Minerva en mode analyse prescriptive.
+- **Contrôle Qualité & Déploiement** :
+  - `npm run verify:design` : **100.0% de conformité** sur 318 fichiers (1192 tokens vérifiés).
+  - `npx tsc --noEmit` : **0 erreur TypeScript**.
+  - `npm run build` : **127/127 routes compilées** avec succès dans Next.js 16 (Turbopack).
+
 ## 2026-09-04 (v2.30.13) — Intégration des Standards UX Mobile Nav (34px Safe Zone) & E-Commerce Produit
 
 - **Barre de Navigation Inférieure Mobile Ergonomique (`MobileBottomNav.tsx`)** :
