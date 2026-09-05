@@ -2,6 +2,41 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.30.12) — Phase 3 : Refonte Mintlify du Workspace Prospection & Vente
+
+- **Refonte Complète du Cockpit de Prospection (`ProspectionOverview.tsx`)** :
+  - **Reconversion Stratégique Vente & Acquisition** : Élimination du bruit technique pour consacrer l'écran à l'acquisition active, aux touches commerciales quotidiennes et à la transformation des leads.
+  - **Structure en 3 Sous-Onglets Spécialisés (`Cockpit`, `Pipeline & Qualification`, `Playbook & Argumentaires`)** :
+    - *Cockpit Prospection* : Vision d'ensemble haute intensité combinant cadence, file prioritaire et argumentaire dynamique.
+    - *Pipeline & Qualification* : Vue tabulaire exhaustive des opportunités avec valeur prévisionnelle en CAD, étapes de closing et accès direct aux fiches CRM (`/leads/[id]`).
+    - *Playbook & Argumentaires* : Bibliothèque de scénarios de vente Minerva (*Flow Resto & Bar*, *Prospection Terrain Reach*, *Closing de Proposition Commerciale*).
+  - **Pilier 1 : Cadence & Momentum Commercial Quotidien** :
+    - Objectif de 30 touches / jour par commercial avec jauge de progression en direct (vert Mint `#0c8c5e`).
+    - Objectif de 4 rendez-vous qualifiés décrochés avec compteur JetBrains Mono (`tabular-nums`).
+    - Indicateur de valeur totale du pipeline en devise locale CAD.
+  - **Pilier 2 : File Prioritaire des Prospects Chauds (Hot Leads Queue)** :
+    - Sélection et tri automatique des 6 opportunités les plus urgentes par valeur financière estimée.
+    - Accès immédiat au statut, à la valeur potentielle et bouton d'appel direct.
+  - **Pilier 3 : Battlecards d'Objections & Méthode ACER en Direct** :
+    - 4 objections majeures intégrées : *Budget & Prix*, *Concurrent en Place (Clover/TouchBistro)*, *Timing & Pas le temps*, *Esquive Classique (« Envoyez un email »)*.
+    - Déroulé pas-à-pas de la méthode ACER (*Accuser, Clarifier, Expliquer, Reboucler*) avec script mot-à-mot à lire à voix haute.
+    - Lien contextuel 1-clic vers les Procédures Opérationnelles Standardisées de la Minerva Academy (`SOP-01`, `SOP-03`, `SOP-07`, `SOP-12`).
+- **Session de Prospection Séquentielle en Mode Focus (Focus Dialer)** :
+  - Modal plein écran anti-distraction accessible via le bouton d'action primaire ou le raccourci clavier `P`.
+  - Défilement automatique prospect par prospect avec qualifications rapides en 1 clic (*Pas de réponse*, *Message laissé*, *Injoignable*, *RDV fixé 🎉*, *Perdu / Non qualifié*).
+  - Prise de notes d'appel en temps réel et incrémentation immédiate de la cadence quotidienne.
+- **Intégration du Copilote Vocal IA (Outbound Calling)** :
+  - Déclenchement d'appels de pré-qualification vocale via l'agent IA Minerva avec retour d'état instantané et gestion d'erreurs gracieuse.
+- **Raccourcis Clavier & Ergonomie Mintlify** :
+  - Raccourci `P` pour lancer la session de prospection séquentielle.
+  - Raccourci `N` pour ouvrir la modale d'ajout rapide de lead.
+  - Raccourci `Escape` pour fermer les modales.
+  - Design tokens Mintlify rigoureux : Paper White, bordures `#f2f2f2`, boutons 4px (`rounded`), cartes 16px (`rounded-2xl`), zéro pilule.
+- **Contrôle Qualité Validé** :
+  - `npm run verify:design` : **100.0% de conformité** sur 311 fichiers.
+  - `npx tsc --noEmit` : **0 erreur TypeScript**.
+  - `npm run build` : **127 routes compilées** avec succès dans Next.js 16 (Turbopack).
+
 ## 2026-09-04 (v2.30.11) — Phase 2 : Refonte Mintlify du Workspace Managing & Cockpit Managérial d'Entraide
 
 - **Transformation Intégrale du Managing Overview (`ManagingOverview.tsx`)** :

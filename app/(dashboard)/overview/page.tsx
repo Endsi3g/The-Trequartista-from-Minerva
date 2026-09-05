@@ -31,6 +31,7 @@ import { AnimatedNumber } from '@/components/ui/animated-number';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { TechDashboard } from '@/components/tech/TechDashboard';
 import { ManagingOverview } from '@/components/dashboard/ManagingOverview';
+import { ProspectionOverview } from '@/components/dashboard/ProspectionOverview';
 import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
@@ -234,6 +235,10 @@ export default function OverviewPage() {
 
   if (workspace === 'tech') {
     return <TechDashboard />;
+  }
+
+  if (workspace === 'prospection') {
+    return <ProspectionOverview leads={leads} voiceCalls={voiceCalls} userName={fullName || ''} />;
   }
 
   // Executive financial dashboard for managing workspace, admins/managers, and unassigned profiles
