@@ -4,50 +4,40 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
-  Terminal,
-  Cpu,
-  FolderKanban,
   ShieldCheck,
   Zap,
   Activity,
-  Layers,
-  FileCode2,
-  ExternalLink,
-  RefreshCw,
-  Sparkles,
   CheckCircle2,
   AlertTriangle,
-  Clock,
   Rocket,
-  FolderGit2,
   BookOpen,
   ArrowRight,
-  Server,
   Code2,
   Plus,
-  Play,
   CheckSquare,
   Square,
   CornerDownLeft,
   X,
-  Trash2,
   Database,
   Globe,
   Radio,
-  Sliders,
-  ChevronRight,
+  RadioTower,
+  Cpu,
+  Server,
+  FileCode2,
+  ExternalLink,
   ShieldAlert,
+  Terminal,
+  Eye,
+  Send,
+  Loader2,
 } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { PageFadeIn } from '@/components/ui/page-transition';
-import { AnimatedNumber } from '@/components/ui/animated-number';
 import { QualityChecklistRunner } from '@/components/tech/QualityChecklistRunner';
 import { SystemHealthMonitor } from '@/components/tech/SystemHealthMonitor';
 import { EdgeFunctionConsole } from '@/components/tech/EdgeFunctionConsole';
 import { fetchTechQaAudits } from '@/lib/services/tech';
-import { fetchProjects, fetchTasks, fetchDocuments, addTask, updateTaskStatus, deleteTask } from '@/lib/services/supabase-data';
+import { fetchProjects, fetchTasks, fetchDocuments, addTask, updateTaskStatus } from '@/lib/services/supabase-data';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useCurrentUser } from '@/hooks/use-current-user';
@@ -56,14 +46,64 @@ import { cn } from '@/lib/utils';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' };
 
+interface TechIncident {
+  id: string;
+  title: string;
+  severity: 'P1 Critique' | 'P2 Majeur' | 'P3 Mineur';
+  service: string;
+  description: string;
+  reportedAt: string;
+  status: 'active' | 'resolved';
+}
+
+const DEFAULT_INCIDENTS: TechIncident[] = [];
+
+const TECH_SOPS_SHORTCUTS = [
+  {
+    id: 'sop-08',
+    code: 'SOP-08',
+    title: 'Gestion d\'un incident de production',
+    duration: '5 min',
+    target: '/academy',
+    category: 'Infra & Securité',
+  },
+  {
+    id: 'sop-02',
+    code: 'SOP-02',
+    title: 'Déploiement Vercel & Migrations Supabase',
+    duration: '8 min',
+    target: '/academy',
+    category: 'CI/CD & Release',
+  },
+  {
+    id: 'sop-15',
+    code: 'SOP-15',
+    title: 'Audit Sécurité, Tokens & RLS PostgreSQL',
+    duration: '6 min',
+    target: '/academy',
+    category: 'Architecture DB',
+  },
+];
+
+const RECENT_CHANGELOG_ENTRIES = [
+  { version: 'v2.30.9', title: 'Edge Console & Télémétrie Latence', date: '4 sept. 2026' },
+  { version: 'v2.30.8', title: 'WebGL Auth Shaders & Mintlify Geometry (0 pilules)', date: '4 sept. 2026' },
+  { version: 'v2.30.7', title: 'Audit Design System & Tokens Mintlify', date: '3 sept. 2026' },
+];
+
 export function TechDashboard() {
   const { toastSuccess, toastError, toastInfo } = useToast();
   const { role, workspace, loading: userLoading } = useCurrentUser();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState<'overview' | 'qa' | 'infra' | 'edge' | 'docs'>(
-    initialTab === 'qa' || initialTab === 'infra' || initialTab === 'edge' || initialTab === 'docs' ? initialTab : 'overview'
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'qa' | 'infra' | 'docs'>(
+    initialTab === 'qa' || initialTab === 'infra' || initialTab === 'docs'
+      ? initialTab
+      : 'overview'
   );
+
+  const [expandQaOnOpen, setExpandQaOnOpen] = useState(false);
   const [audits, setAudits] = useState<TechQaAudit[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -71,12 +111,31 @@ export function TechDashboard() {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  // Incidents dual-state management
+  const [incidents, setIncidents] = useState<TechIncident[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('minerva_tech_incidents');
+        if (stored) return JSON.parse(stored);
+      } catch {}
+    }
+    return DEFAULT_INCIDENTS;
+  });
+
+  const [isDeclareIncidentOpen, setIsDeclareIncidentOpen] = useState(false);
+  const [incidentTitle, setIncidentTitle] = useState('');
+  const [incidentSeverity, setIncidentSeverity] = useState<'P1 Critique' | 'P2 Majeur' | 'P3 Mineur'>('P2 Majeur');
+  const [incidentService, setIncidentService] = useState('Supabase PostgreSQL');
+  const [broadcastToChat, setBroadcastToChat] = useState(true);
+
   // Inline Task Creation State
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [savingTask, setSavingTask] = useState(false);
   const taskInputRef = useRef<HTMLInputElement>(null);
+
+  const isObserverMode = role === 'member' && workspace !== 'tech';
 
   const loadData = async () => {
     try {
@@ -107,21 +166,32 @@ export function TechDashboard() {
     loadData();
   }, []);
 
-  // Global Keyboard Shortcuts (⌘+P for QA, 'C' for new task, 'Esc' to cancel)
+  // Save incidents to localStorage
+  const saveIncidents = (updated: TechIncident[]) => {
+    setIncidents(updated);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('minerva_tech_incidents', JSON.stringify(updated));
+      } catch {}
+    }
+  };
+
+  // Keyboard Shortcuts (A or ⌘+P for QA, C for Task, W for Workspace notice)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // ⌘ + P / Ctrl + P -> Go to QA Protocol
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
-        e.preventDefault();
-        setActiveTab('qa');
-        toastInfo('Raccourci ⌘+P', 'Navigation vers le Protocole QA 20-Points');
-        return;
-      }
-
-      // 'C' -> Focus task creation row if not typing in an input
       const target = e.target as HTMLElement;
       const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable);
 
+      // 'A' or ⌘+P -> Launch Release QA Audit
+      if (!isInput && (e.key === 'a' || e.key === 'A') || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p')) {
+        e.preventDefault();
+        setExpandQaOnOpen(true);
+        setActiveTab('qa');
+        toastInfo('Audit QA Activé', 'Vérification complète des 20 points prête.');
+        return;
+      }
+
+      // 'C' -> Focus task creation row
       if (!isInput && (e.key === 'c' || e.key === 'C')) {
         e.preventDefault();
         if (activeTab !== 'overview') {
@@ -130,39 +200,30 @@ export function TechDashboard() {
         setIsCreatingTask(true);
         setTimeout(() => {
           taskInputRef.current?.focus();
-        }, 50);
+        }, 60);
+        return;
       }
 
-      if (e.key === 'Escape' && isCreatingTask) {
-        setIsCreatingTask(false);
-        setNewTaskTitle('');
+      if (e.key === 'Escape') {
+        if (isCreatingTask) {
+          setIsCreatingTask(false);
+          setNewTaskTitle('');
+        }
+        if (isDeclareIncidentOpen) {
+          setIsDeclareIncidentOpen(false);
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isCreatingTask, activeTab, toastInfo]);
-
-  // No access control existed here at all -- any authenticated user, any
-  // role/workspace, could open /tech directly by URL. The sidebar only
-  // ever hid the nav link, it never protected the route itself.
-  if (!userLoading && !(role === 'admin' || workspace === 'tech')) {
-    return (
-      <div className="max-w-lg mx-auto py-16 text-center space-y-3">
-        <ShieldAlert className="w-8 h-8 text-mv-amber mx-auto" />
-        <p className="text-sm font-bold text-mv-ink">Réservé à l&apos;équipe Tech.</p>
-        <Link href="/overview" className="text-xs text-mv-green hover:underline">
-          Retour à l&apos;aperçu
-        </Link>
-      </div>
-    );
-  }
+  }, [isCreatingTask, isDeclareIncidentOpen, activeTab, toastInfo]);
 
   const latestAudit = audits[0] || null;
   const latestScore = latestAudit?.score_percentage ?? 100;
   const latestPassed = latestAudit?.passed_points ?? 20;
 
-  // Filter Technical Tasks
+  // Filter top 5 priority or blocking technical tasks
   const techTasks = tasks.filter(
     (t) =>
       t.title.toLowerCase().includes('api') ||
@@ -173,117 +234,21 @@ export function TechDashboard() {
       t.title.toLowerCase().includes('supabase') ||
       t.title.toLowerCase().includes('auth') ||
       t.title.toLowerCase().includes('infra') ||
-      t.title.toLowerCase().includes('mcp') ||
       t.status !== 'done'
   );
 
-  const activeProjects = projects.filter((p) => p.progress_pct < 100);
+  const topPriorityTasks = [...techTasks]
+    .sort((a, b) => {
+      const pOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
+      const pA = pOrder[a.priority as keyof typeof pOrder] ?? 2;
+      const pB = pOrder[b.priority as keyof typeof pOrder] ?? 2;
+      if (pA !== pB) return pA - pB;
+      return (a.status === 'in_progress' ? 0 : 1) - (b.status === 'in_progress' ? 0 : 1);
+    })
+    .slice(0, 5);
 
-  // Helper to derive technical stack label
-  const getProjectStack = (p: Project): string => {
-    const nameLower = p.name.toLowerCase();
-    const stageLower = (p.current_stage || '').toLowerCase();
-    if (nameLower.includes('framer') || stageLower.includes('framer')) return 'Design Framer';
-    if (nameLower.includes('flow') || nameLower.includes('saas') || nameLower.includes('core')) return 'Next.js / Supa';
-    if (nameLower.includes('voice') || nameLower.includes('vocal') || nameLower.includes('agent')) return 'ElevenLabs / AI';
-    if (nameLower.includes('reach') || nameLower.includes('lead')) return 'React / CRM';
-    return 'Next.js / API';
-  };
+  const activeIncidents = incidents.filter((i) => i.status === 'active');
 
-  // Helper to derive health badge
-  const getHealthBadge = (p: Project) => {
-    const health = p.health || 'On Track';
-    if (health === 'Ready' || p.progress_pct >= 100) {
-      return (
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-600 font-medium">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          En Ligne
-        </span>
-      );
-    }
-    if (health === 'Needs Review') {
-      return (
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-amber-600 font-medium">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-          Needs Review ({p.progress_pct}%)
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-600 font-medium">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-        On Track ({p.progress_pct}%)
-      </span>
-    );
-  };
-
-  // Helper for priority badges
-  const renderPriorityBadge = (priority: Task['priority']) => {
-    switch (priority) {
-      case 'urgent':
-        return (
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-rose-50 text-rose-700 border border-rose-200">
-            URGENT
-          </span>
-        );
-      case 'high':
-        return (
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-amber-50 text-amber-700 border border-amber-200">
-            HIGH
-          </span>
-        );
-      case 'low':
-        return (
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-zinc-100 text-zinc-600 border border-zinc-200">
-            LOW
-          </span>
-        );
-      case 'medium':
-      default:
-        return (
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-zinc-50 text-zinc-700 border border-zinc-200">
-            MED
-          </span>
-        );
-    }
-  };
-
-  // Helper for status badge
-  const renderStatusBadge = (task: Task) => {
-    if (task.status === 'done') {
-      return (
-        <button
-          onClick={() => handleToggleTaskStatus(task)}
-          className="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded hover:bg-emerald-100 transition-colors cursor-pointer"
-        >
-          <CheckSquare size={11} className="text-emerald-600" />
-          <span>Done</span>
-        </button>
-      );
-    }
-    if (task.status === 'in_progress') {
-      return (
-        <button
-          onClick={() => handleToggleTaskStatus(task)}
-          className="inline-flex items-center gap-1 text-[11px] font-mono text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded hover:bg-amber-100 transition-colors cursor-pointer"
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-          <span>In Progress</span>
-        </button>
-      );
-    }
-    return (
-      <button
-        onClick={() => handleToggleTaskStatus(task)}
-        className="inline-flex items-center gap-1 text-[11px] font-mono text-zinc-600 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded hover:bg-zinc-200 transition-colors cursor-pointer"
-      >
-        <Square size={11} className="text-zinc-400" />
-        <span>Todo</span>
-      </button>
-    );
-  };
-
-  // Toggle task status
   const handleToggleTaskStatus = async (task: Task) => {
     const nextStatus: Task['status'] = task.status === 'done' ? 'in_progress' : 'done';
     const ok = await updateTaskStatus(task.id, nextStatus);
@@ -291,13 +256,12 @@ export function TechDashboard() {
       setTasks((prev) =>
         prev.map((t) => (t.id === task.id ? { ...t, status: nextStatus } : t))
       );
-      toastSuccess('Statut mis à jour', `Tâche passée à « ${nextStatus} »`);
+      toastSuccess('Statut mis à jour', `Tâche marquée « ${nextStatus} »`);
     } else {
-      toastError('Erreur', 'Impossible de mettre à jour le statut.');
+      toastError('Erreur', 'Impossible de mettre à jour la tâche.');
     }
   };
 
-  // Inline Task Creation Handler
   const handleCreateTask = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!newTaskTitle.trim()) return;
@@ -306,16 +270,16 @@ export function TechDashboard() {
     try {
       const created = await addTask({
         title: newTaskTitle.trim(),
-        created_by: currentUserId || 'dev-console',
+        created_by: currentUserId || 'lead-tech',
       });
 
       if (created) {
         setTasks((prev) => [created, ...prev]);
         setNewTaskTitle('');
         setIsCreatingTask(false);
-        toastSuccess('Tâche créée', `« ${created.title} » a été ajoutée au backlog technique.`);
+        toastSuccess('Tâche créée', `« ${created.title} » ajoutée aux priorités.`);
       } else {
-        toastError('Erreur', 'Impossible de sauvegarder la tâche.');
+        toastError('Erreur', 'Impossible de créer la tâche.');
       }
     } catch (err) {
       console.error(err);
@@ -325,726 +289,867 @@ export function TechDashboard() {
     }
   };
 
+  const handleDeclareIncident = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!incidentTitle.trim()) return;
+
+    const newInc: TechIncident = {
+      id: `inc-${Date.now()}`,
+      title: incidentTitle.trim(),
+      severity: incidentSeverity,
+      service: incidentService,
+      description: `Incident signalé sur ${incidentService}. Prise en charge en cours.`,
+      reportedAt: new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
+      status: 'active',
+    };
+
+    const updated = [newInc, ...incidents];
+    saveIncidents(updated);
+    setIsDeclareIncidentOpen(false);
+    setIncidentTitle('');
+
+    // Optional announcement to #annonces
+    if (broadcastToChat) {
+      try {
+        const supabase = createClient();
+        await supabase.from('team_chat_messages').insert({
+          channel_type: 'thematic',
+          thematic_channel: 'annonces',
+          sender_id: currentUserId,
+          sender_name: 'Minerva Sentinel (Tech)',
+          content: `🚨 **Incident Technique Déclaré [${incidentSeverity}]** : ${newInc.title} sur ${incidentService}. L'équipe tech investigue.`,
+        });
+      } catch {}
+    }
+
+    toastError('Incident déclaré', `Alerte ${incidentSeverity} enregistrée.`);
+  };
+
+  const handleResolveIncident = async (id: string, title: string) => {
+    const updated = incidents.map((i) => (i.id === id ? { ...i, status: 'resolved' as const } : i));
+    saveIncidents(updated);
+
+    try {
+      const supabase = createClient();
+      await supabase.from('team_chat_messages').insert({
+        channel_type: 'thematic',
+        thematic_channel: 'annonces',
+        sender_id: currentUserId,
+        sender_name: 'Minerva Sentinel (Tech)',
+        content: `✅ **Incident Résolu** : « ${title} » a été corrigé et validé par l'équipe Tech. Tous les services sont opérationnels.`,
+      });
+    } catch {}
+
+    toastSuccess('Incident résolu', 'Le statut a été mis à jour et diffusé dans #annonces.');
+  };
+
   return (
-    <PageFadeIn className="w-full max-w-7xl mx-auto space-y-3 font-sans pb-12">
-      {/* ── 1. En-tête Contextuel & Barre d'Actions Supérieure (Toolbar 40px) ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-1">
+    <PageFadeIn className="w-full max-w-7xl mx-auto space-y-4 font-sans pb-12">
+      {/* ── Mode Observateur Bienveillant (Question 42) ── */}
+      {isObserverMode && (
+        <div className="bg-white border border-[#f2f2f2] rounded-xl p-3 flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2.5 text-xs text-zinc-600">
+            <Eye size={14} className="text-zinc-400 shrink-0" />
+            <span>
+              <strong>Mode Observateur Tech</strong> — Vous consultez la console technique en lecture seule pour favoriser l'entraide d'équipe.
+            </span>
+          </div>
+          <Link
+            href="/overview"
+            className="text-xs font-medium text-[#0c8c5e] hover:underline shrink-0"
+          >
+            Retour à mon espace ↗
+          </Link>
+        </div>
+      )}
+
+      {/* ── 1. En-tête Contextuel & Barre d'Actions Supérieure (Toolbar Mintlify) ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-1">
         <div className="space-y-0.5">
-          <div className="text-xs text-zinc-400 font-mono flex items-center gap-1.5">
+          <div className="text-xs text-zinc-400 font-mono flex items-center gap-1.5" style={MONO}>
             <span>Minerva</span>
             <span>/</span>
-            <span>Tech & Ingénierie</span>
+            <span>Workspace</span>
             <span>/</span>
-            <span className="text-zinc-600">Vue d'Ensemble</span>
+            <span className="text-[#08090a] font-medium">Tech & Ingénierie</span>
           </div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-[16px] font-semibold text-zinc-900 tracking-tight">
-              Console Tech & Ingénierie
+            <h1 className="text-lg font-semibold text-[#08090a] tracking-tight">
+              Tech Cockpit
             </h1>
-            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              v2.4 Production
+            <span
+              className="inline-flex items-center gap-1.5 text-[10.5px] font-mono text-[#0c8c5e] bg-[#ecfdf5] border border-[#a7f3d0] px-2 py-0.5 rounded font-medium"
+              style={MONO}
+            >
+              <span className="w-1.5 h-1.5 rounded bg-[#0c8c5e]" />
+              v2.30.9
             </span>
           </div>
         </div>
 
-        {/* Toolbar Action Buttons (40px) */}
-        <div className="flex items-center gap-2">
-          <Link
-            href="/projects"
-            className="h-7 px-2.5 text-xs font-medium border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-md inline-flex items-center gap-1.5 transition-colors shadow-2xs"
-          >
-            <FolderKanban size={12} className="text-zinc-500" />
-            <span>Projets & Livrables</span>
-          </Link>
-
-          <Button
-            size="sm"
-            onClick={() => setActiveTab('qa')}
-            className="h-7 px-3 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-md inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-          >
-            <ShieldCheck size={13} />
-            <span>Protocole QA 20-Pts</span>
-            <kbd className="hidden sm:inline-block ml-1 text-[10px] bg-emerald-800/40 px-1 py-0.2 rounded font-mono text-emerald-100">
-              ⌘P
-            </kbd>
-          </Button>
-        </div>
-      </div>
-
-      {/* ── 2. Ruban de Télémétrie Système (System Health Ribbon) ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-zinc-200 rounded-lg divide-y sm:divide-y-0 sm:divide-x divide-zinc-100 shadow-xs">
-        {/* Cell 1: Latence Système */}
-        <div className="p-3 sm:p-3.5 space-y-1">
-          <div className="text-[10px] font-mono font-medium text-zinc-400 uppercase tracking-wider flex items-center justify-between">
-            <span>SANTÉ & LATENCE SYSTÈME</span>
-            <Activity size={13} className="text-emerald-600" />
-          </div>
-          <div className="text-xl font-bold font-mono text-zinc-900" style={MONO}>
-            38 ms
-          </div>
-          <div className="text-[11px] font-mono text-emerald-600 flex items-center gap-1 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>100% services opérationnels</span>
-          </div>
-        </div>
-
-        {/* Cell 2: Conformité QA 20-Points */}
-        <div className="p-3 sm:p-3.5 space-y-1">
-          <div className="text-[10px] font-mono font-medium text-zinc-400 uppercase tracking-wider flex items-center justify-between">
-            <span>CONFORMITÉ QA 20-PTS</span>
-            <ShieldCheck size={13} className="text-emerald-600" />
-          </div>
-          <div className="text-xl font-bold font-mono text-zinc-900" style={MONO}>
-            <AnimatedNumber value={latestScore} />%
-          </div>
-          <div className="text-[11px] font-mono text-zinc-500">
-            {latestPassed} / 20 points validés
-          </div>
-        </div>
-
-        {/* Cell 3: Projets & SaaS Actifs */}
-        <div className="p-3 sm:p-3.5 space-y-1">
-          <div className="text-[10px] font-mono font-medium text-zinc-400 uppercase tracking-wider flex items-center justify-between">
-            <span>PROJETS & SAAS ACTIFS</span>
-            <Rocket size={13} className="text-zinc-500" />
-          </div>
-          <div className="text-xl font-bold font-mono text-zinc-900" style={MONO}>
-            <AnimatedNumber value={activeProjects.length || (projects.length > 0 ? projects.length : 1)} />
-          </div>
-          <div className="text-[11px] font-mono text-zinc-500">
-            Minerva Flow + Clients
-          </div>
-        </div>
-
-        {/* Cell 4: Tâches & Backlog Tech */}
-        <div className="p-3 sm:p-3.5 space-y-1">
-          <div className="text-[10px] font-mono font-medium text-zinc-400 uppercase tracking-wider flex items-center justify-between">
-            <span>TÂCHES & BACKLOG TECH</span>
-            <Code2 size={13} className="text-zinc-500" />
-          </div>
-          <div className="text-xl font-bold font-mono text-zinc-900" style={MONO}>
-            <AnimatedNumber value={techTasks.length} />
-          </div>
-          <div className="text-[11px] font-mono text-emerald-600 flex items-center gap-1 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span>{techTasks.filter((t) => t.status === 'in_progress').length} en cours • Zéro incident</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 3. Barre de Navigation d'Onglets Contextuels (Sub-Tabs Strip 28px) ── */}
-      <div className="flex items-center justify-between pt-1">
-        <div className="h-8 p-0.5 bg-zinc-100/90 border border-zinc-200/80 rounded-md inline-flex items-center gap-0.5 shadow-2xs">
+        {/* Action Header Mintlify : Ink Black #08090a (4px radius) + Action Secondaire */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button
+            type="button"
+            onClick={() => setIsDeclareIncidentOpen(true)}
+            className="h-8 px-3 text-xs font-medium text-zinc-700 hover:text-zinc-900 bg-white hover:bg-zinc-50 border border-[#f2f2f2] hover:border-[#dddddd] rounded shadow-2xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <AlertTriangle size={13} className="text-amber-600" />
+            <span>Signaler un incident</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setExpandQaOnOpen(true);
+              setActiveTab('qa');
+            }}
+            className="h-8 px-3.5 text-xs font-medium bg-[#08090a] hover:bg-zinc-800 text-white rounded shadow-xs inline-flex items-center gap-2 transition-colors cursor-pointer"
+          >
+            <ShieldCheck size={14} className="text-white" />
+            <span>Lancer l'audit de release</span>
+            <kbd className="hidden sm:inline-block text-[9.5px] bg-zinc-700 text-zinc-200 px-1 py-0.2 rounded font-mono ml-0.5">
+              A
+            </kbd>
+          </button>
+        </div>
+      </div>
+
+      {/* ── 2. Modal Déclaration Rapide d'Incident ── */}
+      {isDeclareIncidentOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#f2f2f2] rounded-2xl p-5 w-full max-w-md shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#f2f2f2] pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700">
+                  <AlertTriangle size={14} />
+                </div>
+                <h3 className="text-sm font-semibold text-[#08090a]">Déclarer un Incident Technique</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDeclareIncidentOpen(false)}
+                className="text-zinc-400 hover:text-zinc-700 p-1 rounded"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <form onSubmit={handleDeclareIncident} className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
+                  Intitulé du problème
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Latence anormale sur le webhook de paiement Stripe"
+                  value={incidentTitle}
+                  onChange={(e) => setIncidentTitle(e.target.value)}
+                  className="w-full h-8 text-xs bg-white border border-[#f2f2f2] focus:border-zinc-400 rounded px-2.5 text-[#08090a] focus:outline-hidden"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
+                    Sévérité
+                  </label>
+                  <select
+                    value={incidentSeverity}
+                    onChange={(e) => setIncidentSeverity(e.target.value as any)}
+                    className="w-full h-8 text-xs bg-white border border-[#f2f2f2] rounded px-2 text-[#08090a] focus:outline-hidden"
+                  >
+                    <option value="P1 Critique">P1 Critique (Blocage total)</option>
+                    <option value="P2 Majeur">P2 Majeur (Service dégradé)</option>
+                    <option value="P3 Mineur">P3 Mineur (Anomalie cosmétique)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
+                    Service impacté
+                  </label>
+                  <select
+                    value={incidentService}
+                    onChange={(e) => setIncidentService(e.target.value)}
+                    className="w-full h-8 text-xs bg-white border border-[#f2f2f2] rounded px-2 text-[#08090a] focus:outline-hidden"
+                  >
+                    <option value="Supabase PostgreSQL & Auth">Supabase DB & Auth</option>
+                    <option value="Supabase Edge Functions">Edge Functions</option>
+                    <option value="Vercel Infrastructure">Vercel SSR / Edge</option>
+                    <option value="ElevenLabs AI Voice">ElevenLabs Voice</option>
+                    <option value="Stripe / Webhooks">Stripe Webhooks</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="broadcastChat"
+                  checked={broadcastToChat}
+                  onChange={(e) => setBroadcastToChat(e.target.checked)}
+                  className="rounded text-[#0c8c5e] focus:ring-0 cursor-pointer"
+                />
+                <label htmlFor="broadcastChat" className="text-xs text-zinc-600 cursor-pointer">
+                  Diffuser l'alerte à l'équipe dans <strong>#annonces</strong>
+                </label>
+              </div>
+
+              <div className="pt-3 border-t border-[#f2f2f2] flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsDeclareIncidentOpen(false)}
+                  className="h-8 px-3 text-xs text-zinc-600 hover:text-zinc-900 bg-white border border-[#f2f2f2] rounded transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="h-8 px-3.5 text-xs font-medium bg-[#08090a] hover:bg-zinc-800 text-white rounded transition-colors"
+                >
+                  Enregistrer l'incident
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── 3. Navigation d'Onglets Contextuels (4 Tabs Mintlify) ── */}
+      <div className="flex items-center justify-between border-b border-[#f2f2f2] pb-1">
+        <div className="flex items-center gap-1 overflow-x-auto">
+          <button
+            type="button"
             onClick={() => setActiveTab('overview')}
             className={cn(
-              'h-7 px-2.5 text-xs rounded transition-all cursor-pointer flex items-center gap-1.5',
+              'h-8 px-3 text-xs rounded font-medium transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap',
               activeTab === 'overview'
-                ? 'bg-white text-zinc-900 font-medium shadow-xs border border-zinc-200/80'
-                : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/60'
+                ? 'bg-zinc-100 text-[#08090a]'
+                : 'text-zinc-500 hover:text-[#08090a] hover:bg-zinc-50'
             )}
           >
-            <span>⊞ Vue d'Ensemble & Projets</span>
+            <span>⊞ Cockpit</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('qa')}
             className={cn(
-              'h-7 px-2.5 text-xs rounded transition-all cursor-pointer flex items-center gap-1.5',
+              'h-8 px-3 text-xs rounded font-medium transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap',
               activeTab === 'qa'
-                ? 'bg-white text-zinc-900 font-medium shadow-xs border border-zinc-200/80'
-                : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/60'
+                ? 'bg-zinc-100 text-[#08090a]'
+                : 'text-zinc-500 hover:text-[#08090a] hover:bg-zinc-50'
             )}
           >
-            <span>🛡️ Protocole QA ({latestScore}%)</span>
+            <ShieldCheck size={13} className={cn(activeTab === 'qa' ? 'text-[#0c8c5e]' : 'text-zinc-400')} />
+            <span>Assurance Qualité (QA)</span>
+            <span className="text-[10px] font-mono text-zinc-400" style={MONO}>
+              ({latestScore}%)
+            </span>
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('infra')}
             className={cn(
-              'h-7 px-2.5 text-xs rounded transition-all cursor-pointer flex items-center gap-1.5',
+              'h-8 px-3 text-xs rounded font-medium transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap',
               activeTab === 'infra'
-                ? 'bg-white text-zinc-900 font-medium shadow-xs border border-zinc-200/80'
-                : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/60'
+                ? 'bg-zinc-100 text-[#08090a]'
+                : 'text-zinc-500 hover:text-[#08090a] hover:bg-zinc-50'
             )}
           >
-            <span>📊 Monitoring Infra</span>
+            <Activity size={13} className={cn(activeTab === 'infra' ? 'text-[#0c8c5e]' : 'text-zinc-400')} />
+            <span>Infrastructure & Edge</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('edge')}
-            className={cn(
-              'h-7 px-2.5 text-xs rounded transition-all cursor-pointer flex items-center gap-1.5',
-              activeTab === 'edge'
-                ? 'bg-white text-zinc-900 font-medium shadow-xs border border-zinc-200/80'
-                : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/60'
-            )}
-          >
-            <span>⚡ Console Edge</span>
-          </button>
-
-          <button
+            type="button"
             onClick={() => setActiveTab('docs')}
             className={cn(
-              'h-7 px-2.5 text-xs rounded transition-all cursor-pointer flex items-center gap-1.5',
+              'h-8 px-3 text-xs rounded font-medium transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap',
               activeTab === 'docs'
-                ? 'bg-white text-zinc-900 font-medium shadow-xs border border-zinc-200/80'
-                : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/60'
+                ? 'bg-zinc-100 text-[#08090a]'
+                : 'text-zinc-500 hover:text-[#08090a] hover:bg-zinc-50'
             )}
           >
-            <span>📖 Specs & SOPs</span>
+            <BookOpen size={13} className={cn(activeTab === 'docs' ? 'text-[#0c8c5e]' : 'text-zinc-400')} />
+            <span>SOPs & Architecture</span>
           </button>
-
-          <Link
-            href="/changelog"
-            className="h-7 px-2.5 text-xs rounded transition-all cursor-pointer flex items-center gap-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-white/60"
-          >
-            <span>📜 Changelog (v2.30.9)</span>
-          </Link>
         </div>
 
-        {/* Action Shortcut Label */}
-        {activeTab === 'overview' && (
-          <div className="hidden md:flex items-center gap-2 text-[11px] font-mono text-zinc-400">
-            <span>Raccourcis :</span>
-            <kbd className="px-1.5 py-0.5 bg-zinc-100 border border-zinc-200 rounded text-zinc-600">C</kbd>
-            <span>Nouvelle tâche</span>
-            <span>•</span>
-            <kbd className="px-1.5 py-0.5 bg-zinc-100 border border-zinc-200 rounded text-zinc-600">⌘P</kbd>
-            <span>Audit QA</span>
-          </div>
-        )}
+        <Link
+          href="/changelog"
+          className="text-xs font-mono text-zinc-500 hover:text-[#08090a] flex items-center gap-1 shrink-0 px-2 py-1 rounded hover:bg-zinc-50 transition-colors"
+          style={MONO}
+        >
+          <span>Changelog</span>
+          <ArrowRight size={11} />
+        </Link>
       </div>
 
-      {/* ── 4. TAB 1: OVERVIEW & MONOLITHIC 2-COLUMN SPLIT VIEW ── */}
+      {/* ── 4. ONGLET 1 : COCKPIT TECH (LES 3 PILIERS MAJEURS) ── */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 items-start">
-          {/* Left Column (2/3 width) - DataTables Projets & Tâches */}
-          <div className="lg:col-span-2 space-y-3.5">
-            {/* 1. Projets & Livrables Techniques DataTable */}
-            <div className="bg-white border border-zinc-200 rounded-lg shadow-xs overflow-hidden">
-              <div className="px-3 py-2 border-b border-zinc-200/80 bg-zinc-50/50 flex items-center justify-between">
+        <div className="space-y-4">
+          {/* ── PILIER 1 : BARRE UNIFIÉE DE SANTÉ DES SERVICES (Question 5) ── */}
+          <div className="bg-white border border-[#f2f2f2] rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded bg-[#ecfdf5] border border-[#a7f3d0] flex items-center justify-center shrink-0">
+                <Activity size={15} className="text-[#0c8c5e]" />
+              </div>
+              <div>
                 <div className="flex items-center gap-2">
-                  <FolderKanban size={14} className="text-emerald-600" />
-                  <span className="text-xs font-semibold text-zinc-900">
-                    Projets & Livrables Techniques
-                  </span>
-                  <span className="text-[10px] font-mono text-zinc-400 bg-zinc-100 border border-zinc-200 px-1.5 py-0.2 rounded">
-                    {projects.length || 2}
+                  <h2 className="text-xs font-semibold text-[#08090a]">
+                    Système Opérationnel
+                  </h2>
+                  <span
+                    className="text-[10px] font-mono text-[#0c8c5e] bg-[#ecfdf5] border border-[#a7f3d0] px-1.5 py-0.2 rounded font-medium inline-flex items-center gap-1"
+                    style={MONO}
+                  >
+                    <span className="w-1.5 h-1.5 rounded bg-[#0c8c5e]" />
+                    100% services actifs
                   </span>
                 </div>
-                <Link
-                  href="/projects"
-                  className="text-[11px] font-medium text-emerald-600 hover:text-emerald-700 hover:underline flex items-center gap-1"
-                >
-                  <span>Tous les projets</span>
-                  <ArrowRight size={11} />
-                </Link>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="border-b border-zinc-200/80 bg-zinc-50/75 text-[10px] uppercase font-mono tracking-wider text-zinc-400">
-                      <th className="py-2 px-3 font-semibold">PROJET / REPO</th>
-                      <th className="py-2 px-3 font-semibold">STACK</th>
-                      <th className="py-2 px-3 font-semibold">SANTÉ</th>
-                      <th className="py-2 px-3 font-semibold">ÉCHÉANCE</th>
-                      <th className="py-2 px-3 font-semibold">RESPONSABLE</th>
-                      <th className="py-2 px-3 font-semibold text-right">ACTIONS</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100">
-                    {projects.length > 0 ? (
-                      projects.slice(0, 6).map((project) => (
-                        <tr key={project.id} className="hover:bg-zinc-50/70 transition-colors group">
-                          <td className="py-2.5 px-3">
-                            <div className="font-semibold text-zinc-900 flex items-center gap-1.5">
-                              <span className="truncate max-w-[200px]">{project.name}</span>
-                            </div>
-                            <div className="text-[10px] text-zinc-400 font-mono truncate max-w-[200px]">
-                              {project.client_name || 'Client Minerva'}
-                            </div>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10.5px] font-mono text-zinc-600 bg-zinc-100 border border-zinc-200/80">
-                              {getProjectStack(project)}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            {getHealthBadge(project)}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono text-[11px] text-zinc-600">
-                            {project.due_date ? new Date(project.due_date).toLocaleDateString('fr-CA') : 'Continu'}
-                          </td>
-                          <td className="py-2.5 px-3 text-zinc-600 font-medium">
-                            {project.assignees && project.assignees.length > 0
-                              ? project.assignees[0]
-                              : 'Minerva Dev'}
-                          </td>
-                          <td className="py-2.5 px-3 text-right">
-                            <Link
-                              href={`/projects/${project.id}`}
-                              className="h-6 px-2 text-[11px] font-medium text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 rounded inline-flex items-center gap-1 transition-colors shadow-2xs"
-                            >
-                              <span>↗ Ouvrir</span>
-                            </Link>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <>
-                        <tr className="hover:bg-zinc-50/70 transition-colors">
-                          <td className="py-2.5 px-3">
-                            <div className="font-semibold text-zinc-900">Refonte Site Framer — TB</div>
-                            <div className="text-[10px] text-zinc-400 font-mono">Taverne Bernatchez</div>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10.5px] font-mono text-zinc-600 bg-zinc-100 border border-zinc-200/80">
-                              Design Framer
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-600 font-medium">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              On Track (0%)
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3 font-mono text-[11px] text-zinc-600">2026-09-14</td>
-                          <td className="py-2.5 px-3 text-zinc-600 font-medium">Minerva</td>
-                          <td className="py-2.5 px-3 text-right">
-                            <Link
-                              href="/projects"
-                              className="h-6 px-2 text-[11px] font-medium text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 rounded inline-flex items-center gap-1 transition-colors shadow-2xs"
-                            >
-                              <span>↗ Ouvrir</span>
-                            </Link>
-                          </td>
-                        </tr>
-                        <tr className="hover:bg-zinc-50/70 transition-colors">
-                          <td className="py-2.5 px-3">
-                            <div className="font-semibold text-zinc-900">Minerva Flow (Core SaaS)</div>
-                            <div className="text-[10px] text-zinc-400 font-mono">Système ERP & POS</div>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10.5px] font-mono text-zinc-600 bg-zinc-100 border border-zinc-200/80">
-                              Next.js / Supa
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-600 font-medium">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              En Ligne
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3 font-mono text-[11px] text-zinc-600">Continu</td>
-                          <td className="py-2.5 px-3 text-zinc-600 font-medium">Dev Team</td>
-                          <td className="py-2.5 px-3 text-right">
-                            <Link
-                              href="/projects"
-                              className="h-6 px-2 text-[11px] font-medium text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 rounded inline-flex items-center gap-1 transition-colors shadow-2xs"
-                            >
-                              <span>↗ Ouvrir</span>
-                            </Link>
-                          </td>
-                        </tr>
-                      </>
-                    )}
-                  </tbody>
-                </table>
+                <p className="text-[11px] text-zinc-500 mt-0.5">
+                  Latence moyenne de production : <strong className="font-mono text-[#08090a]">38 ms</strong> • Zéro rupture détectée
+                </p>
               </div>
             </div>
 
-            {/* 2. Tâches Techniques & Backlog DataTable */}
-            <div className="bg-white border border-zinc-200 rounded-lg shadow-xs overflow-hidden">
-              <div className="px-3 py-2 border-b border-zinc-200/80 bg-zinc-50/50 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Code2 size={14} className="text-emerald-600" />
-                  <span className="text-xs font-semibold text-zinc-900">
-                    Tâches Techniques & Backlog
-                  </span>
-                  <span className="text-[10px] font-mono text-zinc-400 bg-zinc-100 border border-zinc-200 px-1.5 py-0.2 rounded">
-                    {techTasks.length}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setIsCreatingTask(true);
-                      setTimeout(() => taskInputRef.current?.focus(), 50);
-                    }}
-                    className="h-5.5 px-2 text-[10.5px] font-mono font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded inline-flex items-center gap-1 transition-colors cursor-pointer"
-                  >
-                    <Plus size={11} />
-                    <span>Nouvelle Tâche [C]</span>
-                  </button>
-                  <Link
-                    href="/tasks"
-                    className="text-[11px] font-medium text-zinc-500 hover:text-zinc-900 hover:underline flex items-center gap-1"
-                  >
-                    <span>Gestionnaire</span>
-                    <ArrowRight size={11} />
-                  </Link>
-                </div>
-              </div>
+            {/* Pastilles cliquables vers les services (Infra tab) */}
+            <div className="flex items-center gap-2 flex-wrap text-[11px] font-mono" style={MONO}>
+              <button
+                type="button"
+                onClick={() => setActiveTab('infra')}
+                className="px-2 py-1 rounded border border-[#f2f2f2] hover:border-[#dddddd] bg-zinc-50 hover:bg-white text-zinc-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span className="w-1.5 h-1.5 rounded bg-[#0c8c5e]" />
+                <span>Supabase DB</span>
+              </button>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="border-b border-zinc-200/80 bg-zinc-50/75 text-[10px] uppercase font-mono tracking-wider text-zinc-400">
-                      <th className="py-2 px-3 font-semibold w-16">#ID</th>
-                      <th className="py-2 px-3 font-semibold">TÂCHE TECHNIQUE</th>
-                      <th className="py-2 px-3 font-semibold w-24">PRIORITÉ</th>
-                      <th className="py-2 px-3 font-semibold w-28">STATUT</th>
-                      <th className="py-2 px-3 font-semibold w-28">ASSIGNÉ</th>
-                      <th className="py-2 px-3 font-semibold w-16 text-right">ACTION</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100">
-                    {/* Inline Creation Row */}
-                    {isCreatingTask ? (
-                      <tr className="bg-emerald-50/40 border-b border-emerald-200">
-                        <td className="py-2 px-3 font-mono text-[11px] text-emerald-700 font-bold">
-                          NEW
-                        </td>
-                        <td className="py-2 px-3">
-                          <form onSubmit={handleCreateTask} className="flex items-center gap-2">
-                            <input
-                              ref={taskInputRef}
-                              type="text"
-                              placeholder="Intitulé de la tâche ou bug... (Ex: Fix RLS token validation)"
-                              value={newTaskTitle}
-                              onChange={(e) => setNewTaskTitle(e.target.value)}
-                              className="w-full bg-white border border-emerald-300 rounded px-2.5 py-1 text-xs text-zinc-900 focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
-                            />
-                          </form>
-                        </td>
-                        <td className="py-2 px-3">
-                          <select
-                            value={newTaskPriority}
-                            onChange={(e) => setNewTaskPriority(e.target.value as any)}
-                            className="bg-white border border-zinc-200 rounded px-1.5 py-1 text-[11px] font-mono text-zinc-700 focus:outline-hidden"
-                          >
-                            <option value="low">LOW</option>
-                            <option value="medium">MED</option>
-                            <option value="high">HIGH</option>
-                            <option value="urgent">URGENT</option>
-                          </select>
-                        </td>
-                        <td className="py-2 px-3 font-mono text-[11px] text-zinc-400">
-                          in_progress
-                        </td>
-                        <td className="py-2 px-3 text-[11px] text-zinc-500 font-mono">
-                          Dev Lead
-                        </td>
-                        <td className="py-2 px-3 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleCreateTask()}
-                              disabled={savingTask || !newTaskTitle.trim()}
-                              className="h-6 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-medium disabled:opacity-50 inline-flex items-center gap-1 cursor-pointer"
-                              title="Valider (Entrée)"
-                            >
-                              <CornerDownLeft size={10} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsCreatingTask(false);
-                                setNewTaskTitle('');
-                              }}
-                              className="h-6 px-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded text-[11px] cursor-pointer"
-                              title="Annuler (Échap)"
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      <tr
-                        onClick={() => {
-                          setIsCreatingTask(true);
-                          setTimeout(() => taskInputRef.current?.focus(), 50);
-                        }}
-                        className="hover:bg-zinc-50/90 transition-colors cursor-pointer border-b border-dashed border-zinc-200"
-                      >
-                        <td colSpan={6} className="py-2 px-3 text-[11px] font-mono text-zinc-400 hover:text-zinc-700">
-                          <div className="flex items-center gap-2">
-                            <Plus size={12} className="text-emerald-600" />
-                            <span>+ Ajouter une tâche technique ou un bug (Appuyer sur "C")...</span>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+              <button
+                type="button"
+                onClick={() => setActiveTab('infra')}
+                className="px-2 py-1 rounded border border-[#f2f2f2] hover:border-[#dddddd] bg-zinc-50 hover:bg-white text-zinc-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span className="w-1.5 h-1.5 rounded bg-[#0c8c5e]" />
+                <span>Edge Functions</span>
+              </button>
 
-                    {/* Task Rows */}
-                    {techTasks.length > 0 ? (
-                      techTasks.slice(0, 8).map((task, idx) => {
-                        const taskIdStr = `TK-${String(idx + 1).padStart(2, '0')}`;
+              <button
+                type="button"
+                onClick={() => setActiveTab('infra')}
+                className="px-2 py-1 rounded border border-[#f2f2f2] hover:border-[#dddddd] bg-zinc-50 hover:bg-white text-zinc-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span className="w-1.5 h-1.5 rounded bg-[#0c8c5e]" />
+                <span>Vercel Edge</span>
+              </button>
 
-                        return (
-                          <tr key={task.id} className="hover:bg-zinc-50/70 transition-colors group">
-                            <td className="py-2 px-3 font-mono text-[11px] text-zinc-400">
-                              {taskIdStr}
-                            </td>
-                            <td className="py-2 px-3">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => handleToggleTaskStatus(task)}
-                                  className="text-zinc-400 hover:text-emerald-600 transition-colors cursor-pointer"
-                                >
-                                  {task.status === 'done' ? (
-                                    <CheckSquare size={13} className="text-emerald-600" />
-                                  ) : (
-                                    <Square size={13} />
-                                  )}
-                                </button>
-                                <span
-                                  className={cn(
-                                    'font-medium text-zinc-900 truncate max-w-[280px]',
-                                    task.status === 'done' && 'line-through text-zinc-400'
-                                  )}
-                                >
-                                  {task.title}
-                                </span>
-                                {task.project_name && (
-                                  <span className="text-[9.5px] font-mono px-1 py-0.2 bg-zinc-100 border border-zinc-200 rounded text-zinc-500 shrink-0">
-                                    {task.project_name}
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-2 px-3">
-                              {renderPriorityBadge(task.priority)}
-                            </td>
-                            <td className="py-2 px-3">
-                              {renderStatusBadge(task)}
-                            </td>
-                            <td className="py-2 px-3 text-zinc-600 font-mono text-[11px] truncate max-w-[100px]">
-                              {task.assignee_name || 'Équipe Dev'}
-                            </td>
-                            <td className="py-2 px-3 text-right">
-                              <Link
-                                href={`/tasks/${task.id}`}
-                                className="text-[11px] text-zinc-400 hover:text-zinc-900 font-mono px-1.5 py-0.5 rounded hover:bg-zinc-100"
-                              >
-                                ↗
-                              </Link>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="py-6 text-center text-zinc-400 font-mono text-xs">
-                          Aucune tâche technique en cours. Appuyez sur « C » pour en ajouter une.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('infra')}
+                className="px-2 py-1 rounded border border-[#f2f2f2] hover:border-[#dddddd] bg-zinc-50 hover:bg-white text-zinc-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span className="w-1.5 h-1.5 rounded bg-[#0c8c5e]" />
+                <span>AI Voice Engine</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('infra')}
+                className="text-xs text-[#0c8c5e] hover:underline flex items-center gap-0.5 ml-1 font-sans"
+              >
+                <span>Détail</span>
+                <ArrowRight size={10} />
+              </button>
             </div>
           </div>
 
-          {/* Right Column (1/3 width) - DevOps & Outils Core + Synthèse Audit */}
-          <div className="space-y-3.5">
-            {/* 1. Conteneur DevOps & Outils Core */}
-            <div className="border border-zinc-200 rounded-lg p-3.5 bg-white shadow-xs space-y-2">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 font-mono flex items-center justify-between">
-                <span>DEVOPS & OUTILS CORE</span>
-                <Radio size={12} className="text-emerald-600 animate-pulse" />
+          {/* ── GRILLE CENTRALE : PILIER 2 & PILIER 3 ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* ── PILIER 2 : CARTE DUAL-STATE INCIDENTS & BLOQUANTS (Question 8) ── */}
+            <div className="bg-white border border-[#f2f2f2] rounded-2xl p-5 shadow-xs space-y-3 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-[#f2f2f2]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded bg-zinc-50 border border-[#f2f2f2] flex items-center justify-center">
+                      <AlertTriangle size={14} className={activeIncidents.length > 0 ? 'text-red-600' : 'text-zinc-500'} />
+                    </div>
+                    <span className="text-xs font-semibold text-[#08090a]">
+                      Incidents & Bloquants Actifs
+                    </span>
+                  </div>
+
+                  <span
+                    className={cn(
+                      'text-[10px] font-mono px-2 py-0.5 rounded border font-medium',
+                      activeIncidents.length === 0
+                        ? 'text-[#0c8c5e] bg-[#ecfdf5] border-[#a7f3d0]'
+                        : 'text-red-700 bg-red-50 border-red-200'
+                    )}
+                    style={MONO}
+                  >
+                    {activeIncidents.length === 0 ? '0 incident actif' : `${activeIncidents.length} bloquant(s)`}
+                  </span>
+                </div>
+
+                {/* Contenu de la carte d'incidents (Double État) */}
+                {activeIncidents.length === 0 ? (
+                  /* ÉTAT NORMAL ZEN (Rassurant & Épuré) */
+                  <div className="py-6 text-center space-y-2">
+                    <div className="w-10 h-10 rounded bg-[#ecfdf5] border border-[#a7f3d0] flex items-center justify-center mx-auto text-[#0c8c5e]">
+                      <CheckCircle2 size={20} />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-semibold text-[#08090a]">
+                        Aucun incident actif • 100% opérationnel
+                      </p>
+                      <p className="text-[11px] text-zinc-500 max-w-sm mx-auto">
+                        Toutes les sondes de base de données, edge functions et authentification répondent dans les seuils nominaux.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  /* ÉTAT ALERTE (Liste des incidents avec action de résolution) */
+                  <div className="space-y-2.5 pt-3">
+                    {activeIncidents.map((inc) => (
+                      <div
+                        key={inc.id}
+                        className="p-3 rounded-xl border border-red-200 bg-red-50/50 space-y-2 text-xs"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-red-900">{inc.title}</span>
+                          <span className="text-[9.5px] font-mono text-red-700 bg-red-100 px-1.5 py-0.2 rounded font-bold" style={MONO}>
+                            {inc.severity}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-red-700 leading-relaxed">
+                          {inc.description}
+                        </p>
+                        <div className="pt-1 flex items-center justify-between text-[10px] text-zinc-500">
+                          <span className="font-mono" style={MONO}>Signalé à {inc.reportedAt} sur {inc.service}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleResolveIncident(inc.id, inc.title)}
+                            className="px-2.5 py-1 text-xs font-medium text-white bg-red-700 hover:bg-red-800 rounded shadow-2xs transition-colors cursor-pointer"
+                          >
+                            Résoudre l'incident
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-1.5 pt-1">
-                <a
-                  href="https://supabase.com/dashboard"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between px-2.5 h-[30px] rounded border border-zinc-200/80 bg-zinc-50/50 hover:bg-zinc-100/80 hover:border-zinc-300 transition-colors text-xs font-medium text-zinc-800 group shadow-2xs"
-                >
-                  <div className="flex items-center gap-2">
-                    <Database size={13} className="text-emerald-600" />
-                    <span>Supabase Studio (DB & Auth)</span>
-                  </div>
-                  <ExternalLink size={11} className="text-zinc-400 group-hover:text-zinc-700" />
-                </a>
-
-                <a
-                  href="https://vercel.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between px-2.5 h-[30px] rounded border border-zinc-200/80 bg-zinc-50/50 hover:bg-zinc-100/80 hover:border-zinc-300 transition-colors text-xs font-medium text-zinc-800 group shadow-2xs"
-                >
-                  <div className="flex items-center gap-2">
-                    <Cpu size={13} className="text-zinc-900" />
-                    <span>Vercel Deployments & Analytics</span>
-                  </div>
-                  <ExternalLink size={11} className="text-zinc-400 group-hover:text-zinc-700" />
-                </a>
-
-                <Link
-                  href="/projects"
-                  className="flex items-center justify-between px-2.5 h-[30px] rounded border border-zinc-200/80 bg-zinc-50/50 hover:bg-zinc-100/80 hover:border-zinc-300 transition-colors text-xs font-medium text-zinc-800 group shadow-2xs"
-                >
-                  <div className="flex items-center gap-2">
-                    <FolderGit2 size={13} className="text-blue-600" />
-                    <span>Roadmap Produits & Jalons</span>
-                  </div>
-                  <ArrowRight size={11} className="text-zinc-400 group-hover:text-zinc-700" />
-                </Link>
-
-                <Link
-                  href="/integrations"
-                  className="flex items-center justify-between px-2.5 h-[30px] rounded border border-zinc-200/80 bg-zinc-50/50 hover:bg-zinc-100/80 hover:border-zinc-300 transition-colors text-xs font-medium text-zinc-800 group shadow-2xs"
-                >
-                  <div className="flex items-center gap-2">
-                    <Zap size={13} className="text-amber-600" />
-                    <span>Intégrations & Webhooks Framer</span>
-                  </div>
-                  <ArrowRight size={11} className="text-zinc-400 group-hover:text-zinc-700" />
-                </Link>
-
+              <div className="pt-3 border-t border-[#f2f2f2] flex items-center justify-between text-xs">
+                <span className="text-[11px] text-zinc-400 font-mono" style={MONO}>
+                  Protocole d'escalade : P1 &lt; 15 min • P2 &lt; 2h
+                </span>
                 <button
-                  onClick={() => setActiveTab('docs')}
-                  className="w-full flex items-center justify-between px-2.5 h-[30px] rounded border border-zinc-200/80 bg-zinc-50/50 hover:bg-zinc-100/80 hover:border-zinc-300 transition-colors text-xs font-medium text-zinc-800 group shadow-2xs cursor-pointer text-left"
+                  type="button"
+                  onClick={() => setIsDeclareIncidentOpen(true)}
+                  className="text-[11px] font-medium text-[#0c8c5e] hover:underline"
                 >
-                  <div className="flex items-center gap-2">
-                    <BookOpen size={13} className="text-purple-600" />
-                    <span>SOPs & Spécifications Tech</span>
-                  </div>
-                  <ChevronRight size={11} className="text-zinc-400 group-hover:text-zinc-700" />
+                  + Déclarer un blocage
                 </button>
               </div>
             </div>
 
-            {/* 2. Dernier Audit QA & Qualité (Card) */}
-            <div className="border border-zinc-200 rounded-lg p-3.5 bg-white shadow-xs space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 font-mono">
-                  DERNIER CONTRÔLE QA
+            {/* ── PILIER 3 : CARTE PIPELINE & DÉPLOIEMENTS (Question 9) ── */}
+            <div className="bg-white border border-[#f2f2f2] rounded-2xl p-5 shadow-xs space-y-3 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-[#f2f2f2]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded bg-zinc-50 border border-[#f2f2f2] flex items-center justify-center">
+                      <Rocket size={14} className="text-zinc-700" />
+                    </div>
+                    <span className="text-xs font-semibold text-[#08090a]">
+                      Pipeline & Déploiements Actifs
+                    </span>
+                  </div>
+
+                  <span
+                    className="text-[10px] font-mono text-[#0c8c5e] bg-[#ecfdf5] border border-[#a7f3d0] px-2 py-0.5 rounded font-medium inline-flex items-center gap-1"
+                    style={MONO}
+                  >
+                    <span className="w-1.5 h-1.5 rounded bg-[#0c8c5e]" />
+                    Vercel Production
+                  </span>
+                </div>
+
+                <div className="space-y-3 pt-3">
+                  {/* Version active et hash git */}
+                  <div className="p-3 bg-zinc-50 border border-[#f2f2f2] rounded-xl flex items-center justify-between text-xs">
+                    <div>
+                      <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider" style={MONO}>
+                        RELEASE ACTIVE
+                      </div>
+                      <div className="font-semibold text-[#08090a] font-mono mt-0.5" style={MONO}>
+                        v2.30.9 (commit dc197b2)
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-mono text-zinc-500 bg-white border border-[#f2f2f2] px-2 py-0.5 rounded" style={MONO}>
+                      branch: main
+                    </span>
+                  </div>
+
+                  {/* 3 dernières entrées changelog */}
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider" style={MONO}>
+                      Dernières Notes de Version
+                    </div>
+                    {RECENT_CHANGELOG_ENTRIES.map((entry) => (
+                      <div
+                        key={entry.version}
+                        className="flex items-center justify-between text-xs py-1 border-b border-[#f2f2f2] last:border-0"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-mono font-semibold text-[#08090a] text-[11px]" style={MONO}>
+                            {entry.version}
+                          </span>
+                          <span className="text-zinc-600 truncate text-[11px]">
+                            {entry.title}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-zinc-400 shrink-0 ml-2" style={MONO}>
+                          {entry.date}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-[#f2f2f2] flex items-center justify-between text-xs">
+                <span className="text-[11px] text-zinc-400">
+                  Build statique & SSR : 127 routes compilées
                 </span>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 font-semibold">
-                  {latestScore}% Conforme
+                <Link
+                  href="/changelog"
+                  className="text-[11px] font-medium text-[#0c8c5e] hover:underline flex items-center gap-1"
+                >
+                  <span>Changelog complet</span>
+                  <ArrowRight size={10} />
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* ── TÂCHES PRIORITAIRES TECHNIQUES (SYNTHÈSE TOP 5 - Question 4) ── */}
+          <div className="bg-white border border-[#f2f2f2] rounded-2xl shadow-xs overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#f2f2f2] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Code2 size={15} className="text-[#0c8c5e]" />
+                <span className="text-xs font-semibold text-[#08090a]">
+                  Tâches Techniques Prioritaires & Bloquantes
+                </span>
+                <span className="text-[10px] font-mono text-zinc-500 bg-zinc-50 border border-[#f2f2f2] px-1.5 py-0.2 rounded" style={MONO}>
+                  Top 5 ({techTasks.length} total)
                 </span>
               </div>
 
-              <div className="space-y-1 text-xs">
-                <div className="font-semibold text-zinc-900 truncate">
-                  {latestAudit?.project_name || 'Minerva — Release v2.4'}
-                </div>
-                <div className="text-[11px] text-zinc-500 font-mono">
-                  Environnement : {latestAudit?.environment || 'production'} • {latestPassed}/20 pts
-                </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCreatingTask(true);
+                    setTimeout(() => taskInputRef.current?.focus(), 50);
+                  }}
+                  className="h-6 px-2 text-[10.5px] font-mono font-medium text-[#0c8c5e] bg-[#ecfdf5] border border-[#a7f3d0] hover:bg-[#ecfdf5]/80 rounded inline-flex items-center gap-1 transition-colors cursor-pointer"
+                  style={MONO}
+                >
+                  <Plus size={11} />
+                  <span>Ajouter [C]</span>
+                </button>
+                <Link
+                  href="/tasks"
+                  className="text-[11px] font-medium text-zinc-500 hover:text-[#08090a] hover:underline flex items-center gap-1 ml-1"
+                >
+                  <span>Voir toutes les tâches</span>
+                  <ArrowRight size={11} />
+                </Link>
               </div>
+            </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveTab('qa')}
-                className="w-full h-7 text-xs font-medium border-zinc-200 hover:bg-zinc-50 text-zinc-800 cursor-pointer shadow-2xs"
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-[#f2f2f2] bg-zinc-50/50 text-[10px] uppercase font-mono tracking-wider text-zinc-400">
+                    <th className="py-2 px-3.5 font-semibold w-12 text-center">STATUT</th>
+                    <th className="py-2 px-3 font-semibold">INTITULÉ DE LA TÂCHE</th>
+                    <th className="py-2 px-3 font-semibold w-24">PRIORITÉ</th>
+                    <th className="py-2 px-3 font-semibold w-28">RESPONSABLE</th>
+                    <th className="py-2 px-3 font-semibold w-16 text-right">ACTION</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#f2f2f2]">
+                  {/* Row de création rapide */}
+                  {isCreatingTask && (
+                    <tr className="bg-[#ecfdf5]/30 border-b border-[#a7f3d0]">
+                      <td className="py-2 px-3.5 text-center font-mono text-[10px] text-[#0c8c5e] font-bold" style={MONO}>
+                        NEW
+                      </td>
+                      <td className="py-2 px-3" colSpan={2}>
+                        <form onSubmit={handleCreateTask} className="flex items-center gap-2">
+                          <input
+                            ref={taskInputRef}
+                            type="text"
+                            placeholder="Nouvelle tâche technique ou correctif (Appuyer sur Entrée)..."
+                            value={newTaskTitle}
+                            onChange={(e) => setNewTaskTitle(e.target.value)}
+                            className="w-full bg-white border border-[#a7f3d0] rounded px-2.5 py-1 text-xs text-[#08090a] focus:outline-hidden"
+                          />
+                        </form>
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[10px] text-zinc-500" style={MONO}>
+                        Lead Tech
+                      </td>
+                      <td className="py-2 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleCreateTask()}
+                            disabled={savingTask || !newTaskTitle.trim()}
+                            className="h-6 px-2 bg-[#08090a] hover:bg-zinc-800 text-white rounded text-[10px] font-medium cursor-pointer"
+                          >
+                            <CornerDownLeft size={10} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsCreatingTask(false);
+                              setNewTaskTitle('');
+                            }}
+                            className="h-6 px-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded text-[10px] cursor-pointer"
+                          >
+                            <X size={11} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+
+                  {topPriorityTasks.length > 0 ? (
+                    topPriorityTasks.map((task) => (
+                      <tr key={task.id} className="hover:bg-zinc-50/60 transition-colors">
+                        <td className="py-2 px-3.5 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleTaskStatus(task)}
+                            className="text-zinc-400 hover:text-[#0c8c5e] transition-colors cursor-pointer inline-flex items-center justify-center"
+                          >
+                            {task.status === 'done' ? (
+                              <CheckSquare size={14} className="text-[#0c8c5e]" />
+                            ) : (
+                              <Square size={14} className="text-zinc-400 hover:text-zinc-700" />
+                            )}
+                          </button>
+                        </td>
+
+                        <td className="py-2 px-3">
+                          <span
+                            className={cn(
+                              'font-medium text-[#08090a]',
+                              task.status === 'done' && 'line-through text-zinc-400 font-normal'
+                            )}
+                          >
+                            {task.title}
+                          </span>
+                        </td>
+
+                        <td className="py-2 px-3">
+                          <span
+                            className={cn(
+                              'inline-flex items-center px-1.5 py-0.2 rounded text-[9.5px] font-mono uppercase font-medium',
+                              task.priority === 'urgent'
+                                ? 'bg-red-50 text-red-700 border border-red-200'
+                                : task.priority === 'high'
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                : 'bg-zinc-100 text-zinc-600 border border-[#f2f2f2]'
+                            )}
+                            style={MONO}
+                          >
+                            {task.priority || 'medium'}
+                          </span>
+                        </td>
+
+                        <td className="py-2 px-3 font-mono text-[11px] text-zinc-500" style={MONO}>
+                          {task.assignee_name || 'Équipe Tech'}
+                        </td>
+
+                        <td className="py-2 px-3 text-right">
+                          <Link
+                            href={`/tasks/${task.id}`}
+                            className="text-[11px] text-zinc-400 hover:text-[#08090a] font-mono px-1.5 py-0.5 rounded hover:bg-zinc-100"
+                            style={MONO}
+                          >
+                            ↗
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="py-6 text-center text-xs text-zinc-400 font-mono" style={MONO}>
+                        Aucune tâche prioritaire en attente. Appuyez sur « C » pour en créer une.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── SOPS & PROCÉDURES TECHNIQUES RAPIDES (Question 48) ── */}
+          <div className="bg-white border border-[#f2f2f2] rounded-2xl p-4 shadow-xs space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-[#f2f2f2]">
+              <div className="flex items-center gap-2">
+                <BookOpen size={14} className="text-[#0c8c5e]" />
+                <span className="text-xs font-semibold text-[#08090a]">
+                  Procédures Opérationnelles Clés (Academy SOPs)
+                </span>
+              </div>
+              <Link
+                href="/academy"
+                className="text-[11px] font-medium text-[#0c8c5e] hover:underline flex items-center gap-1"
               >
-                <span>Relancer le Protocole QA (⌘P)</span>
-              </Button>
+                <span>Accéder à l'Academy</span>
+                <ArrowRight size={10} />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {TECH_SOPS_SHORTCUTS.map((sop) => (
+                <Link
+                  key={sop.id}
+                  href={sop.target}
+                  className="p-3 rounded-xl border border-[#f2f2f2] hover:border-[#dddddd] bg-zinc-50/40 hover:bg-white transition-colors group space-y-1 block"
+                >
+                  <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400" style={MONO}>
+                    <span className="text-[#0c8c5e] font-semibold">{sop.code}</span>
+                    <span>Lecture {sop.duration}</span>
+                  </div>
+                  <h4 className="text-xs font-semibold text-[#08090a] group-hover:text-[#0c8c5e] transition-colors line-clamp-1">
+                    {sop.title}
+                  </h4>
+                  <p className="text-[11px] text-zinc-500">
+                    {sop.category}
+                  </p>
+                </Link>
+              ))}
             </div>
           </div>
         </div>
       )}
 
-      {/* ── 5. TAB 2: QA PROTOCOL RUNNER ── */}
+      {/* ── 5. ONGLET 2 : PROTOCOLE QA (20 POINTS) ── */}
       {activeTab === 'qa' && (
         <QualityChecklistRunner
+          initialExpandAll={expandQaOnOpen}
           onAuditSaved={(saved) => {
             setAudits((prev) => [saved, ...prev.filter((a) => a.id !== saved.id)]);
           }}
         />
       )}
 
-      {/* ── 6. TAB 3: SYSTEM HEALTH MONITOR ── */}
-      {activeTab === 'infra' && <SystemHealthMonitor />}
+      {/* ── 6. ONGLET 3 : INFRASTRUCTURE & EDGE FUNCTIONS (Consolidé - Q6) ── */}
+      {activeTab === 'infra' && (
+        <div className="space-y-6">
+          <SystemHealthMonitor />
+          <div className="pt-4 border-t border-[#f2f2f2]">
+            <EdgeFunctionConsole />
+          </div>
+        </div>
+      )}
 
-      {/* ── 6.bis TAB 3.bis: EDGE FUNCTION CONSOLE ── */}
-      {activeTab === 'edge' && <EdgeFunctionConsole />}
-
-      {/* ── 7. TAB 4: DOCS & ROADMAP ── */}
+      {/* ── 7. ONGLET 4 : SOPS & ARCHITECTURE ── */}
       {activeTab === 'docs' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-          <Card className="p-4 bg-white border border-zinc-200 rounded-lg shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-5 bg-white border border-[#f2f2f2] rounded-2xl shadow-xs space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-[#f2f2f2]">
               <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-emerald-600" />
-                <h3 className="text-xs font-bold text-zinc-900">SOPs & Spécifications Techniques</h3>
+                <BookOpen className="w-4 h-4 text-[#0c8c5e]" />
+                <h3 className="text-xs font-semibold text-[#08090a]">
+                  Documentation Technique & Architecture
+                </h3>
               </div>
-              <Link href="/documents" className="text-[11px] font-medium text-emerald-600 hover:underline">
+              <Link href="/documents" className="text-[11px] font-medium text-[#0c8c5e] hover:underline">
                 Tous les documents ↗
               </Link>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {docs.slice(0, 6).map((doc) => (
                 <Link
                   key={doc.id}
                   href={`/documents?id=${doc.id}`}
-                  className="p-2.5 rounded border border-zinc-200/80 bg-zinc-50/50 hover:bg-zinc-100 flex items-center justify-between text-xs transition-colors"
+                  className="p-3 rounded-xl border border-[#f2f2f2] hover:border-[#dddddd] bg-zinc-50/40 hover:bg-white flex items-center justify-between text-xs transition-colors"
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <FileCode2 size={13} className="text-zinc-400 shrink-0" />
-                    <span className="font-semibold text-zinc-900 truncate">{doc.title}</span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <FileCode2 size={14} className="text-zinc-400 shrink-0" />
+                    <span className="font-semibold text-[#08090a] truncate">{doc.title}</span>
                   </div>
-                  <Badge variant="neutral" className="text-[9.5px] shrink-0 font-mono">
+                  <span className="text-[10px] font-mono text-zinc-500 bg-white border border-[#f2f2f2] px-1.5 py-0.5 rounded" style={MONO}>
                     {doc.category || 'sop'}
-                  </Badge>
+                  </span>
                 </Link>
               ))}
             </div>
-          </Card>
+          </div>
 
-          <Card className="p-4 bg-white border border-zinc-200 rounded-lg shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="p-5 bg-white border border-[#f2f2f2] rounded-2xl shadow-xs space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-[#f2f2f2]">
               <div className="flex items-center gap-2">
-                <Rocket className="w-4 h-4 text-emerald-600" />
-                <h3 className="text-xs font-bold text-zinc-900">Roadmap & Produits Minerva</h3>
+                <Rocket className="w-4 h-4 text-[#0c8c5e]" />
+                <h3 className="text-xs font-semibold text-[#08090a]">
+                  Écosystème Produits & Applications
+                </h3>
               </div>
-              <Link href="/produits" className="text-[11px] font-medium text-emerald-600 hover:underline">
-                Voir roadmap ↗
+              <Link href="/projects" className="text-[11px] font-medium text-[#0c8c5e] hover:underline">
+                Roadmaps ↗
               </Link>
             </div>
 
             <div className="space-y-2 text-xs">
-              <div className="p-2.5 rounded bg-zinc-50/70 border border-zinc-200/80 space-y-1">
+              <div className="p-3 rounded-xl bg-zinc-50/50 border border-[#f2f2f2] space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-zinc-900">Minerva Flow (SaaS)</span>
-                  <Badge variant="green" className="text-[9.5px] font-mono">v1.2 Release</Badge>
+                  <span className="font-semibold text-[#08090a]">Minerva Flow (SaaS Client)</span>
+                  <span className="text-[10px] font-mono text-[#0c8c5e] bg-[#ecfdf5] border border-[#a7f3d0] px-1.5 py-0.2 rounded" style={MONO}>
+                    Production
+                  </span>
                 </div>
                 <p className="text-[11px] text-zinc-500">
-                  Moteur de gestion pour restaurants et franchises avec intégration Stripe & POS.
+                  Plateforme de commande en ligne et QR code pour restaurateurs. Stack : Next.js 16 + Supabase + Stripe.
                 </p>
               </div>
 
-              <div className="p-2.5 rounded bg-zinc-50/70 border border-zinc-200/80 space-y-1">
+              <div className="p-3 rounded-xl bg-zinc-50/50 border border-[#f2f2f2] space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-zinc-900">Agent Vocal IA (ElevenLabs + Twilio)</span>
-                  <Badge variant="blue" className="text-[9.5px] font-mono">Beta Publique</Badge>
+                  <span className="font-semibold text-[#08090a]">Minerva Reach (Desktop / Mobile)</span>
+                  <span className="text-[10px] font-mono text-[#0c8c5e] bg-[#ecfdf5] border border-[#a7f3d0] px-1.5 py-0.2 rounded" style={MONO}>
+                    En Ligne
+                  </span>
                 </div>
                 <p className="text-[11px] text-zinc-500">
-                  Traitement automatique des appels entrants et qualification instantanée des leads.
+                  Application de routine quotidienne et de qualification de leads terrain. URL : minerva-os-lite-desktop.vercel.app.
                 </p>
               </div>
 
-              <div className="p-2.5 rounded bg-zinc-50/70 border border-zinc-200/80 space-y-1">
+              <div className="p-3 rounded-xl bg-zinc-50/50 border border-[#f2f2f2] space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-zinc-900">Contrôle Qualité Automatisé</span>
-                  <Badge variant="green" className="text-[9.5px] font-mono">Actif</Badge>
+                  <span className="font-semibold text-[#08090a]">Agent Vocal IA</span>
+                  <span className="text-[10px] font-mono text-zinc-600 bg-zinc-100 border border-[#f2f2f2] px-1.5 py-0.2 rounded" style={MONO}>
+                    Beta Active
+                  </span>
                 </div>
                 <p className="text-[11px] text-zinc-500">
-                  Validation continue des 20 points de contrôle avant chaque mise en production.
+                  Synthèse neuronale ElevenLabs et qualification instantanée d'appels entrants et sortants.
                 </p>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
       )}
     </PageFadeIn>

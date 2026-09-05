@@ -11,13 +11,7 @@ import {
   Cpu,
   CheckCircle2,
   AlertTriangle,
-  XCircle,
-  ExternalLink,
-  ShieldCheck,
 } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/providers/ToastProvider';
 import { checkSystemHealth } from '@/lib/services/tech';
 import type { SystemServiceHealth } from '@/lib/types';
@@ -62,68 +56,93 @@ export function SystemHealthMonitor() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-32 rounded-xl bg-mv-surface border border-mv-border animate-pulse" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="h-36 rounded-2xl bg-white border border-[#f2f2f2] animate-pulse p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded bg-zinc-100" />
+              <div className="space-y-1 flex-1">
+                <div className="h-3.5 bg-zinc-100 rounded w-28" />
+                <div className="h-2.5 bg-zinc-50 rounded w-20" />
+              </div>
+            </div>
+            <div className="h-8 bg-zinc-50 rounded" />
+          </div>
         ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* ── Summary Card ── */}
-      <Card className="p-5 bg-mv-surface border-mv-border rounded-xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-4 font-sans">
+      {/* ── Summary Card (Mintlify 16px) ── */}
+      <div className="p-5 bg-white border border-[#f2f2f2] rounded-2xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <Activity className="w-5 h-5 text-mv-green" />
-            <h3 className="text-base font-bold font-display text-mv-ink">
-              Monitoring Infrastructure & Services
-            </h3>
-            <Badge variant={healthyCount === services.length ? 'green' : 'amber'} className="text-xs">
-              {healthyCount} / {services.length} Opérationnels
-            </Badge>
+            <div className="w-8 h-8 rounded bg-[#ecfdf5] border border-[#a7f3d0] flex items-center justify-center shrink-0">
+              <Activity className="w-4 h-4 text-[#0c8c5e]" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-[#08090a] tracking-tight">
+                Monitoring Infrastructure & Microservices
+              </h3>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Sondes de latence et connectivité temps réel sur les services Cloud, webhooks et base de données.
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-mv-ink-soft">
-            Sondes de connectivité temps réel pour la base de données, les webhooks, les microservices et l’infrastructure Cloud.
-          </p>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 self-end sm:self-auto">
           <div className="text-right">
-            <div className="text-xl font-bold text-mv-ink" style={MONO}>
+            <div className="text-base font-semibold font-mono text-[#08090a]" style={MONO}>
               {avgLatency} ms
             </div>
-            <p className="text-[10.5px] text-mv-ink-faint">Latence moyenne</p>
+            <p className="text-[10px] text-zinc-400 font-mono">Latence moyenne</p>
           </div>
 
-          <Button
-            size="sm"
+          <span
+            className={cn(
+              'text-[10px] font-mono px-2 py-1 rounded border font-medium inline-flex items-center gap-1.5',
+              healthyCount === services.length
+                ? 'text-[#0c8c5e] bg-[#ecfdf5] border-[#a7f3d0]'
+                : 'text-amber-700 bg-amber-50 border-amber-200'
+            )}
+            style={MONO}
+          >
+            <span className={cn('w-1.5 h-1.5 rounded', healthyCount === services.length ? 'bg-[#0c8c5e]' : 'bg-amber-500')} />
+            {healthyCount} / {services.length} En ligne
+          </span>
+
+          <button
+            type="button"
             onClick={handleRefresh}
             disabled={refreshing}
-            className="bg-mv-green hover:bg-mv-green/90 text-white text-xs gap-1.5 cursor-pointer"
+            className="h-8 px-3 text-xs text-zinc-700 hover:text-zinc-900 bg-white hover:bg-zinc-50 border border-[#f2f2f2] hover:border-[#dddddd] rounded shadow-2xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <RefreshCw size={13} className={cn(refreshing && 'animate-spin')} />
+            <RefreshCw size={13} className={cn(refreshing && 'animate-spin text-[#0c8c5e]')} />
             <span>Actualiser</span>
-          </Button>
+          </button>
         </div>
-      </Card>
+      </div>
 
-      {/* ── Service Grid ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* ── Services Grid (Mintlify 16px cards) ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {services.map((service) => {
           const isHealthy = service.status === 'healthy';
           return (
-            <Card
+            <div
               key={service.name}
-              className="p-4 bg-mv-surface border-mv-border rounded-xl shadow-xs space-y-3 hover:border-mv-green/40 transition-colors"
+              className="p-4 bg-white border border-[#f2f2f2] hover:border-[#dddddd] rounded-2xl shadow-2xs space-y-3 transition-colors"
             >
               <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <div
                     className={cn(
-                      'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
-                      isHealthy ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                      'w-8 h-8 rounded flex items-center justify-center shrink-0 border',
+                      isHealthy
+                        ? 'bg-[#ecfdf5] border-[#a7f3d0] text-[#0c8c5e]'
+                        : 'bg-amber-50 border-amber-200 text-amber-700'
                     )}
                   >
                     {service.key === 'supabase' && <Database size={16} />}
@@ -132,37 +151,37 @@ export function SystemHealthMonitor() {
                     {service.key === 'elevenlabs' && <Radio size={16} />}
                     {service.key === 'notion' && <Server size={16} />}
                   </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-mv-ink line-clamp-1">{service.name}</h4>
-                    <span className="text-[10.5px] text-mv-ink-faint font-mono truncate block max-w-[170px]">
+                  <div className="min-w-0">
+                    <h4 className="text-xs font-semibold text-[#08090a] truncate">{service.name}</h4>
+                    <span className="text-[10px] text-zinc-400 font-mono truncate block" style={MONO}>
                       {service.endpoint}
                     </span>
                   </div>
                 </div>
 
-                <Badge
-                  variant={isHealthy ? 'green' : 'amber'}
-                  className="text-[10px] gap-1 font-medium shrink-0"
+                <span
+                  className={cn(
+                    'text-[9.5px] font-mono px-1.5 py-0.5 rounded border shrink-0 font-medium inline-flex items-center gap-1',
+                    isHealthy
+                      ? 'text-[#0c8c5e] bg-[#ecfdf5] border-[#a7f3d0]'
+                      : 'text-amber-700 bg-amber-50 border-amber-200'
+                  )}
+                  style={MONO}
                 >
-                  <span
-                    className={cn(
-                      'w-1.5 h-1.5 rounded-full',
-                      isHealthy ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
-                    )}
-                  />
-                  {isHealthy ? 'En ligne' : 'Attention'}
-                </Badge>
+                  <span className={cn('w-1 h-1 rounded', isHealthy ? 'bg-[#0c8c5e]' : 'bg-amber-500')} />
+                  {isHealthy ? 'Opérationnel' : 'Dégradé'}
+                </span>
               </div>
 
-              <p className="text-[11.5px] text-mv-ink-soft leading-relaxed min-h-[34px]">
+              <p className="text-[11.5px] text-zinc-500 leading-relaxed min-h-[34px]">
                 {service.description}
               </p>
 
-              <div className="pt-2 border-t border-mv-border flex items-center justify-between text-[10.5px] text-mv-ink-faint">
-                <span style={MONO}>Latence : <strong className="text-mv-ink font-semibold">{service.latencyMs} ms</strong></span>
-                <span>Dernier ping : {service.lastChecked}</span>
+              <div className="pt-2.5 border-t border-[#f2f2f2] flex items-center justify-between text-[10.5px] text-zinc-400 font-mono" style={MONO}>
+                <span>Latence : <strong className="text-[#08090a] font-semibold">{service.latencyMs} ms</strong></span>
+                <span>Ping : {service.lastChecked}</span>
               </div>
-            </Card>
+            </div>
           );
         })}
       </div>

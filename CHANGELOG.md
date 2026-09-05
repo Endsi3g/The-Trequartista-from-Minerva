@@ -2,6 +2,29 @@
 
 Notes de version pour l'équipe Minerva Trequartista. Format minimaliste : date, ce qui a changé, rien de plus.
 
+## 2026-09-04 (v2.30.10) — Phase 1 : Refonte Mintlify & Décomplexification Radicale du Workspace Tech
+
+- **Décomplexification Radicale du Tech Cockpit (`/tech`)** :
+  - **Structure en 3 Piliers Clairs** :
+    1. *Santé Globale des Services* : Barre d'état unifiée avec statut opérationnel temps réel, latence moyenne en direct (`38ms` en JetBrains Mono tabular) et pastilles cliquables vers les composants d'infrastructure.
+    2. *Incidents & Bloquants Actifs* : Carte à double état contextuel (état normal vert zen « 0 incident actif • 100% opérationnel » ; état alerte avec gravité P1/P2/P3, heure de signalement, résolution en 1 clic et diffusion automatique dans `#annonces`).
+    3. *Pipeline & Déploiements* : Suivi de la version active (`v2.30.10`), hash git, statut Vercel Production et top 3 notes de version récentes.
+  - **Synthèse des 5 Tâches Techniques Prioritaires** : Élimination des tables surchargées au profit des 5 tâches bloquantes/urgentes avec validation en 1 clic, création inline (raccourci `C`) et lien vers le gestionnaire global `/tasks`.
+  - **Raccourcis SOPs Métier** : Accès direct en 1 clic aux procédures clés de l'Academy (`SOP-08` gestion d'incident, `SOP-02` déploiement Vercel, `SOP-15` audit RLS).
+  - **Mode Observateur Tech** : Accueil bienveillant et non bloquant pour les collaborateurs non-tech afin de stimuler l'entraide inter-pôles.
+- **Refonte d'Assurance Qualité en Accordéons Pliables (`QualityChecklistRunner.tsx`)** :
+  - **Accordéons Pliables par Catégorie** : Sécurité & RLS, Performance & Latence, Architecture & Robustesse, UX & Responsive, SEO & Monitoring fermés par défaut avec bascule « Tout déplier / Tout replier ».
+  - **Jauge Globale Unique** : Indicateur consolidé de progression (%) et statut de release pré-production.
+  - **Déclenchement 1-Clic depuis l'En-tête** : Bouton d'action primaire Ink Black `#08090a` (rayon 4px) « Lancer l'audit de release » (raccourci `A` ou `⌘P`) basculant instantanément sur la checklist dépliée.
+- **Consolidation Infrastructure & Edge (`/tech?tab=infra`)** :
+  - Fusion harmonieuse du moniteur de sondes système (`SystemHealthMonitor`) et de la console Edge Functions (`EdgeFunctionConsole`) sous un même onglet unifié.
+- **Conformité Graphique Mintlify Absolue** :
+  - 100% tokens respectés (Paper White `#ffffff`, Ink Black `#08090a`, Mint Green `#0c8c5e`, bordures `#f2f2f2` et `#dddddd`, 0 pilule, 0 avatar arrondi, typographie Inter + JetBrains Mono).
+- **Contrôle Qualité Validé** :
+  - `npm run verify:design` : **100.0% de conformité**.
+  - `npx tsc --noEmit` : **0 erreur TypeScript**.
+  - `npm run build` : **127 routes compilées** avec succès dans Next.js 16 (Turbopack).
+
 ## 2026-09-04 (v2.30.9) — Console Edge Functions & Système d'Alertes Incident dans le Tech Workspace
 
 - **Console Interactive Edge Functions & Webhooks (`/tech?tab=edge`)** :

@@ -1,6 +1,6 @@
 # Minerva Trequartista — Guide Technique & Directives IA (GEMINI.md)
 
-**Version du Système :** v2.30.9  
+**Version du Système :** v2.30.10  
 **Stack Principale :** Next.js 16 (App Router) • Supabase (PostgreSQL + RLS + Realtime) • Tailwind CSS • TypeScript Strict Mode
 
 ---
